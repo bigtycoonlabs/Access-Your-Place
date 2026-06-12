@@ -1,6 +1,2 @@
-﻿[build]
-builder = "nixpacks"
-buildCommand = "npm install --legacy-peer-deps && npm run build"
-
-[deploy]
-startCommand = "npx serve -s dist -l $PORT"
+[build]
+buildCommand = "npm install && npm run build"
