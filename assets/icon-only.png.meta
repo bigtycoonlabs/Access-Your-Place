@@ -1,0 +1,10 @@
+App Icon - Access Your Place
+1024x1024 PNG
+Source URL: https://d64gsuwffb70l.cloudfront.net/6912a1d2ea97d4e30b03d36a_1771044924967_36387b2f.jpg
+
+Instructions:
+1. Download the image from the URL above
+2. Save as assets/icon-only.png (1024x1024)
+3. Run: npx @capacitor/assets generate --iconBackgroundColor '#1a365d' --iconBackgroundColorDark '#0f1f33' --splashBackgroundColor '#1a365d' --splashBackgroundColorDark '#0f1f33'
+
+This will auto-generate all required icon sizes for iOS and Android.
