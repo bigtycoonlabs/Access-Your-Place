@@ -66,39 +66,7 @@ const dbHeaders = () => ({
   'Content-Type': 'application/json',
 });
 
-function buildDbUrl(path) {
-  const base = (process.env.POSTGREST_URL || SUPABASE_URL || '').replace(/\/+$/, '');
-  if (!base) throw new Error('POSTGREST_URL or SUPABASE_URL is not configured');
-
-  const cleanPath = path.startsWith('/') ? path : '/' + path;
-  const isSupabaseProject = /supabase\.co/i.test(base);
-  const alreadyRestBase = /\/rest\/v1$/i.test(base);
-  const restPrefix = isSupabaseProject && !alreadyRestBase ? '/rest/v1' : '';
-
-  return base + restPrefix + cleanPath;
-}
 async function db(path, opts = {}) {
-  const url = buildDbUrl(path);
-  const res = await fetch(url, {
-    headers: dbHeaders(),
-    ...opts,
-  });
-
-  const text = await res.text();
-  let data;
-  try { data = JSON.parse(text); }
-  catch { data = text; }
-
-  if (!res.ok) {
-    console.error('[DB] Request failed:', {
-      status: res.status,
-      url,
-      response: typeof data === 'string' ? data.substring(0, 500) : data
-    });
-  }
-
-  return { ok: res.ok, status: res.status, data };
-}) {
   const url = `${SUPABASE_URL}/rest/v1${path}`;
   const res = await fetch(url, {
     headers: dbHeaders(),
@@ -149,31 +117,12 @@ async function callAnthropic({ model = 'claude-3-5-sonnet-20241022', max_tokens 
 }
 
 // ── bcrypt helpers ────────────────────────────────────────────────────────────
-function isBcryptHash(str) {
-  if (!str || typeof str !== 'string') return false;
-  return (
-    str.startsWith('$2a$') ||
-    str.startsWith('$2b$') ||
-    str.startsWith('$2y$')
-  );
-}
-
+function isBcryptHash(str) { return str && str.startsWith('$2') && str.length >= 50; }
 async function verifyPassword(input, stored) {
-  if (input == null || stored == null) return false;
-
-  const entered = String(input).trim();
-  const saved = String(stored).trim();
-
-  if (isBcryptHash(saved)) {
-    return bcrypt.compare(entered, saved);
-  }
-
-  return entered === saved; // legacy plain-text
+  if (isBcryptHash(stored)) return bcrypt.compare(input, stored);
+  return input === stored; // legacy plain-text
 }
-
-async function hashPassword(plain) {
-  return bcrypt.hash(String(plain), 10);
-}
+async function hashPassword(plain) { return bcrypt.hash(plain, 10); }
 
 // ── CORS preflight ────────────────────────────────────────────────────────────
 app.options('*', cors());
