@@ -65,7 +65,15 @@ const dbHeaders = () => ({
   'Authorization': `Bearer ${SERVICE_ROLE_KEY}`,
   'Content-Type': 'application/json',
 });
-
+function buildDbUrl(path) {
+  const base = (process.env.POSTGREST_URL || SUPABASE_URL || '').replace(/\/+$/, '');
+  if (!base) throw new Error('POSTGREST_URL or SUPABASE_URL is not configured');
+  const cleanPath = path.startsWith('/') ? path : '/' + path;
+  const isSupabaseProject = /supabase\.co/i.test(base);
+  const alreadyRestBase = /\/rest\/v1$/i.test(base);
+  const restPrefix = isSupabaseProject && !alreadyRestBase ? '/rest/v1' : '';
+  return base + restPrefix + cleanPath;
+}
 function buildDbUrl(path) {
   const base = (process.env.POSTGREST_URL || SUPABASE_URL || '').replace(/\/+$/, '');
   if (!base) throw new Error('POSTGREST_URL or SUPABASE_URL is not configured');
@@ -79,9 +87,8 @@ function buildDbUrl(path) {
 }
 async function db(path, opts = {}) {
   const url = buildDbUrl(path);
-  const res = await fetch(url, {
-    headers: dbHeaders(),
-    ...opts,
+  // ...rest of the function...
+}
   });
   const text = await res.text();
   try { return { ok: res.ok, status: res.status, data: JSON.parse(text) }; }
