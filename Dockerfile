@@ -35,10 +35,8 @@ RUN npm install --omit=dev
 # Copy backend source
 COPY backend/ .
 
-# Patch full legacy server.js for Railway PostgREST root URLs.
-# The full server expects Supabase URLs that need /rest/v1, but Railway's
-# POSTGREST_URL/SUPABASE_URL may already point directly at PostgREST root.
-RUN node -e 'const fs=require("fs");const f="server.js";let s=fs.readFileSync(f,"utf8");const old="async function db(path, opts = {}) {\n  const url = `${SUPABASE_URL}/rest/v1${path}`;";const helper="function buildDbUrl(path) {\n  const base = (process.env.POSTGREST_URL || SUPABASE_URL || \"\").replace(/\\/+$/, \"\");\n  if (!base) throw new Error(\"POSTGREST_URL or SUPABASE_URL is not configured\");\n  const cleanPath = path.startsWith(\"/\") ? path : \"/\" + path;\n  const restPrefix = /supabase\\.co/i.test(base) && !/\\/rest\\/v1$/i.test(base) ? \"/rest/v1\" : \"\";\n  return base + restPrefix + cleanPath;\n}\n\nasync function db(path, opts = {}) {\n  const url = buildDbUrl(path);";if(s.includes(old)){s=s.replace(old,helper);fs.writeFileSync(f,s,"utf8");console.log("Patched server.js DB URL handling for Railway");}else{console.log("server.js DB URL patch skipped; expected legacy line not found");}'
+# Patch full legacy server.js for Railway PostgREST root URLs and current frontend payloads.
+RUN node -e 'const fs=require("fs");const f="server.js";let s=fs.readFileSync(f,"utf8");const old="async function db(path, opts = {}) {\n  const url = `${SUPABASE_URL}/rest/v1${path}`;";const helper="function buildDbUrl(path) {\n  const base = (process.env.POSTGREST_URL || SUPABASE_URL || \"\").replace(/\\/+$/, \"\");\n  if (!base) throw new Error(\"POSTGREST_URL or SUPABASE_URL is not configured\");\n  const cleanPath = path.startsWith(\"/\") ? path : \"/\" + path;\n  const restPrefix = /supabase\\.co/i.test(base) && !/\\/rest\\/v1$/i.test(base) ? \"/rest/v1\" : \"\";\n  return base + restPrefix + cleanPath;\n}\n\nasync function db(path, opts = {}) {\n  const url = buildDbUrl(path);";if(s.includes(old)){s=s.replace(old,helper);console.log("Patched DB URL handling");}else{console.log("DB URL patch skipped");}const oldRegister="if (action === 'register') {";const newRegister="if (action === 'register' || fn === 'investor-register') {";if(s.includes(oldRegister)){s=s.replace(oldRegister,newRegister);console.log("Patched investor-register action handling");}fs.writeFileSync(f,s,"utf8");'
 RUN node -c server.js
 
 # Copy built frontend into dist/ (backend serves it as static files)
