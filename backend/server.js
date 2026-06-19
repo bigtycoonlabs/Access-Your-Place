@@ -74,21 +74,11 @@ function buildDbUrl(path) {
   const restPrefix = isSupabaseProject && !alreadyRestBase ? '/rest/v1' : '';
   return base + restPrefix + cleanPath;
 }
-function buildDbUrl(path) {
-  const base = (process.env.POSTGREST_URL || SUPABASE_URL || '').replace(/\/+$/, '');
-  if (!base) throw new Error('POSTGREST_URL or SUPABASE_URL is not configured');
-
-  const cleanPath = path.startsWith('/') ? path : '/' + path;
-  const isSupabaseProject = /supabase\.co/i.test(base);
-  const alreadyRestBase = /\/rest\/v1$/i.test(base);
-  const restPrefix = isSupabaseProject && !alreadyRestBase ? '/rest/v1' : '';
-
-  return base + restPrefix + cleanPath;
-}
 async function db(path, opts = {}) {
   const url = buildDbUrl(path);
-  // ...rest of the function...
-}
+  const res = await fetch(url, {
+    headers: dbHeaders(),
+    ...opts,
   });
   const text = await res.text();
   try { return { ok: res.ok, status: res.status, data: JSON.parse(text) }; }
