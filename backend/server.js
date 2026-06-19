@@ -1,10 +1,10 @@
-/**
+﻿/**
  * Access Your Place - Railway Functions Server
  * Replaces all famous.ai/Supabase Edge Functions.
  *
  * Routes:
- *   POST /functions/v1/:functionName  → edge function handler
- *   GET  /health                      → health check
+ *   POST /functions/v1/:functionName  â†’ edge function handler
+ *   GET  /health                      â†’ health check
  */
 
 'use strict';
@@ -19,7 +19,7 @@ const { createProxyMiddleware } = require('http-proxy-middleware');
 const app = express();
 const PORT = process.env.PORT || 4000;
 
-// ── Env helpers ───────────────────────────────────────────────────────────────
+// â”€â”€ Env helpers â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 const SUPABASE_URL       = process.env.SUPABASE_URL;          // PostgREST public URL
 const SERVICE_ROLE_KEY   = process.env.SUPABASE_SERVICE_ROLE_KEY;
 const RESEND_KEY         = process.env.RESEND_API_KEY;
@@ -31,12 +31,12 @@ const TWILIO_TOKEN       = process.env.TWILIO_AUTH_TOKEN;
 const TWILIO_FROM        = process.env.TWILIO_FROM_NUMBER;
 const SITE_URL           = process.env.SITE_URL || 'https://accessyourplace.com';
 
-// ── Middleware ────────────────────────────────────────────────────────────────
+// â”€â”€ Middleware â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 app.use(cors({ origin: '*', methods: ['GET','POST','PUT','PATCH','DELETE','OPTIONS'] }));
 app.use(express.json({ limit: '10mb' }));
 app.use(express.urlencoded({ extended: true, limit: '10mb' }));
 
-// ── PostgREST Proxy (/rest/v1/* → PostgREST) ──────────────────────────────────
+// â”€â”€ PostgREST Proxy (/rest/v1/* â†’ PostgREST) â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 const POSTGREST_INTERNAL = process.env.POSTGREST_URL || 'http://postgrest.railway.internal:3000';
 app.use('/rest/v1', createProxyMiddleware({
   target: POSTGREST_INTERNAL,
@@ -55,19 +55,30 @@ app.use('/rest/v1', createProxyMiddleware({
   }
 }));
 
-// ── Serve built React frontend (static files) ─────────────────────────────────
+// â”€â”€ Serve built React frontend (static files) â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 const DIST_DIR = path.join(__dirname, 'dist');
 app.use(express.static(DIST_DIR));
 
-// ── DB helper (calls PostgREST) ───────────────────────────────────────────────
+// â”€â”€ DB helper (calls PostgREST) â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 const dbHeaders = () => ({
   'apikey': SERVICE_ROLE_KEY,
   'Authorization': `Bearer ${SERVICE_ROLE_KEY}`,
   'Content-Type': 'application/json',
 });
 
+function buildDbUrl(path) {
+  const base = (process.env.POSTGREST_URL || SUPABASE_URL || '').replace(/\/+$/, '');
+  if (!base) throw new Error('POSTGREST_URL or SUPABASE_URL is not configured');
+
+  const cleanPath = path.startsWith('/') ? path : '/' + path;
+  const isSupabaseProject = /supabase\.co/i.test(base);
+  const alreadyRestBase = /\/rest\/v1$/i.test(base);
+  const restPrefix = isSupabaseProject && !alreadyRestBase ? '/rest/v1' : '';
+
+  return base + restPrefix + cleanPath;
+}
 async function db(path, opts = {}) {
-  const url = `${SUPABASE_URL}/rest/v1${path}`;
+  const url = buildDbUrl(path);
   const res = await fetch(url, {
     headers: dbHeaders(),
     ...opts,
@@ -82,7 +93,7 @@ async function dbPost(path, body)   { return db(path, { method: 'POST', headers:
 async function dbPatch(path, body)  { return db(path, { method: 'PATCH', headers: { ...dbHeaders(), 'Prefer': 'return=minimal' }, body: JSON.stringify(body) }); }
 async function dbDelete(path)       { return db(path, { method: 'DELETE', headers: { ...dbHeaders() } }); }
 
-// ── Email helper (Resend) ─────────────────────────────────────────────────────
+// â”€â”€ Email helper (Resend) â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 async function sendEmail({ to, subject, html, from }) {
   if (!RESEND_KEY) return { ok: false, error: 'No RESEND_API_KEY configured' };
   const res = await fetch('https://api.resend.com/emails', {
@@ -93,7 +104,7 @@ async function sendEmail({ to, subject, html, from }) {
   return { ok: res.ok };
 }
 
-// ── SMS helper (Twilio) ───────────────────────────────────────────────────────
+// â”€â”€ SMS helper (Twilio) â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 async function sendSMS(to, body) {
   if (!TWILIO_SID || !TWILIO_TOKEN) return { ok: false };
   const url = `https://api.twilio.com/2010-04-01/Accounts/${TWILIO_SID}/Messages.json`;
@@ -106,7 +117,7 @@ async function sendSMS(to, body) {
   return { ok: res.ok };
 }
 
-// ── Anthropic helper ──────────────────────────────────────────────────────────
+// â”€â”€ Anthropic helper â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 async function callAnthropic({ model = 'claude-3-5-sonnet-20241022', max_tokens = 2048, messages, system }) {
   const res = await fetch('https://api.anthropic.com/v1/messages', {
     method: 'POST',
@@ -116,7 +127,7 @@ async function callAnthropic({ model = 'claude-3-5-sonnet-20241022', max_tokens 
   return res.json();
 }
 
-// ── bcrypt helpers ────────────────────────────────────────────────────────────
+// â”€â”€ bcrypt helpers â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 function isBcryptHash(str) { return str && str.startsWith('$2') && str.length >= 50; }
 async function verifyPassword(input, stored) {
   if (isBcryptHash(stored)) return bcrypt.compare(input, stored);
@@ -124,15 +135,15 @@ async function verifyPassword(input, stored) {
 }
 async function hashPassword(plain) { return bcrypt.hash(plain, 10); }
 
-// ── CORS preflight ────────────────────────────────────────────────────────────
+// â”€â”€ CORS preflight â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 app.options('*', cors());
 
-// ── Health check ──────────────────────────────────────────────────────────────
+// â”€â”€ Health check â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 app.get('/health', (req, res) => res.json({ ok: true, ts: new Date().toISOString() }));
 
-// ══════════════════════════════════════════════════════════════════════════════
+// â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•
 // EDGE FUNCTION ROUTER
-// ══════════════════════════════════════════════════════════════════════════════
+// â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•
 app.post('/functions/v1/:fn', async (req, res) => {
   const fn = req.params.fn;
   const body = req.body || {};
@@ -143,7 +154,7 @@ app.post('/functions/v1/:fn', async (req, res) => {
   try {
     switch (fn) {
 
-    // ─────────────────────────── AUTH: INVESTOR ───────────────────────────
+    // â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€ AUTH: INVESTOR â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
     case 'investor-auth':
     case 'investor-login':
     case 'investor-register':
@@ -245,7 +256,7 @@ app.post('/functions/v1/:fn', async (req, res) => {
       return err(`Unknown investor-auth action: ${action}`);
     }
 
-    // ─────────────────────────── AUTH: STAFF ─────────────────────────────
+    // â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€ AUTH: STAFF â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
     case 'staff-login':
     case 'staff-forgot-password': {
       const { action, email, password, reset_token, new_password, staff_id, current_password, investor_email } = body;
@@ -328,7 +339,7 @@ app.post('/functions/v1/:fn', async (req, res) => {
       return err(`Unknown staff-login action: ${action}`);
     }
 
-    // ─────────────────────────── INVESTOR FAVORITES ───────────────────────
+    // â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€ INVESTOR FAVORITES â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
     case 'investor-favorites': {
       const { action, investor_id, property_id } = body;
       if (action === 'get') {
@@ -348,7 +359,7 @@ app.post('/functions/v1/:fn', async (req, res) => {
       return err('Unknown favorites action');
     }
 
-    // ─────────────────────────── MANAGE STAFF ────────────────────────────
+    // â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€ MANAGE STAFF â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
     case 'manage-staff': {
       const { action } = body;
 
@@ -413,7 +424,7 @@ app.post('/functions/v1/:fn', async (req, res) => {
       return err(`Unknown manage-staff action: ${action}`);
     }
 
-    // ─────────────────────────── SEND INVESTOR INVITATION ─────────────────
+    // â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€ SEND INVESTOR INVITATION â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
     case 'send-investor-invitation': {
       const { action, email, investor_id, staff_id: sId, base_url } = body;
 
@@ -447,7 +458,7 @@ app.post('/functions/v1/:fn', async (req, res) => {
       return err(`Unknown send-investor-invitation action: ${action}`);
     }
 
-    // ─────────────────────────── PROPERTIES ──────────────────────────────
+    // â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€ PROPERTIES â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
     case 'get-properties': {
       const { status, source, city, state, zip_code, limit = 50, offset = 0 } = body;
       let q = `/properties?select=*,deal_analytics(*)&order=created_at.desc&limit=${limit}&offset=${offset}`;
@@ -487,7 +498,7 @@ app.post('/functions/v1/:fn', async (req, res) => {
       return ok({ success: true });
     }
 
-    // ─────────────────────────── DEAL MARKETPLACE ─────────────────────────
+    // â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€ DEAL MARKETPLACE â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
     case 'manage-deal-marketplace': {
       const { action } = body;
 
@@ -542,7 +553,7 @@ app.post('/functions/v1/:fn', async (req, res) => {
       return err(`Unknown manage-deal-marketplace action: ${action}`);
     }
 
-    // ─────────────────────────── INVESTOR MESSAGING ───────────────────────
+    // â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€ INVESTOR MESSAGING â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
     case 'investor-messaging': {
       const { action, investor_id, staff_id, message_id } = body;
 
@@ -570,7 +581,7 @@ app.post('/functions/v1/:fn', async (req, res) => {
       return err(`Unknown investor-messaging action: ${action}`);
     }
 
-    // ─────────────────────────── AM SUBMIT DEAL ───────────────────────────
+    // â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€ AM SUBMIT DEAL â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
     case 'am-submit-deal': {
       const { action } = body;
 
@@ -596,7 +607,7 @@ app.post('/functions/v1/:fn', async (req, res) => {
       return err(`Unknown am-submit-deal action: ${action}`);
     }
 
-    // ─────────────────────────── MANAGE INVESTOR ADMIN ────────────────────
+    // â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€ MANAGE INVESTOR ADMIN â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
     case 'manage-investor-admin': {
       const { action } = body;
 
@@ -633,7 +644,7 @@ app.post('/functions/v1/:fn', async (req, res) => {
       return err(`Unknown manage-investor-admin action: ${action}`);
     }
 
-    // ─────────────────────────── MANAGE LANDLORD PORTAL ───────────────────
+    // â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€ MANAGE LANDLORD PORTAL â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
     case 'manage-landlord-portal':
     case 'manage-landlords':
     case 'landlord-auth': {
@@ -676,7 +687,7 @@ app.post('/functions/v1/:fn', async (req, res) => {
       return err(`Unknown landlord action: ${action}`);
     }
 
-    // ─────────────────────────── AI - PENNY CHAT ──────────────────────────
+    // â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€ AI - PENNY CHAT â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
     case 'ai-investor-chat': {
       const { message, session_id, user_id, user_type = 'investor', context } = body;
       if (!ANTHROPIC_KEY) return err('AI not configured');
@@ -710,7 +721,7 @@ app.post('/functions/v1/:fn', async (req, res) => {
       return ok({ success: true, reply, messages });
     }
 
-    // ─────────────────────────── AI - PROPERTY ANALYSIS ───────────────────
+    // â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€ AI - PROPERTY ANALYSIS â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
     case 'ai-property-analysis': {
       const { property_id, property_data } = body;
       if (!ANTHROPIC_KEY) return err('AI not configured');
@@ -734,7 +745,7 @@ app.post('/functions/v1/:fn', async (req, res) => {
       return ok({ success: true, analysis });
     }
 
-    // ─────────────────────────── AI - PENNY DEAL SCORING ──────────────────
+    // â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€ AI - PENNY DEAL SCORING â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
     case 'penny-deal-scoring':
     case 'nightly-penny-score-refresh': {
       const { property_id, limit = 10 } = body;
@@ -756,7 +767,7 @@ app.post('/functions/v1/:fn', async (req, res) => {
       return ok({ success: true, results });
     }
 
-    // ─────────────────────────── PENNY - GENERATE DESCRIPTION ─────────────
+    // â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€ PENNY - GENERATE DESCRIPTION â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
     case 'penny-generate-description': {
       const { property_id, property_data } = body;
       if (!ANTHROPIC_KEY) return err('AI not configured');
@@ -767,7 +778,7 @@ app.post('/functions/v1/:fn', async (req, res) => {
       return ok({ success: true, description });
     }
 
-    // ─────────────────────────── AI - PENNY PORTFOLIO ANALYSIS ────────────
+    // â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€ AI - PENNY PORTFOLIO ANALYSIS â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
     case 'penny-portfolio-analysis': {
       const { investor_id } = body;
       if (!ANTHROPIC_KEY) return err('AI not configured');
@@ -776,7 +787,7 @@ app.post('/functions/v1/:fn', async (req, res) => {
       return ok({ success: true, analysis: aiRes.content?.[0]?.text || '' });
     }
 
-    // ─────────────────────────── AI - ARTICLE GENERATION ─────────────────
+    // â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€ AI - ARTICLE GENERATION â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
     case 'research-and-generate-articles':
     case 'daily-article-generation':
     case 'generate-single-article': {
@@ -793,7 +804,7 @@ app.post('/functions/v1/:fn', async (req, res) => {
       return ok({ success: true, article: Array.isArray(result.data) ? result.data[0] : result.data });
     }
 
-    // ─────────────────────────── ARTICLES ─────────────────────────────────
+    // â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€ ARTICLES â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
     case 'get-draft-articles': {
       const { status } = body;
       let q = '/draft_articles?order=created_at.desc&select=*';
@@ -820,7 +831,7 @@ app.post('/functions/v1/:fn', async (req, res) => {
       return ok({ success: true, articles: data || [], synced: data?.length || 0 });
     }
 
-    // ─────────────────────────── LEAD MANAGEMENT ──────────────────────────
+    // â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€ LEAD MANAGEMENT â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
     case 'submit-lead':
     case 'get-leads': {
       const { action } = body;
@@ -847,7 +858,7 @@ app.post('/functions/v1/:fn', async (req, res) => {
       return ok({ success: true });
     }
 
-    // ─────────────────────────── NOTIFICATIONS ─────────────────────────────
+    // â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€ NOTIFICATIONS â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
     case 'send-notification-email':
     case 'investor-email-notifications': {
       const { to, subject, html, template, template_data } = body;
@@ -888,7 +899,7 @@ app.post('/functions/v1/:fn', async (req, res) => {
       return err('Unknown notifications action');
     }
 
-    // ─────────────────────────── REFERRALS ────────────────────────────────
+    // â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€ REFERRALS â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
     case 'manage-referrals': {
       const { action } = body;
 
@@ -920,7 +931,7 @@ app.post('/functions/v1/:fn', async (req, res) => {
       return err(`Unknown manage-referrals action: ${action}`);
     }
 
-    // ─────────────────────────── SETUP TASKS ──────────────────────────────
+    // â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€ SETUP TASKS â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
     case 'manage-setup-tasks': {
       const { action, investor_id, task_id } = body;
 
@@ -943,7 +954,7 @@ app.post('/functions/v1/:fn', async (req, res) => {
       return err(`Unknown manage-setup-tasks action: ${action}`);
     }
 
-    // ─────────────────────────── MARKET REPORTS ───────────────────────────
+    // â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€ MARKET REPORTS â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
     case 'manage-market-reports':
     case 'generate-market-report': {
       const { action } = body;
@@ -970,7 +981,7 @@ app.post('/functions/v1/:fn', async (req, res) => {
       return err(`Unknown market-reports action: ${action}`);
     }
 
-    // ─────────────────────────── HR / COMMISSIONS ─────────────────────────
+    // â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€ HR / COMMISSIONS â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
     case 'manage-hr-commissions': {
       const { action } = body;
 
@@ -1007,7 +1018,7 @@ app.post('/functions/v1/:fn', async (req, res) => {
       return err(`Unknown manage-hr-commissions action: ${action}`);
     }
 
-    // ─────────────────────────── ACQUISITION REQUESTS ─────────────────────
+    // â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€ ACQUISITION REQUESTS â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
     case 'manage-acquisition-requests':
     case 'manage-acquisition-workflow':
     case 'manage-acquisitions': {
@@ -1042,7 +1053,7 @@ app.post('/functions/v1/:fn', async (req, res) => {
       return err(`Unknown acquisition action: ${action}`);
     }
 
-    // ─────────────────────────── MANAGE AM ASSIGNMENTS ────────────────────
+    // â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€ MANAGE AM ASSIGNMENTS â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
     case 'manage-am-assignments': {
       const { action } = body;
 
@@ -1072,7 +1083,7 @@ app.post('/functions/v1/:fn', async (req, res) => {
       return err(`Unknown am-assignments action: ${action}`);
     }
 
-    // ─────────────────────────── EMAIL TEMPLATES ───────────────────────────
+    // â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€ EMAIL TEMPLATES â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
     case 'manage-email-templates': {
       const { action, template_id } = body;
 
@@ -1112,7 +1123,7 @@ app.post('/functions/v1/:fn', async (req, res) => {
       return err(`Unknown email-templates action: ${action}`);
     }
 
-    // ─────────────────────────── SEND BULK EMAIL ──────────────────────────
+    // â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€ SEND BULK EMAIL â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
     case 'send-bulk-email': {
       const { recipients, subject, html, from } = body;
       if (!Array.isArray(recipients) || !recipients.length) return err('No recipients');
@@ -1136,7 +1147,7 @@ app.post('/functions/v1/:fn', async (req, res) => {
       return ok({ success: true });
     }
 
-    // ─────────────────────────── MANAGE SUPPORT REQUESTS ──────────────────
+    // â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€ MANAGE SUPPORT REQUESTS â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
     case 'manage-support-requests':
     case 'submit-issue-report': {
       const { action } = body;
@@ -1166,7 +1177,7 @@ app.post('/functions/v1/:fn', async (req, res) => {
       return err(`Unknown support action: ${action}`);
     }
 
-    // ─────────────────────────── ANALYTICS / TRACKING ─────────────────────
+    // â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€ ANALYTICS / TRACKING â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
     case 'track-event': {
       const { event_name, user_id, user_type, properties: props } = body;
       await dbPost('/analytics_events', { event_name, user_id, user_type, properties: props || {}, created_at: new Date().toISOString() }).catch(() => {});
@@ -1205,7 +1216,7 @@ app.post('/functions/v1/:fn', async (req, res) => {
       return err('Unknown activity action');
     }
 
-    // ─────────────────────────── INVESTOR DOCUMENTS ────────────────────────
+    // â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€ INVESTOR DOCUMENTS â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
     case 'manage-investor-documents': {
       const { action, investor_id, document_id } = body;
 
@@ -1228,7 +1239,7 @@ app.post('/functions/v1/:fn', async (req, res) => {
       return err(`Unknown investor-documents action: ${action}`);
     }
 
-    // ─────────────────────────── INVESTOR CREDITS ──────────────────────────
+    // â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€ INVESTOR CREDITS â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
     case 'manage-investor-credits': {
       const { action, investor_id } = body;
 
@@ -1253,7 +1264,7 @@ app.post('/functions/v1/:fn', async (req, res) => {
       return err(`Unknown investor-credits action: ${action}`);
     }
 
-    // ─────────────────────────── DISPUTES ─────────────────────────────────
+    // â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€ DISPUTES â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
     case 'manage-disputes': {
       const { action } = body;
 
@@ -1280,7 +1291,7 @@ app.post('/functions/v1/:fn', async (req, res) => {
       return err(`Unknown disputes action: ${action}`);
     }
 
-    // ─────────────────────────── PLATFORM CONNECTIONS ─────────────────────
+    // â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€ PLATFORM CONNECTIONS â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
     case 'manage-platform-connections':
     case 'handle-platform-webhook': {
       const { action } = body;
@@ -1313,7 +1324,7 @@ app.post('/functions/v1/:fn', async (req, res) => {
       return err(`Unknown platform-connections action: ${action}`);
     }
 
-    // ─────────────────────────── SELLER DOCUMENTS ──────────────────────────
+    // â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€ SELLER DOCUMENTS â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
     case 'seller-document-upload': {
       const { action, property_id, document_id } = body;
 
@@ -1336,7 +1347,7 @@ app.post('/functions/v1/:fn', async (req, res) => {
       return err('Unknown seller-document action');
     }
 
-    // ─────────────────────────── DIGITAL PRODUCTS ──────────────────────────
+    // â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€ DIGITAL PRODUCTS â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
     case 'get-digital-products':
     case 'upload-digital-product':
     case 'delete-digital-product':
@@ -1368,7 +1379,7 @@ app.post('/functions/v1/:fn', async (req, res) => {
       return err('Unknown digital-products action');
     }
 
-    // ─────────────────────────── PAYMENTS ──────────────────────────────────
+    // â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€ PAYMENTS â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
     case 'manage-payments':
     case 'process-account-funding':
     case 'process-acquisition-payment':
@@ -1397,7 +1408,7 @@ app.post('/functions/v1/:fn', async (req, res) => {
       return err(`Unknown payments action: ${action}`);
     }
 
-    // ─────────────────────────── SOP REPOSITORY ───────────────────────────
+    // â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€ SOP REPOSITORY â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
     case 'manage-sop-repository': {
       const { action, sop_id } = body;
 
@@ -1429,7 +1440,7 @@ app.post('/functions/v1/:fn', async (req, res) => {
       return err(`Unknown sop action: ${action}`);
     }
 
-    // ─────────────────────────── DOCUMENT SIGNATURES ──────────────────────
+    // â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€ DOCUMENT SIGNATURES â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
     case 'manage-document-signatures':
     case 'sign-agreement':
     case 'generate-agreement-pdf': {
@@ -1456,7 +1467,7 @@ app.post('/functions/v1/:fn', async (req, res) => {
       return err('Unknown signature action');
     }
 
-    // ─────────────────────────── PORTFOLIO PERFORMANCE ────────────────────
+    // â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€ PORTFOLIO PERFORMANCE â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
     case 'manage-portfolio-performance':
     case 'manage-portfolio-approvals': {
       const { action } = body;
@@ -1493,7 +1504,7 @@ app.post('/functions/v1/:fn', async (req, res) => {
       return err(`Unknown portfolio action: ${action}`);
     }
 
-    // ─────────────────────────── DEAL ALERTS ──────────────────────────────
+    // â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€ DEAL ALERTS â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
     case 'manage-deal-alerts':
     case 'check-deal-alerts': {
       const { action } = body;
@@ -1526,7 +1537,7 @@ app.post('/functions/v1/:fn', async (req, res) => {
       return err('Unknown deal-alerts action');
     }
 
-    // ─────────────────────────── INVESTOR INQUIRIES ────────────────────────
+    // â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€ INVESTOR INQUIRIES â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
     case 'investor-inquiries':
     case 'manage-deal-inquiries':
     case 'submit-deal-inquiry': {
@@ -1556,7 +1567,7 @@ app.post('/functions/v1/:fn', async (req, res) => {
       return err('Unknown inquiries action');
     }
 
-    // ─────────────────────────── PROPERTY PHOTOS ──────────────────────────
+    // â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€ PROPERTY PHOTOS â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
     case 'upload-deal-photo':
     case 'process-property-photos':
     case 'background-photo-processing':
@@ -1578,14 +1589,14 @@ app.post('/functions/v1/:fn', async (req, res) => {
       return ok({ success: true, message: 'Photo processing queued' });
     }
 
-    // ─────────────────────────── INVESTOR OAUTH ────────────────────────────
+    // â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€ INVESTOR OAUTH â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
     case 'investor-oauth': {
       const { provider, code, state } = body;
       // OAuth flow - redirect to provider
       return ok({ success: false, error: 'OAuth must be configured server-side. Set up callback URLs in your OAuth provider.' });
     }
 
-    // ─────────────────────────── DEAL LOCATOR ──────────────────────────────
+    // â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€ DEAL LOCATOR â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
     case 'investor-deal-locator': {
       const { zip_code, city, state, operation_type, investor_id } = body;
       let q = '/properties?is_published=eq.true&select=*,deal_analytics(*)';
@@ -1597,7 +1608,7 @@ app.post('/functions/v1/:fn', async (req, res) => {
       return ok({ success: true, deals: data || [] });
     }
 
-    // ─────────────────────────── WEEKLY DIGEST ────────────────────────────
+    // â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€ WEEKLY DIGEST â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
     case 'investor-weekly-digest':
     case 'unassigned-investor-digest': {
       const { data: investors } = await dbGet('/investors?email_opt_in=eq.true&select=id,email,full_name');
@@ -1611,7 +1622,7 @@ app.post('/functions/v1/:fn', async (req, res) => {
       return ok({ success: true, sent });
     }
 
-    // ─────────────────────────── SECURITY ALERTS ──────────────────────────
+    // â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€ SECURITY ALERTS â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
     case 'security-alerts': {
       const { action, user_id, user_type } = body;
       if (action === 'get') {
@@ -1626,7 +1637,7 @@ app.post('/functions/v1/:fn', async (req, res) => {
       return err('Unknown security-alerts action');
     }
 
-    // ─────────────────────────── ERROR LOGS ────────────────────────────────
+    // â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€ ERROR LOGS â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
     case 'check-error-thresholds':
     case 'cleanup-error-logs': {
       if (fn === 'cleanup-error-logs') {
@@ -1638,7 +1649,7 @@ app.post('/functions/v1/:fn', async (req, res) => {
       return ok({ success: true, errors: data || [] });
     }
 
-    // ─────────────────────────── STAFF DEAL SEARCH ────────────────────────
+    // â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€ STAFF DEAL SEARCH â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
     case 'staff-deal-search': {
       const { zip_code, city, state, search_type } = body;
       let q = '/properties?select=*,deal_analytics(*)&status=in.(approved,new,pending)';
@@ -1655,7 +1666,7 @@ app.post('/functions/v1/:fn', async (req, res) => {
       return ok({ success: true, existingDeals: existingDeals || [], marketData });
     }
 
-    // ─────────────────────────── REVENUE FORECASTING ──────────────────────
+    // â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€ REVENUE FORECASTING â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
     case 'revenue-forecasting': {
       const { property_id, months = 12 } = body;
       const { data: analytics } = await dbGet(`/deal_analytics?property_id=eq.${property_id}&select=*`);
@@ -1668,7 +1679,7 @@ app.post('/functions/v1/:fn', async (req, res) => {
       return ok({ success: true, forecast });
     }
 
-    // ─────────────────────────── MISC FUNCTIONS ───────────────────────────
+    // â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€ MISC FUNCTIONS â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
     case 'generate-setup-quote': {
       const { property_type, bedrooms, operation_type, city, state } = body;
       const base = bedrooms * 800 + (operation_type === 'str' ? 2000 : 1000);
@@ -1824,7 +1835,7 @@ app.post('/functions/v1/:fn', async (req, res) => {
       return ok({ success: true, deal: Array.isArray(result.data) ? result.data[0] : result.data });
     }
 
-    // ─────────────────────────── DEFAULT / UNKNOWN ─────────────────────────
+    // â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€ DEFAULT / UNKNOWN â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
     default:
       // Try to handle as a generic CRUD operation
       console.warn(`[AYP Functions] Unknown function: ${fn}`, JSON.stringify(body).substring(0, 200));
@@ -1836,7 +1847,7 @@ app.post('/functions/v1/:fn', async (req, res) => {
   }
 });
 
-// ── SPA Fallback — serve React app for all non-API routes ────────────────────
+// â”€â”€ SPA Fallback â€” serve React app for all non-API routes â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 app.get('*', (req, res) => {
   const indexFile = path.join(DIST_DIR, 'index.html');
   if (require('fs').existsSync(indexFile)) {
@@ -1846,10 +1857,11 @@ app.get('*', (req, res) => {
   }
 });
 
-// ── Start ─────────────────────────────────────────────────────────────────────
+// â”€â”€ Start â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 app.listen(PORT, () => {
-  console.log(`✅ AYP Functions Server running on port ${PORT}`);
-  console.log(`   SUPABASE_URL: ${SUPABASE_URL || '⚠️  NOT SET'}`);
-  console.log(`   ANTHROPIC:    ${ANTHROPIC_KEY ? '✓ configured' : '⚠️  not set'}`);
-  console.log(`   RESEND:       ${RESEND_KEY ? '✓ configured' : '⚠️  not set'}`);
+  console.log(`âœ… AYP Functions Server running on port ${PORT}`);
+  console.log(`   SUPABASE_URL: ${SUPABASE_URL || 'âš ï¸  NOT SET'}`);
+  console.log(`   ANTHROPIC:    ${ANTHROPIC_KEY ? 'âœ“ configured' : 'âš ï¸  not set'}`);
+  console.log(`   RESEND:       ${RESEND_KEY ? 'âœ“ configured' : 'âš ï¸  not set'}`);
 });
+
