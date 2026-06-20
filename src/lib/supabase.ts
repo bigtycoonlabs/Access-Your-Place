@@ -2,7 +2,7 @@
 
 
 // Initialize database client
-const supabaseUrl = import.meta.env.VITE_SUPABASE_URL;
+const supabaseUrl = import.meta.env.VITE_SUPABASE_URL || 'https://adcbrclppmnguzkzwiys.supabase.co';
 const supabaseKey = import.meta.env.VITE_SUPABASE_ANON_KEY;
 
 if (!supabaseUrl || !supabaseKey) {
@@ -244,6 +244,7 @@ export async function safeDeleteRowsBatch(
 }
 
 export { supabase };
+
 
 
 
