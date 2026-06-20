@@ -1,0 +1,246 @@
+﻿const DATA_SCHEMA = 'prj_X-ZoVQv6LKXT';
+const originalFetch = globalThis.fetch;
+globalThis.fetch = (input: any, init: any = {}) => {
+  const url = typeof input === 'string'
+    ? input
+    : input?.url?.toString?.() || input?.toString?.() || '';
+
+  if (url.includes('/rest/v1/')) {
+    const headers = new Headers(init.headers || {});
+    headers.set('Accept-Profile', DATA_SCHEMA);
+    headers.set('Content-Profile', DATA_SCHEMA);
+    init = { ...init, headers };
+  }
+
+  return originalFetch(input, init);
+};
+// Nightly Penny Score Refresh
+//
+// Runs at 2 AM via pg_cron, scans all properties where penny_scored_at is NULL
+// or older than 7 days, and invokes the penny-deal-scoring edge function for
+// each one in batches of 5 to keep penny_deal_scores cache fresh.
+//
+// Logs every run to the penny_score_refresh_log table.
+
+import { createClient } from 'https://esm.sh/@supabase/supabase-js@2';
+
+export const corsHeaders = {
+  'Access-Control-Allow-Origin': '*',
+  'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
+  'Access-Control-Allow-Methods': 'POST, OPTIONS, GET'
+};
+
+const SUPABASE_URL = Deno.env.get('SUPABASE_URL') ?? '';
+const SERVICE_ROLE_KEY = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY') ?? '';
+const STALE_DAYS = 7;
+const BATCH_SIZE = 5;
+const BATCH_DELAY_MS = 2000; // pause between batches to avoid rate-limiting penny-deal-scoring
+
+Deno.serve(async (req) => {
+  if (req.method === 'OPTIONS') {
+    return new Response('ok', { headers: corsHeaders });
+  }
+
+  const supabase = createClient(SUPABASE_URL, SERVICE_ROLE_KEY);
+  const startedAt = new Date();
+  const runId = `penny-refresh-${startedAt.toISOString()}`;
+
+  // Parse trigger metadata
+  let triggerType: 'cron' | 'manual' = 'cron';
+  let triggeredBy: string | null = null;
+  let onlyStale = true;
+  let limitOverride: number | null = null;
+  try {
+    if (req.method === 'POST') {
+      const body = await req.json().catch(() => ({}));
+      if (body.trigger_type === 'manual') triggerType = 'manual';
+      triggeredBy = body.triggered_by || null;
+      if (body.only_stale === false) onlyStale = false;
+      if (typeof body.limit === 'number') limitOverride = body.limit;
+    }
+  } catch (_) {
+    // ignore body parse failures
+  }
+
+  // Insert initial log row in 'running' state
+  const { data: logRow, error: logErr } = await supabase
+    .from('penny_score_refresh_log')
+    .insert({
+      run_id: runId,
+      started_at: startedAt.toISOString(),
+      trigger_type: triggerType,
+      triggered_by: triggeredBy,
+      status: 'running',
+      properties_scanned: 0,
+      properties_scored: 0,
+      errors_encountered: 0,
+      error_details: []
+    })
+    .select()
+    .single();
+
+  if (logErr) {
+    console.error('[nightly-penny-score-refresh] Failed to create log row:', logErr);
+  }
+  const logId = logRow?.id;
+
+  let propertiesScored = 0;
+  let errorsEncountered = 0;
+  const errorDetails: any[] = [];
+
+  try {
+    // Build the stale-properties query
+    const staleCutoff = new Date(Date.now() - STALE_DAYS * 24 * 60 * 60 * 1000).toISOString();
+
+    let query = supabase
+      .from('properties')
+      .select('id, address, city, state, zip_code, monthly_rent, bedrooms, bathrooms, operation_type, penny_scored_at, deal_status')
+      .in('deal_status', ['live', 'published', 'active', 'available']);
+
+    if (onlyStale) {
+      // Postgrest "or" filter: penny_scored_at is null OR older than cutoff
+      query = query.or(`penny_scored_at.is.null,penny_scored_at.lt.${staleCutoff}`);
+    }
+
+    if (limitOverride && limitOverride > 0) {
+      query = query.limit(limitOverride);
+    } else {
+      query = query.limit(500); // safety cap per run
+    }
+
+    const { data: staleProps, error: queryErr } = await query;
+    if (queryErr) throw queryErr;
+
+    const propertiesScanned = staleProps?.length || 0;
+    console.log(`[nightly-penny-score-refresh] Found ${propertiesScanned} stale properties (cutoff=${staleCutoff})`);
+
+    if (logId) {
+      await supabase
+        .from('penny_score_refresh_log')
+        .update({ properties_scanned: propertiesScanned })
+        .eq('id', logId);
+    }
+
+    // Process in batches of BATCH_SIZE in parallel
+    for (let i = 0; i < (staleProps?.length || 0); i += BATCH_SIZE) {
+      const batch = staleProps!.slice(i, i + BATCH_SIZE);
+      console.log(`[nightly-penny-score-refresh] Processing batch ${Math.floor(i / BATCH_SIZE) + 1} (${batch.length} props)`);
+
+      const batchResults = await Promise.allSettled(
+        batch.map(async (prop: any) => {
+          try {
+            const { data, error } = await supabase.functions.invoke('penny-deal-scoring', {
+              body: {
+                action: 'score_property',
+                property_id: prop.id,
+                property_data: prop
+              }
+            });
+            if (error) throw error;
+            if (!data?.success) throw new Error(data?.error || 'No success flag in scoring response');
+            // Update penny_scored_at on properties row
+            await supabase
+              .from('properties')
+              .update({
+                penny_scored_at: new Date().toISOString(),
+                penny_score: data.score ?? null,
+                penny_recommendation: data.recommendation ?? null
+              })
+              .eq('id', prop.id);
+            return { success: true, propertyId: prop.id };
+          } catch (e: any) {
+            return { success: false, propertyId: prop.id, error: e?.message || String(e) };
+          }
+        })
+      );
+
+      for (const r of batchResults) {
+        if (r.status === 'fulfilled') {
+          if (r.value.success) {
+            propertiesScored++;
+          } else {
+            errorsEncountered++;
+            errorDetails.push({ property_id: r.value.propertyId, error: r.value.error });
+          }
+        } else {
+          errorsEncountered++;
+          errorDetails.push({ error: r.reason?.message || String(r.reason) });
+        }
+      }
+
+      // Periodic progress update so the UI can poll for live status
+      if (logId) {
+        await supabase
+          .from('penny_score_refresh_log')
+          .update({
+            properties_scored: propertiesScored,
+            errors_encountered: errorsEncountered,
+            error_details: errorDetails.slice(0, 50)
+          })
+          .eq('id', logId);
+      }
+
+      // Pause between batches
+      if (i + BATCH_SIZE < (staleProps?.length || 0)) {
+        await new Promise(r => setTimeout(r, BATCH_DELAY_MS));
+      }
+    }
+
+    // Final log update
+    const completedAt = new Date();
+    const durationMs = completedAt.getTime() - startedAt.getTime();
+    const finalStatus = errorsEncountered > 0 && propertiesScored === 0 ? 'failed' :
+                        errorsEncountered > 0 ? 'partial' : 'completed';
+
+    if (logId) {
+      await supabase
+        .from('penny_score_refresh_log')
+        .update({
+          completed_at: completedAt.toISOString(),
+          properties_scanned: propertiesScanned,
+          properties_scored: propertiesScored,
+          errors_encountered: errorsEncountered,
+          error_details: errorDetails.slice(0, 50),
+          status: finalStatus,
+          duration_ms: durationMs
+        })
+        .eq('id', logId);
+    }
+
+    return new Response(JSON.stringify({
+      success: true,
+      run_id: runId,
+      properties_scanned: propertiesScanned,
+      properties_scored: propertiesScored,
+      errors_encountered: errorsEncountered,
+      duration_ms: durationMs,
+      status: finalStatus
+    }), {
+      headers: { 'Content-Type': 'application/json', ...corsHeaders }
+    });
+  } catch (err: any) {
+    console.error('[nightly-penny-score-refresh] Fatal error:', err);
+    if (logId) {
+      await supabase
+        .from('penny_score_refresh_log')
+        .update({
+          completed_at: new Date().toISOString(),
+          status: 'failed',
+          errors_encountered: errorsEncountered + 1,
+          error_details: [...errorDetails, { fatal: err?.message || String(err) }].slice(0, 50),
+          duration_ms: Date.now() - startedAt.getTime(),
+          notes: 'Fatal error - see error_details'
+        })
+        .eq('id', logId);
+    }
+    return new Response(JSON.stringify({
+      success: false,
+      error: err?.message || String(err),
+      run_id: runId
+    }), {
+      status: 500,
+      headers: { 'Content-Type': 'application/json', ...corsHeaders }
+    });
+  }
+});
+

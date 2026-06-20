@@ -1,0 +1,101 @@
+$SourceRoot = "C:\WebsiteMigrations\accessyourplace\functions"
+$TargetRoot = "C:\WebsiteMigrations\accessyourplace-code\supabase\functions"
+$Manifest = "C:\WebsiteMigrations\accessyourplace-code\scripts\batch4c-ai-automation-functions.txt"
+$Schema = "prj_X-ZoVQv6LKXT"
+
+$Functions = @(
+  "ai-investor-chat",
+  "background-photo-processing",
+  "batch-score-properties",
+  "check-deal-alerts",
+  "check-topic-similarity",
+  "crm-dispatcher",
+  "daily-article-generation",
+  "daily-topic-discovery",
+  "discover-trending-topics",
+  "generate-market-report",
+  "generate-monthly-report",
+  "generate-single-article",
+  "intelligent-deal-matching",
+  "marketplace-notifications",
+  "monitor-regulation-feeds",
+  "nightly-penny-score-refresh",
+  "penny-portfolio-analysis",
+  "process-property-photos",
+  "publish-scheduled-articles",
+  "research-and-generate-articles",
+  "research-zip-properties",
+  "revenue-forecasting",
+  "scheduled-report-generation",
+  "send-push-notification",
+  "weekly-market-data-refresh"
+)
+
+$Shim = @"
+const DATA_SCHEMA = '$Schema';
+const originalFetch = globalThis.fetch;
+globalThis.fetch = (input: any, init: any = {}) => {
+  const url = typeof input === 'string'
+    ? input
+    : input?.url?.toString?.() || input?.toString?.() || '';
+
+  if (url.includes('/rest/v1/')) {
+    const headers = new Headers(init.headers || {});
+    headers.set('Accept-Profile', DATA_SCHEMA);
+    headers.set('Content-Profile', DATA_SCHEMA);
+    init = { ...init, headers };
+  }
+
+  return originalFetch(input, init);
+};
+
+"@
+
+$Prepared = @()
+
+foreach ($fn in $Functions) {
+  $srcFn = Join-Path $SourceRoot $fn
+
+  if (!(Test-Path $srcFn)) {
+    Write-Host "MISSING SOURCE: $fn" -ForegroundColor Yellow
+    continue
+  }
+
+  $latest = Get-ChildItem $srcFn -Directory |
+    Where-Object { $_.Name -match '^v\d+$' } |
+    Sort-Object { [int]($_.Name.TrimStart('v')) } -Descending |
+    Select-Object -First 1
+
+  if (!$latest) {
+    Write-Host "NO VERSION FOLDER: $fn" -ForegroundColor Yellow
+    continue
+  }
+
+  $bundle = Join-Path $latest.FullName "bundle.js"
+
+  if (!(Test-Path $bundle)) {
+    Write-Host "MISSING bundle.js: $fn $($latest.Name)" -ForegroundColor Yellow
+    continue
+  }
+
+  $targetDir = Join-Path $TargetRoot $fn
+  New-Item -ItemType Directory -Force -Path $targetDir | Out-Null
+
+  $target = Join-Path $targetDir "index.ts"
+  $content = Get-Content $bundle -Raw
+
+  if ($content -notmatch "const DATA_SCHEMA =") {
+    $content = $Shim + $content
+  }
+
+  Set-Content -Path $target -Value $content -Encoding UTF8
+  $Prepared += $fn
+
+  Write-Host "Prepared $fn from $($latest.Name)" -ForegroundColor Green
+}
+
+$Prepared | Set-Content -Path $Manifest -Encoding UTF8
+
+Write-Host ""
+Write-Host "Prepared function count: $($Prepared.Count)" -ForegroundColor Cyan
+Write-Host "Manifest written to: $Manifest" -ForegroundColor Cyan

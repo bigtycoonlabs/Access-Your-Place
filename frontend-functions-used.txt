@@ -1,0 +1,900 @@
+src\components\AccountSwitcher.tsx:64:        const { data } = await supabase.functions.invoke('staff-login', {
+src\components\AccountSwitcher.tsx:69:        const { data } = await supabase.functions.invoke('investor-auth', {
+src\components\AccountSwitcher.tsx:85:        const { data, error } = await supabase.functions.invoke('staff-login', {
+src\components\AccountSwitcher.tsx:119:        const { data, error } = await supabase.functions.invoke('investor-auth', {
+src\components\admin\AccountLinkingModal.tsx:72:        const { data, error } = await supabase.functions.invoke('manage-investor-admin', {
+src\components\admin\AccountLinkingModal.tsx:92:        const { data, error } = await supabase.functions.invoke('manage-staff', {
+src\components\admin\AccountLinkingModal.tsx:132:        const { data, error } = await supabase.functions.invoke('manage-staff', {
+src\components\admin\AccountLinkingModal.tsx:152:        const { data, error } = await supabase.functions.invoke('manage-investor-admin', {
+src\components\admin\AccountLinkingModal.tsx:189:        const { data, error } = await supabase.functions.invoke('manage-staff', {
+src\components\admin\AccountLinkingModal.tsx:205:        const { data, error } = await supabase.functions.invoke('manage-investor-admin', {
+src\components\admin\AccountLinkSuggestionsBanner.tsx:55:        const { data, error } = await supabase.functions.invoke('manage-staff', {
+src\components\admin\AccountLinkSuggestionsBanner.tsx:64:        const { data, error } = await supabase.functions.invoke('investor-auth', {
+src\components\admin\AccountLinkSuggestionsBanner.tsx:82:        const { data, error } = await supabase.functions.invoke('manage-staff', {
+src\components\admin\AccountLinkSuggestionsBanner.tsx:97:        const { data, error } = await supabase.functions.invoke('investor-auth', {
+src\components\admin\AccountLinkSuggestionsBanner.tsx:129:        await supabase.functions.invoke('manage-staff', {
+src\components\admin\AccountLinkSuggestionsBanner.tsx:137:        await supabase.functions.invoke('investor-auth', {
+src\components\admin\AcquisitionAssignmentModal.tsx:45:      const { error } = await supabase.functions.invoke('manage-acquisition-workflow', {
+src\components\admin\AcquisitionDetailModal.tsx:33:    const { data } = await supabase.functions.invoke('manage-investor-documents', {
+src\components\admin\AcquisitionDetailModal.tsx:46:    await supabase.functions.invoke('manage-acquisitions', { body: { action: 'update_stage', id: acquisition.id, stage: nextStage, staff_name: 'Staff' } });
+src\components\admin\AcquisitionDetailModal.tsx:54:    await supabase.functions.invoke('manage-acquisitions', { body: { action: 'add_note', id: acquisition.id, note, note_type: noteType, staff_name: 'Staff' } });
+src\components\admin\AcquisitionDetailModal.tsx:60:    await supabase.functions.invoke('manage-acquisitions', { body: { action: 'update', id: acquisition.id, updates: { [field]: value }, staff_name: 'Staff' } });
+src\components\admin\AcquisitionDetailModal.tsx:66:    await supabase.functions.invoke('manage-acquisitions', { body: { action: 'update_checklist', id: acquisition.id, checklist: updated, staff_name: 'Staff' } });
+src\components\admin\AcquisitionManagerDashboard.tsx:185:      const dealsRes = await supabase.functions.invoke('get-properties', {
+src\components\admin\AcquisitionManagerDashboard.tsx:195:      const investorsRes = await supabase.functions.invoke('manage-investor-admin', {
+src\components\admin\AcquisitionManagerDashboard.tsx:224:      const requestsRes = await supabase.functions.invoke('manage-acquisition-requests', {
+src\components\admin\AcquisitionManagerDashboard.tsx:237:        const staffRes = await supabase.functions.invoke('manage-staff', {
+src\components\admin\AcquisitionManagerDashboard.tsx:287:      const { data, error } = await supabase.functions.invoke('update-property', {
+src\components\admin\AcquisitionManagerDashboard.tsx:300:          await supabase.functions.invoke('investor-email-notifications', {
+src\components\admin\AcquisitionManagerDashboard.tsx:342:      const { data, error } = await supabase.functions.invoke('send-acquisition-emails', {
+src\components\admin\AcquisitionManagerDashboard.tsx:389:      const { data, error } = await supabase.functions.invoke('manage-investor-admin', {
+src\components\admin\AcquisitionManagerDashboard.tsx:401:        await supabase.functions.invoke('investor-email-notifications', {
+src\components\admin\AcquisitionManagerDashboard.tsx:413:            await supabase.functions.invoke('investor-messaging', {
+src\components\admin\AcquisitionManagerDashboard.tsx:429:          await supabase.functions.invoke('am-submit-deal', {
+src\components\admin\AcquisitionManagerDashboard.tsx:465:      const { data } = await supabase.functions.invoke('manage-acquisition-workflow', { 
+src\components\admin\AcquisitionManagerDashboard.tsx:473:          await supabase.functions.invoke('investor-email-notifications', {
+src\components\admin\AcquisitionManagerDashboard.tsx:500:      const { data } = await supabase.functions.invoke('manage-acquisition-workflow', { 
+src\components\admin\AcquisitionManagerDashboard.tsx:507:          await supabase.functions.invoke('investor-email-notifications', {
+src\components\admin\AcquisitionManagerDashboard.tsx:530:      const { data, error } = await supabase.functions.invoke('ai-property-analysis', {
+src\components\admin\AcquisitionManagerDashboard.tsx:559:      const { data, error } = await supabase.functions.invoke('manage-investor-admin', {
+src\components\admin\AcquisitionManagerDashboard.tsx:577:      const { data, error } = await supabase.functions.invoke('manage-investor-admin', {
+src\components\admin\AcquisitionManagerDashboard.tsx:585:          const refreshRes = await supabase.functions.invoke('manage-investor-admin', {
+src\components\admin\AcquisitionManagerDashboard.tsx:970:                      const { data } = await supabase.functions.invoke('send-investor-invitation', {
+src\components\admin\AcquisitionManagerDashboard.tsx:1028:                      const { data } = await supabase.functions.invoke('send-investor-invitation', {
+src\components\admin\AcquisitionManagerDashboard.tsx:1092:                                    const { data, error } = await supabase.functions.invoke('send-investor-invitation', {
+src\components\admin\AcquisitionManagerDashboard.tsx:1099:                                      const { data: refreshData } = await supabase.functions.invoke('send-investor-invitation', {
+src\components\admin\AcquisitionManagerDashboard.tsx:1107:                                    const { data, error } = await supabase.functions.invoke('send-investor-invitation', {
+src\components\admin\AcquisitionManagerDashboard.tsx:1113:                                      const { data: refreshData } = await supabase.functions.invoke('send-investor-invitation', {
+src\components\admin\AcquisitionManagerDashboard.tsx:1138:                                  const { data, error } = await supabase.functions.invoke('send-investor-invitation', {
+src\components\admin\AcquisitionManagerDashboard.tsx:1244:                      const { data, error } = await supabase.functions.invoke('send-investor-invitation', {
+src\components\admin\AcquisitionManagerDashboard.tsx:1258:                        const { data: refreshData } = await supabase.functions.invoke('send-investor-invitation', {
+src\components\admin\AcquisitionManagerDashboard.tsx:1281:                      const { data, error } = await supabase.functions.invoke('send-investor-invitation', {
+src\components\admin\AcquisitionManagerDashboard.tsx:1295:                        const { data: refreshData } = await supabase.functions.invoke('send-investor-invitation', {
+src\components\admin\AcquisitionRequestsTab.tsx:85:      const { data, error } = await supabase.functions.invoke('manage-acquisition-requests', {
+src\components\admin\AcquisitionRequestsTab.tsx:113:      const { error } = await supabase.functions.invoke('manage-acquisition-requests', {
+src\components\admin\AcquisitionRequestsTab.tsx:147:      const { error } = await supabase.functions.invoke('manage-acquisition-requests', {
+src\components\admin\AcquisitionRequestsTab.tsx:182:      const { data, error } = await supabase.functions.invoke('manage-acquisition-requests', {
+src\components\admin\AcquisitionRequestsTab.tsx:222:      const { error } = await supabase.functions.invoke('manage-acquisition-requests', {
+src\components\admin\AcquisitionWorkflowTab.tsx:52:    await supabase.functions.invoke('manage-acquisition-workflow', { body: { action: 'advance_stage', property_id: propertyId, stage: currentStage } });
+src\components\admin\AcquisitionWorkflowTab.tsx:57:    await supabase.functions.invoke('manage-acquisition-workflow', { body: { action: 'record_payment', property_id: propertyId, data: { amount: 2500 } } });
+src\components\admin\ActiveNegotiationsTab.tsx:140:      const { data, error } = await supabase.functions.invoke('manage-deal-marketplace', {
+src\components\admin\ActiveNegotiationsTab.tsx:165:      const { data, error } = await supabase.functions.invoke('manage-deal-marketplace', {
+src\components\admin\ActiveNegotiationsTab.tsx:229:      const { data, error } = await supabase.functions.invoke('manage-deal-marketplace', {
+src\components\admin\ActiveNegotiationsTab.tsx:279:      const { data, error } = await supabase.functions.invoke('manage-deal-marketplace', {
+src\components\admin\AIContentGenerator.tsx:55:      const { data, error } = await supabase.functions.invoke('generate-single-article', {
+src\components\admin\AMActivityFeed.tsx:78:      const { data, error } = await supabase.functions.invoke('manage-investor-admin', {
+src\components\admin\AMAssignmentRequestsTab.tsx:110:        supabase.functions.invoke('manage-am-assignments', {
+src\components\admin\AMAssignmentRequestsTab.tsx:113:        supabase.functions.invoke('manage-am-assignments', {
+src\components\admin\AMAssignmentRequestsTab.tsx:116:        supabase.functions.invoke('manage-am-assignments', {
+src\components\admin\AMAssignmentRequestsTab.tsx:126:        const { data: fallbackData } = await supabase.functions.invoke('manage-staff', {
+src\components\admin\AMAssignmentRequestsTab.tsx:135:      const { data: changeData } = await supabase.functions.invoke('manage-staff', {
+src\components\admin\AMAssignmentRequestsTab.tsx:154:        const { data: staffData } = await supabase.functions.invoke('manage-staff', {
+src\components\admin\AMAssignmentRequestsTab.tsx:201:      const { data, error } = await supabase.functions.invoke('manage-staff', {
+src\components\admin\AMAssignmentRequestsTab.tsx:236:      const { data, error } = await supabase.functions.invoke('manage-staff', {
+src\components\admin\AMAssignmentRequestsTab.tsx:266:      const { data, error } = await supabase.functions.invoke('manage-staff', {
+src\components\admin\AMAssignmentRequestsTab.tsx:301:      const { data, error } = await supabase.functions.invoke('manage-staff', {
+src\components\admin\AMInvestorActionsDialogs.tsx:39:      const { data } = await supabase.functions.invoke('investor-messaging', {
+src\components\admin\AMInvestorActionsDialogs.tsx:61:      const { data, error } = await supabase.functions.invoke('investor-messaging', {
+src\components\admin\AMInvestorActionsDialogs.tsx:187:      const { data } = await supabase.functions.invoke('manage-notes', {
+src\components\admin\AMInvestorActionsDialogs.tsx:208:      const { data, error } = await supabase.functions.invoke('manage-notes', {
+src\components\admin\AMInvestorActionsDialogs.tsx:347:      const { data } = await supabase.functions.invoke('manage-investor-documents', {
+src\components\admin\AMInvestorActionsDialogs.tsx:373:      const { data, error } = await supabase.functions.invoke('manage-investor-documents', {
+src\components\admin\AMInvestorActionsDialogs.tsx:559:      const { data, error } = await supabase.functions.invoke('investor-messaging', {
+src\components\admin\AMNotificationBell.tsx:73:      const { data, error } = await supabase.functions.invoke('deal-flow-notifications', {
+src\components\admin\AMNotificationBell.tsx:88:      const { data, error } = await supabase.functions.invoke('deal-flow-notifications', {
+src\components\admin\AMNotificationBell.tsx:108:      await supabase.functions.invoke('deal-flow-notifications', {
+src\components\admin\AMNotificationBell.tsx:124:      await supabase.functions.invoke('deal-flow-notifications', {
+src\components\admin\AMSubmitDealModal.tsx:146:      const { data, error } = await supabase.functions.invoke('penny-generate-description', {
+src\components\admin\AMSubmitDealModal.tsx:184:        const { data, error } = await supabase.functions.invoke('upload-deal-photo', {
+src\components\admin\AMSubmitDealModal.tsx:240:      const { data, error } = await supabase.functions.invoke('am-submit-deal', {
+src\components\admin\AMSubmittedDealsTab.tsx:167:          const { data, error } = await supabase.functions.invoke('am-submit-deal', {
+src\components\admin\AMSubmittedDealsTab.tsx:187:      const { data, error } = await supabase.functions.invoke('am-submit-deal', {
+src\components\admin\AMSubmittedDealsTab.tsx:207:      const { data, error } = await supabase.functions.invoke('am-submit-deal', {
+src\components\admin\AMSubmittedDealsTab.tsx:243:        const { data, error } = await supabase.functions.invoke('am-submit-deal', {
+src\components\admin\AMSubmittedDealsTab.tsx:261:        const { data, error } = await supabase.functions.invoke('am-submit-deal', {
+src\components\admin\AMSubmittedDealsTab.tsx:303:      const { data, error } = await supabase.functions.invoke('am-submit-deal', {
+src\components\admin\AMSubmittedDealsTab.tsx:327:      const { data, error } = await supabase.functions.invoke('am-submit-deal', {
+src\components\admin\AMSubmittedDealsTab.tsx:349:      await supabase.functions.invoke('am-submit-deal', {
+src\components\admin\AMSubmittedDealsTab.tsx:374:      const { data, error } = await supabase.functions.invoke('am-submit-deal', {
+src\components\admin\AMSubmittedDealsTab.tsx:400:      const { data, error } = await supabase.functions.invoke('am-submit-deal', {
+src\components\admin\AMSubmittedDealsTracker.tsx:159:      const { data, error } = await supabase.functions.invoke('deal-flow-notifications', {
+src\components\admin\AMVerificationRequests.tsx:83:      const { data: requestsData } = await supabase.functions.invoke('manage-staff', {
+src\components\admin\AMVerificationRequests.tsx:91:      const { data: amsData } = await supabase.functions.invoke('manage-staff', {
+src\components\admin\AMVerificationRequests.tsx:134:      const { data, error } = await supabase.functions.invoke('manage-staff', {
+src\components\admin\AMVerificationRequests.tsx:161:      const { data, error } = await supabase.functions.invoke('manage-staff', {
+src\components\admin\AMVerificationRequests.tsx:190:      const { data, error } = await supabase.functions.invoke('manage-staff', {
+src\components\admin\AnalyticsDashboard.tsx:79:      const { data, error: fetchError } = await supabase.functions.invoke('get-deal-analytics', {
+src\components\admin\AnalyticsDashboard.tsx:140:      const { data } = await supabase.functions.invoke('send-investor-invitation', {
+src\components\admin\AnalyticsDashboard.tsx:175:        const { data } = await supabase.functions.invoke('send-investor-invitation', {
+src\components\admin\AssignedInvestorsTab.tsx:96:      const { data, error } = await supabase.functions.invoke('manage-investor-admin', {
+src\components\admin\AssignedInvestorsTab.tsx:111:          const { data: fallbackData } = await supabase.functions.invoke('manage-staff', {
+src\components\admin\AssignedInvestorsTab.tsx:154:      const { data, error } = await supabase.functions.invoke('manage-investor-admin', {
+src\components\admin\AssignedInvestorsTab.tsx:181:      const { data, error } = await supabase.functions.invoke('investor-messaging', {
+src\components\admin\AuthErrorsWidget.tsx:68:      const { data, error } = await supabase.functions.invoke('investor-login', {
+src\components\admin\AuthErrorsWidget.tsx:91:      const { error } = await supabase.functions.invoke('investor-login', {
+src\components\admin\AutomationRulesModal.tsx:40:    const { data } = await supabase.functions.invoke('manage-investor-pipeline', {
+src\components\admin\AutomationRulesModal.tsx:49:    await supabase.functions.invoke('manage-investor-pipeline', {
+src\components\admin\AutomationRulesModal.tsx:59:    await supabase.functions.invoke('manage-investor-pipeline', {
+src\components\admin\BulkEmailCampaign.tsx:139:      const { data: investorData } = await supabase.functions.invoke('manage-investor-admin', {
+src\components\admin\BulkEmailCampaign.tsx:147:      const { data: templateData } = await supabase.functions.invoke('manage-email-templates', {
+src\components\admin\BulkEmailCampaign.tsx:155:      const { data: campaignData } = await supabase.functions.invoke('manage-email-templates', {
+src\components\admin\BulkEmailCampaign.tsx:357:      const { data: campaignData, error: campaignError } = await supabase.functions.invoke('manage-email-templates', {
+src\components\admin\BulkEmailCampaign.tsx:403:        const { data, error } = await supabase.functions.invoke('manage-email-templates', {
+src\components\admin\BulkEmailCampaign.tsx:421:      await supabase.functions.invoke('manage-email-templates', {
+src\components\admin\BulkEmailCampaign.tsx:450:      await supabase.functions.invoke('manage-email-templates', {
+src\components\admin\BulkEmailCampaign.tsx:468:      await supabase.functions.invoke('manage-email-templates', {
+src\components\admin\BulkEmailCampaign.tsx:484:      await supabase.functions.invoke('manage-email-templates', {
+src\components\admin\BulkEmailModal.tsx:52:    const { data, error } = await supabase.functions.invoke('send-bulk-email', {
+src\components\admin\CommissionLedger.tsx:95:      supabase.functions.invoke('manage-hr-commissions', {
+src\components\admin\CommissionLedger.tsx:98:      supabase.functions.invoke('manage-hr-commissions', {
+src\components\admin\CommissionLedger.tsx:115:    const { error } = await supabase.functions.invoke('manage-hr-commissions', {
+src\components\admin\CommissionLedger.tsx:132:    const { error } = await supabase.functions.invoke('manage-hr-commissions', {
+src\components\admin\CommissionLedger.tsx:358:                                  await supabase.functions.invoke('manage-hr-commissions', {
+src\components\admin\ComplianceDocuments.tsx:72:      supabase.functions.invoke('manage-hr-commissions', {
+src\components\admin\ComplianceDocuments.tsx:75:      isAdmin ? supabase.functions.invoke('manage-hr-commissions', { body: { action: 'get_staff_list' } }) : Promise.resolve({ data: null })
+src\components\admin\ComplianceDocuments.tsx:105:      const { error } = await supabase.functions.invoke('manage-hr-commissions', {
+src\components\admin\ComplianceDocuments.tsx:133:    const { error } = await supabase.functions.invoke('manage-hr-commissions', {
+src\components\admin\CSVUploadModal.tsx:71:      const { data, error } = await supabase.functions.invoke('manage-investor-crm', {
+src\components\admin\DealInquiriesTab.tsx:43:    const { data } = await supabase.functions.invoke('manage-deal-inquiries', {
+src\components\admin\DealInquiriesTab.tsx:55:    const { error } = await supabase.functions.invoke('manage-deal-inquiries', {
+src\components\admin\DealInquiriesTab.tsx:66:    const { error } = await supabase.functions.invoke('manage-deal-inquiries', {
+src\components\admin\DealPickerModal.tsx:81:        const { data, error } = await supabase.functions.invoke('get-properties', {
+src\components\admin\DealPickerModal.tsx:128:        const { data } = await supabase.functions.invoke('get-properties', {
+src\components\admin\DealVerificationTab.tsx:259:        const { data, error } = await supabase.functions.invoke('update-property', {
+src\components\admin\DealVerificationTab.tsx:370:        const { data, error } = await supabase.functions.invoke('update-property', {
+src\components\admin\DealVerificationTab.tsx:382:            await supabase.functions.invoke('am-submit-deal', {
+src\components\admin\DisputeManagementTab.tsx:130:      const { data } = await supabase.functions.invoke('manage-disputes', {
+src\components\admin\DisputeManagementTab.tsx:149:      const { data } = await supabase.functions.invoke('manage-disputes', {
+src\components\admin\DisputeManagementTab.tsx:168:      const { data } = await supabase.functions.invoke('manage-disputes', {
+src\components\admin\DisputeManagementTab.tsx:189:      const { data } = await supabase.functions.invoke('manage-disputes', {
+src\components\admin\DisputeManagementTab.tsx:206:        const { data: msgData } = await supabase.functions.invoke('manage-disputes', {
+src\components\admin\DisputeManagementTab.tsx:227:      const { data } = await supabase.functions.invoke('manage-disputes', {
+src\components\admin\DocumentsTab.tsx:45:      await supabase.functions.invoke('manage-investor-documents', {
+src\components\admin\DocumentsTab.tsx:59:    const { data } = await supabase.functions.invoke('manage-investor-documents', {
+src\components\admin\DocumentsTab.tsx:67:    await supabase.functions.invoke('manage-investor-documents', {
+src\components\admin\DocumentsTab.tsx:74:    await supabase.functions.invoke('manage-investor-documents', {
+src\components\admin\DocumentsTabContent.tsx:176:      const { data } = await supabase.functions.invoke('manage-investor-admin', {
+src\components\admin\DocumentsTabContent.tsx:266:        const { data, error } = await supabase.functions.invoke('manage-investor-admin', {
+src\components\admin\DocumentTemplatesTab.tsx:389:      const { data, error } = await supabase.functions.invoke('manage-email-templates', {
+src\components\admin\DocumentTemplatesTab.tsx:431:          await supabase.functions.invoke('manage-email-templates', {
+src\components\admin\DocumentTemplatesTab.tsx:447:          const { data } = await supabase.functions.invoke('manage-email-templates', {
+src\components\admin\DocumentTemplatesTab.tsx:477:          await supabase.functions.invoke('manage-email-templates', {
+src\components\admin\DocumentTemplatesTab.tsx:513:        const { data } = await supabase.functions.invoke('manage-email-templates', {
+src\components\admin\DocumentTemplatesTab.tsx:537:      const { data } = await supabase.functions.invoke('manage-email-templates', {
+src\components\admin\DocumentTemplatesTab.tsx:604:      const { data } = await supabase.functions.invoke('manage-email-templates', {
+src\components\admin\DocumentTemplatesTab.tsx:657:      const { data } = await supabase.functions.invoke('manage-email-templates', {
+src\components\admin\EdgeFunctionTestSuite.tsx:619:      const { data, error } = await supabase.functions.invoke(test.functionName, {
+src\components\admin\EdgeFunctionTestSuite.tsx:816:      const { data, error } = await supabase.functions.invoke('manage-acquisitions', {
+src\components\admin\EmailDeliveryTab.tsx:59:      const { data, error: fetchError } = await supabase.functions.invoke('manage-email-logs', {
+src\components\admin\EmailMatchMigrationTool.tsx:45:      const { data, error } = await supabase.functions.invoke('manage-staff', {
+src\components\admin\EmailMatchMigrationTool.tsx:71:      const { data, error } = await supabase.functions.invoke('manage-staff', {
+src\components\admin\EmailMatchMigrationTool.tsx:98:      const { data, error } = await supabase.functions.invoke('manage-staff', {
+src\components\admin\EmailTemplateBuilder.tsx:120:      const { data, error } = await supabase.functions.invoke('manage-email-templates', {
+src\components\admin\EmailTemplateBuilder.tsx:149:      const { data, error } = await supabase.functions.invoke('manage-email-templates', {
+src\components\admin\EmailTemplateBuilder.tsx:173:      const { error } = await supabase.functions.invoke('manage-email-templates', {
+src\components\admin\EmailTemplateBuilder.tsx:193:      await supabase.functions.invoke('manage-email-templates', {
+src\components\admin\EmailTemplatesTab.tsx:157:      const { data, error } = await supabase.functions.invoke('manage-email-templates', {
+src\components\admin\EmailTemplatesTab.tsx:180:      const { data, error } = await supabase.functions.invoke('manage-email-templates', {
+src\components\admin\EmailTemplatesTab.tsx:206:      const { data, error } = await supabase.functions.invoke('manage-email-templates', {
+src\components\admin\EmailTemplatesTab.tsx:230:      const { data, error } = await supabase.functions.invoke('manage-email-templates', {
+src\components\admin\EmailTemplatesTab.tsx:282:      const { data, error } = await supabase.functions.invoke('send-sms-notification', {
+src\components\admin\EmailTemplatesTab.tsx:312:      const { data, error } = await supabase.functions.invoke('manage-email-templates', {
+src\components\admin\ErrorMonitoringWidget.tsx:281:      const { data, error } = await supabase.functions.invoke('cleanup-error-logs', { body: {} });
+src\components\admin\ErrorMonitoringWidget.tsx:292:      const { data, error } = await supabase.functions.invoke('check-error-thresholds', { body: {} });
+src\components\admin\ExecutiveOverview.tsx:130:      supabase.functions.invoke('manage-hr-commissions', { body: { action: 'get_executive_overview' } }),
+src\components\admin\ExecutiveOverview.tsx:131:      supabase.functions.invoke('manage-hr-commissions', { body: { action: 'get_master_weekly_report' } }),
+src\components\admin\ExecutiveOverview.tsx:132:      supabase.functions.invoke('manage-hr-commissions', { body: { action: 'get_staff_list' } })
+src\components\admin\ExecutiveOverview.tsx:149:    const { error } = await supabase.functions.invoke('manage-hr-commissions', {
+src\components\admin\ExecutiveOverview.tsx:169:    const { error } = await supabase.functions.invoke('manage-hr-commissions', {
+src\components\admin\ExecutiveOverview.tsx:178:    const { data, error } = await supabase.functions.invoke('manage-hr-commissions', {
+src\components\admin\FollowupRulesTab.tsx:111:      const { data, error: fetchError } = await supabase.functions.invoke('process-followups', {
+src\components\admin\FollowupRulesTab.tsx:136:      const { data, error: fetchError } = await supabase.functions.invoke('process-followups', {
+src\components\admin\FollowupRulesTab.tsx:157:      const { data, error: invokeError } = await supabase.functions.invoke('process-followups', {
+src\components\admin\FollowupRulesTab.tsx:183:      const { data, error: invokeError } = await supabase.functions.invoke('process-followups', {
+src\components\admin\FollowupRulesTab.tsx:205:      const { data, error: invokeError } = await supabase.functions.invoke('process-followups', {
+src\components\admin\FollowupRulesTab.tsx:222:      const { data, error: invokeError } = await supabase.functions.invoke('process-followups', {
+src\components\admin\InvestorAdminModal.tsx:89:    const { data: d } = await supabase.functions.invoke('manage-investor-admin', { 
+src\components\admin\InvestorAdminModal.tsx:108:    await supabase.functions.invoke('manage-investor-admin', { 
+src\components\admin\InvestorAdminModal.tsx:120:    await supabase.functions.invoke('manage-investor-admin', {
+src\components\admin\InvestorAdminModal.tsx:132:      const { error } = await supabase.functions.invoke('manage-investor-admin', {
+src\components\admin\InvestorAdminModal.tsx:146:      const { error } = await supabase.functions.invoke('manage-investor-admin', {
+src\components\admin\InvestorAdminModal.tsx:160:      await supabase.functions.invoke('manage-investor-admin', {
+src\components\admin\InvestorAdminModal.tsx:174:      const { data: result, error } = await supabase.functions.invoke('manage-investor-admin', {
+src\components\admin\InvestorAdminModal.tsx:190:      const { data: result, error } = await supabase.functions.invoke('manage-investor-admin', {
+src\components\admin\InvestorAdminModal.tsx:208:      const { error } = await supabase.functions.invoke('manage-investor-admin', {
+src\components\admin\InvestorAdminModal.tsx:225:      const { data: result, error } = await supabase.functions.invoke('manage-investor-admin', {
+src\components\admin\InvestorCreditsManager.tsx:66:      const { data } = await supabase.functions.invoke('manage-investor-admin', {
+src\components\admin\InvestorCreditsManager.tsx:110:      const { data, error } = await supabase.functions.invoke('manage-investor-admin', {
+src\components\admin\InvestorCreditsTab.tsx:148:      const { data: statsData } = await supabase.functions.invoke('manage-investor-credits', {
+src\components\admin\InvestorCreditsTab.tsx:154:      const { data: requestsData } = await supabase.functions.invoke('manage-investor-credits', {
+src\components\admin\InvestorCreditsTab.tsx:160:      const { data: creditsData } = await supabase.functions.invoke('manage-investor-credits', {
+src\components\admin\InvestorCreditsTab.tsx:166:      const { data: expiringData } = await supabase.functions.invoke('manage-investor-credits', {
+src\components\admin\InvestorCreditsTab.tsx:172:      const { data: auditData } = await supabase.functions.invoke('manage-investor-credits', {
+src\components\admin\InvestorCreditsTab.tsx:178:      const { data: usageStatsData } = await supabase.functions.invoke('manage-investor-credits', {
+src\components\admin\InvestorCreditsTab.tsx:197:      const { data } = await supabase.functions.invoke('manage-investor-credits', {
+src\components\admin\InvestorCreditsTab.tsx:208:      const { data } = await supabase.functions.invoke('manage-investor-admin', {
+src\components\admin\InvestorCreditsTab.tsx:256:      const { data, error } = await supabase.functions.invoke('manage-investor-credits', {
+src\components\admin\InvestorCreditsTab.tsx:326:      const { data, error } = await supabase.functions.invoke('manage-investor-credits', {
+src\components\admin\InvestorCreditsTab.tsx:355:      const { data, error } = await supabase.functions.invoke('manage-investor-credits', {
+src\components\admin\InvestorCRMTab.tsx:53:    const { data } = await supabase.functions.invoke('manage-investor-crm', {
+src\components\admin\InvestorDetailModal.tsx:76:    const { data } = await supabase.functions.invoke('manage-investor-crm', {
+src\components\admin\InvestorDetailModal.tsx:84:    const { data } = await supabase.functions.invoke('manage-investor-pipeline', {
+src\components\admin\InvestorDetailModal.tsx:92:    const { data } = await supabase.functions.invoke('investor-activity-log', {
+src\components\admin\InvestorDetailModal.tsx:105:    const { data } = await supabase.functions.invoke('investor-activity-log', {
+src\components\admin\InvestorDetailModal.tsx:123:    await supabase.functions.invoke('manage-investor-crm', {
+src\components\admin\InvestorDetailModal.tsx:132:    await supabase.functions.invoke('manage-investor-crm', {
+src\components\admin\InvestorInvitationTab.tsx:267:      const { data, error } = await supabase.functions.invoke('send-investor-invitation', {
+src\components\admin\InvestorInvitationTab.tsx:286:      const { data, error } = await supabase.functions.invoke('send-investor-invitation', {
+src\components\admin\InvestorInvitationTab.tsx:309:      const { data, error } = await supabase.functions.invoke('send-investor-invitation', {
+src\components\admin\InvestorInvitationTab.tsx:335:      const { data, error } = await supabase.functions.invoke('send-investor-invitation', {
+src\components\admin\InvestorInvitationTab.tsx:367:      const { data, error } = await supabase.functions.invoke('send-investor-invitation', { body });
+src\components\admin\InvestorInvitationTab.tsx:391:      const { error } = await supabase.functions.invoke('send-investor-invitation', {
+src\components\admin\InvestorInvitationTab.tsx:420:      const { data, error } = await supabase.functions.invoke('send-investor-invitation', {
+src\components\admin\InvestorInvitationTab.tsx:446:      const { error } = await supabase.functions.invoke('send-investor-invitation', {
+src\components\admin\InvestorInvitationTab.tsx:472:      const { data, error } = await supabase.functions.invoke('send-investor-invitation', {
+src\components\admin\InvestorInvitationTab.tsx:528:      const { data, error } = await supabase.functions.invoke('send-investor-invitation', { body });
+src\components\admin\InvestorInvitationTab.tsx:566:      const { data, error } = await supabase.functions.invoke('send-investor-invitation', {
+src\components\admin\InvestorInvitationTab.tsx:607:      const { data, error } = await supabase.functions.invoke('send-investor-invitation', {
+src\components\admin\InvestorInvitationTab.tsx:641:      const { error } = await supabase.functions.invoke('send-investor-invitation', {
+src\components\admin\InvestorInvitationTab.tsx:668:      const { error } = await supabase.functions.invoke('send-investor-invitation', {
+src\components\admin\InvestorInvitationTab.tsx:690:      const { data, error } = await supabase.functions.invoke('send-investor-invitation', {
+src\components\admin\InvestorInvitationTab.tsx:758:      const { data, error } = await supabase.functions.invoke('send-investor-invitation', {
+src\components\admin\InvestorInvitationTab.tsx:869:      const { data, error } = await supabase.functions.invoke('send-investor-invitation', {
+src\components\admin\InvestorInvitationTab.tsx:2473:                    const { error } = await supabase.functions.invoke('send-investor-invitation', {
+src\components\admin\InvestorManagementTab.tsx:146:      const result = await supabase.functions.invoke('manage-investor-admin', { body: requestBody });
+src\components\admin\InvestorManagementTab.tsx:194:      const result = await supabase.functions.invoke('manage-investor-admin', { 
+src\components\admin\InvestorManagementTab.tsx:207:      const result = await supabase.functions.invoke('manage-investor-admin', { 
+src\components\admin\InvestorPipelineTab.tsx:45:    const { data } = await supabase.functions.invoke('manage-investor-pipeline', {
+src\components\admin\InvestorPipelineTab.tsx:65:    const { error } = await supabase.functions.invoke('manage-investor-pipeline', {
+src\components\admin\InvestorsWithoutAMWidget.tsx:72:        supabase.functions.invoke('manage-investor-admin', {
+src\components\admin\InvestorsWithoutAMWidget.tsx:75:        supabase.functions.invoke('manage-am-assignments', {
+src\components\admin\InvestorsWithoutAMWidget.tsx:87:          const fallbackRes = await supabase.functions.invoke('manage-investor-admin', {
+src\components\admin\InvestorsWithoutAMWidget.tsx:116:          const staffRes = await supabase.functions.invoke('manage-staff', {
+src\components\admin\InvestorsWithoutAMWidget.tsx:163:      const { data, error } = await supabase.functions.invoke('manage-staff', {
+src\components\admin\InvestorsWithoutAMWidget.tsx:190:      const { data, error } = await supabase.functions.invoke('manage-staff', {
+src\components\admin\InvestorsWithoutAMWidget.tsx:209:      const { data, error } = await supabase.functions.invoke('unassigned-investor-digest', {
+src\components\admin\InvestorsWithoutAMWidget.tsx:226:      const { data, error } = await supabase.functions.invoke('unassigned-investor-digest', {
+src\components\admin\LandlordCRMTab.tsx:33:    const { data } = await supabase.functions.invoke('manage-landlords', { body: { action: 'list' } });
+src\components\admin\LandlordCRMTab.tsx:38:    const { data } = await supabase.functions.invoke('manage-landlords', { body: { action: 'get_analytics' } });
+src\components\admin\LandlordCRMTab.tsx:43:    const { data } = await supabase.functions.invoke('manage-landlords', { body: { action: 'get_follow_ups' } });
+src\components\admin\LandlordDetailModal.tsx:30:    const { data } = await supabase.functions.invoke('manage-landlords', { body: { action: 'get_communications', landlord_id: landlord.id } });
+src\components\admin\LandlordDetailModal.tsx:38:    const { data, error } = await supabase.functions.invoke('manage-landlords', { body });
+src\components\admin\LandlordDetailModal.tsx:45:    const { error } = await supabase.functions.invoke('manage-landlords', { body: { action: 'log_communication', communication: { ...newComm, landlord_id: landlord.id } } });
+src\components\admin\LandlordOperationsTab.tsx:42:        supabase.functions.invoke('manage-landlords', { body: { action: 'get_analytics' } }),
+src\components\admin\LandlordOperationsTab.tsx:43:        supabase.functions.invoke('manage-landlords', { body: { action: 'get_follow_ups' } }),
+src\components\admin\LandlordOperationsTab.tsx:44:        supabase.functions.invoke('manage-landlord-portal', { body: { action: 'get_all_portal_landlords' } }),
+src\components\admin\ManualPaymentApprovalTab.tsx:69:      const { data, error } = await supabase.functions.invoke('process-acquisition-payment', {
+src\components\admin\ManualPaymentApprovalTab.tsx:86:      const { data, error } = await supabase.functions.invoke('process-acquisition-payment', {
+src\components\admin\ManualPaymentApprovalTab.tsx:116:      const { data, error } = await supabase.functions.invoke('process-acquisition-payment', {
+src\components\admin\MarketplaceVerificationsTab.tsx:171:        supabase.functions.invoke('manage-deal-marketplace', {
+src\components\admin\MarketplaceVerificationsTab.tsx:174:        supabase.functions.invoke('manage-deal-marketplace', {
+src\components\admin\MarketplaceVerificationsTab.tsx:177:        supabase.functions.invoke('manage-deal-marketplace', {
+src\components\admin\MarketplaceVerificationsTab.tsx:225:      const { data } = await supabase.functions.invoke('seller-document-upload', {
+src\components\admin\MarketplaceVerificationsTab.tsx:278:      await supabase.functions.invoke('manage-deal-marketplace', {
+src\components\admin\MarketplaceVerificationsTab.tsx:314:      const { data } = await supabase.functions.invoke('manage-deal-marketplace', {
+src\components\admin\MarketplaceVerificationsTab.tsx:335:      const { data } = await supabase.functions.invoke('manage-deal-marketplace', {
+src\components\admin\MarketplaceVerificationsTab.tsx:372:      const { data } = await supabase.functions.invoke('manage-deal-marketplace', {
+src\components\admin\MarketplaceVerificationsTab.tsx:391:      const { data } = await supabase.functions.invoke('manage-deal-marketplace', {
+src\components\admin\MySetupProjectsTab.tsx:87:      const { data: investorData } = await supabase.functions.invoke('manage-investor-admin', {
+src\components\admin\PaymentProfileManager.tsx:83:    const { data } = await supabase.functions.invoke('manage-hr-commissions', {
+src\components\admin\PaymentProfileManager.tsx:112:    const { error } = await supabase.functions.invoke('manage-hr-commissions', {
+src\components\admin\PaymentProfileManager.tsx:135:    const { error } = await supabase.functions.invoke('manage-hr-commissions', {
+src\components\admin\PendingAMDealsBanner.tsx:72:      const { data, error } = await supabase.functions.invoke('am-submit-deal', {
+src\components\admin\PendingAMDealsBanner.tsx:89:      const { data, error } = await supabase.functions.invoke('am-submit-deal', {
+src\components\admin\PendingAMDealsBanner.tsx:116:      const { data, error } = await supabase.functions.invoke('am-submit-deal', {
+src\components\admin\PendingCreditsWidget.tsx:51:      const { data, error } = await supabase.functions.invoke('manage-investor-admin', {
+src\components\admin\PendingCreditsWidget.tsx:103:      const { data, error } = await supabase.functions.invoke('manage-investor-admin', {
+src\components\admin\PendingCreditsWidget.tsx:136:      const { data, error } = await supabase.functions.invoke('manage-investor-admin', {
+src\components\admin\PendingReservationsTab.tsx:115:      const { data, error } = await supabase.functions.invoke('manage-acquisition-requests', {
+src\components\admin\PendingReservationsTab.tsx:146:      const { data, error } = await supabase.functions.invoke('manage-acquisition-requests', {
+src\components\admin\PendingReservationsTab.tsx:181:      const { data, error } = await supabase.functions.invoke('manage-investor-admin', {
+src\components\admin\PendingReservationsTab.tsx:192:        await supabase.functions.invoke('manage-acquisition-requests', {
+src\components\admin\PendingReservationsTab.tsx:225:      const { data, error } = await supabase.functions.invoke('investor-messaging', {
+src\components\admin\PennyMLFeedbackDashboard.tsx:181:      const { data, error } = await supabase.functions.invoke('penny-deal-scoring', {
+src\components\admin\PennyMLFeedbackDashboard.tsx:241:      const { data, error } = await supabase.functions.invoke('penny-deal-scoring', {
+src\components\admin\PennyMonthlyAccuracyReport.tsx:117:      const { data, error } = await supabase.functions.invoke('penny-deal-scoring', {
+src\components\admin\PennyPhotoGallery.tsx:84:      const { data, error } = await supabase.functions.invoke('penny-property-photos', {
+src\components\admin\PennyPhotoGallery.tsx:126:      const { data, error } = await supabase.functions.invoke('penny-property-photos', {
+src\components\admin\PennyScoreHealthWidget.tsx:136:      const { data, error } = await supabase.functions.invoke('nightly-penny-score-refresh', {
+src\components\admin\PennyScoreMonitoringDashboard.tsx:93:      const { data: dashboardData } = await supabase.functions.invoke('penny-score-monitoring', {
+src\components\admin\PennyScoreMonitoringDashboard.tsx:128:      const { data } = await supabase.functions.invoke('penny-score-monitoring', {
+src\components\admin\PennyScoreMonitoringDashboard.tsx:144:      const { data: lowScores } = await supabase.functions.invoke('penny-score-monitoring', {
+src\components\admin\PennyScoreMonitoringDashboard.tsx:149:      const { data: highValue } = await supabase.functions.invoke('penny-score-monitoring', {
+src\components\admin\PerformanceTrackingDashboard.tsx:114:      const { data: perfData } = await supabase.functions.invoke('penny-deal-scoring', {
+src\components\admin\PerformanceTrackingDashboard.tsx:122:      const { data: accData } = await supabase.functions.invoke('penny-deal-scoring', {
+src\components\admin\PerformanceTrackingDashboard.tsx:130:      const { data: propData } = await supabase.functions.invoke('get-properties', {
+src\components\admin\PerformanceTrackingDashboard.tsx:150:      const { data, error } = await supabase.functions.invoke('penny-deal-scoring', {
+src\components\admin\PerformanceTrackingDashboard.tsx:210:      const { data } = await supabase.functions.invoke('penny-deal-scoring', {
+src\components\admin\PhotoUploadManager.tsx:59:        const { data } = await supabase.functions.invoke('background-photo-processing', {
+src\components\admin\PhotoUploadManager.tsx:172:          await supabase.functions.invoke('background-photo-processing', {
+src\components\admin\PhotoUploadManager.tsx:354:      await supabase.functions.invoke('background-photo-processing', {
+src\components\admin\PortfolioApprovalsTab.tsx:117:      const { data: statsData } = await supabase.functions.invoke('manage-portfolio-approvals', {
+src\components\admin\PortfolioApprovalsTab.tsx:123:      const { data: propsData } = await supabase.functions.invoke('manage-portfolio-approvals', {
+src\components\admin\PortfolioApprovalsTab.tsx:151:      const { data } = await supabase.functions.invoke('manage-portfolio-approvals', {
+src\components\admin\PortfolioApprovalsTab.tsx:166:      const { data, error } = await supabase.functions.invoke('manage-portfolio-approvals', {
+src\components\admin\PortfolioApprovalsTab.tsx:200:      const { data, error } = await supabase.functions.invoke('manage-portfolio-approvals', {
+src\components\admin\PortfolioApprovalsTab.tsx:239:      const { data, error } = await supabase.functions.invoke('manage-portfolio-approvals', {
+src\components\admin\PortfolioApprovalsTab.tsx:276:      const { data, error } = await supabase.functions.invoke('manage-portfolio-approvals', {
+src\components\admin\PropertyAssignmentModal.tsx:125:      const { data, error } = await supabase.functions.invoke('manage-investor-admin', {
+src\components\admin\PropertyAssignmentModal.tsx:183:      const { data, error } = await supabase.functions.invoke('get-properties', {
+src\components\admin\PropertyAssignmentModal.tsx:251:      const { data, error } = await supabase.functions.invoke('get-properties', {
+src\components\admin\PropertyAssignmentModal.tsx:288:      const { data, error } = await supabase.functions.invoke('manage-property-assignments', {
+src\components\admin\PropertyAssignmentModal.tsx:305:          await supabase.functions.invoke('manage-property-assignments', {
+src\components\admin\PropertyReferralsManagementTab.tsx:97:      const { data, error } = await supabase.functions.invoke('manage-property-referrals', {
+src\components\admin\PropertyReferralsManagementTab.tsx:114:      const { data, error } = await supabase.functions.invoke('manage-property-referrals', {
+src\components\admin\PropertyReviewQueue.tsx:55:      const { data, error } = await supabase.functions.invoke('manage-landlord-portal', {
+src\components\admin\PropertyReviewQueue.tsx:75:      const { data } = await supabase.functions.invoke('manage-landlord-portal', {
+src\components\admin\PropertyReviewQueue.tsx:88:          await supabase.functions.invoke('manage-landlord-portal', {
+src\components\admin\PropertyReviewQueue.tsx:123:      const { data } = await supabase.functions.invoke('manage-landlord-portal', {
+src\components\admin\ReferralAnalyticsTab.tsx:88:      const { data, error } = await supabase.functions.invoke('manage-referrals', {
+src\components\admin\ReferralAnalyticsTab.tsx:111:      const { data, error } = await supabase.functions.invoke('manage-referrals', {
+src\components\admin\ReferralAnalyticsTab.tsx:128:      const { data, error } = await supabase.functions.invoke('manage-referrals', {
+src\components\admin\ReportTemplateBuilder.tsx:53:    const { data } = await supabase.functions.invoke('manage-market-reports', { body: { action: 'get_templates' } });
+src\components\admin\ReportTemplateBuilder.tsx:61:    const { error } = await supabase.functions.invoke('manage-market-reports', { body: { action: 'save_template', ...selected } });
+src\components\admin\ReportTemplateBuilder.tsx:68:    await supabase.functions.invoke('manage-market-reports', { body: { action: 'delete_template', template_id: id } });
+src\components\admin\SetupIntakeFieldConfigurator.tsx:81:      const { data } = await supabase.functions.invoke('manage-setup-tasks', {
+src\components\admin\SetupIntakeFieldConfigurator.tsx:94:      const { data, error } = await supabase.functions.invoke('manage-setup-tasks', {
+src\components\admin\SetupIntakeFieldConfigurator.tsx:113:      const { data, error } = await supabase.functions.invoke('manage-setup-tasks', {
+src\components\admin\SetupIntakeFieldConfigurator.tsx:138:      const { data, error } = await supabase.functions.invoke('manage-setup-tasks', {
+src\components\admin\SetupIntakeFieldConfigurator.tsx:156:      await supabase.functions.invoke('manage-setup-tasks', {
+src\components\admin\SetupManagementDashboard.tsx:113:      const { data, error } = await supabase.functions.invoke('manage-setup-tasks', {
+src\components\admin\SetupManagementDashboard.tsx:144:      const { data, error } = await supabase.functions.invoke('manage-setup-tasks', {
+src\components\admin\SetupProjectDetail.tsx:137:      const { data, error } = await supabase.functions.invoke('manage-setup-tasks', {
+src\components\admin\SetupProManagement.tsx:33:      const { data, error } = await supabase.functions.invoke('manage-setup-tasks', {
+src\components\admin\SetupRecapTemplateModal.tsx:176:      const { data, error } = await supabase.functions.invoke('manage-setup-tasks', {
+src\components\admin\SetupRecapTemplateModal.tsx:206:      const { data, error } = await supabase.functions.invoke('manage-setup-tasks', {
+src\components\admin\SetupTasksManager.tsx:34:    const { data } = await supabase.functions.invoke('manage-setup-tasks', { body: { action: 'list', property_id: propertyId } });
+src\components\admin\SetupTasksManager.tsx:41:    await supabase.functions.invoke('manage-setup-tasks', { body: { action: 'create_default_tasks', property_id: propertyId, investor_id: investorId } });
+src\components\admin\SetupTasksManager.tsx:48:      await supabase.functions.invoke('manage-setup-tasks', { body: { action: 'update', task_id: task.id, updates: { status: 'pending', completed_at: null } } });
+src\components\admin\SetupTasksManager.tsx:50:      await supabase.functions.invoke('manage-setup-tasks', { body: { action: 'complete', task_id: task.id, completed_by: 'Staff' } });
+src\components\admin\SetupTasksManager.tsx:56:    await supabase.functions.invoke('manage-setup-tasks', { body: { action: 'update', task_id: taskId, updates } });
+src\components\admin\SiteAnalyticsWidget.tsx:55:      const { data: res, error: err } = await supabase.functions.invoke('get-site-analytics', {
+src\components\admin\SMAssignmentTab.tsx:89:      const { data: investorData } = await supabase.functions.invoke('manage-investor-admin', {
+src\components\admin\SMAssignmentTab.tsx:98:      const { data: staffData } = await supabase.functions.invoke('manage-staff', {
+src\components\admin\SMAssignmentTab.tsx:134:      const { data, error } = await supabase.functions.invoke('manage-investor-admin', {
+src\components\admin\SMAssignmentTab.tsx:169:      const { data, error } = await supabase.functions.invoke('manage-investor-admin', {
+src\components\admin\SOPHelpButton.tsx:75:      const { data, error: fetchError } = await supabase.functions.invoke('manage-sop-repository', {
+src\components\admin\SOPPendingReviewsWidget.tsx:86:      const { data, error } = await supabase.functions.invoke('manage-sop-repository', {
+src\components\admin\SOPPendingReviewsWidget.tsx:112:      const { data, error } = await supabase.functions.invoke('manage-sop-repository', {
+src\components\admin\SOPPendingReviewsWidget.tsx:147:      const { data, error } = await supabase.functions.invoke('manage-sop-repository', {
+src\components\admin\SOPWorkflowsTab.tsx:205:      const { data, error } = await supabase.functions.invoke('manage-sop-repository', {
+src\components\admin\SOPWorkflowsTab.tsx:237:      const { data, error } = await supabase.functions.invoke('manage-sop-repository', {
+src\components\admin\SOPWorkflowsTab.tsx:253:      const { data, error } = await supabase.functions.invoke('manage-sop-repository', {
+src\components\admin\SOPWorkflowsTab.tsx:271:      const { data: businessData, error: businessError } = await supabase.functions.invoke('manage-sop-repository', {
+src\components\admin\SOPWorkflowsTab.tsx:276:      const { data: platformData, error: platformError } = await supabase.functions.invoke('manage-sop-repository', {
+src\components\admin\SOPWorkflowsTab.tsx:327:      const { error } = await supabase.functions.invoke('manage-sop-repository', { body });
+src\components\admin\SOPWorkflowsTab.tsx:347:      const { error } = await supabase.functions.invoke('manage-sop-repository', {
+src\components\admin\StaffAccountLinkingWizard.tsx:99:      const { data, error } = await supabase.functions.invoke('manage-investor-admin', {
+src\components\admin\StaffAccountLinkingWizard.tsx:133:      const { data, error } = await supabase.functions.invoke('staff-login', {
+src\components\admin\StaffAccountLinkingWizard.tsx:145:        await supabase.functions.invoke('manage-investor-admin', {
+src\components\admin\StaffAccountLinkingWizard.tsx:191:      const { data, error } = await supabase.functions.invoke('investor-register', {
+src\components\admin\StaffAccountLinkingWizard.tsx:207:        await supabase.functions.invoke('staff-login', {
+src\components\admin\StaffDealSearch.tsx:90:      const { data, error: funcError } = await supabase.functions.invoke('staff-deal-search', { 
+src\components\admin\StaffDealSearch.tsx:134:      const { error } = await supabase.functions.invoke('add-property', {
+src\components\admin\StaffDealSearch.tsx:181:      const { data, error } = await supabase.functions.invoke('penny-property-photos', {
+src\components\admin\StaffDealSearch.tsx:225:      const { error } = await supabase.functions.invoke('add-property', {
+src\components\admin\StaffManagementTab.tsx:167:      const { data, error } = await supabase.functions.invoke(fnName, { body });
+src\components\admin\StaffManagementTab.tsx:260:      const { data, error } = await supabase.functions.invoke('manage-staff', {
+src\components\admin\StaffManagementTab.tsx:267:              const { data: invData } = await supabase.functions.invoke('manage-staff', {
+src\components\admin\StaffManagementTab.tsx:293:      const { data } = await supabase.functions.invoke('manage-staff', {
+src\components\admin\StaffManagementTab.tsx:306:      const { data } = await supabase.functions.invoke('manage-staff', {
+src\components\admin\StaffManagementTab.tsx:320:      const { data } = await supabase.functions.invoke('send-investor-invitation', {
+src\components\admin\StaffManagementTab.tsx:335:      const { data, error } = await supabase.functions.invoke('send-investor-invitation', {
+src\components\admin\StaffManagementTab.tsx:354:      const { data, error } = await supabase.functions.invoke('send-investor-invitation', {
+src\components\admin\StaffManagementTab.tsx:371:      const { data } = await supabase.functions.invoke('send-investor-invitation', {
+src\components\admin\StaffManagementTab.tsx:418:      const { data, error } = await supabase.functions.invoke('manage-staff', {
+src\components\admin\StaffManagementTab.tsx:457:            const { data: welcomeData, error: welcomeError } = await supabase.functions.invoke('send-investor-invitation', {
+src\components\admin\StaffManagementTab.tsx:522:      const { data } = await supabase.functions.invoke('manage-staff', {
+src\components\admin\StaffManagementTab.tsx:564:      const { data, error } = await supabase.functions.invoke('manage-staff', {
+src\components\admin\StaffManagementTab.tsx:598:      const { data } = await supabase.functions.invoke('manage-staff', {
+src\components\admin\StaffManagementTab.tsx:632:      const { data } = await supabase.functions.invoke('manage-staff', {
+src\components\admin\StaffManagementTab.tsx:660:      const { data, error } = await supabase.functions.invoke('manage-staff', {
+src\components\admin\StaffManagementTab.tsx:696:      const { data } = await supabase.functions.invoke('manage-staff', {
+src\components\admin\StaffManagementTab.tsx:1065:                                const { data: welcomeData, error: welcomeError } = await supabase.functions.invoke('send-investor-invitation', {
+src\components\admin\StaffManagementTab.tsx:1382:                            const { data } = await supabase.functions.invoke('send-investor-invitation', {
+src\components\admin\StaffManagementTab.tsx:1449:                                const { data, error: err } = await supabase.functions.invoke('send-investor-invitation', {
+src\components\admin\StaffManagementTab.tsx:1684:                                          const { data } = await supabase.functions.invoke('generate-agreement-pdf', {
+src\components\admin\StaffManagementTab.tsx:1735:                                        const { data } = await supabase.functions.invoke('send-investor-invitation', {
+src\components\admin\StaffManagementTab.tsx:1967:                      supabase.functions.invoke('send-investor-invitation', {
+src\components\admin\StaffMessaging.tsx:151:          await supabase.functions.invoke('investor-messaging', {
+src\components\admin\StaffMessaging.tsx:168:        supabase.functions.invoke('investor-messaging', {
+src\components\admin\StaffMessaging.tsx:184:        supabase.functions.invoke('investor-messaging', {
+src\components\admin\StaffMessaging.tsx:187:        supabase.functions.invoke('investor-messaging', {
+src\components\admin\StaffMessaging.tsx:190:        supabase.functions.invoke('investor-messaging', {
+src\components\admin\StaffMessaging.tsx:193:        supabase.functions.invoke('investor-messaging', {
+src\components\admin\StaffMessaging.tsx:204:          const allMsgRes = await supabase.functions.invoke('investor-messaging', {
+src\components\admin\StaffMessaging.tsx:227:          const { data: investors } = await supabase.functions.invoke('manage-investor-admin', {
+src\components\admin\StaffMessaging.tsx:274:      const { data } = await supabase.functions.invoke('manage-investor-admin', {
+src\components\admin\StaffMessaging.tsx:306:      const { data, error } = await supabase.functions.invoke('investor-messaging', {
+src\components\admin\StaffMessaging.tsx:323:          await supabase.functions.invoke('send-notification-email', {
+src\components\admin\StaffMessaging.tsx:368:      const { data, error } = await supabase.functions.invoke('investor-messaging', {
+src\components\admin\StaffMessaging.tsx:387:          await supabase.functions.invoke('send-notification-email', {
+src\components\admin\StaffMessaging.tsx:436:      const { data, error } = await supabase.functions.invoke('investor-messaging', {
+src\components\admin\StaffNotifications.tsx:45:    const { data } = await supabase.functions.invoke('manage-investor-admin', { body: { action: 'get_notifications' } });
+src\components\admin\StaffNotifications.tsx:51:    await supabase.functions.invoke('manage-investor-admin', { body: { action: 'mark_notification_read', notification_id: id } });
+src\components\admin\StaffNotifications.tsx:57:      await supabase.functions.invoke('manage-investor-admin', { body: { action: 'mark_notification_read', notification_id: n.id } });
+src\components\admin\StaffPortfolioManager.tsx:133:      const { data, error } = await supabase.functions.invoke('manage-investor-admin', {
+src\components\admin\StaffPortfolioManager.tsx:168:      const { data, error } = await supabase.functions.invoke('get-properties', {
+src\components\admin\StaffPortfolioManager.tsx:230:      const { data, error } = await supabase.functions.invoke('manage-investor-admin', {
+src\components\admin\StaffPortfolioManager.tsx:276:      const { data, error } = await supabase.functions.invoke('manage-investor-admin', {
+src\components\admin\StaffPortfolioManager.tsx:312:      const { data } = await supabase.functions.invoke('manage-investor-admin', {
+src\components\admin\StaffPortfolioManager.tsx:382:      const { data, error } = await supabase.functions.invoke('manage-property-assignments', {
+src\components\admin\StaffPortfolioManager.tsx:410:        const { data, error } = await supabase.functions.invoke('manage-investor-admin', {
+src\components\admin\StaffPortfolioManager.tsx:521:      const { data, error } = await supabase.functions.invoke('manage-investor-admin', {
+src\components\admin\StaffSettingsTab.tsx:115:      const { data, error } = await supabase.functions.invoke('staff-login', {
+src\components\admin\StaffSettingsTab.tsx:156:      const { data, error } = await supabase.functions.invoke('manage-staff', {
+src\components\admin\StaffSettingsTab.tsx:203:      const { data, error } = await supabase.functions.invoke('manage-staff', {
+src\components\admin\StaffSettingsTab.tsx:238:      const { data, error } = await supabase.functions.invoke('manage-staff', {
+src\components\admin\StaffSettingsTab.tsx:296:      const { data, error } = await supabase.functions.invoke('staff-login', {
+src\components\admin\StaffSettingsTab.tsx:342:      const { data, error } = await supabase.functions.invoke('staff-login', {
+src\components\admin\StaffSettingsTab.tsx:380:      const { data, error } = await supabase.functions.invoke('staff-login', {
+src\components\admin\StaffSettingsTab.tsx:736:                      const { data } = await supabase.functions.invoke('staff-login', {
+src\components\admin\StaffSettingsTab.tsx:1150:                    const { data, error } = await supabase.functions.invoke('staff-login', {
+src\components\admin\SuccessAgreementManager.tsx:373:      const { data } = await supabase.functions.invoke('manage-document-signatures', {
+src\components\admin\SuccessAgreementManager.tsx:414:      const { data } = await supabase.functions.invoke('manage-investor-credits', {
+src\components\admin\SuccessAgreementManager.tsx:585:      const { data, error } = await supabase.functions.invoke('manage-document-signatures', {
+src\components\admin\SuccessAgreementManager.tsx:662:      const { data, error } = await supabase.functions.invoke('manage-document-signatures', {
+src\components\admin\SuccessAgreementManager.tsx:721:      await supabase.functions.invoke('manage-document-signatures', {
+src\components\admin\SuccessTeamRequestCenter.tsx:151:      const { data, error } = await supabase.functions.invoke('manage-portfolio-approvals', {
+src\components\admin\SuccessTeamRequestCenter.tsx:214:      const { data, error } = await supabase.functions.invoke('manage-portfolio-approvals', {
+src\components\admin\SuccessTeamRequestCenter.tsx:239:      const { data, error } = await supabase.functions.invoke('manage-portfolio-approvals', {
+src\components\admin\SupportRequestsTab.tsx:135:      const { data, error } = await supabase.functions.invoke('manage-support-requests', {
+src\components\admin\SupportRequestsTab.tsx:159:      const { data, error } = await supabase.functions.invoke('manage-support-requests', {
+src\components\admin\SupportRequestsTab.tsx:183:      const { data, error } = await supabase.functions.invoke('manage-support-requests', {
+src\components\admin\SupportRequestsTab.tsx:197:      const { data, error } = await supabase.functions.invoke('manage-support-requests', {
+src\components\admin\SupportRequestsTab.tsx:227:      const { data, error } = await supabase.functions.invoke('manage-support-requests', {
+src\components\admin\SupportRequestsTab.tsx:268:      const { data, error } = await supabase.functions.invoke('manage-support-requests', {
+src\components\admin\SupportRequestsTab.tsx:296:      const { data, error } = await supabase.functions.invoke('manage-support-requests', {
+src\components\admin\SupportRequestsTab.tsx:324:      const { data, error } = await supabase.functions.invoke('manage-support-requests', {
+src\components\admin\SupportRequestsTab.tsx:354:      const { data, error } = await supabase.functions.invoke('manage-support-requests', {
+src\components\admin\SupportRequestsTab.tsx:383:      const { data, error } = await supabase.functions.invoke('manage-support-requests', {
+src\components\admin\TimeTrackerWidget.tsx:46:      supabase.functions.invoke('manage-hr-commissions', { body: { action: 'get_active_timer', staff_id: staffId } }),
+src\components\admin\TimeTrackerWidget.tsx:47:      supabase.functions.invoke('manage-hr-commissions', { body: { action: 'get_time_stats', staff_id: staffId } }),
+src\components\admin\TimeTrackerWidget.tsx:48:      supabase.functions.invoke('manage-hr-commissions', { body: { action: 'get_time_entries', staff_id: staffId } })
+src\components\admin\TimeTrackerWidget.tsx:74:    const { data, error } = await supabase.functions.invoke('manage-hr-commissions', {
+src\components\admin\TimeTrackerWidget.tsx:84:    const { data, error } = await supabase.functions.invoke('manage-hr-commissions', {
+src\components\admin\TopicDiscoveryTab.tsx:43:      const { data, error } = await supabase.functions.invoke('daily-article-generation');
+src\components\admin\TraineeCertificationProgress.tsx:231:      const { data, error } = await supabase.functions.invoke('send-investor-invitation', {
+src\components\admin\TraineeCertificationProgress.tsx:251:      const { data } = await supabase.functions.invoke('send-investor-invitation', {
+src\components\admin\TraineeCertificationProgress.tsx:265:      const { data } = await supabase.functions.invoke('send-investor-invitation', {
+src\components\admin\TraineeCertificationProgress.tsx:279:      const { data } = await supabase.functions.invoke('send-investor-invitation', {
+src\components\admin\TraineeCertificationProgress.tsx:297:      const { data } = await supabase.functions.invoke('send-investor-invitation', {
+src\components\admin\TraineeCertificationProgress.tsx:312:      const { data, error } = await supabase.functions.invoke('send-investor-invitation', {
+src\components\admin\TraineeCertificationProgress.tsx:351:      const { data } = await supabase.functions.invoke('send-investor-invitation', {
+src\components\admin\TraineeCertificationProgress.tsx:370:      const { data } = await supabase.functions.invoke('send-investor-invitation', {
+src\components\admin\TraineeCertificationProgress.tsx:399:      const { data } = await supabase.functions.invoke('send-investor-invitation', {
+src\components\admin\TraineeCertificationProgress.tsx:432:      const { data } = await supabase.functions.invoke('send-investor-invitation', {
+src\components\admin\TraineeCertificationProgress.tsx:458:      const { data } = await supabase.functions.invoke('send-investor-invitation', {
+src\components\admin\TraineeCertificationProgress.tsx:500:      const { data, error } = await supabase.functions.invoke('manage-staff', {
+src\components\admin\TransactionManagementTab.tsx:102:      const { data, error } = await supabase.functions.invoke('manage-deal-marketplace', {
+src\components\admin\TransactionManagementTab.tsx:132:      const { data, error } = await supabase.functions.invoke('manage-deal-marketplace', {
+src\components\admin\TransactionManagementTab.tsx:161:      const { data, error } = await supabase.functions.invoke('manage-deal-marketplace', {
+src\components\admin\TransactionManagementTab.tsx:191:      const { data, error } = await supabase.functions.invoke('manage-deal-marketplace', {
+src\components\admin\TransactionManagementTab.tsx:218:      const { data, error } = await supabase.functions.invoke('marketplace-payments', {
+src\components\admin\UnassignedLandlordsTab.tsx:54:        supabase.functions.invoke('manage-landlord-portal', { body: { action: 'get_unassigned_landlords' } }),
+src\components\admin\UnassignedLandlordsTab.tsx:55:        supabase.functions.invoke('manage-landlord-portal', { body: { action: 'get_all_portal_landlords' } })
+src\components\admin\UnassignedLandlordsTab.tsx:66:      const { data } = await supabase.functions.invoke('manage-landlord-portal', {
+src\components\admin\UnassignedLandlordsTab.tsx:136:      const { data } = await supabase.functions.invoke('manage-landlord-portal', {
+src\components\admin\UnassignedLandlordsTab.tsx:165:      const { data } = await supabase.functions.invoke('manage-landlord-portal', {
+src\components\admin\UnifiedCRMTab.tsx:80:        const { data: investorData } = await supabase.functions.invoke('manage-investor-crm', {
+src\components\admin\UnifiedCRMTab.tsx:95:        const { data: landlordData } = await supabase.functions.invoke('manage-landlords', {
+src\components\admin\UnifiedCRMTab.tsx:108:        const { data: leadData } = await supabase.functions.invoke('get-leads');
+src\components\admin\WeeklyDigestManager.tsx:91:      const { data } = await supabase.functions.invoke('manage-investor-admin', {
+src\components\admin\WeeklyDigestManager.tsx:105:      const { data } = await supabase.functions.invoke('investor-weekly-digest', {
+src\components\admin\WeeklyDigestManager.tsx:142:      const { data, error } = await supabase.functions.invoke('investor-weekly-digest', {
+src\components\admin\WeeklyDigestManager.tsx:169:      const { data, error } = await supabase.functions.invoke('investor-weekly-digest', { body });
+src\components\admin\WeeklyDigestManager.tsx:190:      const { data, error } = await supabase.functions.invoke('investor-weekly-digest', {
+src\components\admin\WeeklyReportForm.tsx:67:    const { data } = await supabase.functions.invoke('manage-hr-commissions', {
+src\components\admin\WeeklyReportForm.tsx:98:    const { error } = await supabase.functions.invoke('manage-hr-commissions', {
+src\components\admin\WeeklyReportForm.tsx:118:    const { error } = await supabase.functions.invoke('manage-hr-commissions', {
+src\components\dealflow\AddDealModal.tsx:163:      const { data, error } = await supabase.functions.invoke('penny-generate-description', {
+src\components\dealflow\AddDealModal.tsx:381:          const { data, error } = await supabase.functions.invoke('new-deal-create', {
+src\components\dealflow\AddDealModal.tsx:435:                await supabase.functions.invoke('update-property', {
+src\components\dealflow\ArchivedDealsTab.tsx:243:        const { data, error } = await supabase.functions.invoke('create-property', {
+src\components\dealflow\DealFlowTab.tsx:147:      const { data, error } = await supabase.functions.invoke('get-properties', {
+src\components\dealflow\DealFlowTab.tsx:186:      const { data, error } = await supabase.functions.invoke('get-properties', { body: { zip_code: zipCode || undefined, address: addressSearch || undefined } });
+src\components\dealflow\DealFlowTab.tsx:211:      const { data, error } = await supabase.functions.invoke('research-zip-properties', { body: { zip_code: zipCode, city: city || undefined, state: state || undefined } });
+src\components\dealflow\DealFlowTab.tsx:244:        const { data, error } = await supabase.functions.invoke('delete-property', {
+src\components\dealflow\DealFlowTab.tsx:371:        const { data, error } = await supabase.functions.invoke('delete-property', {
+src\components\dealflow\DealFlowTab.tsx:414:      const { data, error } = await supabase.functions.invoke('clear-all-properties', { body: { confirm: 'DELETE_ALL_PROPERTIES' } });
+src\components\dealflow\DealFlowTab.tsx:503:      const { data, error } = await supabase.functions.invoke('update-property', { body: { id: selectedProperty.id, photos: photoUrls, updated_by_staff_id: staffId, updated_by_staff_name: staffName } }); 
+src\components\dealflow\DealFlowTab.tsx:523:      const { data, error } = await supabase.functions.invoke('update-property', { body: { id: selectedProperty.id, deal_status: status, updated_by_staff_id: staffId, updated_by_staff_name: staffName } }); 
+src\components\dealflow\DealFlowTab.tsx:544:      const { data, error } = await supabase.functions.invoke('update-property', { body: { id: selectedProperty.id, is_published: true, deal_status: 'published', workflow_stage: 'published', status: 'published', updated_by_staff_id: staffId, updated_by_staff_name: staffName } }); 
+src\components\dealflow\DealFlowTab.tsx:561:        await supabase.functions.invoke('am-submit-deal', {
+src\components\dealflow\DealFlowTab.tsx:728:      <PropertyDetailModal property={selectedProperty} analytics={selectedProperty ? analytics[selectedProperty.id] : null} outreach={outreach} notes={notes} templates={templates} open={detailModalOpen} onOpenChange={setDetailModalOpen} staffId={staffId} staffName={staffName} onSendEmail={async (tid) => { await supabase.functions.invoke('send-outreach-email', { body: { property_id: selectedProperty?.id, template_id: tid } }); toast({ title: 'Email sent!' }); }} onLogCall={async (outcome) => { await supabase.from('outreach_tracking').insert({ property_id: selectedProperty?.id, contact_method: 'phone', status: outcome }); toast({ title: 'Call logged' }); const { data } = await supabase.from('outreach_tracking').select('*').eq('property_id', selectedProperty?.id); setOutreach(data || []); }} onUpdateStatus={handleUpdateStatus} onAddNote={async (content, noteType) => { await supabase.from('outreach_notes').insert({ property_id: selectedProperty?.id, content, note_type: noteType, author_name: staffName || 'Staff' }); const { data } = await supabase.from('outreach_notes').select('*').eq('property_id', selectedProperty?.id); setNotes(data || []); toast({ title: 'Note added' }); }} onTogglePin={async (noteId, isPinned) => { await supabase.from('outreach_notes').update({ is_pinned: isPinned }).eq('id', noteId); const { data } = await supabase.from('outreach_notes').select('*').eq('property_id', selectedProperty?.id); setNotes(data || []); }} />
+src\components\dealflow\DealFlowTab.tsx:733:          const { data, error } = await supabase.functions.invoke('update-property', { body: { id: selectedProperty?.id, ...updates, updated_by_staff_id: staffId, updated_by_staff_name: staffName } }); 
+src\components\dealflow\DealFlowTab.tsx:774:      }} onPublish={handlePublish} onProcessPhotos={async (listingUrl, photoUrls) => { toast({ title: 'Processing photos...' }); await supabase.functions.invoke('process-property-photos', { body: { property_id: selectedProperty?.id, listing_url: listingUrl, photo_urls: photoUrls } }); const { data } = await supabase.from('property_photos').select('*').eq('property_id', selectedProperty?.id); setPhotos(data || []); toast({ title: 'Photos processed!' }); }} />
+src\components\dealflow\DealKanbanBoard.tsx:175:        await supabase.functions.invoke('manage-property-assignments', {
+src\components\dealflow\EditPublishModal.tsx:134:        const { data, error } = await supabase.functions.invoke('update-property', {
+src\components\dealflow\EditPublishModal.tsx:189:      const { data, error } = await supabase.functions.invoke('penny-generate-description', {
+src\components\dealflow\FinancialsEditor.tsx:210:      const { data, error } = await supabase.functions.invoke('update-property', {
+src\components\dealflow\InlineFinancialEditor.tsx:134:      const { data, error } = await supabase.functions.invoke('update-property', {
+src\components\dealflow\PhotoManagementPanel.tsx:191:      const { data, error } = await supabase.functions.invoke('update-property', {
+src\components\dealflow\PublishedDealsTab.tsx:113:    const { data, error } = await supabase.functions.invoke('delete-property', {
+src\components\dealflow\PublishedDealsTab.tsx:297:        await supabase.functions.invoke('update-property', {
+src\components\dealflow\PublishedDealsTab.tsx:335:        await supabase.functions.invoke('update-property', {
+src\components\dealflow\PublishedDealsTab.tsx:360:        await supabase.functions.invoke('update-property', {
+src\components\dealflow\PublishedDealsTab.tsx:367:          await supabase.functions.invoke('am-submit-deal', {
+src\components\dealflow\QuickAssignPopover.tsx:118:      const { data, error } = await supabase.functions.invoke('manage-investor-admin', {
+src\components\dealflow\QuickAssignPopover.tsx:159:        const { data } = await supabase.functions.invoke('investor-auth', {
+src\components\dealflow\QuickAssignPopover.tsx:205:      const { data, error } = await supabase.functions.invoke('manage-property-assignments', {
+src\components\dealflow\StaffInternalNotes.tsx:125:        const { data, error: efError } = await supabase.functions.invoke('update-property', {
+src\components\deals\InquiryModal.tsx:36:    const { error } = await supabase.functions.invoke('submit-deal-inquiry', {
+src\components\FreeResources.tsx:29:      const { data } = await supabase.functions.invoke('get-digital-products');
+src\components\FreeResources.tsx:51:      const { error } = await supabase.functions.invoke('track-download', {
+src\components\investor\AccountCredits.tsx:102:        const { data, error: confirmError } = await supabase.functions.invoke('process-account-funding', {
+src\components\investor\AccountCredits.tsx:168:        supabase.functions.invoke('process-account-funding', { body: { action: 'get_funding_status', investor_id: investorId } }),
+src\components\investor\AccountCredits.tsx:169:        supabase.functions.invoke('process-account-funding', { body: { action: 'get_funding_tiers' } }),
+src\components\investor\AccountCredits.tsx:170:        supabase.functions.invoke('manage-investor-credits', { body: { action: 'get_investor_credit_summary', investor_id: investorId } })
+src\components\investor\AccountCredits.tsx:207:        const { data: requestsData } = await supabase.functions.invoke('investor-auth', {
+src\components\investor\AccountCredits.tsx:220:      const { data, error } = await supabase.functions.invoke('process-account-funding', {
+src\components\investor\AccountCredits.tsx:236:      const { data } = await supabase.functions.invoke('investor-auth', {
+src\components\investor\AccountCredits.tsx:252:      const { data } = await supabase.functions.invoke('investor-auth', {
+src\components\investor\AccountCredits.tsx:265:      const { data } = await supabase.functions.invoke('investor-auth', {
+src\components\investor\AccountFunding.tsx:85:        const { data, error: confirmError } = await supabase.functions.invoke('process-account-funding', {
+src\components\investor\AccountFunding.tsx:178:        supabase.functions.invoke('process-account-funding', {
+src\components\investor\AccountFunding.tsx:181:        supabase.functions.invoke('process-account-funding', {
+src\components\investor\AccountFunding.tsx:206:      const { data, error } = await supabase.functions.invoke('process-account-funding', {
+src\components\investor\AccountSettings.tsx:63:      const { data, error: fnError } = await supabase.functions.invoke('investor-login', {
+src\components\investor\AccountSettings.tsx:340:        const { data, error } = await supabase.functions.invoke('investor-login', { 
+src\components\investor\AccountSettings.tsx:398:      const { data } = await supabase.functions.invoke('investor-auth', { 
+src\components\investor\AccountSettings.tsx:419:      await supabase.functions.invoke('investor-auth', { 
+src\components\investor\AcquisitionManagerSection.tsx:77:      const { data, error } = await supabase.functions.invoke('investor-auth', {
+src\components\investor\AcquisitionManagerSection.tsx:162:      const { data, error } = await supabase.functions.invoke('manage-am-assignments', {
+src\components\investor\AcquisitionManagerSection.tsx:234:      const { data, error } = await supabase.functions.invoke('investor-auth', {
+src\components\investor\AcquisitionsTracker.tsx:75:      const { data, error } = await supabase.functions.invoke('process-acquisition-payment', {
+src\components\investor\AcquisitionsTracker.tsx:119:      const { data, error } = await supabase.functions.invoke('investor-deal-locator', { 
+src\components\investor\AIChat.tsx:85:    const { data } = await supabase.functions.invoke('investor-auth', {
+src\components\investor\AIChat.tsx:109:    const { data } = await supabase.functions.invoke('manage-investor-credits', {
+src\components\investor\AIChat.tsx:616:      const { data } = await supabase.functions.invoke('ai-investor-chat', {
+src\components\investor\AIChat.tsx:636:      const { data } = await supabase.functions.invoke('ai-investor-chat', {
+src\components\investor\AIChat.tsx:685:      const { data, error } = await supabase.functions.invoke('ai-investor-chat', {
+src\components\investor\ClaimLegacyProperty.tsx:60:      const { data, error } = await supabase.functions.invoke('investor-auth', {
+src\components\investor\ClaimLegacyProperty.tsx:96:      const { data, error } = await supabase.functions.invoke('investor-auth', {
+src\components\investor\ClaimLegacyProperty.tsx:136:      const { data, error } = await supabase.functions.invoke('investor-auth', {
+src\components\investor\DashboardWidgets.tsx:480:        const { data: dashData } = await supabase.functions.invoke('manage-market-reports', { 
+src\components\investor\DashboardWidgets.tsx:484:        const { data: assignedData } = await supabase.functions.invoke('investor-deal-locator', { 
+src\components\investor\DealAlerts.tsx:109:      const { data } = await supabase.functions.invoke('manage-deal-alerts', {
+src\components\investor\DealAlerts.tsx:123:      const { data } = await supabase.functions.invoke('manage-deal-alerts', {
+src\components\investor\DealAlerts.tsx:135:      const { data, error } = await supabase.functions.invoke('manage-deal-alerts', {
+src\components\investor\DealAlerts.tsx:157:      const { data } = await supabase.functions.invoke('manage-deal-alerts', {
+src\components\investor\DealAlertSettings.tsx:140:      const { data } = await supabase.functions.invoke('check-deal-alerts', {
+src\components\investor\DealAlertSettings.tsx:171:      const { data } = await supabase.functions.invoke('check-deal-alerts', {
+src\components\investor\DealAlertSettings.tsx:191:      const { data } = await supabase.functions.invoke('check-deal-alerts', {
+src\components\investor\DealAlertSettings.tsx:216:      const { data } = await supabase.functions.invoke('check-deal-alerts', {
+src\components\investor\DealLocator.tsx:50:      const { data, error } = await supabase.functions.invoke('process-account-funding', {
+src\components\investor\DealLocator.tsx:142:      const { data: assignedData, error: assignedError } = await supabase.functions.invoke('investor-deal-locator', { 
+src\components\investor\DealLocator.tsx:156:        const { data: efData, error: efError } = await supabase.functions.invoke('get-properties', {
+src\components\investor\DealMarketplace.tsx:110:    const { data } = await supabase.functions.invoke('property-photo-urls', {
+src\components\investor\DealMarketplace.tsx:119:    const { data } = await supabase.functions.invoke('seller-document-upload', {
+src\components\investor\DealMarketplace.tsx:178:      const { data } = await supabase.functions.invoke('manage-deal-marketplace', {
+src\components\investor\DealMarketplace.tsx:215:      const { data } = await supabase.functions.invoke('manage-deal-marketplace', {
+src\components\investor\DealMarketplace.tsx:909:      const { data } = await supabase.functions.invoke('manage-deal-marketplace', {
+src\components\investor\DealMarketplace.tsx:946:      const { data, error } = await supabase.functions.invoke('manage-deal-marketplace', {
+src\components\investor\DealMarketplace.tsx:1258:      const { data } = await supabase.functions.invoke('manage-deal-marketplace', {
+src\components\investor\DealMarketplace.tsx:1277:      const { data } = await supabase.functions.invoke('manage-deal-marketplace', {
+src\components\investor\DealMarketplace.tsx:1496:      const { data } = await supabase.functions.invoke('manage-deal-marketplace', {
+src\components\investor\DealMatchPreferences.tsx:133:      const { data } = await supabase.functions.invoke('intelligent-deal-matching', {
+src\components\investor\DealMatchPreferences.tsx:148:      const { data } = await supabase.functions.invoke('intelligent-deal-matching', {
+src\components\investor\DealMatchPreferences.tsx:162:      const { data, error } = await supabase.functions.invoke('intelligent-deal-matching', {
+src\components\investor\DisputeResolutionCenter.tsx:154:      const { data, error } = await supabase.functions.invoke('manage-disputes', {
+src\components\investor\DisputeResolutionCenter.tsx:179:      const { data, error } = await supabase.functions.invoke('manage-disputes', {
+src\components\investor\DisputeResolutionCenter.tsx:222:      const { data, error } = await supabase.functions.invoke('manage-disputes', {
+src\components\investor\DocumentSigning.tsx:90:      const { data } = await supabase.functions.invoke('manage-document-signatures', {
+src\components\investor\DocumentSigning.tsx:122:        await supabase.functions.invoke('manage-document-signatures', {
+src\components\investor\DocumentSigning.tsx:149:        await supabase.functions.invoke('manage-document-signatures', {
+src\components\investor\DocumentSigning.tsx:199:        const { data, error } = await supabase.functions.invoke('sign-agreement', {
+src\components\investor\DocumentSigning.tsx:221:          const { data, error } = await supabase.functions.invoke('manage-document-signatures', {
+src\components\investor\DocumentUpload.tsx:49:      await supabase.functions.invoke('manage-investor-documents', {
+src\components\investor\DocumentUpload.tsx:71:    const { data } = await supabase.functions.invoke('manage-investor-documents', {
+src\components\investor\EmailPreferences.tsx:129:      const { data, error } = await supabase.functions.invoke('investor-email-notifications', {
+src\components\investor\EmailPreferences.tsx:145:      const { data, error } = await supabase.functions.invoke('investor-email-notifications', {
+src\components\investor\EmailPreferences.tsx:166:      const { error } = await supabase.functions.invoke('investor-email-notifications', {
+src\components\investor\ExpenseTracker.tsx:206:      const { data } = await supabase.functions.invoke('manage-property-expenses', {
+src\components\investor\ExpenseTracker.tsx:223:      const { data } = await supabase.functions.invoke('manage-property-expenses', {
+src\components\investor\ExpenseTracker.tsx:261:      const { data } = await supabase.functions.invoke('manage-property-expenses', {
+src\components\investor\ExpenseTracker.tsx:291:      const { data } = await supabase.functions.invoke('manage-property-expenses', {
+src\components\investor\GuidedOnboarding.tsx:92:      await supabase.functions.invoke('investor-login', {
+src\components\investor\GuidedOnboarding.tsx:109:      const { data, error } = await supabase.functions.invoke('investor-auth', {
+src\components\investor\GuidedOnboarding.tsx:137:      const { data, error } = await supabase.functions.invoke('investor-auth', {
+src\components\investor\GuidedOnboarding.tsx:171:        const { data, error } = await supabase.functions.invoke('investor-login', {
+src\components\investor\InquiryTracker.tsx:26:    const { data } = await supabase.functions.invoke('investor-inquiries', { body: { action: 'list', investor_email: investorEmail } });
+src\components\investor\InvestmentCredits.tsx:93:        const { data: summaryData } = await supabase.functions.invoke('manage-investor-credits', {
+src\components\investor\InvestmentCredits.tsx:130:        const { data: requestsData } = await supabase.functions.invoke('investor-auth', {
+src\components\investor\InvestmentCredits.tsx:152:      const { data, error } = await supabase.functions.invoke('investor-auth', {
+src\components\investor\InvestorCalendar.tsx:92:        const { data } = await supabase.functions.invoke('manage-investor-progress', {
+src\components\investor\InvestorCalendar.tsx:106:        const { data } = await supabase.functions.invoke('manage-investor-progress', {
+src\components\investor\InvestorCalendar.tsx:150:      const { data } = await supabase.functions.invoke('manage-investor-progress', {
+src\components\investor\InvestorCalendar.tsx:188:        await supabase.functions.invoke('manage-investor-progress', {
+src\components\investor\InvestorCalendar.tsx:218:          await supabase.functions.invoke('manage-investor-progress', {
+src\components\investor\InvestorDocuments.tsx:149:        const { data } = await supabase.functions.invoke('manage-investor-documents', {
+src\components\investor\InvestorDocuments.tsx:218:      const { data, error } = await supabase.functions.invoke('manage-investor-documents', { 
+src\components\investor\InvestorDocuments.tsx:236:      const { data, error } = await supabase.functions.invoke('manage-investor-admin', {
+src\components\investor\InvestorDocuments.tsx:269:      const { data, error } = await supabase.functions.invoke('manage-document-signatures', {
+src\components\investor\InvestorDocuments.tsx:290:      const { data } = await supabase.functions.invoke('investor-login', { 
+src\components\investor\InvestorDocuments.tsx:316:        const { data, error } = await supabase.functions.invoke('manage-investor-documents', { 
+src\components\investor\InvestorDocuments.tsx:357:            const { data } = await supabase.functions.invoke('manage-investor-documents', { 
+src\components\investor\InvestorMessaging.tsx:62:      const { data, error } = await supabase.functions.invoke('investor-messaging', {
+src\components\investor\InvestorMessaging.tsx:74:        await supabase.functions.invoke('investor-messaging', {
+src\components\investor\InvestorMessaging.tsx:91:      const { data, error } = await supabase.functions.invoke('investor-messaging', {
+src\components\investor\InvestorOnboarding.tsx:114:        const { data, error } = await supabase.functions.invoke('investor-login', {
+src\components\investor\InvestorPortfolio.tsx:149:      const { data } = await supabase.functions.invoke('investor-auth', {
+src\components\investor\InvestorPortfolio.tsx:225:      const { data, error: fnError } = await supabase.functions.invoke('investor-auth', {
+src\components\investor\InvestorPortfolio.tsx:244:              await supabase.functions.invoke('manage-portfolio-approvals', {
+src\components\investor\InvestorPortfolio.tsx:268:          supabase.functions.invoke('penny-portfolio-analysis', {
+src\components\investor\InvestorPortfolio.tsx:362:      const { data } = await supabase.functions.invoke('investor-auth', {
+src\components\investor\InvestorPortfolio.tsx:1196:                  const { data } = await supabase.functions.invoke('investor-auth', {
+src\components\investor\IssueReportForm.tsx:21:      await supabase.functions.invoke('submit-issue-report', {
+src\components\investor\LinkedAccountsSection.tsx:58:      const { data } = await supabase.functions.invoke('investor-oauth', {
+src\components\investor\LinkedAccountsSection.tsx:71:      const { data, error } = await supabase.functions.invoke('investor-oauth', {
+src\components\investor\LinkedAccountsSection.tsx:91:      const { data, error } = await supabase.functions.invoke('investor-oauth', {
+src\components\investor\LinkedAccountsSection.tsx:123:      const { data, error } = await supabase.functions.invoke('investor-oauth', {
+src\components\investor\LoginSupportChat.tsx:95:      const { data, error } = await supabase.functions.invoke('investor-messaging', {
+src\components\investor\LoginSupportChat.tsx:168:      const { data, error } = await supabase.functions.invoke('investor-login', {
+src\components\investor\MarketAlertsDashboard.tsx:72:      const { data, error } = await supabase.functions.invoke('ai-investor-chat', {
+src\components\investor\MarketAlertsDashboard.tsx:100:      const { data } = await supabase.functions.invoke('manage-notifications', {
+src\components\investor\MarketAlertsDashboard.tsx:126:      const { data, error } = await supabase.functions.invoke('manage-notifications', {
+src\components\investor\MarketplacePaymentCheckout.tsx:90:        const { data, error: updateError } = await supabase.functions.invoke('manage-deal-marketplace', {
+src\components\investor\MarketplacePaymentCheckout.tsx:231:      const { data, error: fnError } = await supabase.functions.invoke('marketplace-payments', {
+src\components\investor\MarketReportGenerator.tsx:74:      const { data, error } = await supabase.functions.invoke('generate-market-report', {
+src\components\investor\MarketReportSettings.tsx:38:    const { data } = await supabase.functions.invoke('manage-market-reports', {
+src\components\investor\MarketReportSettings.tsx:63:    const { data } = await supabase.functions.invoke('manage-market-reports', {
+src\components\investor\MessageNotificationBadge.tsx:24:      const { data } = await supabase.functions.invoke('investor-messaging', {
+src\components\investor\MyDealsSection.tsx:151:      const { data: reservationsData } = await supabase.functions.invoke('manage-acquisition-requests', {
+src\components\investor\MyDealsSection.tsx:163:      const { data: acquisitionsData } = await supabase.functions.invoke('investor-deal-locator', {
+src\components\investor\NotificationBell.tsx:36:      const { data } = await supabase.functions.invoke('manage-notifications', {
+src\components\investor\NotificationBell.tsx:66:    await supabase.functions.invoke('manage-notifications', {
+src\components\investor\NotificationBell.tsx:75:    await supabase.functions.invoke('manage-notifications', {
+src\components\investor\OnboardingChecklist.tsx:149:        const { data } = await supabase.functions.invoke('manage-investor-progress', {
+src\components\investor\OnboardingChecklist.tsx:183:      await supabase.functions.invoke('manage-investor-progress', {
+src\components\investor\PaymentCheckout.tsx:354:      const { data, error: fnError } = await supabase.functions.invoke('process-acquisition-payment', {
+src\components\investor\PaymentCheckout.tsx:386:      const { data, error: fnError } = await supabase.functions.invoke('process-acquisition-payment', {
+src\components\investor\PaymentCheckout.tsx:443:        await supabase.functions.invoke('process-acquisition-payment', {
+src\components\investor\PaymentCheckout.tsx:775:      const { data, error } = await supabase.functions.invoke('process-acquisition-payment', {
+src\components\investor\PaymentCheckout.tsx:968:      const { data, error } = await supabase.functions.invoke('process-acquisition-payment', {
+src\components\investor\PaymentCheckout.tsx:1057:      const { data, error } = await supabase.functions.invoke('process-acquisition-payment', {
+src\components\investor\PaymentHistory.tsx:89:        supabase.functions.invoke('manage-payments', {
+src\components\investor\PaymentHistory.tsx:92:        supabase.functions.invoke('manage-payments', {
+src\components\investor\PaymentHistory.tsx:95:        supabase.functions.invoke('manage-investor-credits', {
+src\components\investor\PaymentHistory.tsx:98:        supabase.functions.invoke('investor-auth', {
+src\components\investor\PaymentHistory.tsx:120:      const { data } = await supabase.functions.invoke('manage-payments', {
+src\components\investor\PaymentHistory.tsx:158:      const { data, error } = await supabase.functions.invoke('investor-auth', {
+src\components\investor\PendingAgreements.tsx:57:      const { data, error } = await supabase.functions.invoke('sign-agreement', {
+src\components\investor\PendingAgreements.tsx:119:      const { data, error } = await supabase.functions.invoke('sign-agreement', {
+src\components\investor\PendingAgreements.tsx:150:        const { data, error } = await supabase.functions.invoke('manage-document-signatures', {
+src\components\investor\PennyAnalysisPanel.tsx:178:        const efPromise = supabase.functions.invoke('penny-deal-scoring', {
+src\components\investor\PennyDealScorer.tsx:90:      const { data, error } = await supabase.functions.invoke('ai-property-analysis', {
+src\components\investor\PennyPropertySearch.tsx:85:      const { data, error } = await supabase.functions.invoke('manage-acquisition-requests', {
+src\components\investor\PennyPropertySearch.tsx:100:      const { data, error } = await supabase.functions.invoke('investor-deal-locator', {
+src\components\investor\PennyPropertySearch.tsx:139:      const { data, error } = await supabase.functions.invoke('manage-acquisition-requests', {
+src\components\investor\PennyPropertySearch.tsx:180:      const { data, error } = await supabase.functions.invoke('manage-acquisition-requests', {
+src\components\investor\PennyPropertySearch.tsx:207:      const { data, error } = await supabase.functions.invoke('manage-acquisition-requests', {
+src\components\investor\PennyScoreBadge.tsx:192:        const { data, error } = await supabase.functions.invoke('penny-deal-scoring', {
+src\components\investor\PlatformConnections.tsx:209:      const { data: platformsData } = await supabase.functions.invoke('manage-platform-connections', {
+src\components\investor\PlatformConnections.tsx:217:      const { data: connectionsData } = await supabase.functions.invoke('manage-platform-connections', {
+src\components\investor\PlatformConnections.tsx:225:      const { data: listingsData } = await supabase.functions.invoke('manage-platform-connections', {
+src\components\investor\PlatformConnections.tsx:233:      const { data: bookingsData } = await supabase.functions.invoke('manage-platform-connections', {
+src\components\investor\PlatformConnections.tsx:241:      const { data: statsData } = await supabase.functions.invoke('manage-platform-connections', {
+src\components\investor\PlatformConnections.tsx:249:      const { data: logsData } = await supabase.functions.invoke('manage-platform-connections', {
+src\components\investor\PlatformConnections.tsx:278:      const { data } = await supabase.functions.invoke('export-booking-data', {
+src\components\investor\PlatformConnections.tsx:300:      const { data, error } = await supabase.functions.invoke('export-booking-data', {
+src\components\investor\PlatformConnections.tsx:355:      const { data, error } = await supabase.functions.invoke('manage-platform-connections', {
+src\components\investor\PlatformConnections.tsx:392:      const { data } = await supabase.functions.invoke('manage-platform-connections', {
+src\components\investor\PlatformConnections.tsx:408:      const { data } = await supabase.functions.invoke('manage-platform-connections', {
+src\components\investor\PlatformConnections.tsx:428:      const { data } = await supabase.functions.invoke('manage-platform-connections', {
+src\components\investor\PlatformConnections.tsx:467:      const { data } = await supabase.functions.invoke('manage-platform-connections', {
+src\components\investor\PlatformConnections.tsx:493:      const { data } = await supabase.functions.invoke('manage-platform-connections', {
+src\components\investor\PlatformConnections.tsx:522:      const { data, error } = await supabase.functions.invoke('manage-platform-connections', {
+src\components\investor\PlatformConnections.tsx:1240:                      const { data, error } = await supabase.functions.invoke('manage-platform-connections', {
+src\components\investor\PortalHeader.tsx:41:      const { data } = await supabase.functions.invoke('investor-auth', {
+src\components\investor\PortalHeader.tsx:98:      const { data, error } = await supabase.functions.invoke('investor-auth', {
+src\components\investor\PortfolioDashboard.tsx:264:      const { data, error: fnErr } = await supabase.functions.invoke('manage-investor-admin', {
+src\components\investor\PortfolioDashboard.tsx:279:        const { data, error: fnErr } = await supabase.functions.invoke('investor-auth', {
+src\components\investor\PortfolioPerformanceTracker.tsx:137:      const { data, error } = await supabase.functions.invoke('manage-portfolio-performance', {
+src\components\investor\PortfolioPerformanceTracker.tsx:153:      const { data } = await supabase.functions.invoke('manage-portfolio-performance', {
+src\components\investor\PortfolioPerformanceTracker.tsx:172:      const { data } = await supabase.functions.invoke('manage-portfolio-performance', {
+src\components\investor\PortfolioPerformanceTracker.tsx:190:      const { data, error } = await supabase.functions.invoke('manage-portfolio-performance', {
+src\components\investor\PortfolioPerformanceTracker.tsx:216:      await supabase.functions.invoke('manage-portfolio-performance', {
+src\components\investor\PortfolioPerformanceTracker.tsx:227:      await supabase.functions.invoke('manage-portfolio-performance', {
+src\components\investor\PropertySearchLocator.tsx:119:      const { data } = await supabase.functions.invoke('get-properties', {
+src\components\investor\PropertySearchLocator.tsx:135:      const { data } = await supabase.functions.invoke('investor-favorites', {
+src\components\investor\PropertySearchLocator.tsx:166:      await supabase.functions.invoke('investor-favorites', {
+src\components\investor\PropertySearchLocator.tsx:199:      await supabase.functions.invoke('submit-deal-inquiry', {
+src\components\investor\ReferralProgram.tsx:204:        supabase.functions.invoke('manage-referrals', { body: { action: 'get_referral_code', investor_id: investorId } }).catch(e => ({ data: null, error: e })),
+src\components\investor\ReferralProgram.tsx:205:        supabase.functions.invoke('manage-referrals', { body: { action: 'get_referrals', investor_id: investorId } }).catch(e => ({ data: null, error: e })),
+src\components\investor\ReferralProgram.tsx:206:        supabase.functions.invoke('manage-referrals', { body: { action: 'get_rewards', investor_id: investorId } }).catch(e => ({ data: null, error: e })),
+src\components\investor\ReferralProgram.tsx:207:        supabase.functions.invoke('manage-referrals', { body: { action: 'get_payout_preferences', investor_id: investorId } }).catch(e => ({ data: null, error: e })),
+src\components\investor\ReferralProgram.tsx:221:        const propRefRes = await supabase.functions.invoke('manage-property-referrals', { 
+src\components\investor\ReferralProgram.tsx:266:      const { data, error } = await supabase.functions.invoke('manage-referrals', {
+src\components\investor\ReferralProgram.tsx:281:      const { data } = await supabase.functions.invoke('manage-referrals', {
+src\components\investor\ReferralProgram.tsx:293:      const { data } = await supabase.functions.invoke('manage-referrals', {
+src\components\investor\ReferralProgram.tsx:307:      const { data } = await supabase.functions.invoke('manage-property-referrals', {
+src\components\investor\ReferralProgram.tsx:332:      const { data, error } = await supabase.functions.invoke('manage-property-referrals', {
+src\components\investor\ReportHistory.tsx:27:    const { data } = await supabase.functions.invoke('manage-market-reports', {
+src\components\investor\ReportHistory.tsx:40:    const { data, error } = await supabase.functions.invoke('generate-market-report', {
+src\components\investor\ReportHistory.tsx:76:        const { data, error } = await supabase.functions.invoke('generate-report-pdf', {
+src\components\investor\ReportPreferences.tsx:61:      const { data: prefsData } = await supabase.functions.invoke('generate-monthly-report', {
+src\components\investor\ReportPreferences.tsx:70:      const { data: reportsData } = await supabase.functions.invoke('generate-monthly-report', {
+src\components\investor\ReportPreferences.tsx:93:      const { data, error } = await supabase.functions.invoke('generate-monthly-report', {
+src\components\investor\ReportPreferences.tsx:124:      const { data, error } = await supabase.functions.invoke('generate-monthly-report', {
+src\components\investor\ReportPreferences.tsx:144:      const { data, error } = await supabase.functions.invoke('generate-monthly-report', {
+src\components\investor\RevenueForecastChart.tsx:86:      const { data: forecastData } = await supabase.functions.invoke('revenue-forecasting', {
+src\components\investor\RevenueForecastChart.tsx:97:      const { data: alertData } = await supabase.functions.invoke('revenue-forecasting', {
+src\components\investor\RevenueForecastChart.tsx:104:      const { data: chartResult } = await supabase.functions.invoke('revenue-forecasting', {
+src\components\investor\RevenueForecastChart.tsx:123:      const { data, error } = await supabase.functions.invoke('revenue-forecasting', {
+src\components\investor\SavedDeals.tsx:46:    const { data } = await supabase.functions.invoke('investor-favorites', { body: { action: 'list', investor_id: investorId } });
+src\components\investor\SavedDeals.tsx:73:    await supabase.functions.invoke('investor-favorites', { body: { action: 'remove', investor_id: investorId, property_id: property.id } });
+src\components\investor\SavedQuotes.tsx:56:      const { data, error } = await supabase.functions.invoke('generate-setup-quote', {
+src\components\investor\SavedQuotes.tsx:87:      const { data, error } = await supabase.functions.invoke('generate-setup-quote', {
+src\components\investor\SavedQuotes.tsx:140:      const { data, error } = await supabase.functions.invoke('generate-setup-quote', {
+src\components\investor\SecurityAlertsSettings.tsx:47:      const { data, error } = await supabase.functions.invoke('security-alerts', {
+src\components\investor\SecurityAlertsSettings.tsx:64:      const { data, error } = await supabase.functions.invoke('security-alerts', {
+src\components\investor\SecurityAlertsSettings.tsx:98:      const { data, error } = await supabase.functions.invoke('security-alerts', {
+src\components\investor\SecurityAlertsSettings.tsx:123:      const { data } = await supabase.functions.invoke('security-alerts', {
+src\components\investor\SellerDocumentUploader.tsx:85:    const { data } = await supabase.functions.invoke('seller-document-upload', {
+src\components\investor\SellerDocumentUploader.tsx:187:          const { data, error } = await supabase.functions.invoke('seller-document-upload', {
+src\components\investor\SellerDocumentUploader.tsx:313:        await supabase.functions.invoke('seller-document-upload', {
+src\components\investor\SellerOffersPanel.tsx:59:      const { data, error } = await supabase.functions.invoke('manage-deal-marketplace', {
+src\components\investor\SellerOffersPanel.tsx:178:      const { data } = await supabase.functions.invoke('manage-deal-marketplace', {
+src\components\investor\SellerOffersPanel.tsx:198:      const { data } = await supabase.functions.invoke('manage-deal-marketplace', {
+src\components\investor\SellerOffersPanel.tsx:219:      const { data } = await supabase.functions.invoke('manage-deal-marketplace', {
+src\components\investor\SellMyOperation.tsx:194:        supabase.functions.invoke('manage-deal-marketplace', {
+src\components\investor\SellMyOperation.tsx:197:        supabase.functions.invoke('investor-auth', {
+src\components\investor\SellMyOperation.tsx:200:        supabase.functions.invoke('manage-property-referrals', {
+src\components\investor\SellMyOperation.tsx:262:      const { data, error } = await supabase.functions.invoke('manage-property-referrals', {
+src\components\investor\SellMyOperation.tsx:293:      const { data } = await supabase.functions.invoke('seller-document-upload', {
+src\components\investor\SellMyOperation.tsx:398:          const { data: urlData } = await supabase.functions.invoke('seller-document-upload', {
+src\components\investor\SellMyOperation.tsx:513:      const { data, error } = await supabase.functions.invoke('manage-deal-marketplace', {
+src\components\investor\SellMyOperation.tsx:542:          updatePromises.push(supabase.functions.invoke('seller-document-upload', {
+src\components\investor\SellMyOperation.tsx:547:          updatePromises.push(supabase.functions.invoke('seller-document-upload', {
+src\components\investor\SellMyOperation.tsx:552:          updatePromises.push(supabase.functions.invoke('seller-document-upload', {
+src\components\investor\SellMyOperation.tsx:581:        supabase.functions.invoke('seller-document-upload', {
+src\components\investor\SellMyOperation.tsx:584:        supabase.functions.invoke('seller-document-upload', {
+src\components\investor\SellMyOperation.tsx:587:        supabase.functions.invoke('seller-document-upload', {
+src\components\investor\SellMyOperation.tsx:594:      const { data, error } = await supabase.functions.invoke('manage-deal-marketplace', {
+src\components\investor\SellMyOperation.tsx:639:      const { data, error } = await supabase.functions.invoke('manage-deal-marketplace', {
+src\components\investor\SessionManager.tsx:74:      const { data, error } = await supabase.functions.invoke('investor-session', {
+src\components\investor\SessionManager.tsx:97:      const { data, error } = await supabase.functions.invoke('investor-session', {
+src\components\investor\SessionManager.tsx:115:      const { data, error } = await supabase.functions.invoke('investor-session', {
+src\components\investor\SessionManager.tsx:146:      const { data, error } = await supabase.functions.invoke('investor-login', {
+src\components\investor\SessionTimeoutWarning.tsx:84:      const { data, error } = await supabase.functions.invoke('investor-session', {
+src\components\investor\SessionTimeoutWarning.tsx:131:      supabase.functions.invoke('investor-login', {
+src\components\investor\SetupIntakeForm.tsx:66:      const { data, error } = await supabase.functions.invoke('manage-setup-tasks', {
+src\components\investor\SetupIntakeForm.tsx:112:      const { data, error } = await supabase.functions.invoke('manage-setup-tasks', {
+src\components\investor\SetupManagerSection.tsx:68:      const { data, error } = await supabase.functions.invoke('manage-investor-admin', {
+src\components\investor\SetupManagerSection.tsx:159:      const { data, error } = await supabase.functions.invoke('manage-am-assignments', {
+src\components\investor\SetupProgressTracker.tsx:46:      const { data, error } = await supabase.functions.invoke('manage-setup-tasks', {
+src\components\investor\SetupProgressTracker.tsx:77:      const { data, error } = await supabase.functions.invoke('manage-setup-tasks', {
+src\components\investor\SocialLoginButtons.tsx:42:      const { data } = await supabase.functions.invoke('investor-oauth', {
+src\components\investor\SocialLoginButtons.tsx:62:      const { data, error } = await supabase.functions.invoke('investor-oauth', {
+src\components\investor\StartAcquisitionModal.tsx:544:        await supabase.functions.invoke('manage-acquisition-requests', {
+src\components\investor\StartAcquisitionModal.tsx:577:      const { data, error } = await supabase.functions.invoke('process-acquisition-payment', {
+src\components\investor\StartAcquisitionModal.tsx:612:      const { data, error } = await supabase.functions.invoke('process-acquisition-payment', {
+src\components\investor\VideoTutorials.tsx:158:          const { data } = await supabase.functions.invoke('manage-investor-progress', {
+src\components\investor\VideoTutorials.tsx:192:      await supabase.functions.invoke('manage-investor-progress', {
+src\components\investor\WebhookEndpoints.tsx:79:      const { data: connectionsData } = await supabase.functions.invoke('manage-platform-connections', {
+src\components\investor\WebhookEndpoints.tsx:88:      const { data: eventsData } = await supabase.functions.invoke('handle-platform-webhook', {
+src\components\investor\WebhookEndpoints.tsx:120:      const { data, error } = await supabase.functions.invoke('handle-platform-webhook', {
+src\components\investor\WebhookEndpoints.tsx:154:      const { data, error } = await supabase.functions.invoke('handle-platform-webhook', {
+src\components\landlord\LandlordInquiryForm.tsx:36:        const { data, error: regErr } = await supabase.functions.invoke('landlord-auth', {
+src\components\landlord\LandlordInquiryForm.tsx:65:        await supabase.functions.invoke('manage-landlords', {
+src\components\landlord\LandlordPortalApplications.tsx:62:      const { data } = await supabase.functions.invoke('manage-landlord-portal', {
+src\components\landlord\LandlordPortalApplications.tsx:82:      const { data } = await supabase.functions.invoke('manage-landlord-portal', {
+src\components\landlord\LandlordPortalDocuments.tsx:49:      const { data } = await supabase.functions.invoke('manage-landlord-portal', {
+src\components\landlord\LandlordPortalDocuments.tsx:81:      const { data } = await supabase.functions.invoke('manage-landlord-portal', {
+src\components\landlord\LandlordPortalDocuments.tsx:105:      const { data } = await supabase.functions.invoke('manage-landlord-portal', {
+src\components\landlord\LandlordPortalMessages.tsx:45:      const { data } = await supabase.functions.invoke('manage-landlord-portal', { body });
+src\components\landlord\LandlordPortalMessages.tsx:53:      await supabase.functions.invoke('manage-landlord-portal', {
+src\components\landlord\LandlordPortalMessages.tsx:64:      const { data } = await supabase.functions.invoke('manage-landlord-portal', {
+src\components\landlord\LandlordPortalProperties.tsx:52:      const { data } = await supabase.functions.invoke('manage-landlord-portal', {
+src\components\landlord\LandlordPortalProperties.tsx:72:      const { data } = await supabase.functions.invoke('manage-landlord-portal', {
+src\components\landlord\LandlordPortalProperties.tsx:95:      const { data } = await supabase.functions.invoke('manage-landlord-portal', {
+src\components\landlord\LandlordPortalProperties.tsx:123:      const { data } = await supabase.functions.invoke('manage-landlord-portal', {
+src\components\landlord\LandlordPortalProperties.tsx:138:      const { data } = await supabase.functions.invoke('manage-landlord-portal', {
+src\components\landlord\LandlordPortalProperties.tsx:153:      const { data } = await supabase.functions.invoke('manage-landlord-portal', {
+src\components\marketplace\BuyerOfferModal.tsx:54:      const { data } = await supabase.functions.invoke('manage-deal-marketplace', {
+src\components\marketplace\BuyerOfferModal.tsx:89:      const { data, error } = await supabase.functions.invoke('manage-deal-marketplace', {
+src\components\PennyChatButton.tsx:152:      const { data } = await supabase.functions.invoke('ai-investor-chat', {
+src\components\PennyChatButton.tsx:165:      const { data } = await supabase.functions.invoke('ai-investor-chat', {
+src\components\PennyChatButton.tsx:248:      const { data, error } = await supabase.functions.invoke('ai-investor-chat', {
+src\components\setup\QuoteOptionsModal.tsx:58:      const { data, error: fnError } = await supabase.functions.invoke('generate-setup-quote', {
+src\components\setup\QuoteOptionsModal.tsx:103:      const { data, error: fnError } = await supabase.functions.invoke('generate-setup-quote', {
+src\components\setup\QuoteOptionsModal.tsx:136:      const { data, error: fnError } = await supabase.functions.invoke('generate-setup-quote', {
+src\components\SubmitPropertyModal.tsx:21:      const { data, error } = await supabase.functions.invoke('submit-lead', {
+src\hooks\useActivityLog.ts:52:    const { error } = await supabase.functions.invoke('investor-activity-log', {
+src\hooks\useCallerType.ts:78:        const { data, error } = await supabase.functions.invoke('process-account-funding', {
+src\hooks\useDealFlowRealtime.ts:112:      const { data, error } = await supabase.functions.invoke('deal-flow-notifications', {
+src\hooks\useDealFlowRealtime.ts:157:      await supabase.functions.invoke('deal-flow-notifications', {
+src\hooks\useDealFlowRealtime.ts:176:      await supabase.functions.invoke('deal-flow-notifications', {
+src\hooks\useDealFlowRealtime.ts:257:    const { data, error } = await supabase.functions.invoke('deal-flow-notifications', {
+src\lib\analytics.ts:138:    supabase.functions.invoke('track-event', { body: payload }).catch(() => { /* silent */ });
+src\main.tsx:7:// This monkey-patches supabase.functions.invoke to automatically track failures
+src\pages\AMAgreementSign.tsx:73:      const { data, error: err } = await supabase.functions.invoke('send-investor-invitation', {
+src\pages\AMAgreementSign.tsx:171:      const { data, error: err } = await supabase.functions.invoke('send-investor-invitation', {
+src\pages\AMAgreementSign.tsx:210:      const { data, error: err } = await supabase.functions.invoke('generate-agreement-pdf', {
+src\pages\BlogArticle.tsx:49:        const { data: draftData } = await supabase.functions.invoke('get-draft-articles', {
+src\pages\Deals.tsx:356:          const efPromise = supabase.functions.invoke('get-properties', {
+src\pages\Deals.tsx:834:      const { data, error: fnError } = await supabase.functions.invoke('investor-favorites', {
+src\pages\Deals.tsx:863:      const { data, error: fnError } = await supabase.functions.invoke('investor-favorites', {
+src\pages\InvestorLogin.tsx:288:      await supabase.functions.invoke('investor-session', {
+src\pages\InvestorLogin.tsx:373:      await supabase.functions.invoke('send-notification-email', {
+src\pages\InvestorLogin.tsx:389:        await supabase.functions.invoke('investor-login', {
+src\pages\InvestorLogin.tsx:566:      const { data, error } = await supabase.functions.invoke('investor-session', {
+src\pages\InvestorLogin.tsx:645:          const { data, error } = await supabase.functions.invoke('investor-login', {
+src\pages\InvestorLogin.tsx:797:      const { data, error } = await supabase.functions.invoke('investor-register', {
+src\pages\InvestorLogin.tsx:956:      const { error } = await supabase.functions.invoke('investor-login', {
+src\pages\InvestorLogin.tsx:1001:      const { data, error } = await supabase.functions.invoke('investor-login', {
+src\pages\InvestorLogin.tsx:1029:      const { data, error } = await supabase.functions.invoke('investor-login', {
+src\pages\InvestorPortal.tsx:218:      const { data } = await supabase.functions.invoke('get-properties', {
+src\pages\InvestorPortal.tsx:545:        await supabase.functions.invoke('investor-login', {
+src\pages\InvestorPortal.tsx:591:      await supabase.functions.invoke('book-discovery-call', {
+src\pages\InvestorPortal.tsx:691:        const { data } = await supabase.functions.invoke('investor-session', {
+src\pages\InvestorResetPassword.tsx:49:      const { data, error } = await supabase.functions.invoke('investor-login', { 
+src\pages\InvestorResetPassword.tsx:168:      const { data, error } = await supabase.functions.invoke('investor-login', { 
+src\pages\InvestorUnsubscribe.tsx:113:      const { data, error } = await supabase.functions.invoke('investor-email-notifications', {
+src\pages\InvestorUnsubscribe.tsx:144:      const { data, error } = await supabase.functions.invoke('investor-email-notifications', {
+src\pages\InvestorUnsubscribe.tsx:170:      const { data, error } = await supabase.functions.invoke('investor-email-notifications', {
+src\pages\InvestorVerifyEmail.tsx:57:      const { data, error } = await supabase.functions.invoke('investor-session', {
+src\pages\InvestorVerifyEmail.tsx:176:      const { data, error } = await supabase.functions.invoke('investor-session', {
+src\pages\KnowledgeLibrary.tsx:40:        const { data: draftData } = await supabase.functions.invoke('get-draft-articles', {
+src\pages\LandlordLogin.tsx:38:      const { data, error: invokeErr } = await supabase.functions.invoke('landlord-auth', {
+src\pages\LandlordLogin.tsx:88:      const { data, error: invokeErr } = await supabase.functions.invoke('landlord-auth', {
+src\pages\LandlordPortal.tsx:47:      const { data } = await supabase.functions.invoke('landlord-auth', {
+src\pages\LandlordPortal.tsx:87:      await supabase.functions.invoke('landlord-auth', { body: { action: 'logout', session_token: token } });
+src\pages\LandlordPortal.tsx:98:      const { data } = await supabase.functions.invoke('manage-landlord-portal', {
+src\pages\OAuthCallback.tsx:70:      const { data, error: callbackError } = await supabase.functions.invoke('investor-oauth', {
+src\pages\OAuthCallback.tsx:160:      const { data, error: exchangeError } = await supabase.functions.invoke('manage-platform-connections', {
+src\pages\PropertyDetail.tsx:121:        const { data: efData, error: efError } = await supabase.functions.invoke('get-properties', {
+src\pages\PropertyDetail.tsx:285:      const { error } = await supabase.functions.invoke('submit-deal-inquiry', {
+src\pages\ProPortal.tsx:77:      const { data, error: fnError } = await supabase.functions.invoke('manage-setup-tasks', {
+src\pages\ProPortal.tsx:94:      const { data, error: fnError } = await supabase.functions.invoke('manage-setup-tasks', {
+src\pages\ProPortal.tsx:109:      const { data, error: fnError } = await supabase.functions.invoke('manage-setup-tasks', {
+src\pages\ProPortal.tsx:137:        await supabase.functions.invoke('manage-setup-tasks', {
+src\pages\ProPortal.tsx:166:        await supabase.functions.invoke('manage-setup-tasks', {
+src\pages\ProPortal.tsx:186:      const { data, error: fnError } = await supabase.functions.invoke('manage-setup-tasks', {
+src\pages\SetupServices.tsx:75:      await supabase.functions.invoke('submit-lead', {
+src\pages\StaffDashboard.tsx:327:      supabase.functions.invoke('manage-investor-admin', {
+src\pages\StaffDashboard.tsx:337:        supabase.functions.invoke('manage-landlord-portal', {
+src\pages\StaffDashboard.tsx:346:        supabase.functions.invoke('manage-landlord-portal', {
+src\pages\StaffDashboard.tsx:470:      const { data, error } = await supabase.functions.invoke('manage-staff', {
+src\pages\StaffDashboard.tsx:508:      const { data, error } = await supabase.functions.invoke('staff-login', {
+src\pages\StaffDashboard.tsx:641:      const { data, error } = await supabase.functions.invoke('sync-static-articles', {
+src\pages\StaffDashboard.tsx:664:      const { data, error } = await supabase.functions.invoke('get-leads');
+src\pages\StaffDashboard.tsx:688:    const { data } = await supabase.functions.invoke('get-digital-products');
+src\pages\StaffDashboard.tsx:694:    const { data } = await supabase.functions.invoke('get-draft-articles', {
+src\pages\StaffDashboard.tsx:703:    const { data, error } = await supabase.functions.invoke('research-and-generate-articles');
+src\pages\StaffDashboard.tsx:723:      const { error } = await supabase.functions.invoke('delete-article', {
+src\pages\StaffDashboard.tsx:736:    const { error } = await supabase.functions.invoke('update-article-status', {
+src\pages\StaffDashboard.tsx:759:    const { error } = await supabase.functions.invoke('update-article-status', {
+src\pages\StaffDashboard.tsx:806:    await supabase.functions.invoke('upload-digital-product', {
+src\pages\StaffDashboard.tsx:825:    const { data, error } = await supabase.functions.invoke('delete-digital-product', {
+src\pages\StaffLogin.tsx:263:      const { data, error: invokeError } = await supabase.functions.invoke('staff-login', {
+src\pages\StaffLogin.tsx:368:          const { data, error: invokeError } = await supabase.functions.invoke('staff-login', {
+src\pages\StaffLogin.tsx:556:      const { data, error: invokeError } = await supabase.functions.invoke('staff-forgot-password', {
+src\pages\StaffLogin.tsx:566:        const { data: fallbackData, error: fallbackError } = await supabase.functions.invoke('staff-login', {
+src\pages\StaffLogin.tsx:657:      const { data, error: invokeError } = await supabase.functions.invoke('staff-login', {
+src\pages\StaffQuickAddContact.tsx:93:        const { data, error } = await supabase.functions.invoke('send-investor-invitation', {
+src\pages\StaffQuickAddContact.tsx:133:      const { data, error } = await supabase.functions.invoke('send-investor-invitation', {
+src\pages\StaffResetPassword.tsx:49:      const { data, error } = await supabase.functions.invoke('staff-login', {
+src\pages\StaffResetPassword.tsx:113:      const { data: forgotData, error: forgotError } = await supabase.functions.invoke('staff-forgot-password', {
+src\pages\StaffResetPassword.tsx:125:        const { data: loginData, error: loginError } = await supabase.functions.invoke('staff-login', {
+src\services\ErrorTrackingService.ts:66:   * When true, the monkey-patch on supabase.functions.invoke will NOT track
+src\services\ErrorTrackingService.ts:690:// Monkey-patch supabase.functions.invoke to automatically track errors.
+src\services\ErrorTrackingService.ts:695:const originalInvoke = supabase.functions.invoke.bind(supabase.functions);
+src\services\ErrorTrackingService.ts:716:supabase.functions.invoke = async function(functionName: string, options?: any) {
+src\services\ErrorTrackingService.ts:751:} as typeof supabase.functions.invoke;
+src\services\PushNotificationService.ts:217:    const { data, error } = await supabase.functions.invoke('send-push-notification', {
+src\services\PushNotificationService.ts:260:    await supabase.functions.invoke('send-push-notification', {
+src\services\PushNotificationService.ts:281:    await supabase.functions.invoke('send-push-notification', {
+src\services\PushNotificationService.ts:297:    const { data, error } = await supabase.functions.invoke('send-push-notification', {
+src\services\PushNotificationService.ts:317:    const { data, error } = await supabase.functions.invoke('send-push-notification', {
+src\utils\emailNotifications.ts:26:    const { data, error } = await supabase.functions.invoke('send-notification-email', {
+src\utils\emailNotifications.ts:69:    const { data, error } = await supabase.functions.invoke('send-notification-email', {
+src\utils\emailNotifications.ts:110:    const { data, error } = await supabase.functions.invoke('send-notification-email', {
+src\utils\emailNotifications.ts:152:    const { data, error } = await supabase.functions.invoke('investor-messaging', {
+src\utils\notifyAM.ts:22:    supabase.functions.invoke('manage-investor-admin', {
+src\utils\notifyAM.ts:147:      await supabase.functions.invoke('send-notification-email', {
+src\utils\notifyAM.ts:166:    await supabase.functions.invoke('send-notification-email', {
+src\utils\notifyAM.ts:232:      await supabase.functions.invoke('send-notification-email', {
+src\utils\photoUtils.ts:155:    const { data, error } = await supabase.functions.invoke('property-photo-urls', {
+src\utils\photoUtils.ts:239:    const { data, error } = await supabase.functions.invoke('property-photo-urls', {

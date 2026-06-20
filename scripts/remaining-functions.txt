@@ -1,0 +1,4 @@
+﻿cleanup-error-logs
+clear-all-properties
+test-gateway-connectivity
+test-investor-insert

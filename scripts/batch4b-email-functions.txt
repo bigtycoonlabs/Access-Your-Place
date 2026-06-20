@@ -1,0 +1,12 @@
+﻿check-document-expirations
+check-error-thresholds
+generate-setup-quote
+notify-matching-investors
+process-scheduled-campaigns
+security-alerts
+send-acquisition-emails
+send-bulk-email
+send-inquiry-notifications
+sign-agreement
+staff-forgot-password
+unassigned-investor-digest

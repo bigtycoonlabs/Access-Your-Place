@@ -1,0 +1,26 @@
+[
+  {
+    "relation": [
+      "delegate_permission/common.handle_all_urls"
+    ],
+    "target": {
+      "namespace": "android_app",
+      "package_name": "com.accessyourplace.app",
+      "sha256_cert_fingerprints": [
+        "SHA256_CERT_FINGERPRINT_HERE"
+      ]
+    }
+  },
+  {
+    "relation": [
+      "delegate_permission/common.get_login_creds"
+    ],
+    "target": {
+      "namespace": "android_app",
+      "package_name": "com.accessyourplace.app",
+      "sha256_cert_fingerprints": [
+        "SHA256_CERT_FINGERPRINT_HERE"
+      ]
+    }
+  }
+]

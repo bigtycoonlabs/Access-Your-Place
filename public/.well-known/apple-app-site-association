@@ -1,0 +1,32 @@
+{
+  "applinks": {
+    "apps": [],
+    "details": [
+      {
+        "appID": "TEAM_ID.com.accessyourplace.app",
+        "paths": [
+          "/investor/*",
+          "/deals/*",
+          "/property/*",
+          "/investor/login",
+          "/investor/portal",
+          "/investor/reset-password",
+          "/investor/verify-email",
+          "/deals",
+          "/pricing",
+          "/knowledge-library",
+          "/landlord-partnership",
+          "/setup-services"
+        ]
+      }
+    ]
+  },
+  "webcredentials": {
+    "apps": [
+      "TEAM_ID.com.accessyourplace.app"
+    ]
+  },
+  "appclips": {
+    "apps": []
+  }
+}
