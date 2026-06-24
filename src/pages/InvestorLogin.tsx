@@ -569,33 +569,16 @@ export default function InvestorLogin() {
       
       clearTimeout(timeoutId);
       
-      if (error) {
-        // If edge function fails, check if it's a fallback token
-        if (token.startsWith('fallback_')) {
-          // For fallback tokens, just check if session data exists
-          const session = localStorage.getItem('investorSession');
-          if (session) {
-            navigate('/investor');
-            return;
-          }
-        }
-      } else if (data?.success) {
+      if (!error && data?.success) {
         navigate('/investor');
         return;
       }
     } catch (e) {
       clearTimeout(timeoutId);
-      // For fallback tokens, check if session data exists
-      if (token.startsWith('fallback_')) {
-        const session = localStorage.getItem('investorSession');
-        if (session) {
-          navigate('/investor');
-          return;
-        }
-      }
-      localStorage.removeItem('investorSession');
-      localStorage.removeItem('investorSessionToken');
     }
+    localStorage.removeItem('investorSession');
+    localStorage.removeItem('investorSessionToken');
+    localStorage.removeItem('investorRememberMe');
     setInitialized(true);
   };
 

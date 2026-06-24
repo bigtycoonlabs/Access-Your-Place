@@ -131,7 +131,7 @@ class SessionSyncService {
       
       if (staffSession) {
         const parsed = JSON.parse(staffSession);
-        if (parsed && this.isSessionValid(parsed)) {
+        if (parsed && this.isSessionValid(parsed, 'staff')) {
           staffData = {
             userId: parsed.id,
             userType: 'staff',
@@ -146,7 +146,7 @@ class SessionSyncService {
       
       if (investorSession) {
         const parsed = JSON.parse(investorSession);
-        if (parsed && this.isSessionValid(parsed)) {
+        if (parsed && this.isSessionValid(parsed, 'investor')) {
           investorData = {
             userId: parsed.id,
             userType: 'investor',
@@ -170,12 +170,18 @@ class SessionSyncService {
     }
   }
 
-  private isSessionValid(session: any): boolean {
+  private isSessionValid(session: any, userType: UserType): boolean {
     if (!session || !session.id) return false;
+
+    if (userType === 'investor' && session.sessionExpiresAt) {
+      const expiresAt = new Date(session.sessionExpiresAt).getTime();
+      return !Number.isNaN(expiresAt) && expiresAt > Date.now();
+    }
     
-    // Check if session is within 24 hours
+    // Use the same local fallback lifetime as the investor session contract.
     const sessionTime = session.timestamp || session.loginTime || 0;
-    const maxAge = 24 * 60 * 60 * 1000; // 24 hours
+    const rememberMe = userType === 'investor' && localStorage.getItem('investorRememberMe') === 'true';
+    const maxAge = rememberMe ? 30 * 24 * 60 * 60 * 1000 : 24 * 60 * 60 * 1000;
     
     if (sessionTime && Date.now() - sessionTime > maxAge) {
       return false;

@@ -291,37 +291,58 @@ export default function StaffDashboard() {
   useLogoutSync(handleLogoutFromOtherTab);
 
   useEffect(() => {
-    // Check authentication
     const session = localStorage.getItem('staffSession');
     if (!session) {
       navigate('/staff/login');
       return;
     }
-    
-    const parsed = JSON.parse(session);
-    setStaffSession(parsed);
 
-    // v7.0: Check if AM needs to sign agreement before accessing dashboard
-    const isAMDept = parsed.department === 'acquisition_managers' || (parsed.roles || []).includes('acquisition_managers');
-    if (isAMDept && parsed.agreement_signed === false && parsed.agreement_id) {
-      toast({ 
-        title: 'Agreement Required', 
-        description: 'Please review and sign your service agreement before accessing the dashboard.',
-        variant: 'destructive'
-      });
-      navigate(`/am-agreement/${parsed.agreement_id}`);
-      return;
-    }
+    let isActive = true;
+    const clearInvalidSession = () => {
+      localStorage.removeItem('staffSession');
+      localStorage.removeItem('staffSessionBackup');
+      navigate('/staff/login');
+    };
+    const initializeStaffSession = async () => {
+      try {
+        const parsed = JSON.parse(session);
+        if (!parsed?.id || !parsed?.session_token) {
+          clearInvalidSession();
+          return;
+        }
+
+        const { data, error } = await supabase.functions.invoke('staff-login', {
+          body: { action: 'validate_session', staff_id: parsed.id, session_token: parsed.session_token }
+        });
+        if (error || !data?.valid) {
+          clearInvalidSession();
+          return;
+        }
+        if (!isActive) return;
+
+        setStaffSession(parsed);
+
+        // v7.0: Check if AM needs to sign agreement before accessing dashboard
+        const isAMDept = parsed.department === 'acquisition_managers' || (parsed.roles || []).includes('acquisition_managers');
+        if (isAMDept && parsed.agreement_signed === false && parsed.agreement_id) {
+          toast({
+            title: 'Agreement Required',
+            description: 'Please review and sign your service agreement before accessing the dashboard.',
+            variant: 'destructive'
+          });
+          navigate(`/am-agreement/${parsed.agreement_id}`);
+          return;
+        }
     
-    // Check for investor backup session
-    const investorBackup = localStorage.getItem('investorSessionBackup');
-    setHasInvestorBackup(!!investorBackup);
+        // Check for investor backup session
+        const investorBackup = localStorage.getItem('investorSessionBackup');
+        setHasInvestorBackup(!!investorBackup);
     
-    fetchLeads();
-    fetchProducts();
-    fetchDraftArticles();
+        fetchLeads();
+        fetchProducts();
+        fetchDraftArticles();
     
-    if (parsed.id) {
+        if (parsed.id) {
       loadUnreadCount(parsed.id);
       // Fetch unassigned investor count for badge
       supabase.functions.invoke('manage-investor-admin', {
@@ -395,11 +416,11 @@ export default function StaffDashboard() {
         setLandlordOpsCount(totalCount);
       }).catch(() => {});
 
-    }
+        }
 
 
-    // Set default dashboard and tab based on role
-    const parsedRoles = parsed.roles || [];
+        // Set default dashboard and tab based on role
+        const parsedRoles = parsed.roles || [];
     const parsedPermissions = parsed.permissions || [];
     const parsedRole = parsed.role || '';
     const parsedIsSuccessManager = 
@@ -410,7 +431,7 @@ export default function StaffDashboard() {
       parsedRole === 'success_manager' ||
       parsedRole === 'admin';
     
-    if (parsedIsSuccessManager) {
+        if (parsedIsSuccessManager) {
       setActiveDashboard('success');
       setActiveTab('analytics');
     } else if (parsed.department === 'acquisition_managers' || parsedRoles.includes('acquisition_managers')) {
@@ -419,9 +440,16 @@ export default function StaffDashboard() {
     } else if (parsed.department === 'setup_managers' || parsedRoles.includes('setup_managers')) {
       setActiveDashboard('setups');
       setActiveTab('setups');
-    }
+        }
+      } catch (err) {
+        clearInvalidSession();
+      }
+    };
 
-  }, [navigate]);
+    initializeStaffSession();
+    return () => { isActive = false; };
+
+  }, [navigate, toast]);
 
 
   // Handle dashboard switching
@@ -494,7 +522,12 @@ export default function StaffDashboard() {
   };
 
 
-  const handleLogout = () => {
+  const handleLogout = async () => {
+    if (staffSession?.id) {
+      await supabase.functions.invoke('staff-login', {
+        body: { action: 'logout', staff_id: staffSession.id }
+      }).catch(() => {});
+    }
     localStorage.removeItem('staffSession');
     localStorage.removeItem('staffSessionBackup');
     sessionSyncService.forceLogoutAll('staff');

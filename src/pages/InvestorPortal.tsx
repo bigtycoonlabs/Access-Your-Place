@@ -422,40 +422,31 @@ export default function InvestorPortal() {
     setConnectionError(false);
     
     const stored = localStorage.getItem('investorSession');
-    if (!stored) {
+    const sessionToken = localStorage.getItem('investorSessionToken');
+    if (!stored || !sessionToken) {
+      localStorage.removeItem('investorSession');
+      localStorage.removeItem('investorSessionToken');
+      localStorage.removeItem('investorRememberMe');
       navigate('/investor/login');
       return;
     }
     
     try {
-      const investorData = JSON.parse(stored);
-      
-      // Check "Remember Me" flag to determine session max age
-      const rememberMe = localStorage.getItem('investorRememberMe') === 'true';
-      const maxAge = rememberMe 
-        ? 30 * 24 * 60 * 60 * 1000  // 30 days if "Remember Me" was checked
-        : 24 * 60 * 60 * 1000;       // 24 hours default
-      
-      const sessionAge = Date.now() - (investorData.loginTime || 0);
-      
-      if (sessionAge > maxAge) {
-        console.log(`Session expired (age: ${Math.round(sessionAge / 3600000)}h, max: ${Math.round(maxAge / 3600000)}h, rememberMe: ${rememberMe})`);
-        localStorage.removeItem('investorSession');
-        localStorage.removeItem('investorSessionToken');
-        localStorage.removeItem('investorRememberMe');
-        navigate('/investor/login', { 
-          state: { 
-            message: 'Your session has expired. Please sign in again.', 
-            type: 'timeout' 
-          } 
-        });
-        return;
+      const { data, error } = await supabase.functions.invoke('investor-session', {
+        body: { action: 'validate_session', session_token: sessionToken }
+      });
+      if (error || !data?.success || !data?.investor) {
+        throw error || new Error(data?.error || 'Session validation failed');
       }
+
+      const investorData = data.investor;
       
       setInvestor(investorData);
-      
-      // Refresh loginTime to extend session on active use
-      const updatedData = { ...investorData, loginTime: Date.now() };
+      const updatedData = {
+        ...investorData,
+        loginTime: Date.now(),
+        sessionExpiresAt: data.session?.expires_at || null
+      };
       localStorage.setItem('investorSession', JSON.stringify(updatedData));
       
       // Check if we should show the guided tour
@@ -464,9 +455,13 @@ export default function InvestorPortal() {
         setShowGuidedTour(true);
       }
     } catch (err) {
-      console.error('Error parsing investor session:', err);
+      console.error('Error validating investor session:', err);
       localStorage.removeItem('investorSession');
-      navigate('/investor/login');
+      localStorage.removeItem('investorSessionToken');
+      localStorage.removeItem('investorRememberMe');
+      navigate('/investor/login', {
+        state: { message: 'Your session has expired. Please sign in again.', type: 'timeout' }
+      });
     }
     
     setLoading(false);
