@@ -23,11 +23,24 @@ const corsHeaders = {
 async function db(path: string, method: string, body?: any) {
   const url = Deno.env.get('SUPABASE_URL')!;
   const key = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!;
+  if (!url || !key) throw new Error('Missing Supabase Edge Function configuration');
+
   const res = await fetch(`${url}/rest/v1/${path}`, {
     method, headers: { 'apikey': key, 'Authorization': `Bearer ${key}`, 'Content-Type': 'application/json', 'Prefer': method === 'POST' ? 'return=representation' : 'return=minimal' },
     body: body ? JSON.stringify(body) : undefined
   });
-  return method === 'GET' || method === 'POST' ? res.json() : res.ok;
+  const text = await res.text();
+  let data: any = null;
+  if (text) {
+    try { data = JSON.parse(text); } catch { data = text; }
+  }
+
+  if (!res.ok) {
+    const message = typeof data === 'object' && data?.message ? data.message : text || res.statusText;
+    throw new Error(`Supabase ${method} ${path} failed (${res.status}): ${message}`);
+  }
+
+  return method === 'GET' || method === 'POST' ? data : true;
 }
 
 Deno.serve(async (req) => {
@@ -49,13 +62,23 @@ Deno.serve(async (req) => {
     }
 
     if (action === 'add') {
-      await db('investor_favorites', 'POST', { investor_id, property_id });
-      return new Response(JSON.stringify({ success: true }), { headers: { ...corsHeaders, 'Content-Type': 'application/json' } });
+      // The current schema has no unique (investor_id, property_id) constraint for a
+      // PostgREST upsert. Check first so retrying a save does not add another row.
+      const existing = await db(`investor_favorites?investor_id=eq.${investor_id}&property_id=eq.${property_id}&select=id`, 'GET');
+      if (existing?.length) {
+        return new Response(JSON.stringify({ success: true, already_saved: true }), { headers: { ...corsHeaders, 'Content-Type': 'application/json' } });
+      }
+
+      const inserted = await db('investor_favorites', 'POST', { investor_id, property_id });
+      if (!Array.isArray(inserted) || !inserted[0]?.id) {
+        throw new Error('Favorite insert did not return a saved record');
+      }
+
+      return new Response(JSON.stringify({ success: true, favorite: inserted[0] }), { headers: { ...corsHeaders, 'Content-Type': 'application/json' } });
     }
 
     if (action === 'remove') {
-      const url = Deno.env.get('SUPABASE_URL')!; const key = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!;
-      await fetch(`${url}/rest/v1/investor_favorites?investor_id=eq.${investor_id}&property_id=eq.${property_id}`, { method: 'DELETE', headers: { 'apikey': key, 'Authorization': `Bearer ${key}` } });
+      await db(`investor_favorites?investor_id=eq.${investor_id}&property_id=eq.${property_id}`, 'DELETE');
       return new Response(JSON.stringify({ success: true }), { headers: { ...corsHeaders, 'Content-Type': 'application/json' } });
     }
 

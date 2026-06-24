@@ -43,9 +43,16 @@ export function SavedDeals({ investorId, onInquire }: SavedDealsProps) {
 
   const fetchFavorites = async () => {
     setLoading(true);
-    const { data } = await supabase.functions.invoke('investor-favorites', { body: { action: 'list', investor_id: investorId } });
-    setFavorites(data?.favorites || []);
-    setLoading(false);
+    try {
+      const { data, error } = await supabase.functions.invoke('investor-favorites', { body: { action: 'list', investor_id: investorId } });
+      if (error || data?.error) throw error || new Error(data.error);
+      setFavorites(data?.favorites || []);
+    } catch (err) {
+      console.error('Error fetching favorites:', err);
+      setFavorites([]);
+    } finally {
+      setLoading(false);
+    }
   };
 
   const fetchAvailableDeals = async () => {
@@ -70,13 +77,18 @@ export function SavedDeals({ investorId, onInquire }: SavedDealsProps) {
 
 
   const removeFavorite = async (property: any) => {
-    await supabase.functions.invoke('investor-favorites', { body: { action: 'remove', investor_id: investorId, property_id: property.id } });
-    setFavorites(prev => prev.filter(f => f.properties?.id !== property.id));
-    
-    // Log activity
-    logFavoriteRemoved(investorId, { id: property.id, address: property.address });
-    
-    toast({ title: 'Removed from favorites' });
+    try {
+      const { data, error } = await supabase.functions.invoke('investor-favorites', { body: { action: 'remove', investor_id: investorId, property_id: property.id } });
+      if (error || data?.error) throw error || new Error(data.error);
+      setFavorites(prev => prev.filter(f => f.properties?.id !== property.id));
+
+      // Log activity
+      logFavoriteRemoved(investorId, { id: property.id, address: property.address });
+      toast({ title: 'Removed from favorites' });
+    } catch (err) {
+      console.error('Error removing favorite:', err);
+      toast({ title: 'Error', description: 'Failed to remove favorite', variant: 'destructive' });
+    }
   };
 
   const handleViewDeal = (property: any) => {

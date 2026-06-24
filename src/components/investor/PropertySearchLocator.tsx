@@ -132,9 +132,10 @@ export function PropertySearchLocator({ investorId, investorName, investorEmail,
   // Fetch favorites
   const fetchFavorites = useCallback(async () => {
     try {
-      const { data } = await supabase.functions.invoke('investor-favorites', {
+      const { data, error } = await supabase.functions.invoke('investor-favorites', {
         body: { action: 'list', investor_id: investorId }
       });
+      if (error || data?.error) throw error || new Error(data.error);
       if (data?.favorites) {
         const favIds = new Set<string>(data.favorites.map((f: any) => f.property_id));
         setFavorites(favIds);
@@ -163,13 +164,14 @@ export function PropertySearchLocator({ investorId, investorName, investorEmail,
     });
 
     try {
-      await supabase.functions.invoke('investor-favorites', {
+      const { data, error } = await supabase.functions.invoke('investor-favorites', {
         body: { 
           action: isFav ? 'remove' : 'add', 
           investor_id: investorId, 
           property_id: propertyId 
         }
       });
+      if (error || data?.error) throw error || new Error(data.error);
       toast({ 
         title: isFav ? 'Removed from Saved' : 'Saved to Favorites',
         description: isFav ? 'Property removed from your saved deals.' : 'Property added to your saved deals.'
