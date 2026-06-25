@@ -52,7 +52,9 @@ const App = () => (
               <Routes>
                 <Route path="/" element={<Index />} />
                 <Route path="/deals" element={<Deals />} />
+                <Route path="/deal-flow" element={<Navigate to="/deals" replace />} />
                 <Route path="/deals/:id" element={<PropertyDetail />} />
+                <Route path="/client-access" element={<Navigate to="/investor/login" replace />} />
                 <Route path="/investor/login" element={<InvestorLogin />} />
 
                 <Route path="/investor" element={<InvestorPortal />} />
@@ -61,6 +63,7 @@ const App = () => (
                 <Route path="/investor/verify-email" element={<InvestorVerifyEmail />} />
                 <Route path="/investor/unsubscribe" element={<InvestorUnsubscribe />} />
                 <Route path="/staff/login" element={<StaffLogin />} />
+                <Route path="/staff-login" element={<Navigate to="/staff/login" replace />} />
                 <Route path="/staff/dashboard" element={<StaffDashboard />} />
                 <Route path="/staff/reset-password" element={<StaffResetPassword />} />
                 <Route path="/staff/quick-add" element={<StaffQuickAddContact />} />
@@ -69,6 +72,7 @@ const App = () => (
 
                 <Route path="/knowledge" element={<KnowledgeLibrary />} />
                 <Route path="/knowledge-library" element={<KnowledgeLibrary />} />
+                <Route path="/article-demo" element={<Navigate to="/knowledge-library" replace />} />
                 <Route path="/blog/:slug" element={<BlogArticle />} />
                 <Route path="/pricing" element={<Pricing />} />
                 <Route path="/setup-services" element={<SetupServices />} />
