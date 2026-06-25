@@ -35,6 +35,7 @@ import OAuthCallback from "./pages/OAuthCallback";
 import TermsOfService from "./pages/TermsOfService";
 import PrivacyPolicy from "./pages/PrivacyPolicy";
 import ProPortal from "./pages/ProPortal";
+import Careers from "./pages/Careers";
 
 const queryClient = new QueryClient();
 
@@ -72,6 +73,7 @@ const App = () => (
                 <Route path="/pricing" element={<Pricing />} />
                 <Route path="/setup-services" element={<SetupServices />} />
                 <Route path="/landlord-partnership" element={<LandlordPartnership />} />
+                <Route path="/careers" element={<Careers />} />
                 <Route path="/landlord/login" element={<LandlordLogin />} />
                 <Route path="/landlord/portal" element={<LandlordPortal />} />
                 <Route path="/admin/comments" element={<AdminComments />} />
@@ -82,8 +84,6 @@ const App = () => (
                 <Route path="/am-agreement/:agreementId" element={<AMAgreementSign />} />
                 <Route path="/pro-portal/:token" element={<ProPortal />} />
                 <Route path="*" element={<NotFound />} />
-
-
               </Routes>
             </BrowserRouter>
           </NativeShell>
@@ -94,4 +94,3 @@ const App = () => (
 );
 
 export default App;
-
