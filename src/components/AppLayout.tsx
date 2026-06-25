@@ -53,7 +53,7 @@ const AppLayout: React.FC = () => {
       </a>
 
       <SEO
-        title="Access Your Place - Flexible Housing Opportunity Platform"
+        title="Access Your Place - Flexible Housing Operator Platform"
         description="Access Your Place helps operator clients move past traditional real estate barriers with Penny market research, qualified corporate lease opportunities, acquisition support, and flexible housing resources."
         keywords="flexible housing, corporate lease opportunities, rental arbitrage, short-term rental operator, co-living operator, Penny market research, real estate access, operator dashboard, acquisition support"
         canonicalUrl="/"
