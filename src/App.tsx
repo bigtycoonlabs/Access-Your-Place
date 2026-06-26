@@ -34,6 +34,9 @@ import AdminComments from "./pages/AdminComments";
 import OAuthCallback from "./pages/OAuthCallback";
 import TermsOfService from "./pages/TermsOfService";
 import PrivacyPolicy from "./pages/PrivacyPolicy";
+import HowItWorks from "./pages/HowItWorks";
+import CoreValues from "./pages/CoreValues";
+import Careers from "./pages/Careers";
 import ProPortal from "./pages/ProPortal";
 import Careers from "./pages/Careers";
 
@@ -85,6 +88,9 @@ const App = () => (
                 <Route path="/oauth/callback/investor" element={<OAuthCallback />} />
                 <Route path="/terms-of-service" element={<TermsOfService />} />
                 <Route path="/privacy-policy" element={<PrivacyPolicy />} />
+                <Route path="/how-it-works" element={<HowItWorks />} />
+                <Route path="/core-values" element={<CoreValues />} />
+                <Route path="/careers" element={<Careers />} />
                 <Route path="/am-agreement/:agreementId" element={<AMAgreementSign />} />
                 <Route path="/pro-portal/:token" element={<ProPortal />} />
                 <Route path="*" element={<NotFound />} />
