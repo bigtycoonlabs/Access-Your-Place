@@ -1,144 +1,226 @@
-import Header from '@/components/Header';
+import { ArrowLeft, CheckCircle, Phone, Mail } from 'lucide-react';
+import { Link } from 'react-router-dom';
 import Footer from '@/components/Footer';
-import SEO from '@/components/SEO';
-import { Badge } from '@/components/ui/badge';
-import { Button } from '@/components/ui/button';
-import { BriefcaseBusiness, CheckCircle, FileText, Handshake, Search, Shield, Users } from 'lucide-react';
+import SEO, { getBreadcrumbSchema } from '@/components/SEO';
 
-const departments = [
-  {
-    title: 'Acquisition',
-    description: 'Source and qualify real estate opportunities, guide operator clients, and use Penny to evaluate market fit.',
-    items: ['Acquisition Manager', 'Market Research Associate', 'Landlord Relationship Specialist'],
-    icon: Search,
-  },
-  {
-    title: 'Success Team',
-    description: 'Handle compliance, screening, sensitive documents, landlord communication, and completed acquisition handoffs.',
-    items: ['Client Success Manager', 'Screening Coordinator', 'Compliance Operations'],
-    icon: Shield,
-  },
-  {
-    title: 'Platform & Education',
-    description: 'Build the knowledge library, operator resources, product systems, and tools that help flexible housing companies grow.',
-    items: ['Content Strategist', 'Product Operations', 'Knowledge Library Editor'],
-    icon: FileText,
-  },
+const amResponsibilities = [
+  'Build and own your client pipeline',
+  'Direct landlord and property manager negotiations',
+  'Run the 80/20 micro-market valuation on every deal',
+  'Source both furnished and unfurnished opportunities and list them on the marketplace',
+  'Use Penny\'s real historical market data — not platform scrapes',
+  'Run your own furnished rental portfolio alongside the role',
 ];
 
-const principles = [
-  'Use data before assumptions.',
-  'Protect client and landlord trust.',
-  'Create more real estate access than traditional models allow.',
-  'Build systems that make operators more capable.',
+const smResponsibilities = [
+  'Own the full launch process, start to finish',
+  'Furniture and decor procurement for unfurnished assets',
+  'Refresher packages and upgrades for existing furnished units',
+  'Coordinate with housekeepers and maintenance providers on the ground',
+  'Wi-Fi setup and utility coordination',
+  'Connect clients to vendors and software needed to go live',
+];
+
+const pillars = [
+  { num: '01', title: 'Market Mastery' },
+  { num: '02', title: 'Rainmaker Lead Sourcing' },
+  { num: '03', title: 'Full-Cycle Management' },
+  { num: '04', title: 'Technical Operational Proficiency' },
 ];
 
 export default function Careers() {
+  const breadcrumbSchema = getBreadcrumbSchema([
+    { name: 'Home', url: '/' },
+    { name: 'Careers', url: '/careers' },
+  ]);
+
   return (
-    <div className="min-h-screen flex flex-col bg-slate-50">
+    <div className="min-h-screen bg-[#0a0f1a] text-white">
       <SEO
         title="Careers - Access Your Place"
-        description="Join Access Your Place and help build the technology, acquisition, and success systems powering flexible housing operators."
+        description="We're hiring Acquisition Managers and Setup Managers. Get certified, cross-train, and build your own book in the corporate lease acquisition space."
+        keywords="careers, acquisition manager jobs, setup manager jobs, rental arbitrage careers, corporate housing jobs, AYP careers"
         canonicalUrl="/careers"
         ogType="website"
+        structuredData={breadcrumbSchema}
       />
-      <Header />
-      <main id="main-content" className="flex-grow">
-        <section className="bg-[#0a0f1a] text-white py-20">
-          <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-            <div className="max-w-4xl">
-              <Badge className="bg-[#d4a574]/15 text-[#e8c99d] border border-[#d4a574]/30 mb-5">
-                Careers at Access Your Place
-              </Badge>
-              <h1 className="text-4xl md:text-6xl font-bold leading-tight mb-6">
-                Help operators access real estate opportunities faster.
-              </h1>
-              <p className="text-lg md:text-xl text-slate-300 leading-relaxed max-w-3xl">
-                We are building a consultancy and technology suite for the flexible housing industry: market research, acquisition support, operator education, vendor resources, and portfolio systems that help housing companies scale.
-              </p>
-            </div>
-          </div>
-        </section>
 
-        <section className="py-16">
-          <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-            <div className="grid lg:grid-cols-[0.8fr_1.2fr] gap-10 items-start">
-              <div>
-                <h2 className="text-3xl font-bold text-slate-950 mb-4">Teams We Are Building</h2>
-                <p className="text-slate-600 leading-relaxed">
-                  Our hiring structure follows how the platform works. Acquisition managers guide opportunity selection, the success team handles screening and compliance, and platform roles turn internal knowledge into tools operators can use.
-                </p>
+      {/* Header bar */}
+      <header className="bg-[#0a0f1a] border-b border-white/10 py-5">
+        <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 flex items-center gap-4">
+          <Link to="/" className="inline-flex items-center text-[#d4a574] hover:text-white transition-colors">
+            <ArrowLeft className="w-4 h-4 mr-2" />
+            Back to Home
+          </Link>
+          <span className="text-white/20">/</span>
+          <span className="text-white/50 text-sm">Careers</span>
+        </div>
+      </header>
+
+      {/* Hero */}
+      <section className="py-16 border-b border-white/10">
+        <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8">
+          <p className="text-xs font-mono tracking-widest text-white/40 uppercase mb-4">Now Hiring</p>
+          <h1 className="text-4xl md:text-5xl font-bold mb-6 leading-tight">
+            We're hiring Acquisition Managers<br />
+            <span className="text-[#d4a574]">and Setup Managers.</span>
+          </h1>
+          <p className="text-xl text-gray-300 max-w-2xl leading-relaxed">
+            Join the team that's actually building the engine — not selling a course about it. Get certified, get trained across both disciplines, and build your own track record placing corporate leases and launching operations across our network.
+          </p>
+        </div>
+      </section>
+
+      {/* Open Roles */}
+      <section className="py-16 border-b border-white/10">
+        <div className="max-w-5xl mx-auto px-4 sm:px-6 lg:px-8">
+          <p className="text-xs font-mono tracking-widest text-white/40 uppercase mb-3">Open Roles</p>
+          <h2 className="text-3xl font-bold mb-3">Two roles. One certification path that connects them.</h2>
+          <p className="text-gray-400 mb-10">Every Acquisition Manager and Setup Manager goes through the same rigorous training program. Many of our team members end up certified in both.</p>
+
+          <div className="grid md:grid-cols-2 gap-6">
+            {/* AM Card */}
+            <div className="bg-[#0d1424] border border-[#d4a574]/20 rounded-2xl p-8 relative">
+              <div className="absolute top-6 right-6 flex items-center gap-1.5 text-xs font-mono text-green-400 bg-green-400/10 px-2.5 py-1 rounded-full">
+                <span className="w-1.5 h-1.5 rounded-full bg-green-400"></span>Open
               </div>
-              <div className="grid md:grid-cols-3 gap-5">
-                {departments.map((department) => (
-                  <article key={department.title} className="bg-white rounded-2xl border border-slate-200 shadow-sm p-5">
-                    <div className="w-11 h-11 rounded-xl bg-[#0a0f1a] text-[#d4a574] flex items-center justify-center mb-4">
-                      <department.icon className="w-5 h-5" />
-                    </div>
-                    <h3 className="text-xl font-bold text-slate-950 mb-2">{department.title}</h3>
-                    <p className="text-sm text-slate-600 leading-relaxed mb-4">{department.description}</p>
-                    <ul className="space-y-2">
-                      {department.items.map((item) => (
-                        <li key={item} className="flex gap-2 text-sm text-slate-700">
-                          <CheckCircle className="w-4 h-4 text-[#d4a574] flex-shrink-0 mt-0.5" />
-                          {item}
-                        </li>
-                      ))}
-                    </ul>
-                  </article>
+              <p className="text-xs font-mono text-[#d4a574] tracking-widest uppercase mb-3">Acquisition Manager</p>
+              <h3 className="text-xl font-bold mb-3">Source deals. Negotiate leases. Build your book.</h3>
+              <p className="text-gray-400 text-sm mb-6">You'll analyze the marketplace, run the 80/20 micro-market valuation on every deal, negotiate directly with landlords, and place corporate leases for clients across our network — on-market, off-market, and through our Master Lease program.</p>
+              <div className="space-y-2.5">
+                {amResponsibilities.map((r, i) => (
+                  <div key={i} className="flex items-start gap-2.5 text-sm text-gray-400">
+                    <CheckCircle className="w-4 h-4 text-[#d4a574] flex-shrink-0 mt-0.5" />
+                    {r}
+                  </div>
+                ))}
+              </div>
+            </div>
+
+            {/* SM Card */}
+            <div className="bg-[#0d1424] border border-[#5EEAD4]/20 rounded-2xl p-8 relative">
+              <div className="absolute top-6 right-6 flex items-center gap-1.5 text-xs font-mono text-green-400 bg-green-400/10 px-2.5 py-1 rounded-full">
+                <span className="w-1.5 h-1.5 rounded-full bg-green-400"></span>Open
+              </div>
+              <p className="text-xs font-mono text-[#5EEAD4] tracking-widest uppercase mb-3">Setup Manager</p>
+              <h3 className="text-xl font-bold mb-3">Launch operations. Coordinate logistics. Get units live.</h3>
+              <p className="text-gray-400 text-sm mb-6">You'll manage the full setup process for furnished and unfurnished properties alike — from furniture procurement and refresher packages to housekeeping coordination, Wi-Fi setup, and vendor matching.</p>
+              <div className="space-y-2.5">
+                {smResponsibilities.map((r, i) => (
+                  <div key={i} className="flex items-start gap-2.5 text-sm text-gray-400">
+                    <CheckCircle className="w-4 h-4 text-[#5EEAD4] flex-shrink-0 mt-0.5" />
+                    {r}
+                  </div>
                 ))}
               </div>
             </div>
           </div>
-        </section>
 
-        <section className="py-16 bg-white border-y border-slate-200">
-          <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-            <div className="grid lg:grid-cols-2 gap-10">
-              <div className="rounded-3xl bg-slate-950 text-white p-8">
-                <div className="w-12 h-12 rounded-2xl bg-[#d4a574] text-slate-950 flex items-center justify-center mb-5">
-                  <BriefcaseBusiness className="w-6 h-6" />
-                </div>
-                <h2 className="text-3xl font-bold mb-4">Hiring Principles</h2>
-                <div className="space-y-3">
-                  {principles.map((principle) => (
-                    <div key={principle} className="flex gap-3 text-slate-300">
-                      <CheckCircle className="w-5 h-5 text-[#d4a574] flex-shrink-0 mt-0.5" />
-                      <span>{principle}</span>
-                    </div>
-                  ))}
-                </div>
-              </div>
+          {/* Dual cert */}
+          <div className="mt-6 rounded-2xl border border-white/10 p-8 bg-gradient-to-r from-[#5EEAD4]/5 to-[#d4a574]/5 text-center">
+            <h3 className="text-lg font-bold mb-3">Cross-train. Get certified in both.</h3>
+            <p className="text-gray-400 max-w-2xl mx-auto text-sm leading-relaxed">
+              Acquisition Managers can train and certify as Setup Managers, and Setup Managers can train and certify as Acquisition Managers. Most of our highest-performing team members hold both certifications — meaning they can carry a client from sourcing straight through launch without a handoff.
+            </p>
+          </div>
+        </div>
+      </section>
 
-              <div className="rounded-3xl bg-slate-50 border border-slate-200 p-8">
-                <div className="w-12 h-12 rounded-2xl bg-[#0a0f1a] text-[#d4a574] flex items-center justify-center mb-5">
-                  <Handshake className="w-6 h-6" />
-                </div>
-                <h2 className="text-3xl font-bold text-slate-950 mb-4">Vendor-Related Applicants</h2>
-                <p className="text-slate-600 leading-relaxed mb-5">
-                  Applicants with housing-related companies can still participate in the vendor network when their services do not conflict with Access Your Place acquisition support or setup services. Eligible vendor categories include housekeeping, maintenance, funding, cohosting, property management, virtual management, logistics, and other operator support services.
-                </p>
-                <Button asChild className="bg-[#d4a574] hover:bg-[#c49464] text-slate-950 font-bold">
-                  <a href="mailto:careers@accessyourplace.com">Contact Careers</a>
-                </Button>
+      {/* 4 Pillars */}
+      <section className="py-16 border-b border-white/10">
+        <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8">
+          <p className="text-xs font-mono tracking-widest text-white/40 uppercase mb-3">Certification</p>
+          <h2 className="text-3xl font-bold mb-3">A real four-month training program, not a weekend course.</h2>
+          <p className="text-gray-400 mb-8">Every certified team member passes a rigorous examination across four pillars before working with clients.</p>
+          <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+            {pillars.map(p => (
+              <div key={p.num} className="bg-white/5 border border-white/10 rounded-xl p-5 text-center">
+                <div className="text-xs font-mono text-gray-500 mb-2">{p.num}</div>
+                <div className="text-sm font-semibold">{p.title}</div>
               </div>
+            ))}
+          </div>
+        </div>
+      </section>
+
+      {/* Compensation */}
+      <section className="py-16 border-b border-white/10">
+        <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8">
+          <p className="text-xs font-mono tracking-widest text-white/40 uppercase mb-3">Earning Potential</p>
+          <h2 className="text-3xl font-bold mb-3">You're building your own book — your earnings scale with it.</h2>
+          <p className="text-gray-400 mb-10">Acquisition Managers and Setup Managers earn on a commission structure tied to deals sourced, deals closed, and operations launched — not a flat hourly rate.</p>
+
+          {/* AM Comp */}
+          <h3 className="text-lg font-semibold mb-4 text-[#d4a574]">Acquisition Manager Commission</h3>
+          <div className="rounded-2xl overflow-hidden border border-white/10 mb-4">
+            <div className="grid grid-cols-2 bg-white/5 border-b border-white/10">
+              <div className="p-4 text-xs font-mono text-white/40 uppercase tracking-widest">Structure</div>
+              <div className="p-4 text-xs font-mono text-white/40 uppercase tracking-widest">Commission</div>
+            </div>
+            {[
+              ['Sourcing a deal', '15% of the acquisition fee'],
+              ['Closing a deal', '15% of the acquisition fee'],
+              ['Sourced and closed the same deal', '30% total'],
+              ['Found a deal, regardless of who closes it', '15% sourcing commission — paid either way'],
+            ].map(([label, value]) => (
+              <div key={label} className="grid grid-cols-2 border-b border-white/10 last:border-b-0">
+                <div className="p-4 text-sm text-gray-300">{label}</div>
+                <div className="p-4 text-sm font-mono text-[#d4a574]">{value}</div>
+              </div>
+            ))}
+          </div>
+          <p className="text-xs text-gray-500 mb-10">Acquisition Managers can source both furnished and unfurnished opportunities and list them on the marketplace. Your 15% sourcing commission is yours once you've found the deal — whether you personally close it or another team member does.</p>
+
+          {/* SM Comp */}
+          <h3 className="text-lg font-semibold mb-4 text-[#5EEAD4]">Setup Manager Compensation</h3>
+          <div className="rounded-2xl overflow-hidden border border-white/10 mb-4">
+            <div className="grid grid-cols-2 bg-white/5 border-b border-white/10">
+              <div className="p-4 text-xs font-mono text-white/40 uppercase tracking-widest">Project Type</div>
+              <div className="p-4 text-xs font-mono text-white/40 uppercase tracking-widest">Compensation</div>
+            </div>
+            {[
+              ['Furnished deal requiring a refresher package', '15% commission'],
+              ['Unfurnished property launch (client-requested setup)', '$750 – $1,800 flat fee per launch'],
+              ['Other assigned projects', 'Flat setup management fee, set per project'],
+            ].map(([label, value]) => (
+              <div key={label} className="grid grid-cols-2 border-b border-white/10 last:border-b-0">
+                <div className="p-4 text-sm text-gray-300">{label}</div>
+                <div className="p-4 text-sm font-mono text-[#5EEAD4]">{value}</div>
+              </div>
+            ))}
+          </div>
+          <p className="text-xs text-gray-500">Setup Managers are typically assigned to most furnished deals and to unfurnished launches where a client has requested setup support. Staff members are also encouraged and supported in building their own furnished rental portfolio alongside their role.</p>
+        </div>
+      </section>
+
+      {/* Apply */}
+      <section className="py-16">
+        <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8">
+          <div className="bg-[#0d1424] border border-white/10 rounded-2xl p-10 text-center">
+            <h2 className="text-3xl font-bold mb-4">Ready to apply?</h2>
+            <p className="text-gray-400 max-w-lg mx-auto mb-8">
+              Send your resume and a short note about why you're interested in Acquisition Management or Setup Management to our Success Team. Include which role (or both) you're applying for.
+            </p>
+            <a
+              href="mailto:success@accessyourplace.com?subject=Career%20Inquiry%20-%20Acquisition%20Manager%20%2F%20Setup%20Manager"
+              className="inline-flex items-center gap-2 text-xl font-mono text-[#5EEAD4] hover:underline mb-8"
+            >
+              <Mail className="w-5 h-5" />
+              success@accessyourplace.com
+            </a>
+            <div className="mt-4">
+              <a
+                href="tel:8133039110"
+                className="inline-flex items-center gap-2 border border-white/20 text-white px-6 py-3 rounded-xl font-medium hover:bg-white/5 transition-all"
+              >
+                <Phone className="w-4 h-4" />
+                Or call Penny: (813) 303-9110
+              </a>
             </div>
           </div>
-        </section>
+        </div>
+      </section>
 
-        <section className="py-16">
-          <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 text-center">
-            <Users className="w-10 h-10 mx-auto text-[#d4a574] mb-4" />
-            <h2 className="text-3xl font-bold text-slate-950 mb-4">Application Flow</h2>
-            <p className="text-slate-600 leading-relaxed mb-8">
-              Send your resume, the department you are interested in, and a short note on how your background helps operators gain better access to real estate opportunities.
-            </p>
-            <Button asChild size="lg" className="bg-[#0a0f1a] hover:bg-[#172033] text-white">
-              <a href="mailto:careers@accessyourplace.com?subject=Access%20Your%20Place%20Career%20Interest">Apply by Email</a>
-            </Button>
-          </div>
-        </section>
-      </main>
       <Footer />
     </div>
   );
