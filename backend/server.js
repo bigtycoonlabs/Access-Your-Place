@@ -2942,10 +2942,53 @@ app.get('*', (req, res) => {
   }
 });
 
+// ── Auto-migration: runs on every boot, safe to repeat (all statements use IF NOT EXISTS)
+async function runStartupMigrations() {
+  // We call PostgREST's rpc or use direct DB via the pg package if available,
+  // otherwise fall back to running the ALTER TABLE via our db() helper against
+  // a custom RPC. Simplest reliable path: call our own /functions/v1/run-migration
+  // endpoint after boot, or use node-postgres if DATABASE_URL is set.
+  const dbUrl = process.env.DATABASE_URL || process.env.DATABASE_PUBLIC_URL;
+  if (!dbUrl) {
+    console.log('⚠️  No DATABASE_URL set — skipping auto-migration');
+    return;
+  }
+  try {
+    const { Client } = require('pg');
+    const client = new Client({ connectionString: dbUrl, ssl: { rejectUnauthorized: false } });
+    await client.connect();
+    console.log('🔄 Running startup migrations...');
+    await client.query(`
+      ALTER TABLE staff_users
+        ADD COLUMN IF NOT EXISTS failed_login_attempts integer DEFAULT 0,
+        ADD COLUMN IF NOT EXISTS locked_until timestamp with time zone,
+        ADD COLUMN IF NOT EXISTS last_failed_login timestamp with time zone,
+        ADD COLUMN IF NOT EXISTS session_token text,
+        ADD COLUMN IF NOT EXISTS session_expires timestamp with time zone;
+    `);
+    await client.query(`
+      CREATE INDEX IF NOT EXISTS idx_staff_users_session_token
+        ON staff_users (session_token) WHERE session_token IS NOT NULL;
+    `);
+    await client.query(`
+      ALTER TABLE landlord_contacts
+        ADD COLUMN IF NOT EXISTS reset_token text,
+        ADD COLUMN IF NOT EXISTS reset_token_expires timestamp with time zone;
+    `);
+    await client.end();
+    console.log('✅ Startup migrations complete');
+  } catch (e) {
+    // Log but never crash the server over a migration — IF NOT EXISTS means
+    // re-running is always safe, so a failure here is non-fatal.
+    console.error('⚠️  Startup migration error (non-fatal):', e.message);
+  }
+}
+
 // ── Start ─────────────────────────────────────────────────────────────────────
 app.listen(PORT, () => {
   console.log(`✅ AYP Functions Server running on port ${PORT}`);
   console.log(`   SUPABASE_URL: ${SUPABASE_URL || '⚠️  NOT SET'}`);
   console.log(`   ANTHROPIC:    ${ANTHROPIC_KEY ? '✓ configured' : '⚠️  not set'}`);
   console.log(`   RESEND:       ${RESEND_KEY ? '✓ configured' : '⚠️  not set'}`);
+  runStartupMigrations();
 });
