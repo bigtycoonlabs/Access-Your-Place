@@ -1,12 +1,11 @@
-FROM postgrest/postgrest:latest AS postgrest
+FROM postgrest/postgrest:v12.2.0
 
-FROM debian:bookworm-slim
-COPY --from=postgrest /bin/postgrest /bin/postgrest
+# PostgREST v12 runs fine as root in Railway containers.
+# All configuration via environment variables:
+#   PGRST_DB_URI         - full postgres connection string
+#   PGRST_DB_SCHEMA      - public
+#   PGRST_DB_ANON_ROLE   - anon
+#   PGRST_SERVER_PORT    - 3000
+#   PGRST_JWT_SECRET     - your JWT secret
 
-# Now we have a real shell — add the user entry libpq needs
-RUN echo "postgrest:x:1000:1000:postgrest:/home/postgrest:/bin/sh" >> /etc/passwd && \
-    mkdir -p /home/postgrest && \
-    chown 1000:1000 /home/postgrest
-
-USER 1000
 ENTRYPOINT ["/bin/postgrest"]
