@@ -1,4 +1,4 @@
-FROM postgrest/postgrest:latest
+FROM postgrest/postgrest:v12.2.0
 
 # Ensure UID 1000 has a passwd entry so libpq can resolve the local user ID.
 # Without this, PostgREST fails with "could not look up local user ID 1000: Permission denied".
