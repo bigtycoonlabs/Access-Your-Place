@@ -1,13 +1,12 @@
-FROM postgrest/postgrest:v12.2.0
+FROM postgrest/postgrest:latest AS postgrest
 
-# Ensure UID 1000 has a passwd entry so libpq can resolve the local user ID.
-# Without this, PostgREST fails with "could not look up local user ID 1000: Permission denied".
-RUN echo "postgrest:x:1000:1000:postgrest:/home/postgrest:/bin/sh" >> /etc/passwd
+FROM debian:bookworm-slim
+COPY --from=postgrest /bin/postgrest /bin/postgrest
 
-# PostgREST is configured entirely via environment variables — no extra build steps needed.
-# Set these in Railway:
-#   PGRST_DB_URI         = postgres://user:pass@host:5432/dbname (Railway Postgres URL)
-#   PGRST_DB_SCHEMA      = public
-#   PGRST_DB_ANON_ROLE   = anon
-#   PGRST_JWT_SECRET     = (from generate-jwt-secrets.js)
-#   PGRST_SERVER_PORT    = 3000
+# Now we have a real shell — add the user entry libpq needs
+RUN echo "postgrest:x:1000:1000:postgrest:/home/postgrest:/bin/sh" >> /etc/passwd && \
+    mkdir -p /home/postgrest && \
+    chown 1000:1000 /home/postgrest
+
+USER 1000
+ENTRYPOINT ["/bin/postgrest"]
