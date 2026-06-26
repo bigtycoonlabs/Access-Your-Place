@@ -37,16 +37,33 @@ app.use(express.json({ limit: '10mb' }));
 app.use(express.urlencoded({ extended: true, limit: '10mb' }));
 
 // ── PostgREST Proxy (/rest/v1/* → PostgREST) ──────────────────────────────────
-const POSTGREST_INTERNAL = process.env.POSTGREST_URL || 'http://postgrest.railway.internal:3000';
+// Priority: POSTGREST_URL env var → Railway internal PostgREST → real Supabase URL
+const POSTGREST_INTERNAL = process.env.POSTGREST_URL
+  || (process.env.SUPABASE_URL && !process.env.SUPABASE_URL.includes('localhost') ? process.env.SUPABASE_URL : null)
+  || 'http://postgrest.railway.internal:3000';
+
+const PROXY_TARGET = POSTGREST_INTERNAL.includes('supabase.co')
+  ? POSTGREST_INTERNAL  // real Supabase — path already includes /rest/v1
+  : POSTGREST_INTERNAL; // internal PostgREST — strip /rest/v1 prefix
+
+console.log(`[PostgREST Proxy] target: ${PROXY_TARGET}`);
+
 app.use('/rest/v1', createProxyMiddleware({
-  target: POSTGREST_INTERNAL,
+  target: PROXY_TARGET,
   changeOrigin: true,
-  pathRewrite: { '^/rest/v1': '' },
+  pathRewrite: POSTGREST_INTERNAL.includes('supabase.co')
+    ? {} // Supabase already has /rest/v1 in its URL — don't strip
+    : { '^/rest/v1': '' }, // internal PostgREST — strip the prefix
   on: {
     proxyReq: (proxyReq, req) => {
       if (req.headers.authorization) proxyReq.setHeader('Authorization', req.headers.authorization);
       if (req.headers.apikey) proxyReq.setHeader('apikey', req.headers.apikey);
       if (req.headers.prefer) proxyReq.setHeader('Prefer', req.headers.prefer);
+      // If proxying to real Supabase, inject the service role key
+      if (POSTGREST_INTERNAL.includes('supabase.co') && process.env.SUPABASE_SERVICE_ROLE_KEY) {
+        proxyReq.setHeader('Authorization', `Bearer ${process.env.SUPABASE_SERVICE_ROLE_KEY}`);
+        proxyReq.setHeader('apikey', process.env.SUPABASE_SERVICE_ROLE_KEY);
+      }
     },
     error: (err, req, res) => {
       console.error('[PostgREST Proxy] Error:', err.message);
