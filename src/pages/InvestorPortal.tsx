@@ -121,7 +121,7 @@ function PortfolioSkeleton() {
                     <Skeleton className="h-6 w-16 rounded-full" />
                   </div>
                 </div>
-                <div className="grid grid-cols-3 gap-3">
+                <div className="grid grid-cols-2 sm:grid-cols-3 gap-3">
                   <Skeleton className="h-16 w-20 rounded-lg" />
                   <Skeleton className="h-16 w-20 rounded-lg" />
                   <Skeleton className="h-16 w-20 rounded-lg" />

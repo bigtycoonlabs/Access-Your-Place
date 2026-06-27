@@ -59,7 +59,7 @@ export default function AcquisitionRoadmap() {
             {/* Connection Line */}
             <div className="absolute top-24 left-0 right-0 h-1 bg-gradient-to-r from-emerald-500 via-blue-500 via-purple-500 to-[#d4a574] opacity-30"></div>
             
-            <div className="grid grid-cols-4 gap-6">
+            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
               {steps.map((step, index) => (
                 <div key={index} className="relative">
                   {/* Step Card */}

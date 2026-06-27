@@ -133,7 +133,7 @@ export default function CoreValues() {
           <p className="text-gray-400 leading-relaxed max-w-2xl">
             We could keep this engine entirely internal and capture all of it ourselves. We don't — because in every city we service, real people need a safe, flexible place to stay today. That urgency is why we move on acquisition without unnecessary delay, execute setups immediately, and back every recommendation with real projections instead of guesswork.
           </p>
-          <div className="grid grid-cols-3 gap-4 mt-8 max-w-lg">
+          <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 mt-8 max-w-lg">
             {[
               { val: '5', label: 'Years building this platform' },
               { val: '80/20', label: 'Raw micro-data vs aggregated tools' },
