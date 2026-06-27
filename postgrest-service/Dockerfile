@@ -1,11 +1,12 @@
-FROM postgrest/postgrest:v12.2.0
+FROM postgrest/postgrest:v12.2.0 AS builder
 
-# PostgREST v12 runs fine as root in Railway containers.
-# All configuration via environment variables:
-#   PGRST_DB_URI         - full postgres connection string
-#   PGRST_DB_SCHEMA      - public
-#   PGRST_DB_ANON_ROLE   - anon
-#   PGRST_SERVER_PORT    - 3000
-#   PGRST_JWT_SECRET     - your JWT secret
+FROM debian:bookworm-slim
 
-ENTRYPOINT ["/bin/postgrest"]
+COPY --from=builder /bin/postgrest /bin/postgrest
+
+RUN echo "postgrest:x:1000:1000:postgrest:/home/postgrest:/bin/sh" >> /etc/passwd \
+    && mkdir -p /home/postgrest && chown 1000:1000 /home/postgrest
+
+USER 1000
+
+ENTRYPOINT ["sh", "-c", "PGRST_SERVER_PORT=${PORT:-3000} exec /bin/postgrest"]
