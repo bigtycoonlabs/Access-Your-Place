@@ -275,12 +275,17 @@ app.post('/admin/run-migration', async (req, res) => {
   const secret = req.headers['x-migration-secret'];
   if (secret !== 'ayp-migrate-2024-secure') return res.status(401).json({ error: 'unauthorized' });
   try {
-    const { Client } = require('pg');
-    const dbUrl = process.env.DATABASE_PUBLIC_URL || process.env.DATABASE_URL;
-    if (!dbUrl || dbUrl.startsWith('V/')) return res.status(500).json({ error: 'DATABASE_URL not available or sealed', hint: 'Use SUPABASE_URL + service role key approach instead' });
-    const client = new Client({ connectionString: dbUrl, ssl: { rejectUnauthorized: false } });
-    await client.connect();
-    const results = [];
+    // Use the Supabase Management API to run SQL directly
+    // This uses the same SUPABASE_URL and SERVICE_ROLE_KEY that the rest of server.js uses
+    const supabaseUrl = SUPABASE_URL;
+    const serviceKey = SERVICE_ROLE_KEY;
+    if (!supabaseUrl || !serviceKey) {
+      return res.status(500).json({ error: 'SUPABASE_URL or SERVICE_ROLE_KEY not configured' });
+    }
+
+    // Extract project ref from URL: https://adcbrclppmnguzkzwiys.supabase.co
+    const projectRef = supabaseUrl.replace('https://', '').replace('.supabase.co', '').split('.')[0];
+
     const queries = [
       `ALTER TABLE staff_users ADD COLUMN IF NOT EXISTS failed_login_attempts integer DEFAULT 0`,
       `ALTER TABLE staff_users ADD COLUMN IF NOT EXISTS locked_until timestamp with time zone`,
@@ -289,18 +294,33 @@ app.post('/admin/run-migration', async (req, res) => {
       `ALTER TABLE staff_users ADD COLUMN IF NOT EXISTS session_expires timestamp with time zone`,
       `ALTER TABLE landlord_contacts ADD COLUMN IF NOT EXISTS reset_token text`,
       `ALTER TABLE landlord_contacts ADD COLUMN IF NOT EXISTS reset_token_expires timestamp with time zone`,
-      `CREATE INDEX IF NOT EXISTS idx_staff_users_session_token ON staff_users (session_token) WHERE session_token IS NOT NULL`,
     ];
-    for (const q of queries) {
-      try { await client.query(q); results.push({ ok: true, q: q.substring(0, 60) }); }
-      catch (e) { results.push({ ok: false, q: q.substring(0, 60), error: e.message }); }
+
+    const results = [];
+    for (const sql of queries) {
+      try {
+        // Use Supabase Management API to execute SQL
+        const mgmtUrl = `https://api.supabase.com/v1/projects/${projectRef}/database/query`;
+        const response = await fetch(mgmtUrl, {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            'Authorization': `Bearer ${serviceKey}`,
+          },
+          body: JSON.stringify({ query: sql }),
+        });
+        const result = await response.text();
+        results.push({ ok: response.ok, status: response.status, q: sql.substring(0, 80), result: result.substring(0, 100) });
+      } catch (e) {
+        results.push({ ok: false, q: sql.substring(0, 80), error: e.message });
+      }
     }
-    await client.end();
-    res.json({ success: true, results });
+    res.json({ success: true, projectRef, results });
   } catch (e) {
     res.status(500).json({ error: e.message });
   }
 });
+
 
 
 // ══════════════════════════════════════════════════════════════════════════════
