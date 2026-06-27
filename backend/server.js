@@ -269,6 +269,40 @@ app.options('*', cors());
 // ── Health check ──────────────────────────────────────────────────────────────
 app.get('/health', (req, res) => res.json({ ok: true, ts: new Date().toISOString() }));
 
+// ── One-time migration endpoint — runs the missing column additions safely ────
+// Uses IF NOT EXISTS so safe to call multiple times. Remove after confirmed done.
+app.post('/admin/run-migration', async (req, res) => {
+  const secret = req.headers['x-migration-secret'];
+  if (secret !== 'ayp-migrate-2024-secure') return res.status(401).json({ error: 'unauthorized' });
+  try {
+    const { Client } = require('pg');
+    const dbUrl = process.env.DATABASE_PUBLIC_URL || process.env.DATABASE_URL;
+    if (!dbUrl || dbUrl.startsWith('V/')) return res.status(500).json({ error: 'DATABASE_URL not available or sealed', hint: 'Use SUPABASE_URL + service role key approach instead' });
+    const client = new Client({ connectionString: dbUrl, ssl: { rejectUnauthorized: false } });
+    await client.connect();
+    const results = [];
+    const queries = [
+      `ALTER TABLE staff_users ADD COLUMN IF NOT EXISTS failed_login_attempts integer DEFAULT 0`,
+      `ALTER TABLE staff_users ADD COLUMN IF NOT EXISTS locked_until timestamp with time zone`,
+      `ALTER TABLE staff_users ADD COLUMN IF NOT EXISTS last_failed_login timestamp with time zone`,
+      `ALTER TABLE staff_users ADD COLUMN IF NOT EXISTS session_token text`,
+      `ALTER TABLE staff_users ADD COLUMN IF NOT EXISTS session_expires timestamp with time zone`,
+      `ALTER TABLE landlord_contacts ADD COLUMN IF NOT EXISTS reset_token text`,
+      `ALTER TABLE landlord_contacts ADD COLUMN IF NOT EXISTS reset_token_expires timestamp with time zone`,
+      `CREATE INDEX IF NOT EXISTS idx_staff_users_session_token ON staff_users (session_token) WHERE session_token IS NOT NULL`,
+    ];
+    for (const q of queries) {
+      try { await client.query(q); results.push({ ok: true, q: q.substring(0, 60) }); }
+      catch (e) { results.push({ ok: false, q: q.substring(0, 60), error: e.message }); }
+    }
+    await client.end();
+    res.json({ success: true, results });
+  } catch (e) {
+    res.status(500).json({ error: e.message });
+  }
+});
+
+
 // ══════════════════════════════════════════════════════════════════════════════
 // EDGE FUNCTION ROUTER
 // ══════════════════════════════════════════════════════════════════════════════
