@@ -1,0 +1,486 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>How It Works — Access Your Place</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400;500;600;700&family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500;600&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="ayp-shared.css">
+<style>
+  /* Department cards */
+  .dept-grid{
+    display:grid;
+    grid-template-columns:1fr 1fr 1fr;
+    gap:1px;
+    background:var(--hairline);
+    border:1px solid var(--hairline);
+    border-radius:14px;
+    overflow:hidden;
+    margin-top:48px;
+  }
+  .dept-card{
+    background:var(--obsidian);
+    padding:36px 30px;
+    position:relative;
+  }
+  .dept-step{
+    font-family:'JetBrains Mono',monospace;
+    font-size:11px;letter-spacing:0.1em;text-transform:uppercase;
+    margin-bottom:16px;
+    display:flex;align-items:center;gap:8px;
+  }
+  .dept-step .dot{width:6px;height:6px;border-radius:50%;}
+  .dept-card.acq .dot{background:var(--gold-b);}
+  .dept-card.setup .dot{background:var(--cyan);}
+  .dept-card.success .dot{background:#A78BFA;}
+  .dept-card.acq .dept-step{color:var(--gold-b);}
+  .dept-card.setup .dept-step{color:var(--cyan);}
+  .dept-card.success .dept-step{color:#A78BFA;}
+  .dept-card h3{font-size:21px;margin-bottom:12px;}
+  .dept-card p{color:var(--ink-dim);font-size:14.5px;margin-bottom:10px;}
+  .dept-arrow{
+    position:absolute;
+    top:50%;right:-1px;
+    transform:translateY(-50%);
+    color:var(--ink-faint);
+    font-size:18px;
+    z-index:2;
+  }
+  .dept-card:last-child .dept-arrow{display:none;}
+
+  /* Dual cert callout */
+  .dual-cert{
+    margin-top:64px;
+    border:1px solid var(--hairline);
+    border-radius:14px;
+    padding:40px;
+    background:linear-gradient(135deg, rgba(94,234,212,0.05), rgba(244,217,118,0.05));
+    display:grid;
+    grid-template-columns:1fr 1fr;
+    gap:40px;
+    align-items:center;
+  }
+  .dual-cert-badge{
+    display:inline-flex;
+    align-items:center;
+    gap:8px;
+    font-family:'JetBrains Mono',monospace;
+    font-size:11px;letter-spacing:0.1em;text-transform:uppercase;
+    color:var(--gold-b);
+    margin-bottom:14px;
+  }
+  .dual-cert h3{font-size:24px;margin-bottom:14px;line-height:1.3;}
+  .dual-cert p{color:var(--ink-dim);font-size:15px;}
+  .dual-venn{
+    position:relative;
+    height:200px;
+    display:flex;
+    align-items:center;
+    justify-content:center;
+  }
+  .dual-venn svg{width:100%;height:100%;max-width:280px;}
+
+  /* Pillars */
+  .pillars-row{
+    display:grid;
+    grid-template-columns:repeat(4,1fr);
+    gap:20px;
+    margin-top:48px;
+  }
+  .pillar-card{
+    border:1px solid var(--hairline);
+    border-radius:10px;
+    padding:24px 20px;
+    text-align:center;
+  }
+  .pillar-num{
+    font-family:'JetBrains Mono',monospace;
+    font-size:11px;
+    color:var(--ink-faint);
+    margin-bottom:10px;
+  }
+  .pillar-card h4{font-size:14.5px;line-height:1.4;}
+
+  /* Niche framing band */
+  .niche-band{
+    border:1px solid var(--hairline);
+    border-radius:14px;
+    padding:44px;
+    margin-top:48px;
+    display:grid;
+    grid-template-columns:1fr 1.3fr;
+    gap:40px;
+    align-items:center;
+  }
+  .niche-stat{
+    font-family:'JetBrains Mono',monospace;
+    font-size:54px;
+    font-weight:600;
+    color:var(--cyan);
+    line-height:1;
+  }
+  .niche-stat-label{
+    font-size:13px;
+    color:var(--ink-faint);
+    margin-top:8px;
+    max-width:200px;
+  }
+
+  /* FAQ */
+  .faq-item{
+    border-top:1px solid var(--hairline);
+  }
+  .faq-item:last-child{border-bottom:1px solid var(--hairline);}
+  .faq-q{
+    width:100%;
+    text-align:left;
+    background:none;
+    border:none;
+    color:var(--ink);
+    font-family:'Space Grotesk',sans-serif;
+    font-size:16.5px;
+    font-weight:500;
+    padding:22px 0;
+    cursor:pointer;
+    display:flex;
+    justify-content:space-between;
+    align-items:center;
+    gap:16px;
+  }
+  .faq-q .icon{
+    flex-shrink:0;
+    width:20px;height:20px;
+    color:var(--ink-faint);
+    transition:transform .25s ease;
+  }
+  .faq-item.open .faq-q .icon{transform:rotate(45deg);color:var(--cyan);}
+  .faq-a{
+    max-height:0;
+    overflow:hidden;
+    transition:max-height .3s ease;
+  }
+  .faq-item.open .faq-a{max-height:300px;}
+  .faq-a-inner{
+    padding-bottom:22px;
+    color:var(--ink-dim);
+    font-size:14.5px;
+    max-width:680px;
+  }
+
+  /* Call CTA strip */
+  .call-strip{
+    display:flex;
+    align-items:center;
+    justify-content:space-between;
+    gap:24px;
+    border:1px solid var(--hairline);
+    border-radius:14px;
+    padding:32px 40px;
+    margin-top:56px;
+    background:var(--slate-panel);
+    flex-wrap:wrap;
+  }
+  .call-strip-text h4{font-size:18px;margin-bottom:4px;}
+  .call-strip-text p{font-size:13.5px;color:var(--ink-faint);}
+
+  @media (max-width:900px){
+    .dept-grid{grid-template-columns:1fr;}
+    .dept-arrow{display:none;}
+    .dual-cert{grid-template-columns:1fr;}
+    .pillars-row{grid-template-columns:1fr 1fr;}
+    .niche-band{grid-template-columns:1fr;text-align:center;}
+    .niche-stat-label{margin:0 auto;}
+  }
+</style>
+</head>
+<body>
+
+<header>
+  <div class="wrap nav-inner">
+    <a href="index.html" class="brand">
+      <span class="brand-mark"><svg viewBox="0 0 28 28" fill="none"><path d="M14 2L25 8V20L14 26L3 20V8L14 2Z" stroke="#F4D976" stroke-width="1.4" fill="none"/><path d="M14 9L19 12V18L14 21L9 18V12L14 9Z" fill="#F4D976" opacity="0.85"/></svg></span>
+      Access Your Place
+    </a>
+    <nav class="center-links">
+      <a href="index.html#deals">Available Deals</a>
+      <a href="how-it-works.html" class="active">How It Works</a>
+      <a href="core-values.html">Core Values</a>
+      <a href="index.html#ecosystem">Ecosystem Software</a>
+      <a href="careers.html">Careers</a>
+    </nav>
+    <div class="nav-right">
+      <a href="#" class="signin-link">Sign In</a>
+      <a href="#" class="btn-gold">Create Your Account</a>
+    </div>
+  </div>
+</header>
+
+<section class="page-hero" style="border-top:none;">
+  <div class="wrap-narrow">
+    <div class="breadcrumb"><a href="index.html">Home</a> / How It Works</div>
+    <h1>Three departments. One launch engine.</h1>
+    <p class="lede">
+      Rental arbitrage and corporate lease acquisition is still a niche strategy —
+      not yet mass-market, and not something a course or a guru webinar can teach
+      in a weekend. It requires a real end-to-end platform. Here's exactly how ours
+      is structured, and who you'll work with at every stage.
+    </p>
+  </div>
+</section>
+
+<section style="border-top:none;">
+  <div class="wrap">
+    <div class="section-label">The Flow</div>
+    <h2 class="section-title">Every client moves through the same three departments.</h2>
+    <p class="section-desc">No guesswork about who to call. Each department has one job, and a specialist who owns it.</p>
+
+    <div class="dept-grid">
+      <div class="dept-card acq">
+        <span class="dept-arrow">→</span>
+        <div class="dept-step"><span class="dot"></span>Department 01</div>
+        <h3>Acquisition</h3>
+        <p>Your Acquisition Manager analyzes the marketplace, matches properties to your budget and strategy, and negotiates the deal — whether it's on-market, off-market, or a Master Lease.</p>
+        <p>They break down every deal or bundled package fully before you purchase. Nothing is hidden in the fine print.</p>
+      </div>
+      <div class="dept-card setup">
+        <span class="dept-arrow">→</span>
+        <div class="dept-step"><span class="dot"></span>Department 02</div>
+        <h3>Setup</h3>
+        <p>Whether the asset is unfurnished or already furnished, your Setup Manager takes over: furniture and decor procurement, refresher packages on existing units, housekeeping coordination, Wi-Fi setup, maintenance provider matching, and connecting you to the vendors and software needed to run smoothly.</p>
+      </div>
+      <div class="dept-card success">
+        <div class="dept-step"><span class="dot"></span>Department 03</div>
+        <h3>Success</h3>
+        <p>The Success Team is the command and compliance backbone — mediating disputes, distributing overflow leads across the network, and keeping every relationship (client, landlord, staff) running on calm, structured communication.</p>
+      </div>
+    </div>
+
+    <div class="dual-cert">
+      <div>
+        <div class="dual-cert-badge">⬡ Dual Certification</div>
+        <h3>Many of our Acquisition Managers are also certified Setup Managers.</h3>
+        <p>
+          That means the same specialist who sources your deal can often carry you
+          straight through the entire launch — furnishing, vendor coordination, and
+          go-live — without handing you off to a stranger mid-process. We showcase
+          AM and Setup Manager certification side by side because they're two halves
+          of the same operational skill set, not two separate businesses.
+        </p>
+      </div>
+      <div class="dual-venn">
+        <svg viewBox="0 0 280 200" fill="none">
+          <circle cx="105" cy="100" r="78" fill="#F4D976" opacity="0.08" stroke="#F4D976" stroke-width="1.4"/>
+          <circle cx="175" cy="100" r="78" fill="#5EEAD4" opacity="0.08" stroke="#5EEAD4" stroke-width="1.4"/>
+          <text x="65" y="60" fill="#F4D976" font-family="JetBrains Mono" font-size="11" letter-spacing="0.5">ACQUISITION</text>
+          <text x="172" y="60" fill="#5EEAD4" font-family="JetBrains Mono" font-size="11" letter-spacing="0.5">SETUP</text>
+          <text x="113" y="104" fill="#E8EAF0" font-family="Space Grotesk" font-size="13" text-anchor="middle">Dual</text>
+          <text x="113" y="120" fill="#E8EAF0" font-family="Space Grotesk" font-size="13" text-anchor="middle">Certified</text>
+        </svg>
+      </div>
+    </div>
+
+    <h3 style="font-size:20px;margin-top:64px;margin-bottom:8px;">The 4 Pillars of Certification</h3>
+    <p style="color:var(--ink-dim);font-size:14.5px;max-width:600px;">Every Acquisition Manager passes a rigorous, four-month internal training before working with clients.</p>
+    <div class="pillars-row">
+      <div class="pillar-card"><div class="pillar-num">01</div><h4>Market Mastery</h4></div>
+      <div class="pillar-card"><div class="pillar-num">02</div><h4>Rainmaker Lead Sourcing</h4></div>
+      <div class="pillar-card"><div class="pillar-num">03</div><h4>Full-Cycle Management</h4></div>
+      <div class="pillar-card"><div class="pillar-num">04</div><h4>Technical Operational Proficiency</h4></div>
+    </div>
+  </div>
+</section>
+
+<section>
+  <div class="wrap">
+    <div class="section-label">Why It's Not Mass-Market Yet</div>
+    <h2 class="section-title">Rental arbitrage is a different strategy than buying real estate.</h2>
+    <p class="section-desc">It's still a niche, specialized approach to building cash flow — which is exactly why it needs a full platform, not a PDF guide.</p>
+
+    <div class="niche-band">
+      <div>
+        <div class="niche-stat">80/20</div>
+        <div class="niche-stat-label">Raw micro-market indices vs. aggregated software tools in every deal score</div>
+      </div>
+      <div>
+        <p style="color:var(--ink-dim);font-size:15px;">
+          We evaluate local seasonal trends, historic hotel ADR and occupancy,
+          corporate/executive suite performance, direct-booking platform metrics,
+          a five-mile hyper-local competitive radius, physical layout, and municipal
+          logistics — not just what a public dashboard tells you. That's the
+          difference between a guess and a projection.
+        </p>
+        <p style="color:var(--ink-dim);font-size:15px;margin-top:12px;">
+          We don't guarantee profits. We don't sell hype. We hand every client a
+          data-backed, research-driven projection and let the numbers speak for
+          themselves.
+        </p>
+      </div>
+    </div>
+  </div>
+</section>
+
+<section>
+  <div class="wrap">
+    <div class="section-label">Why a Course Can't Do This</div>
+    <h2 class="section-title">Corporate leasing requires a network. Not a webinar.</h2>
+    <p class="section-desc">
+      There's an entire industry of gurus and courses selling hype around
+      Airbnb-style short-term rentals as if that's the whole opportunity. It
+      isn't — and most of them skip the part that actually matters.
+    </p>
+
+    <div class="split" style="margin-top:48px;">
+      <div class="split-col">
+        <span class="split-tag" style="color:var(--danger);">What the Guru Model Sells</span>
+        <h3>A PDF, a webinar, and an Airbnb listing</h3>
+        <p>Most courses stop at "find a property and list it." They rarely mention that landlords and property managers don't want a random individual cold-messaging them on Zillow about starting a short-term rental in their building.</p>
+        <p>Without a real network behind you, that outreach gets ignored — or gets you flagged as a liability before you ever get a lease signed.</p>
+      </div>
+      <div class="split-col">
+        <span class="split-tag human">What Corporate Leasing Actually Requires</span>
+        <h3>A network with standing relationships</h3>
+        <p>Corporate lease acquisition moves at the speed of trust. Our Acquisition Managers carry an existing relationship and a track record into every landlord conversation — that's what gets a Master Lease approved instead of ignored.</p>
+        <p>We built Access Your Place to remove the noise: no guessing how to professionally approach a landlord, no learning curve burned on trial and error. Just a faster, supported path to scale.</p>
+      </div>
+    </div>
+  </div>
+</section>
+
+<section>
+  <div class="wrap-narrow">
+    <div class="section-label">Frequently Asked Questions</div>
+    <h2 class="section-title">What people ask before their first acquisition.</h2>
+
+    <div style="margin-top:32px;">
+      <div class="faq-item">
+        <button class="faq-q" onclick="toggleFaq(this)">
+          What is rental arbitrage, really?
+          <svg class="icon" viewBox="0 0 20 20" fill="none"><path d="M10 4V16M4 10H16" stroke="currentColor" stroke-width="1.6" stroke-linecap="round"/></svg>
+        </button>
+        <div class="faq-a"><div class="faq-a-inner">You lease a property long-term and operate it as a short-term rental, mid-term corporate stay, or co-living space — generating margin between your lease cost and rental income. It's a different strategy from buying real estate outright, and it's still a specialized, niche approach that most investors haven't been exposed to.</div></div>
+      </div>
+      <div class="faq-item">
+        <button class="faq-q" onclick="toggleFaq(this)">
+          Do you guarantee any returns?
+          <svg class="icon" viewBox="0 0 20 20" fill="none"><path d="M10 4V16M4 10H16" stroke="currentColor" stroke-width="1.6" stroke-linecap="round"/></svg>
+        </button>
+        <div class="faq-a"><div class="faq-a-inner">No — and we never will. We give you data-backed, research-driven projections on every deal, built from raw micro-market indices. Real estate and booking platforms fluctuate. We project; we don't promise.</div></div>
+      </div>
+      <div class="faq-item">
+        <button class="faq-q" onclick="toggleFaq(this)">
+          How much capital do I need to start?
+          <svg class="icon" viewBox="0 0 20 20" fill="none"><path d="M10 4V16M4 10H16" stroke="currentColor" stroke-width="1.6" stroke-linecap="round"/></svg>
+        </button>
+        <div class="faq-a"><div class="faq-a-inner">Most clients start with $5,000–$15,000 for their first property, covering deposit, lease, furnishing, and initial setup. Your Acquisition Manager will walk through the exact breakdown for any deal before you commit.</div></div>
+      </div>
+      <div class="faq-item">
+        <button class="faq-q" onclick="toggleFaq(this)">
+          Do I need real estate experience?
+          <svg class="icon" viewBox="0 0 20 20" fill="none"><path d="M10 4V16M4 10H16" stroke="currentColor" stroke-width="1.6" stroke-linecap="round"/></svg>
+        </button>
+        <div class="faq-a"><div class="faq-a-inner">No prior experience required. Your Acquisition Manager and Setup Manager are trained across all four certification pillars to guide you from sourcing through launch.</div></div>
+      </div>
+      <div class="faq-item">
+        <button class="faq-q" onclick="toggleFaq(this)">
+          What does a Setup Manager actually handle?
+          <svg class="icon" viewBox="0 0 20 20" fill="none"><path d="M10 4V16M4 10H16" stroke="currentColor" stroke-width="1.6" stroke-linecap="round"/></svg>
+        </button>
+        <div class="faq-a"><div class="faq-a-inner">A Setup Manager handles logistics on furnished and unfurnished properties alike — furniture, decor, refresher packages, housekeeping coordination, Wi-Fi setup, maintenance matching, and connecting you to the right vendors and software. Many of our Acquisition Managers are dual-certified, so you may work with the same specialist end to end.</div></div>
+      </div>
+      <div class="faq-item">
+        <button class="faq-q" onclick="toggleFaq(this)">
+          How do I access the live deal marketplace?
+          <svg class="icon" viewBox="0 0 20 20" fill="none"><path d="M10 4V16M4 10H16" stroke="currentColor" stroke-width="1.6" stroke-linecap="round"/></svg>
+        </button>
+        <div class="faq-a"><div class="faq-a-inner">Visit Available Deals to browse current inventory. Every listing has been scanned by Penny — our market intelligence AI — against real historical occupancy and ADR data, then passed initial compliance screening before it goes live.</div></div>
+      </div>
+      <div class="faq-item">
+        <button class="faq-q" onclick="toggleFaq(this)">
+          Can I submit my own property?
+          <svg class="icon" viewBox="0 0 20 20" fill="none"><path d="M10 4V16M4 10H16" stroke="currentColor" stroke-width="1.6" stroke-linecap="round"/></svg>
+        </button>
+        <div class="faq-a"><div class="faq-a-inner">Yes. Use the Submit Property form, and if approved, it's added to deal flow within 24 hours.</div></div>
+      </div>
+      <div class="faq-item">
+        <button class="faq-q" onclick="toggleFaq(this)">
+          What happens after I call to schedule a discovery call?
+          <svg class="icon" viewBox="0 0 20 20" fill="none"><path d="M10 4V16M4 10H16" stroke="currentColor" stroke-width="1.6" stroke-linecap="round"/></svg>
+        </button>
+        <div class="faq-a"><div class="faq-a-inner">Call Penny at (813) 303-9110 to get scheduled with an Acquisition Manager. They'll review your goals, walk through available deals, and build a custom strategy — with zero obligation to proceed.</div></div>
+      </div>
+      <div class="faq-item">
+        <button class="faq-q" onclick="toggleFaq(this)">
+          Is Penny a chatbot I'm stuck talking to?
+          <svg class="icon" viewBox="0 0 20 20" fill="none"><path d="M10 4V16M4 10H16" stroke="currentColor" stroke-width="1.6" stroke-linecap="round"/></svg>
+        </button>
+        <div class="faq-a"><div class="faq-a-inner">No. Penny is our market intelligence AI — one of several specialized AI tools built across the Set Up Your Place / AYP Enterprise — and she's focused specifically on real historical short-term and mid-term rental performance data, not general conversation. You can call her line to ask how we work or get scheduled, but a real Acquisition Manager follows up and runs your deal.</div></div>
+      </div>
+      <div class="faq-item">
+        <button class="faq-q" onclick="toggleFaq(this)">
+          Why can't I just learn this from a course?
+          <svg class="icon" viewBox="0 0 20 20" fill="none"><path d="M10 4V16M4 10H16" stroke="currentColor" stroke-width="1.6" stroke-linecap="round"/></svg>
+        </button>
+        <div class="faq-a"><div class="faq-a-inner">Most courses teach you to list a unit on Airbnb — they don't get you a landlord relationship. Corporate property managers generally won't engage an unknown individual cold-messaging them about a short-term rental. Closing a Master Lease takes a network with standing relationships, which is what an Acquisition Manager actually brings to the table.</div></div>
+      </div>
+    </div>
+
+    <div class="call-strip">
+      <div class="call-strip-text">
+        <h4>Ready to talk to an Acquisition Manager?</h4>
+        <p>Call Penny to get scheduled — no obligation.</p>
+      </div>
+      <a href="tel:8133039110" class="btn-gold btn-lg">(813) 303-9110</a>
+    </div>
+  </div>
+</section>
+
+<footer>
+  <div class="wrap">
+    <div class="footer-top">
+      <div class="footer-brand">
+        <a href="index.html" class="brand">
+          <span class="brand-mark"><svg viewBox="0 0 28 28" fill="none"><path d="M14 2L25 8V20L14 26L3 20V8L14 2Z" stroke="#F4D976" stroke-width="1.4" fill="none"/><path d="M14 9L19 12V18L14 21L9 18V12L14 9Z" fill="#F4D976" opacity="0.85"/></svg></span>
+          Access Your Place
+        </a>
+        <p>1150 NW 72nd Ave, Tower I, Suite 455<br>Miami, FL 33126<br><br>success@accessyourplace.com<br>(813) 303-9110</p>
+      </div>
+      <div class="footer-col">
+        <h4>Platform Architecture</h4>
+        <a href="index.html#deals">Available Deals</a>
+        <a href="how-it-works.html">How It Works</a>
+        <a href="core-values.html">Core Values</a>
+        <a href="index.html#ecosystem">Ecosystem Software</a>
+        <a href="careers.html">Careers</a>
+      </div>
+      <div class="footer-col">
+        <h4>Enterprise Compliance</h4>
+        <a href="terms-of-service.html">Terms of Service</a>
+        <a href="privacy-policy.html">Privacy Policy</a>
+        <a href="community-standards.html">Community Standards</a>
+      </div>
+    </div>
+    <p class="footer-legal">
+      Access Your Place and all integrated cross-platform software technologies are
+      owned, maintained, and operated under Set Up Your Place LLC. All business
+      operations, acquisitions, and data access are governed strictly by our
+      Terms of Service. Access Your Place is an education-first consultancy
+      powered by a technology platform — not a financial services business.
+      We do not promise, guarantee, or warrant any specific returns or financial
+      gain from any acquisition, operation, or use of YP Flow.
+    </p>
+  </div>
+</footer>
+
+<script>
+  function toggleFaq(btn){
+    const item = btn.closest('.faq-item');
+    const wasOpen = item.classList.contains('open');
+    document.querySelectorAll('.faq-item.open').forEach(el => el.classList.remove('open'));
+    if(!wasOpen) item.classList.add('open');
+  }
+</script>
+
+</body>
+</html>

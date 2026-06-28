@@ -1,0 +1,344 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Careers — Access Your Place</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400;500;600;700&family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500;600&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="ayp-shared.css">
+<style>
+  .placeholder-flag{
+    background:rgba(226,103,90,0.08);
+    border:1px solid rgba(226,103,90,0.3);
+    border-radius:10px;
+    padding:18px 22px;
+    margin-bottom:32px;
+    font-size:13.5px;
+    color:var(--ink-dim);
+  }
+  .placeholder-flag strong{color:var(--danger);}
+
+  .role-grid{
+    display:grid;
+    grid-template-columns:1fr 1fr;
+    gap:24px;
+    margin-top:48px;
+  }
+  .role-card{
+    border:1px solid var(--hairline);
+    border-radius:14px;
+    padding:36px;
+    position:relative;
+  }
+  .role-card .role-tag{
+    font-family:'JetBrains Mono',monospace;
+    font-size:11px;letter-spacing:0.1em;text-transform:uppercase;
+    margin-bottom:14px;display:inline-block;
+  }
+  .role-card.acq .role-tag{color:var(--gold-b);}
+  .role-card.setup .role-tag{color:var(--cyan);}
+  .role-card h3{font-size:23px;margin-bottom:12px;}
+  .role-card p{color:var(--ink-dim);font-size:14.5px;margin-bottom:14px;}
+  .role-open-chip{
+    position:absolute;top:32px;right:32px;
+    background:rgba(74,222,128,0.1);
+    color:#4ADE80;
+    font-family:'JetBrains Mono',monospace;
+    font-size:10.5px;letter-spacing:0.08em;text-transform:uppercase;
+    padding:4px 10px;border-radius:5px;
+    display:flex;align-items:center;gap:6px;
+  }
+  .role-open-chip .dot{width:5px;height:5px;border-radius:50%;background:#4ADE80;}
+  .role-list{margin-top:18px;}
+  .role-list-item{
+    display:flex;gap:10px;align-items:flex-start;
+    font-size:13.5px;color:var(--ink-dim);
+    padding:8px 0;border-top:1px solid var(--hairline);
+  }
+  .role-list-item:first-child{border-top:none;}
+  .role-list-item svg{flex-shrink:0;margin-top:3px;}
+
+  .dual-cert-strip{
+    margin-top:24px;
+    border:1px solid var(--hairline);
+    border-radius:14px;
+    padding:32px;
+    background:linear-gradient(135deg, rgba(94,234,212,0.05), rgba(244,217,118,0.05));
+    text-align:center;
+  }
+  .dual-cert-strip h3{font-size:19px;margin-bottom:10px;}
+  .dual-cert-strip p{color:var(--ink-dim);font-size:14px;max-width:600px;margin:0 auto;}
+
+  .comp-table{
+    margin-top:48px;
+    border:1px solid var(--hairline);
+    border-radius:14px;
+    overflow:hidden;
+  }
+  .comp-row{
+    display:grid;
+    grid-template-columns:1.4fr 1fr;
+    border-top:1px solid var(--hairline);
+  }
+  .comp-row:first-child{border-top:none;background:var(--slate-panel);}
+  .comp-cell{padding:18px 24px;font-size:14px;}
+  .comp-cell.label{color:var(--ink);font-weight:500;}
+  .comp-cell.value{color:var(--gold-b);font-family:'JetBrains Mono',monospace;font-size:13.5px;}
+  .comp-row:first-child .comp-cell{color:var(--ink-faint);font-family:'JetBrains Mono',monospace;font-size:11px;letter-spacing:0.08em;text-transform:uppercase;font-weight:500;}
+
+  .pillars-row-careers{
+    display:grid;grid-template-columns:repeat(4,1fr);gap:20px;margin-top:32px;
+  }
+  .pillar-card-c{
+    border:1px solid var(--hairline);border-radius:10px;padding:22px 18px;text-align:center;
+  }
+  .pillar-card-c .pillar-num{font-family:'JetBrains Mono',monospace;font-size:11px;color:var(--ink-faint);margin-bottom:8px;}
+  .pillar-card-c h4{font-size:14px;line-height:1.4;}
+
+  .apply-box{
+    border:1px solid var(--hairline);
+    border-radius:14px;
+    padding:44px;
+    text-align:center;
+    margin-top:24px;
+    background:var(--slate-panel);
+  }
+  .apply-box h3{font-size:24px;margin-bottom:14px;}
+  .apply-box p{color:var(--ink-dim);font-size:15px;max-width:520px;margin:0 auto 28px;}
+  .apply-email{
+    font-family:'JetBrains Mono',monospace;
+    font-size:18px;
+    color:var(--cyan);
+  }
+
+  @media (max-width:900px){
+    .role-grid{grid-template-columns:1fr;}
+    .comp-row{grid-template-columns:1fr 1fr;}
+    .pillars-row-careers{grid-template-columns:1fr 1fr;}
+  }
+</style>
+</head>
+<body>
+
+<header>
+  <div class="wrap nav-inner">
+    <a href="index.html" class="brand">
+      <span class="brand-mark"><svg viewBox="0 0 28 28" fill="none"><path d="M14 2L25 8V20L14 26L3 20V8L14 2Z" stroke="#F4D976" stroke-width="1.4" fill="none"/><path d="M14 9L19 12V18L14 21L9 18V12L14 9Z" fill="#F4D976" opacity="0.85"/></svg></span>
+      Access Your Place
+    </a>
+    <nav class="center-links">
+      <a href="index.html#deals">Available Deals</a>
+      <a href="how-it-works.html">How It Works</a>
+      <a href="core-values.html">Core Values</a>
+      <a href="careers.html" class="active">Careers</a>
+    </nav>
+    <div class="nav-right">
+      <a href="#" class="signin-link">Sign In</a>
+      <a href="#" class="btn-gold">Create Your Account</a>
+    </div>
+  </div>
+</header>
+
+<section class="page-hero" style="border-top:none;">
+  <div class="wrap-narrow">
+    <div class="breadcrumb"><a href="index.html">Home</a> / Careers</div>
+    <h1>We're hiring Acquisition Managers and Setup Managers.</h1>
+    <p class="lede">
+      Join the team that's actually building the engine — not selling a course
+      about it. Get certified, get trained across both disciplines, and build
+      your own track record placing corporate leases and launching operations
+      across our network.
+    </p>
+  </div>
+</section>
+
+<section style="border-top:none;">
+  <div class="wrap-narrow">
+
+    <div class="section-label">Open Roles</div>
+    <h2 class="section-title">Two roles. One certification path that connects them.</h2>
+    <p class="section-desc">
+      Every Acquisition Manager and Setup Manager goes through the same
+      rigorous training program. Many of our team members end up certified
+      in both — the skill sets overlap more than people expect.
+    </p>
+
+    <div class="role-grid">
+      <div class="role-card acq">
+        <div class="role-open-chip"><span class="dot"></span>Open</div>
+        <span class="role-tag">Acquisition Manager</span>
+        <h3>Source deals. Negotiate leases. Build your book.</h3>
+        <p>You'll analyze the marketplace, run the 80/20 micro-market valuation on every deal, negotiate directly with landlords, and place corporate leases for clients across our network — on-market, off-market, and through our Master Lease program.</p>
+        <div class="role-list">
+          <div class="role-list-item"><svg width="14" height="14" viewBox="0 0 14 14" fill="none"><path d="M3 7L6 10L11 4" stroke="#F4D976" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/></svg> Build and own your client pipeline</div>
+          <div class="role-list-item"><svg width="14" height="14" viewBox="0 0 14 14" fill="none"><path d="M3 7L6 10L11 4" stroke="#F4D976" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/></svg> Direct landlord and property manager negotiations</div>
+          <div class="role-list-item"><svg width="14" height="14" viewBox="0 0 14 14" fill="none"><path d="M3 7L6 10L11 4" stroke="#F4D976" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/></svg> Use Penny's real market data, not guesswork</div>
+          <div class="role-list-item"><svg width="14" height="14" viewBox="0 0 14 14" fill="none"><path d="M3 7L6 10L11 4" stroke="#F4D976" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/></svg> Run your own furnished rental portfolio alongside the role</div>
+        </div>
+      </div>
+      <div class="role-card setup">
+        <div class="role-open-chip"><span class="dot"></span>Open</div>
+        <span class="role-tag">Setup Manager</span>
+        <h3>Launch operations. Coordinate logistics. Get units live.</h3>
+        <p>You'll manage furniture and decor procurement, coordinate with housekeepers and maintenance providers on the ground, handle Wi-Fi and utility setup, and connect clients to the vendors and software they need — for furnished and unfurnished properties alike.</p>
+        <div class="role-list">
+          <div class="role-list-item"><svg width="14" height="14" viewBox="0 0 14 14" fill="none"><path d="M3 7L6 10L11 4" stroke="#5EEAD4" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/></svg> Own the full launch process, start to finish</div>
+          <div class="role-list-item"><svg width="14" height="14" viewBox="0 0 14 14" fill="none"><path d="M3 7L6 10L11 4" stroke="#5EEAD4" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/></svg> Build relationships with vendors across your market</div>
+          <div class="role-list-item"><svg width="14" height="14" viewBox="0 0 14 14" fill="none"><path d="M3 7L6 10L11 4" stroke="#5EEAD4" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/></svg> Work refresher packages for existing operations too</div>
+          <div class="role-list-item"><svg width="14" height="14" viewBox="0 0 14 14" fill="none"><path d="M3 7L6 10L11 4" stroke="#5EEAD4" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/></svg> Direct line into the certification track for AM as well</div>
+        </div>
+      </div>
+    </div>
+
+    <div class="dual-cert-strip">
+      <h3>Cross-train. Get certified in both.</h3>
+      <p>
+        Acquisition Managers can train and certify as Setup Managers, and
+        Setup Managers can train and certify as Acquisition Managers. Most of
+        our highest-performing team members hold both certifications — it
+        means you can carry a client from sourcing straight through launch
+        without a handoff.
+      </p>
+    </div>
+
+  </div>
+</section>
+
+<section>
+  <div class="wrap-narrow">
+    <div class="section-label">The 4 Pillars of Certification</div>
+    <h2 class="section-title">A real four-month training program, not a weekend course.</h2>
+    <p class="section-desc">Every certified team member passes a rigorous examination across four pillars before working with clients.</p>
+    <div class="pillars-row-careers">
+      <div class="pillar-card-c"><div class="pillar-num">01</div><h4>Market Mastery</h4></div>
+      <div class="pillar-card-c"><div class="pillar-num">02</div><h4>Rainmaker Lead Sourcing</h4></div>
+      <div class="pillar-card-c"><div class="pillar-num">03</div><h4>Full-Cycle Management</h4></div>
+      <div class="pillar-card-c"><div class="pillar-num">04</div><h4>Technical Operational Proficiency</h4></div>
+    </div>
+  </div>
+</section>
+
+<section>
+  <div class="wrap-narrow">
+    <div class="section-label">Earning Potential</div>
+    <h2 class="section-title">You're building your own book — your earnings scale with it.</h2>
+    <p class="section-desc">
+      Acquisition Managers and Setup Managers earn on a commission structure
+      tied to deals sourced, deals closed, and operations launched — not a
+      flat hourly rate.
+    </p>
+
+    <h3 style="font-size:18px;margin-top:40px;margin-bottom:16px;">Acquisition Manager Commission</h3>
+    <div class="comp-table">
+      <div class="comp-row">
+        <div class="comp-cell">Structure</div>
+        <div class="comp-cell">Commission</div>
+      </div>
+      <div class="comp-row">
+        <div class="comp-cell label">Sourcing a deal</div>
+        <div class="comp-cell value">15% of the acquisition fee</div>
+      </div>
+      <div class="comp-row">
+        <div class="comp-cell label">Closing a deal</div>
+        <div class="comp-cell value">15% of the acquisition fee</div>
+      </div>
+      <div class="comp-row">
+        <div class="comp-cell label">Sourced and closed the same deal</div>
+        <div class="comp-cell value">30% total</div>
+      </div>
+      <div class="comp-row">
+        <div class="comp-cell label">Found a deal listed on the marketplace, regardless of who closes it</div>
+        <div class="comp-cell value">15% sourcing commission, paid either way</div>
+      </div>
+    </div>
+    <p style="font-size:13px;color:var(--ink-faint);margin-top:14px;">
+      Acquisition Managers can source both furnished and unfurnished
+      opportunities and list them on the marketplace. Your 15% sourcing
+      commission is yours once you've found the deal — whether you personally
+      close it or another team member does.
+    </p>
+
+    <h3 style="font-size:18px;margin-top:40px;margin-bottom:16px;">Setup Manager Compensation</h3>
+    <div class="comp-table">
+      <div class="comp-row">
+        <div class="comp-cell">Project Type</div>
+        <div class="comp-cell">Compensation</div>
+      </div>
+      <div class="comp-row">
+        <div class="comp-cell label">Furnished deal requiring a refresher package</div>
+        <div class="comp-cell value">15% commission</div>
+      </div>
+      <div class="comp-row">
+        <div class="comp-cell label">Unfurnished property launch (client-requested setup)</div>
+        <div class="comp-cell value">$750 – $1,800 flat fee per launch</div>
+      </div>
+      <div class="comp-row">
+        <div class="comp-cell label">Other assigned projects</div>
+        <div class="comp-cell value">Flat setup management fee, set per project</div>
+      </div>
+    </div>
+    <p style="font-size:13px;color:var(--ink-faint);margin-top:14px;">
+      Setup Managers are typically assigned to most furnished deals and to
+      unfurnished launches where a client has requested setup support. Flat
+      fees are set per project; furnished refresher packages are commission-based.
+    </p>
+  </div>
+</section>
+
+<section>
+  <div class="wrap-narrow">
+    <div class="apply-box">
+      <h3>Ready to apply?</h3>
+      <p>
+        Send your resume and a short note about why you're interested in
+        Acquisition Management or Setup Management to our Success Team.
+        Include which role (or both) you're applying for.
+      </p>
+      <a href="mailto:success@accessyourplace.com?subject=Career%20Inquiry%20-%20Acquisition%20Manager%20%2F%20Setup%20Manager" class="apply-email">success@accessyourplace.com</a>
+      <div style="margin-top:28px;">
+        <a href="tel:8133039110" class="btn-outline">Or call Penny: (813) 303-9110</a>
+      </div>
+    </div>
+  </div>
+</section>
+
+<footer>
+  <div class="wrap">
+    <div class="footer-top">
+      <div class="footer-brand">
+        <a href="index.html" class="brand">
+          <span class="brand-mark"><svg viewBox="0 0 28 28" fill="none"><path d="M14 2L25 8V20L14 26L3 20V8L14 2Z" stroke="#F4D976" stroke-width="1.4" fill="none"/><path d="M14 9L19 12V18L14 21L9 18V12L14 9Z" fill="#F4D976" opacity="0.85"/></svg></span>
+          Access Your Place
+        </a>
+        <p>1150 NW 72nd Ave, Tower I, Suite 455<br>Miami, FL 33126<br><br>success@accessyourplace.com<br>(813) 303-9110</p>
+      </div>
+      <div class="footer-col">
+        <h4>Platform Architecture</h4>
+        <a href="index.html#deals">Available Deals</a>
+        <a href="how-it-works.html">How It Works</a>
+        <a href="core-values.html">Core Values</a>
+        <a href="careers.html">Careers</a>
+      </div>
+      <div class="footer-col">
+        <h4>Enterprise Compliance</h4>
+        <a href="terms-of-service.html">Terms of Service</a>
+        <a href="privacy-policy.html">Privacy Policy</a>
+        <a href="community-standards.html">Community Standards</a>
+      </div>
+    </div>
+    <p class="footer-legal">
+      Access Your Place and all integrated cross-platform software technologies are
+      owned, maintained, and operated under Set Up Your Place LLC. All business
+      operations, acquisitions, and data access are governed strictly by our
+      Terms of Service. Access Your Place is an education-first consultancy
+      powered by a technology platform — not a financial services business.
+      We do not promise, guarantee, or warrant any specific returns or financial
+      gain from any acquisition, operation, or use of YP Flow.
+    </p>
+  </div>
+</footer>
+
+</body>
+</html>

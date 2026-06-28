@@ -34,7 +34,13 @@ import AdminComments from "./pages/AdminComments";
 import OAuthCallback from "./pages/OAuthCallback";
 import TermsOfService from "./pages/TermsOfService";
 import PrivacyPolicy from "./pages/PrivacyPolicy";
+import HowItWorks from "./pages/HowItWorks";
+import CoreValues from "./pages/CoreValues";
+import Careers from "./pages/Careers";
 import ProPortal from "./pages/ProPortal";
+import CommunityStandards from "./pages/CommunityStandards";
+import LegalAgreementGate from "./pages/LegalAgreementGate";
+import PennyAI from "@/components/PennyAI";
 
 const queryClient = new QueryClient();
 
@@ -51,7 +57,9 @@ const App = () => (
               <Routes>
                 <Route path="/" element={<Index />} />
                 <Route path="/deals" element={<Deals />} />
+                <Route path="/deal-flow" element={<Navigate to="/deals" replace />} />
                 <Route path="/deals/:id" element={<PropertyDetail />} />
+                <Route path="/client-access" element={<Navigate to="/investor/login" replace />} />
                 <Route path="/investor/login" element={<InvestorLogin />} />
 
                 <Route path="/investor" element={<InvestorPortal />} />
@@ -60,6 +68,7 @@ const App = () => (
                 <Route path="/investor/verify-email" element={<InvestorVerifyEmail />} />
                 <Route path="/investor/unsubscribe" element={<InvestorUnsubscribe />} />
                 <Route path="/staff/login" element={<StaffLogin />} />
+                <Route path="/staff-login" element={<Navigate to="/staff/login" replace />} />
                 <Route path="/staff/dashboard" element={<StaffDashboard />} />
                 <Route path="/staff/reset-password" element={<StaffResetPassword />} />
                 <Route path="/staff/quick-add" element={<StaffQuickAddContact />} />
@@ -68,10 +77,12 @@ const App = () => (
 
                 <Route path="/knowledge" element={<KnowledgeLibrary />} />
                 <Route path="/knowledge-library" element={<KnowledgeLibrary />} />
+                <Route path="/article-demo" element={<Navigate to="/knowledge-library" replace />} />
                 <Route path="/blog/:slug" element={<BlogArticle />} />
                 <Route path="/pricing" element={<Pricing />} />
                 <Route path="/setup-services" element={<SetupServices />} />
                 <Route path="/landlord-partnership" element={<LandlordPartnership />} />
+                <Route path="/careers" element={<Careers />} />
                 <Route path="/landlord/login" element={<LandlordLogin />} />
                 <Route path="/landlord/portal" element={<LandlordPortal />} />
                 <Route path="/admin/comments" element={<AdminComments />} />
@@ -79,13 +90,17 @@ const App = () => (
                 <Route path="/oauth/callback/investor" element={<OAuthCallback />} />
                 <Route path="/terms-of-service" element={<TermsOfService />} />
                 <Route path="/privacy-policy" element={<PrivacyPolicy />} />
+                <Route path="/how-it-works" element={<HowItWorks />} />
+                <Route path="/core-values" element={<CoreValues />} />
                 <Route path="/am-agreement/:agreementId" element={<AMAgreementSign />} />
                 <Route path="/pro-portal/:token" element={<ProPortal />} />
+                <Route path="/community-standards" element={<CommunityStandards />} />
+                <Route path="/legal-agreement-gate" element={<LegalAgreementGate />} />
                 <Route path="*" element={<NotFound />} />
-
-
               </Routes>
             </BrowserRouter>
+            {/* Penny AI floating chat — hidden on staff/admin routes */}
+            <PennyAI mode="floating" />
           </NativeShell>
         </TooltipProvider>
       </AppProvider>
@@ -94,4 +109,3 @@ const App = () => (
 );
 
 export default App;
-
