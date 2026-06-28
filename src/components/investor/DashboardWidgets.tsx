@@ -485,11 +485,14 @@ export function DashboardWidgets({ investorId, onNavigate, onBookCall }: Props) 
           body: { action: 'get_assigned_deals', investor_id: investorId } 
         });
 
+        const safeDash = (dashData && typeof dashData === 'object' && !dashData.error) ? dashData : {};
+        const safeDeals = Array.isArray(assignedData?.deals) ? assignedData.deals : [];
         const combinedData = {
-          ...dashData,
-          assignedDeals: assignedData?.deals || [],
-          pendingPayments: (assignedData?.deals || []).filter((d: any) => d.payment_status === 'pending'),
-          recentActivity: generateRecentActivity(dashData, assignedData?.deals || [])
+          ...safeDash,
+          recentReports: Array.isArray(safeDash.recentReports) ? safeDash.recentReports : [],
+          assignedDeals: safeDeals,
+          pendingPayments: safeDeals.filter((d: any) => d.payment_status === 'pending'),
+          recentActivity: generateRecentActivity(safeDash, safeDeals)
         };
 
         setData(combinedData);
