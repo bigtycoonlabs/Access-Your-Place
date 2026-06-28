@@ -77,7 +77,7 @@ interface WidgetProps {
 
 // Assigned Deals Widget
 const AssignedDealsWidget = ({ data, onNavigate }: WidgetProps) => {
-  const assignedDeals = data?.assignedDeals || [];
+  const assignedDeals = Array.isArray(data?.assignedDeals) ? data.assignedDeals : [];
   const paidDeals = assignedDeals.filter((d: any) => d.payment_status === 'paid');
   const pendingDeals = assignedDeals.filter((d: any) => d.payment_status === 'pending');
 
@@ -125,7 +125,7 @@ const AssignedDealsWidget = ({ data, onNavigate }: WidgetProps) => {
 
 // Pending Payments Widget
 const PendingPaymentsWidget = ({ data, onNavigate }: WidgetProps) => {
-  const pendingPayments = data?.pendingPayments || [];
+  const pendingPayments = Array.isArray(data?.pendingPayments) ? data.pendingPayments : [];
   const totalPending = pendingPayments.reduce((sum: number, p: any) => sum + (p.amount || 0), 0);
 
   return (
@@ -188,7 +188,7 @@ const PendingPaymentsWidget = ({ data, onNavigate }: WidgetProps) => {
 
 // Recent Activity Widget
 const RecentActivityWidget = ({ data }: WidgetProps) => {
-  const activities = data?.recentActivity || [];
+  const activities = Array.isArray(data?.recentActivity) ? data.recentActivity : [];
 
   const getActivityIcon = (type: string) => {
     switch (type) {
@@ -298,7 +298,7 @@ const MarketReportsWidget = ({ data, onNavigate }: WidgetProps) => (
       </CardTitle>
     </CardHeader>
     <CardContent>
-      {data?.recentReports?.length > 0 ? (
+      {Array.isArray(data?.recentReports) && data.recentReports.length > 0 ? (
         <ul className="space-y-2" aria-label="Report list">
           {data.recentReports.slice(0, 3).map((r: any) => (
             <li key={r.id} className="p-2 bg-gray-50 rounded text-sm">
@@ -386,7 +386,7 @@ const MarketInsightsWidget = ({ data, onNavigate }: WidgetProps) => (
 
 // Acquisition Progress Widget
 const AcquisitionProgressWidget = ({ data, onNavigate }: WidgetProps) => {
-  const acquisitions = data?.acquisitions || [];
+  const acquisitions = Array.isArray(data?.acquisitions) ? data.acquisitions : [];
   const activeAcquisitions = acquisitions.filter((a: any) => a.status !== 'completed' && a.status !== 'cancelled');
 
   return (
@@ -553,15 +553,15 @@ export function DashboardWidgets({ investorId, onNavigate, onBookCall }: Props) 
           </div>
           <dl className="flex gap-6">
             <div className="text-center">
-              <dd className="text-2xl font-bold text-[#d4a574]">{data.assignedDeals?.length || 0}</dd>
+              <dd className="text-2xl font-bold text-[#d4a574]">{Array.isArray(data.assignedDeals) ? data.assignedDeals.length : 0}</dd>
               <dt className="text-xs text-white/60">Assigned Deals</dt>
             </div>
             <div className="text-center">
-              <dd className="text-2xl font-bold text-green-400">{data.pendingPayments?.length || 0}</dd>
+              <dd className="text-2xl font-bold text-green-400">{Array.isArray(data.pendingPayments) ? data.pendingPayments.length : 0}</dd>
               <dt className="text-xs text-white/60">Pending</dt>
             </div>
             <div className="text-center">
-              <dd className="text-2xl font-bold text-blue-400">{data.recentReports?.length || 0}</dd>
+              <dd className="text-2xl font-bold text-blue-400">{Array.isArray(data.recentReports) ? data.recentReports.length : 0}</dd>
               <dt className="text-xs text-white/60">Reports</dt>
             </div>
           </dl>
