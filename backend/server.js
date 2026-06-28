@@ -899,14 +899,18 @@ app.post('/functions/v1/:fn', async (req, res) => {
     // ─────────────────────────── PROPERTIES ──────────────────────────────
     case 'get-properties': {
       const { status, source, city, state, zip_code, limit = 50, offset = 0 } = body;
-      let q = `/properties?select=*,deal_analytics(*)&order=created_at.desc&limit=${limit}&offset=${offset}`;
+      let q = `/properties?select=*&order=created_at.desc&limit=${limit}&offset=${offset}`;
       if (status && status !== 'all') q += `&status=eq.${status}`;
       if (source) q += `&source=eq.${source}`;
       if (city) q += `&city=ilike.%25${encodeURIComponent(city)}%25`;
       if (state) q += `&state=eq.${state}`;
       if (zip_code) q += `&zip_code=eq.${zip_code}`;
-      const { data } = await dbGet(q);
-      return ok({ success: true, properties: data || [] });
+      try {
+        const { data } = await dbGet(q);
+        return ok({ success: true, properties: Array.isArray(data) ? data : [] });
+      } catch (e) {
+        return ok({ success: true, properties: [] });
+      }
     }
 
     case 'add-property':

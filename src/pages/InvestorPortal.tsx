@@ -229,9 +229,8 @@ function PersonalizedRecommendations({ investor, onNavigate }: { investor: any; 
       
       clearTimeout(timeoutId);
       
-      if (data?.properties) {
-        setRecommendations(data.properties);
-      }
+      const props = Array.isArray(data?.properties) ? data.properties : [];
+      setRecommendations(props);
     } catch (err: any) {
       clearTimeout(timeoutId);
       if (err.name === 'AbortError') {
@@ -357,7 +356,7 @@ function PersonalizedRecommendations({ investor, onNavigate }: { investor: any; 
       </CardHeader>
       <CardContent>
         <div className="grid md:grid-cols-3 gap-4">
-          {recommendations.map((deal: any) => (
+          {(Array.isArray(recommendations) ? recommendations : []).map((deal: any) => (
             <div 
               key={deal.id}
               className="p-4 border rounded-lg hover:border-[#d4a574] transition-colors cursor-pointer"
