@@ -84,7 +84,12 @@ const dbHeaders = () => ({
 });
 
 async function db(path, opts = {}) {
-  const url = `${SUPABASE_URL}/rest/v1${path}`;
+  // Build the correct URL depending on whether we're hitting real Supabase or internal PostgREST
+  const base = (process.env.POSTGREST_URL || SUPABASE_URL || '').replace(/\/+$/, '');
+  const cleanPath = path.startsWith('/') ? path : '/' + path;
+  // Real Supabase URLs need /rest/v1 prefix; internal PostgREST already serves at root
+  const needsRestPrefix = /supabase\.co/i.test(base);
+  const url = base + (needsRestPrefix ? '/rest/v1' : '') + cleanPath;
   const res = await fetch(url, {
     headers: dbHeaders(),
     ...opts,
