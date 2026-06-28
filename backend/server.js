@@ -341,7 +341,10 @@ app.post('/functions/v1/:fn', async (req, res) => {
     case 'investor-login':
     case 'investor-register':
     case 'investor-session': {
-      const { action } = body;
+      // Auto-detect action from function name when not explicitly provided
+      let { action } = body;
+      if (!action && fn === 'investor-register') action = 'register';
+      if (!action && fn === 'investor-login') action = 'login';
 
       // REGISTER
       if (action === 'register') {
