@@ -50,8 +50,8 @@ export function GuidedOnboarding({ investor, onComplete, onSkip }: Props) {
     phone: investor.phone || '',
     investment_budget_min: investor.investment_budget_min?.toString() || '',
     investment_budget_max: investor.investment_budget_max?.toString() || '',
-    preferred_markets: investor.preferred_markets || [],
-    preferred_operation_types: investor.preferred_operation_types || [],
+    preferred_markets: Array.isArray(investor.preferred_markets) ? investor.preferred_markets : [],
+    preferred_operation_types: Array.isArray(investor.preferred_operation_types) ? investor.preferred_operation_types : [],
     am_first_name: investor.acquisition_manager_first_name || '',
     am_last_name: investor.acquisition_manager_last_name || '',
     has_am: investor.acquisition_manager_first_name ? 'yes' : ''

@@ -57,9 +57,7 @@ export function PendingAgreements({ investorId, investorName, investorEmail, onN
       const { data, error } = await supabase.functions.invoke('sign-agreement', {
         body: { action: 'get_pending_agreements', investor_id: investorId }
       });
-      if (data?.agreements) {
-        setAgreements(data.agreements);
-      }
+      setAgreements(Array.isArray(data?.agreements) ? data.agreements : []);
     } catch (err) {
       console.error('Error fetching agreements:', err);
     }

@@ -2421,10 +2421,19 @@ app.post('/functions/v1/:fn', async (req, res) => {
       if (action === 'get_documents') {
         const { investor_id } = body;
         const { data } = await dbGet(`/document_signatures?investor_id=eq.${investor_id}&select=*`);
-        return ok({ success: true, documents: data || [] });
+        return ok({ success: true, documents: Array.isArray(data) ? data : [] });
       }
 
-      return err('Unknown signature action');
+      if (action === 'get_pending_agreements') {
+        const { investor_id } = body;
+        try {
+          const { data } = await dbGet(`/document_signatures?investor_id=eq.${investor_id}&status=eq.pending&select=*`);
+          return ok({ success: true, agreements: Array.isArray(data) ? data : [] });
+        } catch { return ok({ success: true, agreements: [] }); }
+      }
+
+      console.warn(`[sign-agreement] Unhandled action: ${action}`);
+      return ok({ success: true, agreements: [], documents: [] });
     }
 
     // ─────────────────────────── PORTFOLIO PERFORMANCE ────────────────────
