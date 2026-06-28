@@ -95,7 +95,7 @@ export function SetupManagerSection({ investorId, investorName, investorEmail, o
         .from('investors')
         .select('assigned_setup_manager_id, assigned_setup_manager_name')
         .eq('id', investorId)
-        .single();
+        .maybeSingle();
 
       if (profile?.assigned_setup_manager_id) {
         // Try to get SM details from staff_users table

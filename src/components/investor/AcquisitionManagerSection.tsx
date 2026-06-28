@@ -103,8 +103,9 @@ export function AcquisitionManagerSection({ investorId, investorName, investorEm
       // Check investor_profiles for assigned AM
       const { data: profile } = await supabase
         .from('investors')
-        .select('assigned_acquisition_manager_id, assigned_acquisition_manager_name')
+        .select('assigned_acquisition_manager_id, acquisition_manager_name')
         .eq('id', investorId)
+        .maybeSingle();
 
       if (profile?.assigned_acquisition_manager_id) {
         const { data: staff } = await supabase
@@ -125,10 +126,10 @@ export function AcquisitionManagerSection({ investorId, investorName, investorEm
         }
         
         // Fallback: use the name from profile
-        if (profile.assigned_acquisition_manager_name) {
+        if (profile.acquisition_manager_name) {
           setAmInfo({
             id: profile.assigned_acquisition_manager_id,
-            name: profile.assigned_acquisition_manager_name,
+            name: profile.acquisition_manager_name,
             email: null,
             phone: null,
             assigned_at: null

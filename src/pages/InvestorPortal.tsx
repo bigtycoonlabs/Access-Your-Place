@@ -1163,7 +1163,7 @@ export default function InvestorPortal() {
                 investorId={investor.id} 
                 investorName={investor.full_name}
                 assignedAMId={investor.assigned_acquisition_manager_id}
-                assignedAMName={investor.assigned_acquisition_manager_name}
+                assignedAMName={investor.acquisition_manager_name}
               />
             </InvestorTabErrorBoundary>
           </TabsContent>
