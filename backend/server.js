@@ -59,6 +59,10 @@ app.use('/rest/v1', createProxyMiddleware({
       if (req.headers.authorization) proxyReq.setHeader('Authorization', req.headers.authorization);
       if (req.headers.apikey) proxyReq.setHeader('apikey', req.headers.apikey);
       if (req.headers.prefer) proxyReq.setHeader('Prefer', req.headers.prefer);
+      if (req.headers.accept) proxyReq.setHeader('Accept', req.headers.accept);
+      if (req.headers['content-type']) proxyReq.setHeader('Content-Type', req.headers['content-type']);
+      if (req.headers['content-profile']) proxyReq.setHeader('Content-Profile', req.headers['content-profile']);
+      if (req.headers['accept-profile']) proxyReq.setHeader('Accept-Profile', req.headers['accept-profile']);
       // If proxying to real Supabase, inject the service role key
       if (POSTGREST_INTERNAL.includes('supabase.co') && process.env.SUPABASE_SERVICE_ROLE_KEY) {
         proxyReq.setHeader('Authorization', `Bearer ${process.env.SUPABASE_SERVICE_ROLE_KEY}`);
