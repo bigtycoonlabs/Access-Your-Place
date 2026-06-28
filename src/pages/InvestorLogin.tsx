@@ -557,45 +557,46 @@ export default function InvestorLogin() {
   }, [searchParams]);
 
   const validateExistingSession = async (token: string) => {
-    // Set a timeout to ensure initialization completes even if API hangs
     const timeoutId = setTimeout(() => {
       setInitialized(true);
     }, 5000);
-    
+
     try {
+      // For fallback tokens, just check if session data exists locally
+      if (token.startsWith('fallback_')) {
+        clearTimeout(timeoutId);
+        const session = localStorage.getItem('investorSession');
+        if (session) {
+          try {
+            const parsed = JSON.parse(session);
+            if (parsed.id && parsed.email) {
+              navigate('/investor');
+              return;
+            }
+          } catch {}
+        }
+        localStorage.removeItem('investorSession');
+        localStorage.removeItem('investorSessionToken');
+        setInitialized(true);
+        return;
+      }
+
       const { data, error } = await supabase.functions.invoke('investor-session', {
         body: { action: 'validate_session', session_token: token }
       });
-      
+
       clearTimeout(timeoutId);
-      
-      if (error) {
-        // If edge function fails, check if it's a fallback token
-        if (token.startsWith('fallback_')) {
-          // For fallback tokens, just check if session data exists
-          const session = localStorage.getItem('investorSession');
-          if (session) {
-            navigate('/investor');
-            return;
-          }
-        }
-      } else if (data?.success) {
+
+      if (!error && data?.success) {
         navigate('/investor');
         return;
       }
     } catch (e) {
       clearTimeout(timeoutId);
-      // For fallback tokens, check if session data exists
-      if (token.startsWith('fallback_')) {
-        const session = localStorage.getItem('investorSession');
-        if (session) {
-          navigate('/investor');
-          return;
-        }
-      }
-      localStorage.removeItem('investorSession');
-      localStorage.removeItem('investorSessionToken');
     }
+    // Session invalid or expired — silently clear and show login form (no error banner)
+    localStorage.removeItem('investorSession');
+    localStorage.removeItem('investorSessionToken');
     setInitialized(true);
   };
 
