@@ -36,12 +36,14 @@ export function NotificationBell({ investorId }: NotificationBellProps) {
       const { data } = await supabase.functions.invoke('manage-notifications', {
         body: { action: 'get', investorId }
       });
-      if (mountedRef.current && data?.notifications) {
-        setNotifications(data.notifications);
-        setUnreadCount(data.unreadCount);
+      if (mountedRef.current) {
+        const safe = Array.isArray(data?.notifications) ? data.notifications : [];
+        setNotifications(safe);
+        setUnreadCount(Number(data?.unreadCount ?? 0));
       }
     } catch (err) {
       console.warn('[NotificationBell] Fetch error:', err);
+      if (mountedRef.current) { setNotifications([]); setUnreadCount(0); }
     }
   }, [investorId]);
 
@@ -66,7 +68,7 @@ export function NotificationBell({ investorId }: NotificationBellProps) {
     await supabase.functions.invoke('manage-notifications', {
       body: { action: 'markRead', notificationId: id }
     });
-    setNotifications(prev => prev.map(n => n.id === id ? { ...n, read: true } : n));
+    setNotifications(prev => (Array.isArray(prev) ? prev : []).map(n => n.id === id ? { ...n, read: true } : n));
     setUnreadCount(prev => Math.max(0, prev - 1));
     setAnnouncement(`Marked "${title}" as read`);
   };
@@ -75,7 +77,7 @@ export function NotificationBell({ investorId }: NotificationBellProps) {
     await supabase.functions.invoke('manage-notifications', {
       body: { action: 'markAllRead', investorId }
     });
-    setNotifications(prev => prev.map(n => ({ ...n, read: true })));
+    setNotifications(prev => (Array.isArray(prev) ? prev : []).map(n => ({ ...n, read: true })));
     setUnreadCount(0);
     setAnnouncement('All notifications marked as read');
   };
