@@ -476,29 +476,39 @@ export function DashboardWidgets({ investorId, onNavigate, onBookCall }: Props) 
 
   useEffect(() => {
     const fetchData = async () => {
+      let safeDash: any = {};
+      let safeDeals: any[] = [];
+
+      // Fetch market reports — isolated so failure doesn't block deals
       try {
-        const { data: dashData } = await supabase.functions.invoke('manage-market-reports', { 
-          body: { action: 'get_dashboard_data', investor_id: investorId } 
+        const { data: dashData, error: dashErr } = await supabase.functions.invoke('manage-market-reports', {
+          body: { action: 'get_dashboard_data', investor_id: investorId }
         });
-        
-        const { data: assignedData } = await supabase.functions.invoke('investor-deal-locator', { 
-          body: { action: 'get_assigned_deals', investor_id: investorId } 
+        if (!dashErr && dashData && typeof dashData === 'object' && !dashData.error) {
+          safeDash = dashData;
+        }
+      } catch (e) { console.warn('[DashboardWidgets] market-reports fetch failed:', e); }
+
+      // Fetch assigned deals — isolated
+      try {
+        const { data: assignedData, error: assignErr } = await supabase.functions.invoke('investor-deal-locator', {
+          body: { action: 'get_assigned_deals', investor_id: investorId }
         });
+        if (!assignErr && assignedData) {
+          safeDeals = Array.isArray(assignedData?.deals) ? assignedData.deals : [];
+        }
+      } catch (e) { console.warn('[DashboardWidgets] deal-locator fetch failed:', e); }
 
-        const safeDash = (dashData && typeof dashData === 'object' && !dashData.error) ? dashData : {};
-        const safeDeals = Array.isArray(assignedData?.deals) ? assignedData.deals : [];
-        const combinedData = {
-          ...safeDash,
-          recentReports: Array.isArray(safeDash.recentReports) ? safeDash.recentReports : [],
-          assignedDeals: safeDeals,
-          pendingPayments: safeDeals.filter((d: any) => d.payment_status === 'pending'),
-          recentActivity: generateRecentActivity(safeDash, safeDeals)
-        };
+      const combinedData = {
+        ...safeDash,
+        recentReports: Array.isArray(safeDash.recentReports) ? safeDash.recentReports : [],
+        acquisitions: Array.isArray(safeDash.acquisitions) ? safeDash.acquisitions : [],
+        assignedDeals: safeDeals,
+        pendingPayments: safeDeals.filter((d: any) => d.payment_status === 'pending'),
+        recentActivity: generateRecentActivity(safeDash, safeDeals)
+      };
 
-        setData(combinedData);
-      } catch (e) { 
-        console.error(e); 
-      }
+      setData(combinedData);
       setLoading(false);
     };
     fetchData();

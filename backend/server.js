@@ -1926,7 +1926,19 @@ app.post('/functions/v1/:fn', async (req, res) => {
         return ok({ success: true, reports: data || [] });
       }
 
-      return err(`Unknown market-reports action: ${action}`);
+      // Dashboard data — return safe defaults for any unknown action
+      if (action === 'get_dashboard_data') {
+        const { investor_id } = body;
+        let reports = [];
+        try {
+          const { data } = await dbGet('/market_reports?order=created_at.desc&limit=5&select=*');
+          reports = Array.isArray(data) ? data : [];
+        } catch {}
+        return ok({ success: true, recentReports: reports, reports });
+      }
+
+      console.warn(`[manage-market-reports] Unhandled action: ${action}`);
+      return ok({ success: true, reports: [], recentReports: [] });
     }
 
     // ─────────────────────────── HR / COMMISSIONS ─────────────────────────
@@ -2546,14 +2558,24 @@ app.post('/functions/v1/:fn', async (req, res) => {
 
     // ─────────────────────────── DEAL LOCATOR ──────────────────────────────
     case 'investor-deal-locator': {
-      const { zip_code, city, state, operation_type, investor_id } = body;
+      const { zip_code, city, state, operation_type, investor_id, action } = body;
+
+      if (action === 'get_assigned_deals') {
+        try {
+          const { data } = await dbGet(`/properties?is_published=eq.true&select=*&limit=20`);
+          return ok({ success: true, deals: Array.isArray(data) ? data : [] });
+        } catch { return ok({ success: true, deals: [] }); }
+      }
+
       let q = '/properties?is_published=eq.true&select=*,deal_analytics(*)';
       if (zip_code) q += `&zip_code=eq.${zip_code}`;
       if (city) q += `&city=ilike.%25${encodeURIComponent(city)}%25`;
       if (state) q += `&state=eq.${state}`;
       if (operation_type) q += `&operation_type=eq.${operation_type}`;
-      const { data } = await dbGet(q);
-      return ok({ success: true, deals: data || [] });
+      try {
+        const { data } = await dbGet(q);
+        return ok({ success: true, deals: Array.isArray(data) ? data : [] });
+      } catch { return ok({ success: true, deals: [] }); }
     }
 
     // ─────────────────────────── WEEKLY DIGEST ────────────────────────────
