@@ -8,7 +8,7 @@ import { createClient } from '@supabase/supabase-js';
 // Fallback: use the browser's own origin so the app works without any env var set.
 const supabaseUrl = import.meta.env.VITE_SUPABASE_URL ||
   (typeof window !== 'undefined' ? window.location.origin : 'http://localhost:4000');
-const supabaseKey = import.meta.env.VITE_SUPABASE_ANON_KEY || 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJyb2xlIjoiYW5vbiIsImlhdCI6MTc4MTMwNTg0NiwiZXhwIjoyMDk2NjY1ODQ2fQ.PDedoXvk6RoUSEc2g5k8T6QmwkWyreeR8zc4yAWDMVQ';
+const supabaseKey = import.meta.env.VITE_SUPABASE_ANON_KEY || 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJyb2xlIjoiYW5vbiIsImlhdCI6MTc4MjYxNTM0MywiZXhwIjoyMDk3OTc1MzQzfQ.2_Zy92Q4PWwyRE_3Rk71nroMRWksTm3amkwv9Lli8tE';
 
 /**
  * Custom Realtime WebSocket message decoder.
