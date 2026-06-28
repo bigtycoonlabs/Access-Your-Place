@@ -239,7 +239,7 @@ export function SellMyOperation({ investorId, investorName }: Props) {
         // DB fallback for TOS
         try {
           const { data: profile } = await supabase
-            .from('investor_profiles')
+            .from('investors')
             .select('seller_tos_agreed')
             .eq('id', investorId)
             .single();
@@ -269,7 +269,7 @@ export function SellMyOperation({ investorId, investorName }: Props) {
       } else {
         // DB fallback: update investor_profiles directly
         const { error: updateError } = await supabase
-          .from('investor_profiles')
+          .from('investors')
           .update({ seller_tos_agreed: true, seller_tos_agreed_at: new Date().toISOString() })
           .eq('id', investorId);
         if (updateError) throw new Error(updateError.message);

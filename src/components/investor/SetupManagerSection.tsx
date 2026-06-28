@@ -92,7 +92,7 @@ export function SetupManagerSection({ investorId, investorName, investorEmail, o
     try {
       // Check investor_profiles for assigned SM
       const { data: profile } = await supabase
-        .from('investor_profiles')
+        .from('investors')
         .select('assigned_setup_manager_id, assigned_setup_manager_name')
         .eq('id', investorId)
         .single();

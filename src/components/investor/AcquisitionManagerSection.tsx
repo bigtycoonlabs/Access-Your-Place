@@ -102,7 +102,7 @@ export function AcquisitionManagerSection({ investorId, investorName, investorEm
     try {
       // Check investor_profiles for assigned AM
       const { data: profile } = await supabase
-        .from('investor_profiles')
+        .from('investors')
         .select('assigned_acquisition_manager_id, assigned_acquisition_manager_name')
         .eq('id', investorId)
 
