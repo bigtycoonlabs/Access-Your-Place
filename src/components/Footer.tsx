@@ -145,10 +145,10 @@ export default function Footer() {
                 <li className="flex items-start">
                   <Mail size={18} className="mr-2 mt-1 text-[#d4a574] flex-shrink-0" aria-hidden="true" />
                   <a 
-                    href="mailto:hello@accessyourplace.com" 
+                    href="mailto:success@accessyourplace.com"
                     className="text-gray-400 hover:text-[#d4a574] transition-colors focus:outline-none focus:ring-2 focus:ring-[#d4a574] rounded"
                   >
-                    hello@accessyourplace.com
+                    success@accessyourplace.com
                   </a>
                 </li>
                 <li className="flex items-start">
