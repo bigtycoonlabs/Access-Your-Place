@@ -30,11 +30,6 @@ const TWILIO_SID         = process.env.TWILIO_ACCOUNT_SID;
 const TWILIO_TOKEN       = process.env.TWILIO_AUTH_TOKEN;
 const TWILIO_FROM        = process.env.TWILIO_FROM_NUMBER;
 const SITE_URL           = process.env.SITE_URL || 'https://accessyourplace.com';
-const STRIPE_SECRET_KEY  = process.env.STRIPE_SECRET_KEY;
-const STRIPE_WEBHOOK_SECRET = process.env.STRIPE_WEBHOOK_SECRET;
-const STRIPE_PRICE_STARTER  = process.env.STRIPE_PRICE_STARTER;   // e.g. price_xxx
-const STRIPE_PRICE_GROWTH   = process.env.STRIPE_PRICE_GROWTH;
-const STRIPE_PRICE_SCALE    = process.env.STRIPE_PRICE_SCALE;
 
 // ── Middleware ────────────────────────────────────────────────────────────────
 app.use(cors({ origin: '*', methods: ['GET','POST','PUT','PATCH','DELETE','OPTIONS'] }));
@@ -2348,153 +2343,26 @@ app.post('/functions/v1/:fn', async (req, res) => {
       return err('Unknown digital-products action');
     }
 
-    // ─────────────────────────── PAYMENTS (Stripe) ────────────────────────
+    // ─────────────────────────── PAYMENTS (DB-only stub) ─────────────────
     case 'manage-payments':
     case 'process-account-funding':
     case 'process-acquisition-payment':
     case 'marketplace-payments': {
       const { action } = body;
 
-      // ── Lazy-load Stripe so server still boots without the key ─────────────
-      const getStripe = () => {
-        if (!STRIPE_SECRET_KEY) throw new Error('STRIPE_SECRET_KEY env var not set');
-        const Stripe = require('stripe');
-        return Stripe(STRIPE_SECRET_KEY);
-      };
-
-      // ── Read payments from DB ──────────────────────────────────────────────
       if (action === 'get_payments') {
         const { investor_id } = body;
-        const q = investor_id
-          ? `/payments?investor_id=eq.${investor_id}&order=created_at.desc&select=*`
-          : '/payments?order=created_at.desc&select=*';
+        const q = investor_id ? `/payments?investor_id=eq.${investor_id}&order=created_at.desc&select=*` : '/payments?order=created_at.desc&select=*';
         const { data } = await dbGet(q);
         return ok({ success: true, payments: data || [] });
       }
 
-      // ── Create a Stripe PaymentIntent (one-time charge) ────────────────────
-      if (action === 'create_payment_intent') {
-        const { investor_id, amount, currency = 'usd', description, metadata = {} } = body;
-        if (!amount || amount <= 0) return err('amount is required and must be > 0');
-        const stripe = getStripe();
-        const intent = await stripe.paymentIntents.create({
-          amount: Math.round(amount * 100),   // Stripe uses cents
-          currency,
-          description: description || 'Access Your Place payment',
-          metadata: { investor_id: investor_id || '', ...metadata },
-          automatic_payment_methods: { enabled: true },
-        });
-        // Record in DB as pending
-        const result = await dbPost('/payments', {
-          investor_id,
-          amount,
-          currency: currency.toUpperCase(),
-          description,
-          payment_method: 'stripe',
-          stripe_payment_intent_id: intent.id,
-          status: 'pending',
-          created_at: new Date().toISOString(),
-        });
-        return ok({
-          success: true,
-          client_secret: intent.client_secret,
-          payment_intent_id: intent.id,
-          payment: Array.isArray(result.data) ? result.data[0] : result.data,
-        });
-      }
-
-      // ── Create or retrieve a Stripe Customer ──────────────────────────────
-      if (action === 'create_customer') {
-        const { investor_id, email, name } = body;
-        if (!email) return err('email is required');
-        const stripe = getStripe();
-        const customer = await stripe.customers.create({
-          email, name: name || email,
-          metadata: { investor_id: investor_id || '' },
-        });
-        // Persist stripe_customer_id on the investor row
-        if (investor_id) {
-          await dbPatch(`/investors?id=eq.${investor_id}`, {
-            stripe_customer_id: customer.id,
-            updated_at: new Date().toISOString(),
-          });
-        }
-        return ok({ success: true, customer_id: customer.id });
-      }
-
-      // ── Create a Stripe subscription ──────────────────────────────────────
-      if (action === 'create_subscription') {
-        const { investor_id, plan = 'starter', customer_id } = body;
-        if (!customer_id) return err('customer_id is required');
-        const priceMap = {
-          starter: STRIPE_PRICE_STARTER,
-          growth:  STRIPE_PRICE_GROWTH,
-          scale:   STRIPE_PRICE_SCALE,
-        };
-        const priceId = priceMap[plan];
-        if (!priceId) return err(`No Stripe price configured for plan "${plan}". Set STRIPE_PRICE_${plan.toUpperCase()} env var.`);
-        const stripe = getStripe();
-        const subscription = await stripe.subscriptions.create({
-          customer: customer_id,
-          items: [{ price: priceId }],
-          payment_behavior: 'default_incomplete',
-          expand: ['latest_invoice.payment_intent'],
-          metadata: { investor_id: investor_id || '', plan },
-        });
-        if (investor_id) {
-          await dbPatch(`/investors?id=eq.${investor_id}`, {
-            subscription_plan: plan,
-            stripe_subscription_id: subscription.id,
-            subscription_status: subscription.status,
-            updated_at: new Date().toISOString(),
-          });
-        }
-        return ok({
-          success: true,
-          subscription_id: subscription.id,
-          status: subscription.status,
-          client_secret: subscription.latest_invoice?.payment_intent?.client_secret || null,
-        });
-      }
-
-      // ── Cancel a subscription ─────────────────────────────────────────────
-      if (action === 'cancel_subscription') {
-        const { subscription_id, investor_id } = body;
-        if (!subscription_id) return err('subscription_id is required');
-        const stripe = getStripe();
-        await stripe.subscriptions.cancel(subscription_id);
-        if (investor_id) {
-          await dbPatch(`/investors?id=eq.${investor_id}`, {
-            subscription_status: 'canceled',
-            updated_at: new Date().toISOString(),
-          });
-        }
-        return ok({ success: true });
-      }
-
-      // ── Get customer portal link (self-serve billing) ─────────────────────
-      if (action === 'get_portal_url') {
-        const { customer_id } = body;
-        if (!customer_id) return err('customer_id is required');
-        const stripe = getStripe();
-        const session = await stripe.billingPortal.sessions.create({
-          customer: customer_id,
-          return_url: `${SITE_URL}/investor/portal`,
-        });
-        return ok({ success: true, url: session.url });
-      }
-
-      // ── Legacy DB-only create_payment (kept for backward compat) ──────────
       if (action === 'create_payment') {
         const { investor_id, amount, currency = 'USD', description, payment_method } = body;
-        const result = await dbPost('/payments', {
-          investor_id, amount, currency, description, payment_method,
-          status: 'pending', created_at: new Date().toISOString(),
-        });
+        const result = await dbPost('/payments', { investor_id, amount, currency, description, payment_method, status: 'pending', created_at: new Date().toISOString() });
         return ok({ success: true, payment: Array.isArray(result.data) ? result.data[0] : result.data });
       }
 
-      // ── Legacy DB-only update_payment ─────────────────────────────────────
       if (action === 'update_payment') {
         const { payment_id, status } = body;
         await dbPatch(`/payments?id=eq.${payment_id}`, { status, updated_at: new Date().toISOString() });
@@ -3205,101 +3073,6 @@ app.post('/functions/v1/:fn', async (req, res) => {
   }
 }); // end app.post /functions/v1/:fn
 
-// ── Stripe webhook (raw body required — registered BEFORE json middleware) ───
-app.post(
-  '/webhooks/stripe',
-  express.raw({ type: 'application/json' }),
-  async (req, res) => {
-    if (!STRIPE_SECRET_KEY || !STRIPE_WEBHOOK_SECRET) {
-      return res.status(400).json({ error: 'Stripe not configured' });
-    }
-    const Stripe = require('stripe');
-    const stripe = Stripe(STRIPE_SECRET_KEY);
-    let event;
-    try {
-      event = stripe.webhooks.constructEvent(
-        req.body,
-        req.headers['stripe-signature'],
-        STRIPE_WEBHOOK_SECRET
-      );
-    } catch (e) {
-      console.error('[Stripe Webhook] Signature verification failed:', e.message);
-      return res.status(400).send(`Webhook Error: ${e.message}`);
-    }
-
-    try {
-      switch (event.type) {
-        case 'payment_intent.succeeded': {
-          const pi = event.data.object;
-          await dbPatch(
-            `/payments?stripe_payment_intent_id=eq.${pi.id}`,
-            { status: 'succeeded', updated_at: new Date().toISOString() }
-          );
-          break;
-        }
-        case 'payment_intent.payment_failed': {
-          const pi = event.data.object;
-          await dbPatch(
-            `/payments?stripe_payment_intent_id=eq.${pi.id}`,
-            { status: 'failed', updated_at: new Date().toISOString() }
-          );
-          break;
-        }
-        case 'customer.subscription.updated':
-        case 'customer.subscription.deleted': {
-          const sub = event.data.object;
-          const investorId = sub.metadata?.investor_id;
-          if (investorId) {
-            await dbPatch(
-              `/investors?id=eq.${investorId}`,
-              {
-                subscription_status: sub.status,
-                subscription_plan: sub.metadata?.plan || null,
-                updated_at: new Date().toISOString(),
-              }
-            );
-          }
-          break;
-        }
-        case 'invoice.payment_succeeded': {
-          const inv = event.data.object;
-          if (inv.subscription) {
-            const sub = await stripe.subscriptions.retrieve(inv.subscription);
-            const investorId = sub.metadata?.investor_id;
-            if (investorId) {
-              await dbPatch(
-                `/investors?id=eq.${investorId}`,
-                { subscription_status: 'active', updated_at: new Date().toISOString() }
-              );
-            }
-          }
-          break;
-        }
-        case 'invoice.payment_failed': {
-          const inv = event.data.object;
-          if (inv.subscription) {
-            const sub = await stripe.subscriptions.retrieve(inv.subscription);
-            const investorId = sub.metadata?.investor_id;
-            if (investorId) {
-              await dbPatch(
-                `/investors?id=eq.${investorId}`,
-                { subscription_status: 'past_due', updated_at: new Date().toISOString() }
-              );
-            }
-          }
-          break;
-        }
-        default:
-          console.log(`[Stripe Webhook] Unhandled event: ${event.type}`);
-      }
-    } catch (e) {
-      console.error('[Stripe Webhook] Handler error:', e);
-    }
-
-    res.json({ received: true });
-  }
-);
-
 // ── SPA fallback ───────────────────────────────────────────────────────────────
 app.get('*', (req, res) => {
   const indexPath = path.join(DIST_DIR, 'index.html');
@@ -3313,6 +3086,5 @@ app.get('*', (req, res) => {
 // ── Start ─────────────────────────────────────────────────────────────────────
 app.listen(PORT, () => {
   console.log(`[AYP Server] Listening on port ${PORT}`);
-  console.log(`[AYP Server] Stripe: ${STRIPE_SECRET_KEY ? 'configured' : 'NOT configured (set STRIPE_SECRET_KEY)'}`);
   console.log(`[AYP Server] Supabase: ${SUPABASE_URL ? 'configured' : 'NOT configured'}`);
 });
