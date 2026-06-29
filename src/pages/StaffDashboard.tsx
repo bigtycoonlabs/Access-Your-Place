@@ -686,7 +686,7 @@ export default function StaffDashboard() {
 
   const fetchProducts = async () => {
     const { data } = await supabase.functions.invoke('get-digital-products');
-    if (data?.products) setProducts(data.products);
+    if (Array.isArray(data?.products)) setProducts(data.products);
   };
 
   const fetchDraftArticles = async () => {
@@ -1725,7 +1725,7 @@ export default function StaffDashboard() {
                         </form>
 
                         <div className="space-y-4" role="list" aria-label="Digital products">
-                          {products.length === 0 ? (
+                          {(!Array.isArray(products) || products.length === 0) ? (
                             <p className="text-center text-gray-500 py-8">No digital products uploaded yet.</p>
                           ) : (
                             products.map(product => (
@@ -2168,6 +2168,12 @@ export default function StaffDashboard() {
             </AlertDialogFooter>
           </AlertDialogContent>
         </AlertDialog>
+
+      </div>
+    </div>
+  );
+}
+lertDialog>
 
       </div>
     </div>
