@@ -25,8 +25,8 @@ export default function Hero2026() {
   }, []);
 
   return (
-    <section className="bg-gradient-to-br from-[#0a0f1a] via-[#111827] to-[#0a0f1a] text-white py-20 relative overflow-hidden">
-      <div className="absolute inset-0 opacity-20" style={{backgroundImage:'radial-gradient(circle at 1px 1px, rgba(255,255,255,0.05) 1px, transparent 0)', backgroundSize:'40px 40px'}}></div>
+    <section className="bg-gradient-to-br from-[#0a0f1a] via-[#111827] to-[#0a0f1a] text-white py-12 sm:py-20 relative overflow-hidden">
+      <div className="absolute inset-0 bg-[url(\'data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iNjAiIGhlaWdodD0iNjAiIHZpZXdCb3g9IjAgMCA2MCA2MCIgeG1sbnM9Imh0dHA6Ly93d3cudzMub3JnLzIwMDAvc3ZnIj48ZyBmaWxsPSJub25lIiBmaWxsLXJ1bGU9ImV2ZW5vZGQiPjxnIGZpbGw9IiNmZmYiIGZpbGwtb3BhY2l0eT0iMC4wMiI+PGNpcmNsZSBjeD0iMzAiIGN5PSIzMCIgcj0iMiIvPjwvZz48L2c+PC9zdmc+\')] opacity-50"></div>
       <div className="absolute top-20 left-10 w-72 h-72 bg-[#d4a574]/10 rounded-full blur-3xl"></div>
       <div className="absolute bottom-20 right-10 w-96 h-96 bg-[#d4a574]/5 rounded-full blur-3xl"></div>
 
@@ -38,10 +38,10 @@ export default function Hero2026() {
             Penny · Market Intelligence AI · (813) 822-0610
           </div>
 
-          {/* Main Headline */}
-          <h1 className="text-4xl md:text-5xl lg:text-6xl font-bold mb-6 leading-tight">
+          {/* Headline */}
+          <h1 className="text-3xl sm:text-4xl md:text-5xl lg:text-6xl font-bold mb-6 leading-tight">
             <span className="bg-gradient-to-r from-white via-gray-100 to-gray-300 bg-clip-text text-transparent">
-              You Shouldn't Need Permission
+              You Shouldn&apos;t Need Permission
             </span>
             <br />
             <span className="bg-gradient-to-r from-white via-gray-100 to-gray-300 bg-clip-text text-transparent">
@@ -53,11 +53,11 @@ export default function Hero2026() {
             </span>
           </h1>
 
-          <p className="text-xl md:text-2xl text-gray-300 max-w-3xl mx-auto mb-4 leading-relaxed">
-            Every year, it gets harder for an individual to break into housing — tighter credit requirements, closed-door landlord relationships, institutions with the inside track.
+          <p className="text-lg sm:text-xl md:text-2xl text-gray-300 max-w-3xl mx-auto mb-4 leading-relaxed">
+            Every year it gets harder to break into housing — tighter credit requirements, closed-door landlord relationships, institutions with the inside track.
           </p>
-          <p className="text-lg text-gray-400 max-w-2xl mx-auto mb-8">
-            Access Your Place gives that access back. We give you the engine, the network, and the certified team to build a flexible housing portfolio that's actually yours.
+          <p className="text-base sm:text-lg text-gray-400 max-w-2xl mx-auto mb-8">
+            Access Your Place gives that access back. We give you the engine, the network, and the certified team to build a flexible housing portfolio that&apos;s actually yours.
           </p>
 
           {/* Trust Indicators */}
@@ -78,7 +78,7 @@ export default function Hero2026() {
         </div>
 
         {/* Stats */}
-        <div className="grid grid-cols-4 gap-3 max-w-2xl mx-auto mb-10">
+        <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 max-w-2xl mx-auto mb-10">
           {[
             { value: counts.rentals, label: 'Properties', suffix: '+' },
             { value: counts.clients, label: 'Investors', suffix: '+' },
@@ -108,7 +108,6 @@ export default function Hero2026() {
             Landlord Partners: Fill Vacancies
           </Link>
         </div>
-
         <p className="text-center text-sm text-gray-500">
           Prefer to talk?{' '}
           <a href="tel:8138220610" className="text-[#5EEAD4] hover:underline inline-flex items-center gap-1">

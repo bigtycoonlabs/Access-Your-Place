@@ -14,50 +14,27 @@ import SEO, { getOrganizationSchema, getWebsiteSchema, getFAQSchema } from './SE
 
 const AppLayout: React.FC = () => {
   const faqData = [
-    {
-      question: 'What is rental arbitrage?',
-      answer: 'Rental arbitrage is a real estate investment strategy where you lease a property long-term and then sublease it as a short-term rental or co-living space, profiting from the difference between your lease payment and rental income.'
-    },
-    {
-      question: 'Do I need to own property to start?',
-      answer: 'No. You lease properties from landlords who approve STR or co-living operations, eliminating the need for large down payments or mortgages.'
-    },
-    {
-      question: 'How do I find landlords who allow short-term rentals?',
-      answer: 'Access Your Place provides pre-negotiated deals where landlord approval is already secured. We handle the outreach and negotiation so you can focus on running your business.'
-    },
-    {
-      question: 'What returns can I expect?',
-      answer: 'Returns vary by market and property type. Each listing includes detailed revenue projections based on real micro-market data. We project — we never guarantee.'
-    },
-    {
-      question: 'Is rental arbitrage legal?',
-      answer: 'Yes, when done properly with landlord permission and in compliance with local regulations. We verify that all properties on our platform meet legal requirements.'
-    }
+    { question: 'What does Access Your Place help operators do?', answer: 'Access Your Place helps operator clients research markets, review qualified corporate lease opportunities, work with acquisition support, and manage flexible housing growth through one platform.' },
+    { question: 'Are investors and operators separate account types?', answer: 'No. Access Your Place uses one operator client account. Investor describes a pre-launch operator; once properties are live and hosting guests, that client is operating.' },
+    { question: 'Can public users see property addresses?', answer: 'Public marketplace cards protect exact addresses. Funded operator accounts can access full addresses through the internal marketplace and dashboard experience.' },
+    { question: 'How does Penny qualify properties?', answer: 'Penny uses a 0-100 score across demand, supply, regulation, and economics. Properties under 50 do not qualify for public listing.' },
+    { question: 'Who can use the client access portal?', answer: 'Operator clients, pre-launch investors, vendors, and landlords can use the public account flow. Staff login remains separate for internal teams.' }
   ];
 
   const homepageSchema = {
     '@context': 'https://schema.org',
-    '@graph': [
-      getOrganizationSchema(),
-      getWebsiteSchema(),
-      getFAQSchema(faqData)
-    ]
+    '@graph': [ getOrganizationSchema(), getWebsiteSchema(), getFAQSchema(faqData) ]
   };
 
   return (
     <div className="min-h-screen bg-[#0a0f1a]">
-      <a
-        href="#main-content"
-        className="sr-only focus:not-sr-only focus:absolute focus:top-4 focus:left-4 focus:z-50 focus:bg-white focus:px-4 focus:py-2 focus:rounded-md focus:shadow-lg focus:text-[#1a365d] focus:ring-2 focus:ring-[#d4a574] focus:outline-none focus:font-medium"
-      >
+      <a href="#main-content" className="sr-only focus:not-sr-only focus:absolute focus:top-4 focus:left-4 focus:z-50 focus:bg-white focus:px-4 focus:py-2 focus:rounded-md focus:shadow-lg focus:text-[#1a365d] focus:ring-2 focus:ring-[#d4a574] focus:outline-none focus:font-medium">
         Skip to main content
       </a>
-
       <SEO
-        title="Access Your Place — Corporate Lease Acquisition Platform"
-        description="Certified Acquisition Managers source and close furnished rental deals across 30+ markets. Landlord-approved deals, real market projections, no cold outreach."
-        keywords="rental arbitrage, corporate leasing, furnished rentals, acquisition manager, short-term rental investment"
+        title="Access Your Place - Rental Arbitrage Operator Platform"
+        description="Access Your Place is the compliance-first platform for rental arbitrage operators. Find landlord-approved STR and co-living deals, leverage Penny AI market research, and scale with expert acquisition support."
+        keywords="rental arbitrage, STR operator, co-living operator, short-term rental deals, Penny AI, landlord-approved properties, flexible housing, acquisition support, corporate lease, operator dashboard"
         canonicalUrl="/"
         ogType="website"
         structuredData={homepageSchema}
