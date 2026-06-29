@@ -30,6 +30,11 @@ const TWILIO_SID         = process.env.TWILIO_ACCOUNT_SID;
 const TWILIO_TOKEN       = process.env.TWILIO_AUTH_TOKEN;
 const TWILIO_FROM        = process.env.TWILIO_FROM_NUMBER;
 const SITE_URL           = process.env.SITE_URL || 'https://accessyourplace.com';
+const STRIPE_SECRET_KEY  = process.env.STRIPE_SECRET_KEY;
+const STRIPE_WEBHOOK_SECRET = process.env.STRIPE_WEBHOOK_SECRET;
+const STRIPE_PRICE_STARTER  = process.env.STRIPE_PRICE_STARTER;   // e.g. price_xxx
+const STRIPE_PRICE_GROWTH   = process.env.STRIPE_PRICE_GROWTH;
+const STRIPE_PRICE_SCALE    = process.env.STRIPE_PRICE_SCALE;
 
 // ── Middleware ────────────────────────────────────────────────────────────────
 app.use(cors({ origin: '*', methods: ['GET','POST','PUT','PATCH','DELETE','OPTIONS'] }));
@@ -2343,26 +2348,153 @@ app.post('/functions/v1/:fn', async (req, res) => {
       return err('Unknown digital-products action');
     }
 
-    // ─────────────────────────── PAYMENTS ──────────────────────────────────
+    // ─────────────────────────── PAYMENTS (Stripe) ────────────────────────
     case 'manage-payments':
     case 'process-account-funding':
     case 'process-acquisition-payment':
     case 'marketplace-payments': {
       const { action } = body;
 
+      // ── Lazy-load Stripe so server still boots without the key ─────────────
+      const getStripe = () => {
+        if (!STRIPE_SECRET_KEY) throw new Error('STRIPE_SECRET_KEY env var not set');
+        const Stripe = require('stripe');
+        return Stripe(STRIPE_SECRET_KEY);
+      };
+
+      // ── Read payments from DB ──────────────────────────────────────────────
       if (action === 'get_payments') {
         const { investor_id } = body;
-        const q = investor_id ? `/payments?investor_id=eq.${investor_id}&order=created_at.desc&select=*` : '/payments?order=created_at.desc&select=*';
+        const q = investor_id
+          ? `/payments?investor_id=eq.${investor_id}&order=created_at.desc&select=*`
+          : '/payments?order=created_at.desc&select=*';
         const { data } = await dbGet(q);
         return ok({ success: true, payments: data || [] });
       }
 
+      // ── Create a Stripe PaymentIntent (one-time charge) ────────────────────
+      if (action === 'create_payment_intent') {
+        const { investor_id, amount, currency = 'usd', description, metadata = {} } = body;
+        if (!amount || amount <= 0) return err('amount is required and must be > 0');
+        const stripe = getStripe();
+        const intent = await stripe.paymentIntents.create({
+          amount: Math.round(amount * 100),   // Stripe uses cents
+          currency,
+          description: description || 'Access Your Place payment',
+          metadata: { investor_id: investor_id || '', ...metadata },
+          automatic_payment_methods: { enabled: true },
+        });
+        // Record in DB as pending
+        const result = await dbPost('/payments', {
+          investor_id,
+          amount,
+          currency: currency.toUpperCase(),
+          description,
+          payment_method: 'stripe',
+          stripe_payment_intent_id: intent.id,
+          status: 'pending',
+          created_at: new Date().toISOString(),
+        });
+        return ok({
+          success: true,
+          client_secret: intent.client_secret,
+          payment_intent_id: intent.id,
+          payment: Array.isArray(result.data) ? result.data[0] : result.data,
+        });
+      }
+
+      // ── Create or retrieve a Stripe Customer ──────────────────────────────
+      if (action === 'create_customer') {
+        const { investor_id, email, name } = body;
+        if (!email) return err('email is required');
+        const stripe = getStripe();
+        const customer = await stripe.customers.create({
+          email, name: name || email,
+          metadata: { investor_id: investor_id || '' },
+        });
+        // Persist stripe_customer_id on the investor row
+        if (investor_id) {
+          await dbPatch(`/investors?id=eq.${investor_id}`, {
+            stripe_customer_id: customer.id,
+            updated_at: new Date().toISOString(),
+          });
+        }
+        return ok({ success: true, customer_id: customer.id });
+      }
+
+      // ── Create a Stripe subscription ──────────────────────────────────────
+      if (action === 'create_subscription') {
+        const { investor_id, plan = 'starter', customer_id } = body;
+        if (!customer_id) return err('customer_id is required');
+        const priceMap = {
+          starter: STRIPE_PRICE_STARTER,
+          growth:  STRIPE_PRICE_GROWTH,
+          scale:   STRIPE_PRICE_SCALE,
+        };
+        const priceId = priceMap[plan];
+        if (!priceId) return err(`No Stripe price configured for plan "${plan}". Set STRIPE_PRICE_${plan.toUpperCase()} env var.`);
+        const stripe = getStripe();
+        const subscription = await stripe.subscriptions.create({
+          customer: customer_id,
+          items: [{ price: priceId }],
+          payment_behavior: 'default_incomplete',
+          expand: ['latest_invoice.payment_intent'],
+          metadata: { investor_id: investor_id || '', plan },
+        });
+        if (investor_id) {
+          await dbPatch(`/investors?id=eq.${investor_id}`, {
+            subscription_plan: plan,
+            stripe_subscription_id: subscription.id,
+            subscription_status: subscription.status,
+            updated_at: new Date().toISOString(),
+          });
+        }
+        return ok({
+          success: true,
+          subscription_id: subscription.id,
+          status: subscription.status,
+          client_secret: subscription.latest_invoice?.payment_intent?.client_secret || null,
+        });
+      }
+
+      // ── Cancel a subscription ─────────────────────────────────────────────
+      if (action === 'cancel_subscription') {
+        const { subscription_id, investor_id } = body;
+        if (!subscription_id) return err('subscription_id is required');
+        const stripe = getStripe();
+        await stripe.subscriptions.cancel(subscription_id);
+        if (investor_id) {
+          await dbPatch(`/investors?id=eq.${investor_id}`, {
+            subscription_status: 'canceled',
+            updated_at: new Date().toISOString(),
+          });
+        }
+        return ok({ success: true });
+      }
+
+      // ── Get customer portal link (self-serve billing) ─────────────────────
+      if (action === 'get_portal_url') {
+        const { customer_id } = body;
+        if (!customer_id) return err('customer_id is required');
+        const stripe = getStripe();
+        const session = await stripe.billingPortal.sessions.create({
+          customer: customer_id,
+          return_url: `${SITE_URL}/investor/portal`,
+        });
+        return ok({ success: true, url: session.url });
+      }
+
+      // ── Legacy DB-only create_payment (kept for backward compat) ──────────
       if (action === 'create_payment') {
         const { investor_id, amount, currency = 'USD', description, payment_method } = body;
-        const result = await dbPost('/payments', { investor_id, amount, currency, description, payment_method, status: 'pending', created_at: new Date().toISOString() });
+        const result = await dbPost('/payments', {
+          investor_id, amount, currency, description, payment_method,
+          status: 'pending', created_at: new Date().toISOString(),
+        });
         return ok({ success: true, payment: Array.isArray(result.data) ? result.data[0] : result.data });
       }
 
+      // ── Legacy DB-only update_payment ─────────────────────────────────────
       if (action === 'update_payment') {
         const { payment_id, status } = body;
         await dbPatch(`/payments?id=eq.${payment_id}`, { status, updated_at: new Date().toISOString() });
@@ -3063,127 +3195,124 @@ app.post('/functions/v1/:fn', async (req, res) => {
       return err('Unknown property-assignments action');
     }
 
-    case 'manage-property-expenses': {
-      const { action, property_id, expense_id } = body;
-      if (action === 'get') {
-        const { data } = await dbGet(`/property_expenses?property_id=eq.${property_id}&order=created_at.desc&select=*`);
-        return ok({ success: true, expenses: data || [] });
-      }
-      if (action === 'add') {
-        const { amount, category, description, date } = body;
-        const result = await dbPost('/property_expenses', { property_id, amount, category, description, date, created_at: new Date().toISOString() });
-        return ok({ success: true, expense: Array.isArray(result.data) ? result.data[0] : result.data });
-      }
-      if (action === 'delete') {
-        await dbDelete(`/property_expenses?id=eq.${expense_id}`);
-        return ok({ success: true });
-      }
-      return err('Unknown property-expenses action');
-    }
-
-    case 'manage-property-referrals': {
-      const { action } = body;
-      if (action === 'get') {
-        const { data } = await dbGet('/property_referrals?order=created_at.desc&select=*');
-        return ok({ success: true, referrals: data || [] });
-      }
-      if (action === 'create') {
-        const { property_id, referred_by, referred_email } = body;
-        const result = await dbPost('/property_referrals', { property_id, referred_by, referred_email, created_at: new Date().toISOString() });
-        return ok({ success: true, referral: Array.isArray(result.data) ? result.data[0] : result.data });
-      }
-      return err('Unknown property-referrals action');
-    }
-
-    case 'penny-score-monitoring': {
-      const { data } = await dbGet('/properties?is_published=eq.true&penny_score=lt.50&select=id,penny_score,listing_title');
-      return ok({ success: true, low_score_properties: data || [], count: data?.length || 0 });
-    }
-
-    case 'manage-email-logs': {
-      const { action } = body;
-      if (action === 'get') {
-        const { data } = await dbGet('/email_logs?order=created_at.desc&limit=100&select=*');
-        return ok({ success: true, logs: data || [] });
-      }
-      return err('Unknown email-logs action');
-    }
-
-    case 'new-deal-create': {
-      const { deal } = body;
-      const result = await dbPost('/properties', { ...deal, status: 'new', is_published: false, created_at: new Date().toISOString(), updated_at: new Date().toISOString() });
-      return ok({ success: true, deal: Array.isArray(result.data) ? result.data[0] : result.data });
-    }
-
-    // ─────────────────────────── DEFAULT / UNKNOWN ─────────────────────────
     default:
-      // Try to handle as a generic CRUD operation
-      console.warn(`[AYP Functions] Unknown function: ${fn}`, JSON.stringify(body).substring(0, 200));
-      return res.status(404).json({ error: `Function '${fn}' not found`, available: 'Check /health for server status' });
+      return err(`Unknown function: ${fn}`, 404);
+
+  } // end switch
+  } catch (e) {
+    console.error(`[${fn}] Unhandled error:`, e);
+    if (!res.headersSent) res.status(500).json({ error: e.message });
+  }
+}); // end app.post /functions/v1/:fn
+
+// ── Stripe webhook (raw body required — registered BEFORE json middleware) ───
+app.post(
+  '/webhooks/stripe',
+  express.raw({ type: 'application/json' }),
+  async (req, res) => {
+    if (!STRIPE_SECRET_KEY || !STRIPE_WEBHOOK_SECRET) {
+      return res.status(400).json({ error: 'Stripe not configured' });
     }
-  } catch (e) {
-    console.error(`[AYP Functions] Error in ${fn}:`, e);
-    return res.status(500).json({ error: e.message || 'Internal server error', function: fn });
-  }
-});
+    const Stripe = require('stripe');
+    const stripe = Stripe(STRIPE_SECRET_KEY);
+    let event;
+    try {
+      event = stripe.webhooks.constructEvent(
+        req.body,
+        req.headers['stripe-signature'],
+        STRIPE_WEBHOOK_SECRET
+      );
+    } catch (e) {
+      console.error('[Stripe Webhook] Signature verification failed:', e.message);
+      return res.status(400).send(`Webhook Error: ${e.message}`);
+    }
 
-// ── SPA Fallback — serve React app for all non-API routes ────────────────────
+    try {
+      switch (event.type) {
+        case 'payment_intent.succeeded': {
+          const pi = event.data.object;
+          await dbPatch(
+            `/payments?stripe_payment_intent_id=eq.${pi.id}`,
+            { status: 'succeeded', updated_at: new Date().toISOString() }
+          );
+          break;
+        }
+        case 'payment_intent.payment_failed': {
+          const pi = event.data.object;
+          await dbPatch(
+            `/payments?stripe_payment_intent_id=eq.${pi.id}`,
+            { status: 'failed', updated_at: new Date().toISOString() }
+          );
+          break;
+        }
+        case 'customer.subscription.updated':
+        case 'customer.subscription.deleted': {
+          const sub = event.data.object;
+          const investorId = sub.metadata?.investor_id;
+          if (investorId) {
+            await dbPatch(
+              `/investors?id=eq.${investorId}`,
+              {
+                subscription_status: sub.status,
+                subscription_plan: sub.metadata?.plan || null,
+                updated_at: new Date().toISOString(),
+              }
+            );
+          }
+          break;
+        }
+        case 'invoice.payment_succeeded': {
+          const inv = event.data.object;
+          if (inv.subscription) {
+            const sub = await stripe.subscriptions.retrieve(inv.subscription);
+            const investorId = sub.metadata?.investor_id;
+            if (investorId) {
+              await dbPatch(
+                `/investors?id=eq.${investorId}`,
+                { subscription_status: 'active', updated_at: new Date().toISOString() }
+              );
+            }
+          }
+          break;
+        }
+        case 'invoice.payment_failed': {
+          const inv = event.data.object;
+          if (inv.subscription) {
+            const sub = await stripe.subscriptions.retrieve(inv.subscription);
+            const investorId = sub.metadata?.investor_id;
+            if (investorId) {
+              await dbPatch(
+                `/investors?id=eq.${investorId}`,
+                { subscription_status: 'past_due', updated_at: new Date().toISOString() }
+              );
+            }
+          }
+          break;
+        }
+        default:
+          console.log(`[Stripe Webhook] Unhandled event: ${event.type}`);
+      }
+    } catch (e) {
+      console.error('[Stripe Webhook] Handler error:', e);
+    }
+
+    res.json({ received: true });
+  }
+);
+
+// ── SPA fallback ───────────────────────────────────────────────────────────────
 app.get('*', (req, res) => {
-  const indexFile = path.join(DIST_DIR, 'index.html');
-  if (require('fs').existsSync(indexFile)) {
-    res.sendFile(indexFile);
+  const indexPath = path.join(DIST_DIR, 'index.html');
+  if (require('fs').existsSync(indexPath)) {
+    res.sendFile(indexPath);
   } else {
-    res.status(404).json({ error: 'Frontend not built. Run npm run build first.' });
+    res.status(200).json({ ok: true, message: 'Access Your Place API server running' });
   }
 });
-
-// ── Auto-migration: runs on every boot, safe to repeat (all statements use IF NOT EXISTS)
-async function runStartupMigrations() {
-  // We call PostgREST's rpc or use direct DB via the pg package if available,
-  // otherwise fall back to running the ALTER TABLE via our db() helper against
-  // a custom RPC. Simplest reliable path: call our own /functions/v1/run-migration
-  // endpoint after boot, or use node-postgres if DATABASE_URL is set.
-  const dbUrl = process.env.DATABASE_URL || process.env.DATABASE_PUBLIC_URL;
-  if (!dbUrl) {
-    console.log('⚠️  No DATABASE_URL set — skipping auto-migration');
-    return;
-  }
-  try {
-    const { Client } = require('pg');
-    const client = new Client({ connectionString: dbUrl, ssl: { rejectUnauthorized: false } });
-    await client.connect();
-    console.log('🔄 Running startup migrations...');
-    await client.query(`
-      ALTER TABLE staff_users
-        ADD COLUMN IF NOT EXISTS failed_login_attempts integer DEFAULT 0,
-        ADD COLUMN IF NOT EXISTS locked_until timestamp with time zone,
-        ADD COLUMN IF NOT EXISTS last_failed_login timestamp with time zone,
-        ADD COLUMN IF NOT EXISTS session_token text,
-        ADD COLUMN IF NOT EXISTS session_expires timestamp with time zone;
-    `);
-    await client.query(`
-      CREATE INDEX IF NOT EXISTS idx_staff_users_session_token
-        ON staff_users (session_token) WHERE session_token IS NOT NULL;
-    `);
-    await client.query(`
-      ALTER TABLE landlord_contacts
-        ADD COLUMN IF NOT EXISTS reset_token text,
-        ADD COLUMN IF NOT EXISTS reset_token_expires timestamp with time zone;
-    `);
-    await client.end();
-    console.log('✅ Startup migrations complete');
-  } catch (e) {
-    // Log but never crash the server over a migration — IF NOT EXISTS means
-    // re-running is always safe, so a failure here is non-fatal.
-    console.error('⚠️  Startup migration error (non-fatal):', e.message);
-  }
-}
 
 // ── Start ─────────────────────────────────────────────────────────────────────
 app.listen(PORT, () => {
-  console.log(`✅ AYP Functions Server running on port ${PORT}`);
-  console.log(`   SUPABASE_URL: ${SUPABASE_URL || '⚠️  NOT SET'}`);
-  console.log(`   ANTHROPIC:    ${ANTHROPIC_KEY ? '✓ configured' : '⚠️  not set'}`);
-  console.log(`   RESEND:       ${RESEND_KEY ? '✓ configured' : '⚠️  not set'}`);
-  runStartupMigrations();
+  console.log(`[AYP Server] Listening on port ${PORT}`);
+  console.log(`[AYP Server] Stripe: ${STRIPE_SECRET_KEY ? 'configured' : 'NOT configured (set STRIPE_SECRET_KEY)'}`);
+  console.log(`[AYP Server] Supabase: ${SUPABASE_URL ? 'configured' : 'NOT configured'}`);
 });

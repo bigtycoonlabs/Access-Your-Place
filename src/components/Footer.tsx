@@ -127,11 +127,9 @@ export default function Footer() {
                 </li>
                 <li>
                   <a
-                    href="https://calendly.com/investyourplaces"
-                    target="_blank"
-                    rel="noopener noreferrer"
+                    href="mailto:success@accessyourplace.com?subject=Discovery%20Call%20Request"
                     className="text-gray-400 hover:text-[#d4a574] transition-colors focus:outline-none focus:ring-2 focus:ring-[#d4a574] rounded"
-                    aria-label="Book Discovery Call (opens in new tab)"
+                    aria-label="Book Discovery Call — email success team"
                   >
                     Book Discovery Call
                   </a>

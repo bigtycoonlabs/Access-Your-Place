@@ -10,7 +10,7 @@ export default function BookCallSection() {
   ];
 
   const handleBookCall = () => {
-    window.open('https://calendly.com/investyourplaces', '_blank');
+    window.location.href = 'mailto:success@accessyourplace.com?subject=Discovery%20Call%20Request&body=Hi%20Success%20Team%2C%0A%0AI%20would%20like%20to%20schedule%20a%20discovery%20call%20to%20learn%20more%20about%20Access%20Your%20Place.%0A%0AName%3A%0AMarket%20of%20interest%3A%0ABest%20time%20to%20reach%20me%3A%0A';
   };
 
   return (
@@ -62,7 +62,7 @@ export default function BookCallSection() {
               <p className="text-gray-600">Choose a time that works best for you</p>
             </div>
 
-            <button 
+            <button
               onClick={handleBookCall}
               className="w-full bg-gradient-to-r from-[#d4a574] to-[#c49464] text-[#0a0f1a] py-4 rounded-xl font-bold hover:shadow-lg hover:shadow-[#d4a574]/20 transition-all text-lg flex items-center justify-center gap-2"
             >
@@ -70,7 +70,17 @@ export default function BookCallSection() {
               <ArrowRight className="w-5 h-5" />
             </button>
 
-            <div className="mt-6 space-y-2">
+            <div className="mt-4 text-center">
+              <p className="text-xs text-gray-500 mb-1">or reach us directly at</p>
+              <a
+                href="mailto:success@accessyourplace.com"
+                className="text-sm font-medium text-[#d4a574] hover:text-[#c49464] transition-colors"
+              >
+                success@accessyourplace.com
+              </a>
+            </div>
+
+            <div className="mt-5 space-y-2">
               <div className="flex items-center justify-center gap-2 text-sm text-gray-600">
                 <CheckCircle className="w-4 h-4 text-green-500" />
                 <span>Free, no-obligation consultation</span>

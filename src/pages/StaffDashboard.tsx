@@ -935,6 +935,20 @@ export default function StaffDashboard() {
               )}
             </Button>
 
+            {/* Book a Call — quick-dial to success team */}
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={() => {
+                window.location.href = 'mailto:success@accessyourplace.com?subject=Discovery%20Call%20Request&body=Hi%20Success%20Team%2C%0A%0AI%20would%20like%20to%20schedule%20a%20discovery%20call.%0A%0AClient%20name%3A%0AMarket%20of%20interest%3A%0ABest%20time%3A%0A';
+              }}
+              className="hidden sm:flex items-center gap-1 text-[#d4a574] border-[#d4a574]/40 hover:bg-[#d4a574]/10"
+              aria-label="Book a discovery call — opens email to success team"
+            >
+              <Mail className="w-4 h-4" aria-hidden="true" />
+              <span className="text-xs font-medium">Book a Call</span>
+            </Button>
+
             {/* Deal Status Notification Bell - Shows for AMs and Success Team */}
             {staffSession?.id && canAccessDealFlow && (
               <AMNotificationBell
