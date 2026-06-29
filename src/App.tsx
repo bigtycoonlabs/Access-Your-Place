@@ -38,7 +38,9 @@ import HowItWorks from "./pages/HowItWorks";
 import CoreValues from "./pages/CoreValues";
 import Careers from "./pages/Careers";
 import ProPortal from "./pages/ProPortal";
-import Careers from "./pages/Careers";
+import CommunityStandards from "./pages/CommunityStandards";
+import LegalAgreementGate from "./pages/LegalAgreementGate";
+import PennyAI from "@/components/PennyAI";
 
 const queryClient = new QueryClient();
 
@@ -90,12 +92,15 @@ const App = () => (
                 <Route path="/privacy-policy" element={<PrivacyPolicy />} />
                 <Route path="/how-it-works" element={<HowItWorks />} />
                 <Route path="/core-values" element={<CoreValues />} />
-                <Route path="/careers" element={<Careers />} />
                 <Route path="/am-agreement/:agreementId" element={<AMAgreementSign />} />
                 <Route path="/pro-portal/:token" element={<ProPortal />} />
+                <Route path="/community-standards" element={<CommunityStandards />} />
+                <Route path="/legal-agreement-gate" element={<LegalAgreementGate />} />
                 <Route path="*" element={<NotFound />} />
               </Routes>
             </BrowserRouter>
+            {/* Penny AI floating chat — hidden on staff/admin routes */}
+            <PennyAI mode="floating" />
           </NativeShell>
         </TooltipProvider>
       </AppProvider>

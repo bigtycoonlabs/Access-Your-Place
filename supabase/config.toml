@@ -1,0 +1,67 @@
+# Supabase local dev config
+# https://supabase.com/docs/guides/local-development
+
+project_id = "lxfgylmkexnyryafmibi"
+
+[api]
+port = 54321
+schemas = ["public", "storage", "graphql_public"]
+extra_search_path = ["public", "extensions"]
+max_rows = 1000
+
+[db]
+port = 54322
+shadow_port = 54320
+major_version = 15
+
+[studio]
+port = 54323
+
+[inbucket]
+port = 54324
+smtp_port = 54325
+pop3_port = 54326
+
+[storage]
+file_size_limit = "50MiB"
+
+[auth]
+site_url = "http://localhost:5173"
+additional_redirect_urls = ["https://accessyourplace.com", "https://www.accessyourplace.com"]
+jwt_expiry = 3600
+enable_signup = true
+
+[auth.email]
+enable_signup = true
+double_confirm_changes = true
+enable_confirmations = false
+
+[functions.ai-investor-chat]
+verify_jwt = false
+
+[functions.investor-auth-v2]
+verify_jwt = false
+
+[functions.investor-register]
+verify_jwt = false
+
+[functions.investor-login]
+verify_jwt = false
+
+[functions.investor-session]
+verify_jwt = false
+
+[functions.staff-login]
+verify_jwt = false
+
+[functions.staff-forgot-password]
+verify_jwt = false
+
+[functions.security-alerts]
+verify_jwt = false
+
+[functions.get-properties]
+verify_jwt = false
+
+[functions.manage-deal-marketplace]
+verify_jwt = false
