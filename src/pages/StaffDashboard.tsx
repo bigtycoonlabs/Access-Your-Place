@@ -2152,4 +2152,24 @@ export default function StaffDashboard() {
             <AlertDialogHeader>
               <AlertDialogTitle>Delete Digital Product</AlertDialogTitle>
               <AlertDialogDescription>
-                Are you sure you want to delete "{productToDelete?.title}"? This will permanently remove the file from stor
+                Are you sure you want to delete &ldquo;{productToDelete?.title}&rdquo;? This will permanently remove the file from storage. This action cannot be undone.
+              </AlertDialogDescription>
+            </AlertDialogHeader>
+            <AlertDialogFooter>
+              <AlertDialogCancel onClick={() => { setDeleteDialogOpen(false); setProductToDelete(null); }}>
+                Cancel
+              </AlertDialogCancel>
+              <AlertDialogAction
+                onClick={handleDeleteConfirm}
+                className="bg-red-600 hover:bg-red-700 text-white"
+              >
+                {deleting ? 'Deleting...' : 'Delete'}
+              </AlertDialogAction>
+            </AlertDialogFooter>
+          </AlertDialogContent>
+        </AlertDialog>
+
+      </div>
+    </div>
+  );
+}
