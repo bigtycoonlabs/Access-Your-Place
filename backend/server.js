@@ -546,7 +546,7 @@ app.post('/functions/v1/:fn', async (req, res) => {
         } catch { return { agreement_signed: true, agreement_id: null }; }
       }
 
-      const STAFF_SELECT = 'id,email,is_active,password_hash,account_completed,first_name,last_name,name,phone,whatsapp_number,team,role,department,permissions,linked_investor_id,roles,yp_certified,trainee_status,commission_split,notification_preferences,failed_login_attempts,locked_until';
+      const STAFF_SELECT = 'id,email,is_active,password_hash,account_completed,first_name,last_name,name,phone,whatsapp_number,team,role,department,permissions,linked_investor_id,roles,yp_certified';
 
       // ==================== REFRESH SESSION ====================
       if (action === 'refresh_session') {

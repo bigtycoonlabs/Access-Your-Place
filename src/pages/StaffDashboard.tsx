@@ -854,6 +854,20 @@ export default function StaffDashboard() {
     return 'Staff Dashboard';
   };
 
+  // Guard: render loading spinner until session is loaded from localStorage.
+  // Prevents first-paint crash where staffSession=null causes isSuccessManager=false
+  // and locked DashboardSelector cards crash components expecting a valid session.
+  if (!staffSession) {
+    return (
+      <div className="min-h-screen bg-gray-50 flex items-center justify-center">
+        <div className="text-center">
+          <div className="w-8 h-8 border-4 border-[#d4a574] border-t-transparent rounded-full animate-spin mx-auto mb-3"></div>
+          <p className="text-gray-500 text-sm">Loading dashboard...</p>
+        </div>
+      </div>
+    );
+  }
+
   return (
     <div className="min-h-screen bg-gray-50">
       {/* Skip to main content link - WCAG 2.1 Level A: Bypass Blocks (2.4.1) */}
@@ -2138,28 +2152,4 @@ export default function StaffDashboard() {
             <AlertDialogHeader>
               <AlertDialogTitle>Delete Digital Product</AlertDialogTitle>
               <AlertDialogDescription>
-                Are you sure you want to delete "{productToDelete?.title}"? This will permanently remove the file from storage.
-              </AlertDialogDescription>
-            </AlertDialogHeader>
-            <AlertDialogFooter>
-              <AlertDialogCancel disabled={deleting}>Cancel</AlertDialogCancel>
-              <AlertDialogAction onClick={handleDeleteConfirm} disabled={deleting} className="bg-red-600 hover:bg-red-700">
-                {deleting ? <Loader2 className="w-4 h-4 animate-spin mr-2" aria-hidden="true" /> : null}
-                Delete
-              </AlertDialogAction>
-            </AlertDialogFooter>
-          </AlertDialogContent>
-        </AlertDialog>
-      </main>
-
-      {/* Penny AI Floating Chat Button */}
-      {staffSession?.id && (
-        <PennyChatButton
-          userId={staffSession.id}
-          userName={staffDisplayName}
-          userType="staff"
-        />
-      )}
-    </div>
-  );
-}
+                Are you sure you want to delete "{productToDelete?.title}"? This will permanently remove the file from stor
