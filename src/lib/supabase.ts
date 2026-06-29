@@ -120,7 +120,7 @@ function safeRealtimeDecode(
 
 const supabase = createClient(supabaseUrl, supabaseKey, {
   db: {
-    schema: 'prj_X-ZoVQv6LKXT',
+    schema: 'public',
   },
   realtime: {
     params: {
