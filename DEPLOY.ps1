@@ -20,16 +20,12 @@ if ($LASTEXITCODE -ne 0) { Write-Host "git add failed" -ForegroundColor Red; pau
 $status = git status --porcelain
 if ($status) {
     Write-Host "Committing changes..." -ForegroundColor Cyan
-    git commit -m "deploy: sync all source files to production
+    git commit -m "feat: restore hero2026, HowWeWork, EcosystemSection homepage sections
 
-- src/lib/supabase.ts: schema public (fixes staff login)
-- src/components/Footer.tsx: platforms section, no TycoonLabs
-- src/components/BookCallSection.tsx: email success@accessyourplace.com
-- src/pages/StaffDashboard.tsx: Book a Call button
-- src/pages/InvestorPortal.tsx: PennyStaffTool widget
-- src/components/AppLayout.tsx: updated SEO
-- backend/server.js: complete with app.listen, no Stripe
-- migrations/admin_user_teamvissionworks.sql: admin user"
+- Hero2026.tsx: 'You Shouldn't Need Permission' headline + (813) 822-0610
+- HowWeWork.tsx: 4-step process section (recovered from dangling commit dff1fa02)
+- EcosystemSection.tsx: AYP + Arbo Bot \$999 + YP Labs (recovered from f839b4c0)
+- AppLayout.tsx: wires all three sections in correct order"
 } else {
     Write-Host "Nothing new to commit — pushing existing commits" -ForegroundColor Green
 }
