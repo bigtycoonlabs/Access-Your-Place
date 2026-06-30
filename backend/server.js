@@ -4069,6 +4069,68 @@ app.post('/functions/v1/:fn', async (req, res) => {
         return ok({ success: true });
       }
 
+      
+      if (action === 'get_credit_requests') {
+        const { investor_id } = body;
+        let q = '/investor_credit_requests?order=created_at.desc&select=*,investor:investors!investor_id(full_name,email)';
+        if (investor_id) q += `&investor_id=eq.${investor_id}`;
+        const { data } = await dbGet(q);
+        return ok({ success: true, requests: Array.isArray(data) ? data : [] });
+      }
+      if (action === 'get_all_credits') {
+        const { data } = await dbGet('/investor_portfolio_credits?order=created_at.desc&select=*,investor:investors!investor_id(full_name,email)');
+        return ok({ success: true, credits: Array.isArray(data) ? data : [] });
+      }
+      if (action === 'assign_credit') {
+        const { investor_id, amount, reason, staff_id } = body;
+        await dbPost('/investor_portfolio_credits', { investor_id, amount, reason, created_by: staff_id||null, status: 'active', created_at: new Date().toISOString() });
+        await dbPatch(`/investors?id=eq.${investor_id}`, { portfolio_credits: amount });
+        return ok({ success: true });
+      }
+      if (action === 'approve_credit_request') {
+        const { request_id, staff_id } = body;
+        await dbPatch(`/investor_credit_requests?id=eq.${request_id}`, { status: 'approved', approved_by: staff_id||null, approved_at: new Date().toISOString() });
+        return ok({ success: true });
+      }
+      if (action === 'reject_credit_request') {
+        const { request_id, reason, staff_id } = body;
+        await dbPatch(`/investor_credit_requests?id=eq.${request_id}`, { status: 'rejected', rejection_reason: reason||null, rejected_by: staff_id||null, rejected_at: new Date().toISOString() });
+        return ok({ success: true });
+      }
+      if (action === 'get_investor_credit_summary') {
+        const { investor_id } = body;
+        const { data: inv } = await dbGet(`/investors?id=eq.${investor_id}&select=portfolio_credits`);
+        const { data: hist } = await dbGet(`/investor_portfolio_credits?investor_id=eq.${investor_id}&select=amount,status,created_at`);
+        return ok({ success: true, summary: { current_balance: inv?.[0]?.portfolio_credits||0, history: Array.isArray(hist)?hist:[] } });
+      }
+      if (action === 'get_credit_usage_stats' || action === 'get_credit_usage_audit') {
+        const { investor_id } = body;
+        try {
+          const { data } = await dbGet(`/investor_credit_usage?${investor_id?`investor_id=eq.${investor_id}&`:''}order=created_at.desc&select=*`);
+          return ok({ success: true, usage: Array.isArray(data)?data:[], stats: { total_used: (Array.isArray(data)?data:[]).reduce((s,u)=>s+parseFloat(u.amount||0),0) } });
+        } catch { return ok({ success: true, usage: [], stats: { total_used: 0 } }); }
+      }
+      if (action === 'get_expiring_credits') {
+        const thirtyDays = new Date(Date.now()+30*86400000).toISOString();
+        try {
+          const { data } = await dbGet(`/investor_portfolio_credits?status=eq.active&expires_at=lt.${thirtyDays}&order=expires_at.asc&select=*,investor:investors!investor_id(full_name,email)`);
+          return ok({ success: true, credits: Array.isArray(data)?data:[] });
+        } catch { return ok({ success: true, credits: [] }); }
+      }
+      if (action === 'get_stats') {
+        try {
+          const { data } = await dbGet('/investor_portfolio_credits?select=amount,status');
+          const credits = Array.isArray(data)?data:[];
+          return ok({ success: true, stats: { total: credits.length, active: credits.filter(c=>c.status==='active').length, total_amount: credits.reduce((s,c)=>s+parseFloat(c.amount||0),0) } });
+        } catch { return ok({ success: true, stats: {} }); }
+      }
+      if (action === 'search_investors') {
+        const { search } = body;
+        let q = '/investors?order=created_at.desc&limit=20&select=id,full_name,email,portfolio_credits';
+        if (search) { const s = encodeURIComponent(search); q += `&or=(full_name.ilike.*${s}*,email.ilike.*${s}*)`; }
+        const { data } = await dbGet(q);
+        return ok({ success: true, investors: Array.isArray(data)?data:[] });
+      }
       return err(`Unknown investor-credits action: ${action}`);
     }
 
