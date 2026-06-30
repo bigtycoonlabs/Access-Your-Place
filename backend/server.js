@@ -4941,30 +4941,38 @@ app.post('/functions/v1/:fn', async (req, res) => {
       return ok({ success: true, matches: data || [] });
     }
 
-    case 'manage-investor-crm': {
+    case 'manage-investor-crm':
+    case 'manage-investor-pipeline': {
       const { action } = body;
-      if (action === 'get' || action === 'list') {
-        const { investor_id, search, limit=50 } = body;
-        let q = '/investors?order=created_at.desc&limit=' + limit + '&select=*';
-        if (investor_id) q += '&id=eq.' + investor_id;
-        else if (search) q += '&or=(full_name.ilike.*' + encodeURIComponent(search) + '*,email.ilike.*' + encodeURIComponent(search) + '*)';
-        const { data } = await dbGet(q);
-        return ok({ success: true, investors: Array.isArray(data)?data:[], investor: investor_id?data?.[0]:null });
+      if (action === 'get_pipeline') {
+        const { data } = await dbGet('/investors?is_funded=eq.false&onboarding_completed=eq.true&order=created_at.desc&select=*');
+        return ok({ success: true, pipeline: Array.isArray(data)?data:[] });
       }
-      if (action === 'update') {
-        const { investor_id, ...updates } = body; delete updates.action;
-        await dbPatch('/investors?id=eq.' + investor_id, { ...updates, updated_at: new Date().toISOString() });
+      if (action === 'update_stage') {
+        const { investor_id, stage } = body;
+        await dbPatch('/investors?id=eq.' + investor_id, { pipeline_stage: stage, updated_at: new Date().toISOString() });
         return ok({ success: true });
       }
-      if (action === 'log_communication') {
-        const { investor_id, type, notes, staff_id } = body;
-        await dbPost('/investor_communication_log', { investor_id, type, notes, logged_by: staff_id||null, logged_at: new Date().toISOString(), created_at: new Date().toISOString() });
+      if (action === 'get_history') {
+        try { const { data } = await dbGet('/investor_pipeline_history?investor_id=eq.' + body.investor_id + '&order=created_at.desc&select=*'); return ok({ success: true, history: Array.isArray(data)?data:[] }); }
+        catch { return ok({ success: true, history: [] }); }
+      }
+      if (action === 'get_sequences') {
+        try { const { data } = await dbGet('/pipeline_sequences?order=created_at.desc&select=*'); return ok({ success: true, sequences: Array.isArray(data)?data:[] }); }
+        catch { return ok({ success: true, sequences: [] }); }
+      }
+      if (action === 'save_sequence') {
+        const { sequence_id, ...props } = body; delete props.action;
+        if (sequence_id) await dbPatch('/pipeline_sequences?id=eq.' + sequence_id, { ...props, updated_at: new Date().toISOString() });
+        else await dbPost('/pipeline_sequences', { ...props, created_at: new Date().toISOString() });
         return ok({ success: true });
       }
-      if (action === 'import_csv') { return ok({ success: true, imported: 0 }); }
-      return err('Unknown manage-investor-crm action: ' + action);
+      if (action === 'delete_sequence') {
+        await dbDelete('/pipeline_sequences?id=eq.' + body.sequence_id);
+        return ok({ success: true });
+      }
+      return err('Unknown manage-investor-pipeline action: ' + action);
     }
-    case 'manage-investor-pipeline':
     case 'manage-investor-progress': {
       const { action } = body;
       const tableName = fn === 'manage-investor-crm' ? 'investor_crm' : fn === 'manage-investor-progress' ? 'investor_progress' : 'investor_pipeline';
