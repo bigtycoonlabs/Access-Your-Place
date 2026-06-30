@@ -982,6 +982,312 @@ app.post('/functions/v1/:fn', async (req, res) => {
         return ok({ success: true });
       }
 
+
+      // GET DEPARTMENTS (static list)
+      if (action === 'get_departments') {
+        return ok({
+          success: true,
+          departments: [
+            { id: 'success_managers', name: 'Success Managers', description: 'Full platform access', permissions: ['all'] },
+            { id: 'acquisition_managers', name: 'Acquisition Managers', description: 'Deal and investor management', permissions: ['deals', 'acquisitions', 'investors', 'crm'] },
+            { id: 'setup_managers', name: 'Setup Managers', description: 'Property setup management', permissions: ['deals', 'setups', 'investors', 'crm'] },
+            { id: 'content_team', name: 'Content Team', description: 'Content and blog management', permissions: ['content'] },
+            { id: 'support_team', name: 'Support Team', description: 'Customer support', permissions: ['support', 'crm'] },
+          ],
+        });
+      }
+
+      // DEACTIVATE STAFF
+      if (action === 'deactivate_staff') {
+        const { staff_id, deactivated_by } = body;
+        if (!staff_id) return ok({ success: false, error: 'staff_id is required' });
+        await dbPatch(`/staff_users?id=eq.${staff_id}`, {
+          is_active: false, deactivated_by, deactivated_at: new Date().toISOString(), updated_at: new Date().toISOString(),
+        });
+        return ok({ success: true });
+      }
+
+      // DELETE STAFF (hard delete)
+      if (action === 'delete_staff') {
+        const { staff_id } = body;
+        if (!staff_id) return ok({ success: false, error: 'staff_id is required' });
+        try { await dbDelete(`/staff_users?id=eq.${staff_id}`); } catch (e) { return ok({ success: false, error: e.message }); }
+        return ok({ success: true });
+      }
+
+      // RESEND INVITATION
+      if (action === 'resend_invitation') {
+        const { staff_id, base_url } = body;
+        if (!staff_id) return ok({ success: false, error: 'staff_id is required' });
+        const { data: staffData } = await dbGet(`/staff_users?id=eq.${staff_id}&select=*`);
+        const staff = staffData?.[0];
+        if (!staff) return ok({ success: false, error: 'Staff not found' });
+
+        const invitationToken = uuidv4() + '-' + uuidv4();
+        const invitationExpires = new Date(Date.now() + 7 * 24 * 60 * 60 * 1000);
+        await dbPatch(`/staff_users?id=eq.${staff_id}`, {
+          invitation_token: invitationToken, invitation_expires: invitationExpires.toISOString(), updated_at: new Date().toISOString(),
+        });
+
+        const inviteUrl = `${base_url || SITE_URL}/staff/login?invitation=${invitationToken}`;
+        const departmentName = (staff.department || 'staff').replace(/_/g, ' ').replace(/\b\w/g, l => l.toUpperCase());
+        try {
+          await sendEmail({
+            to: staff.email, subject: 'Reminder: Complete Your Access Your Place Account Setup',
+            html: `<div style="font-family:Arial,sans-serif;max-width:600px;margin:0 auto;">
+              <div style="background:linear-gradient(135deg,#1e293b,#334155);padding:30px;text-align:center;border-radius:8px 8px 0 0;">
+                <h1 style="color:#f59e0b;margin:0;">Access Your Place</h1>
+                <p style="color:#94a3b8;margin:10px 0 0;">Staff Portal</p>
+              </div>
+              <div style="padding:30px;background:#f8fafc;border:1px solid #e2e8f0;border-top:none;">
+                <h2 style="color:#1e293b;margin-top:0;">Hi ${staff.first_name},</h2>
+                <p style="color:#475569;">This is a reminder to complete your account setup as a ${departmentName}.</p>
+                <div style="text-align:center;margin:30px 0;">
+                  <a href="${inviteUrl}" style="background:#f59e0b;color:#1e293b;padding:14px 32px;text-decoration:none;border-radius:8px;font-weight:bold;">Complete Account Setup</a>
+                </div>
+                <p style="color:#64748b;font-size:12px;">This link expires in 7 days.</p>
+              </div>
+            </div>`,
+          });
+        } catch (e) { console.error('[manage-staff] resend_invitation email failed:', e.message); }
+        return ok({ success: true });
+      }
+
+      // LINK / UNLINK / GET LINKED INVESTOR
+      if (action === 'link_investor_account') {
+        const { staff_id, investor_id } = body;
+        if (!staff_id) return ok({ success: false, error: 'staff_id is required' });
+        await dbPatch(`/staff_users?id=eq.${staff_id}`, { linked_investor_id: investor_id, updated_at: new Date().toISOString() });
+        return ok({ success: true });
+      }
+      if (action === 'unlink_investor_account') {
+        const { staff_id } = body;
+        if (!staff_id) return ok({ success: false, error: 'staff_id is required' });
+        await dbPatch(`/staff_users?id=eq.${staff_id}`, { linked_investor_id: null, updated_at: new Date().toISOString() });
+        return ok({ success: true });
+      }
+      if (action === 'get_linked_investor') {
+        const { staff_id } = body;
+        const { data: staffData } = await dbGet(`/staff_users?id=eq.${staff_id}&select=linked_investor_id`);
+        const linkedId = staffData?.[0]?.linked_investor_id;
+        if (!linkedId) return ok({ success: true, investor: null });
+        const { data } = await dbGet(`/investors?id=eq.${linkedId}&select=id,full_name,email,phone,company_name`);
+        return ok({ success: true, investor: data?.[0] || null });
+      }
+
+      if (action === 'get_certified_ams') {
+        const { data } = await dbGet(`/staff_users?is_active=eq.true&yp_certified=eq.true&select=*`);
+        return ok({ success: true, staff: Array.isArray(data) ? data : [] });
+      }
+
+      // STAFF MESSAGE UNREAD COUNT
+      if (action === 'get_unread_count') {
+        const { staff_id } = body;
+        if (!staff_id) return ok({ success: true, count: 0 });
+        const { data } = await dbGet(`/staff_messages?recipient_id=eq.${staff_id}&read=eq.false&select=id`);
+        return ok({ success: true, count: Array.isArray(data) ? data.length : 0 });
+      }
+
+      // ACQUISITION MANAGERS WITH INVESTOR COUNTS
+      if (action === 'get_acquisition_managers_with_counts') {
+        const { data: allStaff } = await dbGet(`/staff_users?is_active=eq.true&select=*`);
+        const ams = (Array.isArray(allStaff) ? allStaff : []).filter(s =>
+          s.department === 'acquisition_managers' || (Array.isArray(s.roles) && s.roles.includes('acquisition_managers'))
+        );
+        const amsWithCounts = await Promise.all(ams.map(async (am) => {
+          try {
+            const { data: investors } = await dbGet(`/investors?assigned_acquisition_manager_id=eq.${am.id}&select=id`);
+            return { ...am, investor_count: Array.isArray(investors) ? investors.length : 0 };
+          } catch { return { ...am, investor_count: 0 }; }
+        }));
+        return ok({ success: true, staff: amsWithCounts });
+      }
+
+      // AM ASSIGNMENT REQUESTS
+      if (action === 'get_am_assignment_requests') {
+        const { data: requests } = await dbGet(`/am_assignment_requests?status=eq.pending&order=created_at.desc&select=*`);
+        const enriched = await Promise.all((Array.isArray(requests) ? requests : []).map(async (r) => {
+          try {
+            const { data: inv } = await dbGet(`/investors?id=eq.${r.investor_id}&select=id,full_name,email,preferred_markets,portfolio_count`);
+            return { ...r, investor: inv?.[0] || null };
+          } catch { return { ...r, investor: null }; }
+        }));
+        return ok({ success: true, requests: enriched });
+      }
+      if (action === 'match_am_assignment') {
+        const { request_id, investor_id, am_id, matched_by } = body;
+        if (!request_id) return ok({ success: false, error: 'request_id is required' });
+        await dbPatch(`/am_assignment_requests?id=eq.${request_id}`, {
+          status: 'approved', assigned_am_id: am_id, matched_by, matched_at: new Date().toISOString(),
+        });
+        if (investor_id && am_id) {
+          await dbPatch(`/investors?id=eq.${investor_id}`, { assigned_acquisition_manager_id: am_id, updated_at: new Date().toISOString() });
+        }
+        return ok({ success: true });
+      }
+      if (action === 'reject_am_assignment') {
+        const { request_id, rejected_by, rejection_reason } = body;
+        if (!request_id) return ok({ success: false, error: 'request_id is required' });
+        await dbPatch(`/am_assignment_requests?id=eq.${request_id}`, {
+          status: 'rejected', rejected_by, rejection_reason, rejected_at: new Date().toISOString(),
+        });
+        return ok({ success: true });
+      }
+
+      // AM CHANGE REQUESTS
+      if (action === 'get_am_change_requests') {
+        const { data } = await dbGet(`/am_change_requests?status=eq.pending&order=created_at.desc&select=*`);
+        return ok({ success: true, requests: Array.isArray(data) ? data : [] });
+      }
+      if (action === 'approve_am_change') {
+        const { request_id, investor_id, new_am_id, approved_by } = body;
+        if (!request_id) return ok({ success: false, error: 'request_id is required' });
+        await dbPatch(`/am_change_requests?id=eq.${request_id}`, { status: 'approved', approved_by, approved_at: new Date().toISOString() });
+        if (investor_id && new_am_id) {
+          await dbPatch(`/investors?id=eq.${investor_id}`, { assigned_acquisition_manager_id: new_am_id, updated_at: new Date().toISOString() });
+        }
+        return ok({ success: true });
+      }
+      if (action === 'reject_am_change') {
+        const { request_id, rejected_by, rejection_reason } = body;
+        if (!request_id) return ok({ success: false, error: 'request_id is required' });
+        await dbPatch(`/am_change_requests?id=eq.${request_id}`, {
+          status: 'rejected', rejected_by, rejection_reason, rejected_at: new Date().toISOString(),
+        });
+        return ok({ success: true });
+      }
+
+      // INVESTORS WITHOUT AM
+      if (action === 'get_investors_without_am' || action === 'get_unassigned_investors') {
+        const { data } = await dbGet(`/investors?assigned_acquisition_manager_id=is.null&onboarding_completed=eq.true&order=created_at.desc&limit=50&select=id,full_name,email,preferred_markets,portfolio_count,created_at`);
+        return ok({ success: true, investors: Array.isArray(data) ? data : [] });
+      }
+      if (action === 'bulk_assign_am') {
+        const { investor_ids, am_id, assigned_by } = body;
+        if (!Array.isArray(investor_ids) || !investor_ids.length || !am_id) {
+          return ok({ success: false, error: 'investor_ids and am_id are required' });
+        }
+        for (const investorId of investor_ids) {
+          try { await dbPatch(`/investors?id=eq.${investorId}`, { assigned_acquisition_manager_id: am_id, updated_at: new Date().toISOString() }); } catch {}
+        }
+        return ok({ success: true, assigned_count: investor_ids.length });
+      }
+      if (action === 'assign_am_to_investor') {
+        const { investor_id, am_id } = body;
+        if (!investor_id || !am_id) return ok({ success: false, error: 'investor_id and am_id are required' });
+        await dbPatch(`/investors?id=eq.${investor_id}`, { assigned_acquisition_manager_id: am_id, updated_at: new Date().toISOString() });
+        return ok({ success: true });
+      }
+      if (action === 'get_assigned_investors') {
+        const { am_id } = body;
+        if (!am_id) return ok({ success: true, investors: [] });
+        const { data } = await dbGet(`/investors?assigned_acquisition_manager_id=eq.${am_id}&order=created_at.desc&select=*`);
+        return ok({ success: true, investors: Array.isArray(data) ? data : [] });
+      }
+      if (action === 'get_staff_list') {
+        const { department } = body;
+        let q = '/staff_users?is_active=eq.true&order=first_name.asc&select=*';
+        if (department) q += `&department=eq.${encodeURIComponent(department)}`;
+        const { data } = await dbGet(q);
+        return ok({ success: true, staff: Array.isArray(data) ? data : [] });
+      }
+
+      // EMAIL MATCH MIGRATION TOOL
+      if (action === 'find_matching_emails') {
+        const { data: staffList } = await dbGet(`/staff_users?is_active=eq.true&linked_investor_id=is.null&select=id,email,first_name,last_name`);
+        const { data: investorList } = await dbGet(`/investors?select=id,email,full_name`);
+        const matches = [];
+        for (const s of (Array.isArray(staffList) ? staffList : [])) {
+          const match = (Array.isArray(investorList) ? investorList : []).find(i => i.email?.toLowerCase() === s.email?.toLowerCase());
+          if (match) {
+            matches.push({
+              staff_id: s.id, staff_email: s.email, staff_name: `${s.first_name} ${s.last_name}`,
+              investor_id: match.id, investor_email: match.email, investor_name: match.full_name,
+            });
+          }
+        }
+        return ok({ success: true, matches });
+      }
+      if (action === 'auto_link_by_email') {
+        const { email } = body;
+        if (!email) return ok({ success: false, error: 'email is required' });
+        const { data: staffData } = await dbGet(`/staff_users?email=eq.${encodeURIComponent(email.toLowerCase())}&select=id`);
+        const { data: invData } = await dbGet(`/investors?email=eq.${encodeURIComponent(email.toLowerCase())}&select=id`);
+        if (!staffData?.[0] || !invData?.[0]) return ok({ success: false, error: 'No matching accounts found' });
+        await dbPatch(`/staff_users?id=eq.${staffData[0].id}`, { linked_investor_id: invData[0].id, updated_at: new Date().toISOString() });
+        return ok({ success: true });
+      }
+      if (action === 'create_bulk_link_suggestions') {
+        const { matches } = body;
+        if (!Array.isArray(matches)) return ok({ success: false, error: 'matches array is required' });
+        let created = 0;
+        for (const m of matches) {
+          try {
+            await dbPost('/account_link_suggestions', {
+              staff_id: m.staff_id, investor_id: m.investor_id, status: 'pending', created_at: new Date().toISOString(),
+            });
+            created++;
+          } catch {}
+        }
+        return ok({ success: true, created_count: created });
+      }
+      if (action === 'get_link_suggestions') {
+        const { data } = await dbGet(`/account_link_suggestions?status=eq.pending&order=created_at.desc&select=*`);
+        return ok({ success: true, suggestions: Array.isArray(data) ? data : [] });
+      }
+      if (action === 'accept_link_suggestion') {
+        const { suggestion_id, staff_id, investor_id } = body;
+        if (!suggestion_id) return ok({ success: false, error: 'suggestion_id is required' });
+        if (staff_id && investor_id) {
+          await dbPatch(`/staff_users?id=eq.${staff_id}`, { linked_investor_id: investor_id, updated_at: new Date().toISOString() });
+        }
+        await dbPatch(`/account_link_suggestions?id=eq.${suggestion_id}`, { status: 'accepted' });
+        return ok({ success: true });
+      }
+      if (action === 'dismiss_link_suggestion') {
+        const { suggestion_id } = body;
+        if (!suggestion_id) return ok({ success: false, error: 'suggestion_id is required' });
+        await dbPatch(`/account_link_suggestions?id=eq.${suggestion_id}`, { status: 'dismissed' });
+        return ok({ success: true });
+      }
+
+      // AM VERIFICATION REQUESTS
+      if (action === 'get_am_verification_requests') {
+        const { data } = await dbGet(`/am_verification_requests?status=eq.pending&order=created_at.desc&select=*`);
+        return ok({ success: true, requests: Array.isArray(data) ? data : [] });
+      }
+      if (action === 'verify_am_request') {
+        const { request_id, verified_by } = body;
+        if (!request_id) return ok({ success: false, error: 'request_id is required' });
+        await dbPatch(`/am_verification_requests?id=eq.${request_id}`, { status: 'verified', verified_by, verified_at: new Date().toISOString() });
+        return ok({ success: true });
+      }
+      if (action === 'reject_am_request') {
+        const { request_id, rejected_by, reason } = body;
+        if (!request_id) return ok({ success: false, error: 'request_id is required' });
+        await dbPatch(`/am_verification_requests?id=eq.${request_id}`, { status: 'rejected', rejected_by, rejection_reason: reason, rejected_at: new Date().toISOString() });
+        return ok({ success: true });
+      }
+
+      // PROFILE & MISC
+      if (action === 'update_profile') {
+        const { staff_id, ...updates } = body;
+        if (!staff_id) return ok({ success: false, error: 'staff_id is required' });
+        delete updates.action;
+        await dbPatch(`/staff_users?id=eq.${staff_id}`, { ...updates, updated_at: new Date().toISOString() });
+        return ok({ success: true });
+      }
+      if (action === 'test_sms') {
+        return ok({ success: true, message: 'Test SMS feature not yet configured' });
+      }
+      if (action === 'update_trainee_progress') {
+        const { trainee_id, ...updates } = body;
+        if (!trainee_id) return ok({ success: false, error: 'trainee_id is required' });
+        delete updates.action;
+        await dbPatch(`/staff_users?id=eq.${trainee_id}`, { ...updates, updated_at: new Date().toISOString() });
+        return ok({ success: true });
+      }
+
       if (action === 'get_all_staff') {
         const { data } = await dbGet('/staff_users?order=created_at.desc&select=*');
         return ok({ success: true, staff: data || [] });
