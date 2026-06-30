@@ -3161,6 +3161,21 @@ app.post('/functions/v1/:fn', async (req, res) => {
         await dbPatch(`/notifications?${field}=eq.${user_id}&read=eq.false`, { read: true });
         return ok({ success: true });
       }
+      
+      if (action === 'get_preferences') {
+        const { investor_id } = body;
+        try { const { data } = await dbGet(`/investor_notification_preferences?investor_id=eq.${investor_id}&select=*`); return ok({ success: true, preferences: data?.[0]||{} }); }
+        catch { return ok({ success: true, preferences: {} }); }
+      }
+      if (action === 'update_preferences') {
+        const { investor_id, ...prefs } = body; delete prefs.action;
+        try {
+          const { data: ex } = await dbGet(`/investor_notification_preferences?investor_id=eq.${investor_id}&select=id`);
+          if (ex?.length) await dbPatch(`/investor_notification_preferences?investor_id=eq.${investor_id}`, { ...prefs, updated_at: new Date().toISOString() });
+          else await dbPost('/investor_notification_preferences', { investor_id, ...prefs, created_at: new Date().toISOString() });
+        } catch {}
+        return ok({ success: true });
+      }
       return err('Unknown notifications action');
     }
 
@@ -3794,6 +3809,25 @@ app.post('/functions/v1/:fn', async (req, res) => {
         return ok({ success: true });
       }
 
+      
+      if (action === 'get_acquisition_managers_with_counts') {
+        const { data: staff } = await dbGet('/staff_users?is_active=eq.true&select=*');
+        const ams = (Array.isArray(staff)?staff:[]).filter(s=>s.department==='acquisition_managers'||s.roles?.includes?.('acquisition_managers'));
+        const result = await Promise.all(ams.map(async am => {
+          try { const { data: inv } = await dbGet(`/investors?assigned_acquisition_manager_id=eq.${am.id}&select=id`); return { ...am, investor_count: Array.isArray(inv)?inv.length:0 }; }
+          catch { return { ...am, investor_count: 0 }; }
+        }));
+        return ok({ success: true, staff: result });
+      }
+      if (action === 'get_am_assignment_requests') {
+        try { const { data } = await dbGet('/am_assignment_requests?status=eq.pending&order=created_at.desc&select=*'); return ok({ success: true, requests: Array.isArray(data)?data:[] }); }
+        catch { return ok({ success: true, requests: [] }); }
+      }
+      if (action === 'request_sm') {
+        const { investor_id, notes } = body;
+        await dbPost('/sm_assignment_requests', { investor_id, notes, status: 'pending', created_at: new Date().toISOString() });
+        return ok({ success: true });
+      }
       return err(`Unknown am-assignments action: ${action}`);
     }
 
@@ -4044,6 +4078,39 @@ app.post('/functions/v1/:fn', async (req, res) => {
         return ok({ success: true });
       }
 
+      
+      if (action === 'list') {
+        const { investor_id } = body;
+        let q = '/investor_documents?order=created_at.desc&select=*';
+        if (investor_id) q += `&investor_id=eq.${investor_id}`;
+        const { data } = await dbGet(q);
+        return ok({ success: true, documents: Array.isArray(data)?data:[] });
+      }
+      if (action === 'add_document' || action === 'upload') {
+        const { investor_id, document_url, document_type, file_name, ...props } = body; delete props.action;
+        const result = await dbPost('/investor_documents', { investor_id, document_url, document_type, file_name, ...props, created_at: new Date().toISOString() });
+        return ok({ success: true, document: Array.isArray(result.data)?result.data[0]:result.data });
+      }
+      if (action === 'update_status') {
+        const { document_id, status, notes } = body;
+        await dbPatch(`/investor_documents?id=eq.${document_id}`, { status, notes, updated_at: new Date().toISOString() });
+        return ok({ success: true });
+      }
+      if (action === 'delete') {
+        const { document_id } = body;
+        await dbDelete(`/investor_documents?id=eq.${document_id}`);
+        return ok({ success: true });
+      }
+      if (action === 'download') {
+        const { document_id } = body;
+        const { data } = await dbGet(`/investor_documents?id=eq.${document_id}&select=*`);
+        return ok({ success: true, document: data?.[0]||null });
+      }
+      if (action === 'count') {
+        const { investor_id } = body;
+        const { data } = await dbGet(`/investor_documents?investor_id=eq.${investor_id}&select=id`);
+        return ok({ success: true, count: Array.isArray(data)?data.length:0 });
+      }
       return err(`Unknown investor-documents action: ${action}`);
     }
 
@@ -4615,26 +4682,6 @@ app.post('/functions/v1/:fn', async (req, res) => {
         return ok({ success: true });
       }
 
-      
-      if (action === 'list') {
-        const { deal_id, investor_id, status } = body;
-        let q = '/deal_inquiries?order=created_at.desc&select=*,investor:investors!investor_id(full_name,email)';
-        if (deal_id) q += `&deal_id=eq.${deal_id}`;
-        if (investor_id) q += `&investor_id=eq.${investor_id}`;
-        if (status) q += `&status=eq.${status}`;
-        try { const { data } = await dbGet(q); return ok({ success: true, inquiries: Array.isArray(data)?data:[] }); }
-        catch { return ok({ success: true, inquiries: [] }); }
-      }
-      if (action === 'update_status') {
-        const { inquiry_id, status, notes } = body;
-        await dbPatch(`/deal_inquiries?id=eq.${inquiry_id}`, { status, staff_notes: notes||null, updated_at: new Date().toISOString() });
-        return ok({ success: true });
-      }
-      if (action === 'add_note') {
-        const { inquiry_id, note, staff_id } = body;
-        await dbPost('/deal_inquiry_notes', { inquiry_id, note, created_by: staff_id||null, created_at: new Date().toISOString() });
-        return ok({ success: true });
-      }
       return err('Unknown inquiries action');
     }
 
@@ -5202,21 +5249,6 @@ app.post('/functions/v1/:fn', async (req, res) => {
       if (action === 'delete') {
         await dbDelete(`/notes?id=eq.${note_id}`);
         return ok({ success: true });
-      }
-      
-      if (action === 'get_notes') {
-        const { investor_id, entity_id, entity_type } = body;
-        let q = '/notes?order=created_at.desc&select=*';
-        if (investor_id) q += `&investor_id=eq.${investor_id}`;
-        if (entity_id) q += `&entity_id=eq.${entity_id}`;
-        if (entity_type) q += `&entity_type=eq.${entity_type}`;
-        try { const { data } = await dbGet(q); return ok({ success: true, notes: Array.isArray(data)?data:[] }); }
-        catch { return ok({ success: true, notes: [] }); }
-      }
-      if (action === 'add_note') {
-        const { investor_id, entity_id, entity_type, content: noteContent, note, staff_id } = body;
-        const result = await dbPost('/notes', { investor_id: investor_id||null, entity_id: entity_id||null, entity_type: entity_type||null, content: noteContent||note, created_by: staff_id||null, created_at: new Date().toISOString() });
-        return ok({ success: true, note: Array.isArray(result.data)?result.data[0]:result.data });
       }
       return err('Unknown notes action');
     }
