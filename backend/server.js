@@ -3813,20 +3813,83 @@ app.post('/functions/v1/:fn', async (req, res) => {
 
     // ─────────────────────────── SECURITY ALERTS ──────────────────────────
     case 'security-alerts': {
-      const { action, user_id, user_type } = body;
-      if (action === 'get') {
-        const { data } = await dbGet(`/security_alerts?user_id=eq.${user_id}&order=created_at.desc&limit=20&select=*`);
-        return ok({ success: true, alerts: data || [] });
-      }
-      if (action === 'dismiss') {
-        const { alert_id } = body;
-        await dbPatch(`/security_alerts?id=eq.${alert_id}`, { dismissed: true });
-        return ok({ success: true });
-      }
-      return err('Unknown security-alerts action');
-    }
+      const { action } = body;
 
-    // ─────────────────────────── ERROR LOGS ────────────────────────────────
+      if (action === 'get_alerts' || action === 'get') {
+        const { investor_id, user_id } = body;
+        const id = investor_id || user_id;
+        if (!id) return ok({ success: false, error: 'Investor ID is required' });
+        const { data } = await dbGet(`/security_alerts?investor_id=eq.${id}&select=*&order=created_at.desc&limit=50`);
+        return ok({ success: true, alerts: Array.isArray(data) ? data : [] });
+      }
+
+      if (action === 'update_settings') {
+        const { investor_id, security_alerts_enabled } = body;
+        if (!investor_id) return ok({ success: false, error: 'Investor ID is required' });
+        await dbPatch(`/investors?id=eq.${investor_id}`, { security_alerts_enabled, updated_at: new Date().toISOString() });
+        return ok({ success: true, message: security_alerts_enabled ? 'Security alerts enabled' : 'Security alerts disabled' });
+      }
+
+      if (action === 'clear_known_devices') {
+        const { investor_id } = body;
+        if (!investor_id) return ok({ success: false, error: 'Investor ID is required' });
+        await dbPatch(`/investors?id=eq.${investor_id}`, { known_devices: [], known_ips: [], updated_at: new Date().toISOString() });
+        return ok({ success: true, message: 'Known devices and locations cleared. You will receive alerts on your next login.' });
+      }
+
+      if (action === 'acknowledge_alert' || action === 'dismiss') {
+        const { alert_id } = body;
+        if (!alert_id) return ok({ success: false, error: 'Alert ID is required' });
+        await dbPatch(`/security_alerts?id=eq.${alert_id}`, { is_acknowledged: true, acknowledged_at: new Date().toISOString() });
+        return ok({ success: true, message: 'Alert acknowledged' });
+      }
+
+      if (action === 'create_alert') {
+        const { investor_id, alert_type, severity, title, description, device_info, ip_address, location } = body;
+        if (!investor_id || !alert_type || !title) return ok({ success: false, error: 'Missing required fields' });
+
+        const { data: invData } = await dbGet(`/investors?id=eq.${investor_id}&select=email,full_name,security_alerts_enabled`);
+        const investor = invData?.[0];
+        if (!investor) return ok({ success: false, error: 'Investor not found' });
+
+        const alertResult = await dbPost('/security_alerts', {
+          investor_id, alert_type, severity: severity || 'medium', title, description,
+          device_info: device_info || {}, ip_address, location, is_acknowledged: false, created_at: new Date().toISOString(),
+        });
+        const alert = Array.isArray(alertResult.data) ? alertResult.data[0] : alertResult.data;
+
+        if (investor.security_alerts_enabled) {
+          try {
+            const severityColors = {
+              high: { bg: '#fef2f2', text: '#991b1b' }, medium: { bg: '#fffbeb', text: '#92400e' }, low: { bg: '#f0fdf4', text: '#166534' },
+            };
+            const colors = severityColors[severity] || severityColors.medium;
+            await sendEmail({
+              to: investor.email, subject: `🔐 Security Alert: ${title}`,
+              html: `<div style="font-family:Arial,sans-serif;max-width:600px;margin:0 auto;">
+                <div style="background:#1a365d;padding:20px;text-align:center;"><h1 style="color:#f59e0b;margin:0;">Security Alert</h1></div>
+                <div style="padding:30px;background:${colors.bg};border:1px solid ${colors.text}20;">
+                  <h2 style="color:${colors.text};margin:0 0 15px 0;">${title}</h2>
+                  <p style="color:${colors.text};">${description || ''}</p>
+                  ${device_info ? `<p style="color:${colors.text};"><strong>Device:</strong> ${device_info.browser || 'Unknown'} on ${device_info.os || 'Unknown'}</p>` : ''}
+                  ${ip_address ? `<p style="color:${colors.text};"><strong>IP Address:</strong> ${ip_address}</p>` : ''}
+                  <p style="color:${colors.text};"><strong>Time:</strong> ${new Date().toLocaleString()}</p>
+                  <div style="text-align:center;margin:25px 0;"><a href="${SITE_URL}/investor" style="background:#f59e0b;color:#1a365d;padding:12px 30px;text-decoration:none;border-radius:6px;font-weight:bold;">Review Account Activity</a></div>
+                  <p style="color:${colors.text};font-size:14px;">If you don't recognize this activity, please change your password immediately.</p>
+                </div>
+                <div style="background:#1e293b;padding:15px;text-align:center;">
+                  <p style="color:#94a3b8;font-size:12px;margin:0;">You're receiving this because security alerts are enabled for your account.<br><a href="${SITE_URL}/investor" style="color:#f59e0b;">Manage notification settings</a></p>
+                </div>
+              </div>`,
+            });
+          } catch (e) { console.error('[security-alerts] email send failed:', e.message); }
+        }
+
+        return ok({ success: true, alert });
+      }
+
+      return err(`Unknown security-alerts action: ${action}`);
+    }
     case 'check-error-thresholds':
     case 'cleanup-error-logs': {
       if (fn === 'cleanup-error-logs') {
