@@ -2173,9 +2173,3 @@ export default function StaffDashboard() {
     </div>
   );
 }
-lertDialog>
-
-      </div>
-    </div>
-  );
-}
