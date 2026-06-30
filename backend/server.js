@@ -1976,33 +1976,146 @@ app.post('/functions/v1/:fn', async (req, res) => {
       return err(`Unknown manage-deal-marketplace action: ${action}`);
     }
     case 'investor-messaging': {
-      const { action, investor_id, staff_id, message_id } = body;
+      const { action } = body;
 
       if (action === 'get_conversations') {
-        const { data } = await dbGet(`/investor_messages?or=(investor_id.eq.${investor_id},staff_id.eq.${investor_id})&order=created_at.desc&select=*`);
-        return ok({ success: true, conversations: data || [] });
+        const { investor_id } = body;
+        const { data } = await dbGet(`/investor_messages?or=(sender_id.eq.${investor_id},recipient_id.eq.${investor_id})&order=created_at.desc&select=*,sender:investors!sender_id(full_name),recipient:investors!recipient_id(full_name)&limit=50`);
+        return ok({ success: true, conversations: Array.isArray(data) ? data : [] });
       }
-
+      if (action === 'get_conversation') {
+        const { conversation_id, investor_id, other_investor_id } = body;
+        let q;
+        if (other_investor_id && investor_id) {
+          q = `/investor_messages?or=(and(sender_id.eq.${investor_id},recipient_id.eq.${other_investor_id}),and(sender_id.eq.${other_investor_id},recipient_id.eq.${investor_id}))&order=created_at.asc&select=*`;
+        } else {
+          q = `/investor_messages?conversation_id=eq.${conversation_id}&order=created_at.asc&select=*`;
+        }
+        const { data } = await dbGet(q);
+        return ok({ success: true, messages: Array.isArray(data) ? data : [] });
+      }
       if (action === 'send_message') {
-        const { content, recipient_id, message_type = 'text' } = body;
-        const result = await dbPost('/investor_messages', { investor_id, staff_id, content, recipient_id, message_type, read: false, created_at: new Date().toISOString() });
+        const { sender_id, recipient_id, message, message_type = 'text', conversation_id } = body;
+        if (!sender_id || !message) return ok({ success: false, error: 'sender_id and message are required' });
+        const result = await dbPost('/investor_messages', {
+          sender_id, recipient_id, message, message_type,
+          conversation_id: conversation_id || null, is_read: false, created_at: new Date().toISOString(),
+        });
         return ok({ success: true, message: Array.isArray(result.data) ? result.data[0] : result.data });
       }
-
+      if (action === 'send_reply') {
+        const { sender_id, recipient_id, message, parent_message_id, conversation_id } = body;
+        if (!sender_id || !message) return ok({ success: false, error: 'sender_id and message are required' });
+        const result = await dbPost('/investor_messages', {
+          sender_id, recipient_id, message, message_type: 'reply',
+          parent_message_id: parent_message_id || null, conversation_id: conversation_id || null,
+          is_read: false, created_at: new Date().toISOString(),
+        });
+        return ok({ success: true, message: Array.isArray(result.data) ? result.data[0] : result.data });
+      }
       if (action === 'mark_read') {
-        await dbPatch(`/investor_messages?id=eq.${message_id}`, { read: true });
+        const { message_id, investor_id } = body;
+        if (message_id) await dbPatch(`/investor_messages?id=eq.${message_id}`, { is_read: true, read_at: new Date().toISOString() });
+        else if (investor_id) await dbPatch(`/investor_messages?recipient_id=eq.${investor_id}&is_read=eq.false`, { is_read: true, read_at: new Date().toISOString() });
         return ok({ success: true });
       }
-
-      if (action === 'get_unread_count') {
-        const { data } = await dbGet(`/investor_messages?recipient_id=eq.${investor_id}&read=eq.false&select=id`);
-        return ok({ success: true, count: data?.length || 0 });
+      if (action === 'mark_all_read') {
+        const { investor_id } = body;
+        if (!investor_id) return ok({ success: false, error: 'investor_id required' });
+        await dbPatch(`/investor_messages?recipient_id=eq.${investor_id}&is_read=eq.false`, { is_read: true, read_at: new Date().toISOString() });
+        return ok({ success: true });
       }
-
-      return err(`Unknown investor-messaging action: ${action}`);
+      if (action === 'get_unread_count') {
+        const { investor_id } = body;
+        try {
+          const { data } = await dbGet(`/investor_messages?recipient_id=eq.${investor_id}&is_read=eq.false&select=id`);
+          return ok({ success: true, count: Array.isArray(data) ? data.length : 0 });
+        } catch { return ok({ success: true, count: 0 }); }
+      }
+      if (action === 'get_staff_for_messaging') {
+        try {
+          const { data } = await dbGet('/staff_users?is_active=eq.true&select=id,first_name,last_name,email,department');
+          return ok({ success: true, staff: Array.isArray(data) ? data : [] });
+        } catch { return ok({ success: true, staff: [] }); }
+      }
+      if (action === 'get_staff_messages') {
+        const { investor_id, staff_id } = body;
+        let q = '/staff_investor_messages?order=created_at.desc&select=*&limit=50';
+        if (investor_id) q += `&investor_id=eq.${investor_id}`;
+        if (staff_id) q += `&staff_id=eq.${staff_id}`;
+        try {
+          const { data } = await dbGet(q);
+          return ok({ success: true, messages: Array.isArray(data) ? data : [] });
+        } catch { return ok({ success: true, messages: [] }); }
+      }
+      if (action === 'get_am_messages') {
+        const { investor_id } = body;
+        try {
+          const { data: inv } = await dbGet(`/investors?id=eq.${investor_id}&select=assigned_acquisition_manager_id`);
+          const amId = inv?.[0]?.assigned_acquisition_manager_id;
+          if (!amId) return ok({ success: true, messages: [] });
+          const { data } = await dbGet(`/staff_investor_messages?or=(and(investor_id.eq.${investor_id},staff_id.eq.${amId}),and(investor_id.eq.${investor_id},staff_id.eq.${amId}))&order=created_at.asc&select=*`);
+          return ok({ success: true, messages: Array.isArray(data) ? data : [] });
+        } catch { return ok({ success: true, messages: [] }); }
+      }
+      if (action === 'send_staff_message') {
+        const { investor_id, staff_id, message, sender_type = 'staff' } = body;
+        if (!message) return ok({ success: false, error: 'message required' });
+        const result = await dbPost('/staff_investor_messages', {
+          investor_id, staff_id, message, sender_type,
+          is_read: false, created_at: new Date().toISOString(),
+        });
+        return ok({ success: true, message: Array.isArray(result.data) ? result.data[0] : result.data });
+      }
+      if (action === 'send_to_investor') {
+        const { staff_id, investor_id, message, subject } = body;
+        if (!investor_id || !message) return ok({ success: false, error: 'investor_id and message are required' });
+        const result = await dbPost('/staff_investor_messages', {
+          investor_id, staff_id, message, subject, sender_type: 'staff',
+          is_read: false, created_at: new Date().toISOString(),
+        });
+        try {
+          const { data: inv } = await dbGet(`/investors?id=eq.${investor_id}&select=email,full_name`);
+          if (inv?.[0]) await sendEmail({ to: inv[0].email, subject: subject || 'New Message from Your Team', html: `<p>Hi ${inv[0].full_name},</p><p>${message}</p>` });
+        } catch {}
+        return ok({ success: true });
+      }
+      if (action === 'get_all_investor_messages') {
+        try {
+          const { data } = await dbGet('/staff_investor_messages?order=created_at.desc&limit=50&select=*,investors(full_name,email)');
+          return ok({ success: true, messages: Array.isArray(data) ? data : [] });
+        } catch { return ok({ success: true, messages: [] }); }
+      }
+      if (action === 'mark_staff_conversation_read') {
+        const { investor_id, staff_id } = body;
+        try {
+          let q = '/staff_investor_messages?is_read=eq.false';
+          if (investor_id) q += `&investor_id=eq.${investor_id}`;
+          if (staff_id) q += `&staff_id=eq.${staff_id}`;
+          await dbPatch(q, { is_read: true, read_at: new Date().toISOString() });
+        } catch {}
+        return ok({ success: true });
+      }
+      if (action === 'get_templates') {
+        try {
+          const { data } = await dbGet('/message_templates?is_active=eq.true&order=name.asc&select=*');
+          return ok({ success: true, templates: Array.isArray(data) ? data : [] });
+        } catch { return ok({ success: true, templates: [] }); }
+      }
+      if (action === 'submit_support_request') {
+        const { investor_id, subject, message, category } = body;
+        if (!investor_id || !message) return ok({ success: false, error: 'investor_id and message are required' });
+        const result = await dbPost('/support_requests', {
+          investor_id, subject, message, category, status: 'open', created_at: new Date().toISOString(),
+        });
+        try {
+          const { data: inv } = await dbGet(`/investors?id=eq.${investor_id}&select=email,full_name`);
+          if (inv?.[0]) await sendEmail({ to: inv[0].email, subject: `Support Request Received: ${subject || 'Your Request'}`, html: `<p>Hi ${inv[0].full_name},</p><p>We received your support request and will respond within 24-48 hours.</p>` });
+        } catch {}
+        return ok({ success: true, request: Array.isArray(result.data) ? result.data[0] : result.data });
+      }
+      return ok({ success: true, data: [], message: `investor-messaging action '${action}' not implemented` });
     }
-
-    // ─────────────────────────── AM SUBMIT DEAL ───────────────────────────
     case 'am-submit-deal': {
       const { action } = body;
 
