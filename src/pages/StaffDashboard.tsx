@@ -1,4 +1,4 @@
-import { useState, useEffect, useCallback, lazy, Suspense } from 'react';
+﻿import { useState, useEffect, useCallback, lazy, Suspense } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
@@ -575,7 +575,7 @@ export default function StaffDashboard() {
 
   // isAcquisitionManager: accept both plural + singular variants so AMs with inconsistent
   // session data (e.g. department='acquisition_manager' vs 'acquisition_managers') are
-  // still recognised — prevents AMs from falling through to the 'Setup_Manager' default
+  // still recognised â€” prevents AMs from falling through to the 'Setup_Manager' default
   // in <DealFlowTab>, which would block them from uploading deals.
   const isAcquisitionManager =
     staffDepartment === 'acquisition_managers' ||
@@ -593,11 +593,11 @@ export default function StaffDashboard() {
     staffRole === 'setup_managers' ||
     staffRole === 'setup_manager';
 
-  // ADMIN CHECK — used to gate the HR Executive Overview (master weekly report,
+  // ADMIN CHECK â€” used to gate the HR Executive Overview (master weekly report,
   // executive KPIs, staff_list). The `manage-hr-commissions` edge function
   // returns 403 for non-admins. Success Managers are treated as
   // admin-equivalent by this platform (they run operations), so they're
-  // included here — this restores the Executive Overview / Master Weekly
+  // included here â€” this restores the Executive Overview / Master Weekly
   // Report features for Success Team after the earlier over-strict fix
   // accidentally locked them out. Acquisition Managers and Setup Managers
   // remain excluded, preventing the original 403 errors.
@@ -949,7 +949,7 @@ export default function StaffDashboard() {
               )}
             </Button>
 
-            {/* Book a Call — quick-dial to success team */}
+            {/* Book a Call â€” quick-dial to success team */}
             <Button
               variant="outline"
               size="sm"
@@ -957,7 +957,7 @@ export default function StaffDashboard() {
                 window.location.href = 'mailto:success@accessyourplace.com?subject=Discovery%20Call%20Request&body=Hi%20Success%20Team%2C%0A%0AI%20would%20like%20to%20schedule%20a%20discovery%20call.%0A%0AClient%20name%3A%0AMarket%20of%20interest%3A%0ABest%20time%3A%0A';
               }}
               className="hidden sm:flex items-center gap-1 text-[#d4a574] border-[#d4a574]/40 hover:bg-[#d4a574]/10"
-              aria-label="Book a discovery call — opens email to success team"
+              aria-label="Book a discovery call â€” opens email to success team"
             >
               <Mail className="w-4 h-4" aria-hidden="true" />
               <span className="text-xs font-medium">Book a Call</span>
@@ -1734,7 +1734,7 @@ export default function StaffDashboard() {
                                   <p className="font-semibold text-lg">{product.title}</p>
                                   <p className="text-sm text-gray-600 mt-1">{product.description}</p>
                                   <p className="text-xs text-gray-500 mt-2">
-                                    Category: {product.category} • File: {product.file_name}
+                                    Category: {product.category} â€¢ File: {product.file_name}
                                   </p>
                                 </div>
                                 <div className="flex gap-2 ml-4">
@@ -2169,13 +2169,7 @@ export default function StaffDashboard() {
           </AlertDialogContent>
         </AlertDialog>
 
+      </main>
       </div>
-    </div>
-  );
-}
-lertDialog>
-
-      </div>
-    </div>
-  );
+    );
 }
