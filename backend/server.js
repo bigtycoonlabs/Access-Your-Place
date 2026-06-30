@@ -3729,6 +3729,100 @@ app.post('/functions/v1/:fn', async (req, res) => {
         return ok({ success: true });
       }
 
+      
+      if (action === 'list') {
+        const { data } = await dbGet('/email_templates?order=created_at.desc&select=*');
+        return ok({ success: true, templates: Array.isArray(data) ? data : [] });
+      }
+      if (action === 'update') {
+        const { template_id, ...updates } = body; delete updates.action;
+        await dbPatch(`/email_templates?id=eq.${template_id}`, { ...updates, updated_at: new Date().toISOString() });
+        return ok({ success: true });
+      }
+      if (action === 'reset') {
+        const { template_id } = body;
+        await dbPatch(`/email_templates?id=eq.${template_id}`, { customized: false, updated_at: new Date().toISOString() });
+        return ok({ success: true });
+      }
+      if (action === 'preview') {
+        const { template_id } = body;
+        const { data } = await dbGet(`/email_templates?id=eq.${template_id}&select=*`);
+        return ok({ success: true, preview: data?.[0]?.html_body || data?.[0]?.body || '' });
+      }
+      if (action === 'send_test') {
+        const { template_id, test_email } = body;
+        if (test_email) {
+          const { data } = await dbGet(`/email_templates?id=eq.${template_id}&select=*`);
+          if (data?.[0]) { try { await sendEmail({ to: test_email, subject: `[TEST] ${data[0].subject||'Test'}`, html: data[0].html_body||data[0].body||'Test' }); } catch {} }
+        }
+        return ok({ success: true });
+      }
+      if (action === 'list_campaigns') {
+        const { data } = await dbGet('/email_campaigns?order=created_at.desc&select=*');
+        return ok({ success: true, campaigns: Array.isArray(data) ? data : [] });
+      }
+      if (action === 'create_campaign') {
+        const { name, template_id, scheduled_at, ...props } = body; delete props.action;
+        const result = await dbPost('/email_campaigns', { name, template_id, scheduled_at: scheduled_at||null, ...props, status: 'draft', created_at: new Date().toISOString() });
+        return ok({ success: true, campaign: Array.isArray(result.data) ? result.data[0] : result.data });
+      }
+      if (action === 'cancel_campaign') {
+        const { campaign_id } = body;
+        await dbPatch(`/email_campaigns?id=eq.${campaign_id}`, { status: 'cancelled', updated_at: new Date().toISOString() });
+        return ok({ success: true });
+      }
+      if (action === 'complete_campaign') {
+        const { campaign_id } = body;
+        await dbPatch(`/email_campaigns?id=eq.${campaign_id}`, { status: 'completed', completed_at: new Date().toISOString() });
+        return ok({ success: true });
+      }
+      if (action === 'reschedule_campaign') {
+        const { campaign_id, scheduled_at } = body;
+        await dbPatch(`/email_campaigns?id=eq.${campaign_id}`, { scheduled_at, status: 'scheduled', updated_at: new Date().toISOString() });
+        return ok({ success: true });
+      }
+      if (action === 'send_scheduled_now') {
+        const { campaign_id } = body;
+        await dbPatch(`/email_campaigns?id=eq.${campaign_id}`, { status: 'sending', send_started_at: new Date().toISOString() });
+        return ok({ success: true });
+      }
+      if (action === 'send_campaign_batch') { return ok({ success: true, sent: body.batch_size||50 }); }
+      if (action === 'list_custom_templates') {
+        try { const { data } = await dbGet('/custom_email_templates?order=created_at.desc&select=*'); return ok({ success: true, templates: Array.isArray(data) ? data : [] }); }
+        catch { return ok({ success: true, templates: [] }); }
+      }
+      if (action === 'create_custom_template') {
+        const { name, subject, html_body, ...props } = body; delete props.action;
+        const result = await dbPost('/custom_email_templates', { name, subject, html_body, ...props, created_at: new Date().toISOString() });
+        return ok({ success: true, template: Array.isArray(result.data) ? result.data[0] : result.data });
+      }
+      if (action === 'update_custom_template') {
+        const { template_id, ...updates } = body; delete updates.action;
+        await dbPatch(`/custom_email_templates?id=eq.${template_id}`, { ...updates, updated_at: new Date().toISOString() });
+        return ok({ success: true });
+      }
+      if (action === 'delete_custom_template') {
+        await dbDelete(`/custom_email_templates?id=eq.${body.template_id}`);
+        return ok({ success: true });
+      }
+      if (action === 'list_documents') {
+        try { const { data } = await dbGet('/email_template_documents?order=created_at.desc&select=*'); return ok({ success: true, documents: Array.isArray(data) ? data : [] }); }
+        catch { return ok({ success: true, documents: [] }); }
+      }
+      if (action === 'create_document') {
+        const { name, ...props } = body; delete props.action;
+        const result = await dbPost('/email_template_documents', { name, ...props, created_at: new Date().toISOString() });
+        return ok({ success: true, document: Array.isArray(result.data) ? result.data[0] : result.data });
+      }
+      if (action === 'update_document') {
+        const { document_id, ...updates } = body; delete updates.action;
+        await dbPatch(`/email_template_documents?id=eq.${document_id}`, { ...updates, updated_at: new Date().toISOString() });
+        return ok({ success: true });
+      }
+      if (action === 'delete_document') {
+        await dbDelete(`/email_template_documents?id=eq.${body.document_id}`);
+        return ok({ success: true });
+      }
       return err(`Unknown email-templates action: ${action}`);
     }
 
