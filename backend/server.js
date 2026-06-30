@@ -896,9 +896,13 @@ app.post('/functions/v1/:fn', async (req, res) => {
     // ─────────────────────────── INVESTOR FAVORITES ───────────────────────
     case 'investor-favorites': {
       const { action, investor_id, property_id } = body;
-      if (action === 'get') {
+      if (action === 'get' || action === 'list') {
         const { data } = await dbGet(`/investor_favorites?investor_id=eq.${investor_id}&select=*,properties(*)`);
         return ok({ success: true, favorites: data || [] });
+      }
+      if (action === 'check') {
+        const { data } = await dbGet(`/investor_favorites?investor_id=eq.${investor_id}&property_id=eq.${property_id}&select=id`);
+        return ok({ success: true, is_favorited: (data?.length || 0) > 0 });
       }
       if (action === 'add') {
         const existing = await dbGet(`/investor_favorites?investor_id=eq.${investor_id}&property_id=eq.${property_id}&select=id`);
