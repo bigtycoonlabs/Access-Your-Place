@@ -4710,6 +4710,57 @@ app.post('/functions/v1/:fn', async (req, res) => {
         return ok({ success: true });
       }
 
+      
+      if (action === 'get_all_pending_requests' || action === 'get_all_portfolio_properties') {
+        let q = '/portfolio_approval_requests?order=created_at.desc&select=*,investor:investors!investor_id(full_name,email)';
+        if (action === 'get_all_pending_requests') q += '&status=eq.pending';
+        try { const { data } = await dbGet(q); return ok({ success: true, requests: Array.isArray(data)?data:[], properties: Array.isArray(data)?data:[] }); }
+        catch { return ok({ success: true, requests: [], properties: [] }); }
+      }
+      if (action === 'submit_property') {
+        const { investor_id, ...props } = body; delete props.action;
+        const result = await dbPost('/portfolio_approval_requests', { investor_id, ...props, status: 'pending', created_at: new Date().toISOString() });
+        return ok({ success: true, request: Array.isArray(result.data)?result.data[0]:result.data });
+      }
+      if (action === 'approve_property') {
+        const { request_id, staff_id, notes } = body;
+        await dbPatch('/portfolio_approval_requests?id=eq.' + request_id, { status: 'approved', approved_by: staff_id||null, approval_notes: notes||null, approved_at: new Date().toISOString() });
+        return ok({ success: true });
+      }
+      if (action === 'reject_property') {
+        const { request_id, staff_id, reason } = body;
+        await dbPatch('/portfolio_approval_requests?id=eq.' + request_id, { status: 'rejected', rejected_by: staff_id||null, rejection_reason: reason||null, rejected_at: new Date().toISOString() });
+        return ok({ success: true });
+      }
+      if (action === 'update_property_details') {
+        const { request_id, ...updates } = body; delete updates.action;
+        await dbPatch('/portfolio_approval_requests?id=eq.' + request_id, { ...updates, updated_at: new Date().toISOString() });
+        return ok({ success: true });
+      }
+      if (action === 'update_document_status') {
+        const { document_id, status } = body;
+        await dbPatch('/portfolio_documents?id=eq.' + document_id, { status, updated_at: new Date().toISOString() });
+        return ok({ success: true });
+      }
+      if (action === 'mark_acquisition_complete') {
+        const { request_id } = body;
+        await dbPatch('/portfolio_approval_requests?id=eq.' + request_id, { status: 'acquisition_complete', completed_at: new Date().toISOString() });
+        return ok({ success: true });
+      }
+      if (action === 'search_existing_deals') {
+        const { search } = body;
+        let q = '/properties?is_published=eq.true&order=created_at.desc&limit=20&select=id,address,city,state,operation_type';
+        if (search) q += '&or=(address.ilike.*' + encodeURIComponent(search) + '*,city.ilike.*' + encodeURIComponent(search) + '*)';
+        try { const { data } = await dbGet(q); return ok({ success: true, deals: Array.isArray(data)?data:[] }); }
+        catch { return ok({ success: true, deals: [] }); }
+      }
+      if (action === 'get_stats') {
+        try {
+          const { data } = await dbGet('/portfolio_approval_requests?select=status');
+          const s = Array.isArray(data)?data:[];
+          return ok({ success: true, stats: { total: s.length, pending: s.filter(r=>r.status==='pending').length, approved: s.filter(r=>r.status==='approved').length, rejected: s.filter(r=>r.status==='rejected').length } });
+        } catch { return ok({ success: true, stats: {} }); }
+      }
       return err(`Unknown portfolio action: ${action}`);
     }
 
