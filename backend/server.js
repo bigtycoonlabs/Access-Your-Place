@@ -3484,41 +3484,150 @@ app.post('/functions/v1/:fn', async (req, res) => {
     // ─────────────────────────── HR / COMMISSIONS ─────────────────────────
     case 'manage-hr-commissions': {
       const { action } = body;
-
-      if (action === 'get_commissions') {
-        const { staff_id, status } = body;
-        let q = '/commissions?order=created_at.desc&select=*,staff_users(first_name,last_name)';
-        if (staff_id) q += `&staff_id=eq.${staff_id}`;
-        if (status) q += `&status=eq.${status}`;
-        const { data } = await dbGet(q);
-        return ok({ success: true, commissions: data || [] });
+      if (action === 'get_staff_list') {
+        const { data } = await dbGet('/staff_users?is_active=eq.true&order=first_name.asc&select=id,first_name,last_name,email,department,roles');
+        return ok({ success: true, staff: Array.isArray(data) ? data : [] });
       }
-
-      if (action === 'create_commission') {
-        const { staff_id, amount, description, deal_id } = body;
-        const result = await dbPost('/commissions', { staff_id, amount, description, deal_id, status: 'pending', created_at: new Date().toISOString() });
+      if (action === 'submit_commission') {
+        const { staff_id, deal_id, amount, type, notes } = body;
+        const result = await dbPost('/staff_commissions', { staff_id, deal_id, amount, type, notes, status: 'pending', submitted_at: new Date().toISOString(), created_at: new Date().toISOString() });
         return ok({ success: true, commission: Array.isArray(result.data) ? result.data[0] : result.data });
       }
-
-      if (action === 'update_commission') {
-        const { commission_id, ...updates } = body;
-        delete updates.action;
-        await dbPatch(`/commissions?id=eq.${commission_id}`, { ...updates, updated_at: new Date().toISOString() });
+      if (action === 'update_commission_status') {
+        const { commission_id, status, notes, approved_by } = body;
+        await dbPatch(`/staff_commissions?id=eq.${commission_id}`, { status, staff_notes: notes||null, approved_by: approved_by||null, updated_at: new Date().toISOString() });
         return ok({ success: true });
       }
-
-      if (action === 'get_summary') {
+      if (action === 'get_commission_stats') {
         const { staff_id } = body;
-        const { data } = await dbGet(`/commissions?staff_id=eq.${staff_id}&select=amount,status`);
-        const summary = { total: 0, pending: 0, paid: 0 };
-        data?.forEach(c => { summary.total += c.amount || 0; if (c.status === 'pending') summary.pending += c.amount || 0; if (c.status === 'paid') summary.paid += c.amount || 0; });
-        return ok({ success: true, summary });
+        let q = '/staff_commissions?select=amount,status,type';
+        if (staff_id) q += `&staff_id=eq.${staff_id}`;
+        const { data } = await dbGet(q);
+        const c = Array.isArray(data) ? data : [];
+        return ok({ success: true, stats: { total: c.reduce((s,x)=>s+parseFloat(x.amount||0),0), pending: c.filter(x=>x.status==='pending').length, approved: c.filter(x=>x.status==='approved').length, paid: c.filter(x=>x.status==='paid').length } });
       }
-
+      if (action === 'submit_weekly_report') {
+        const { staff_id, week_start, report_data } = body;
+        const result = await dbPost('/staff_weekly_reports', { staff_id, week_start, report_data: JSON.stringify(report_data||{}), status: 'submitted', submitted_at: new Date().toISOString(), created_at: new Date().toISOString() });
+        return ok({ success: true, report: Array.isArray(result.data) ? result.data[0] : result.data });
+      }
+      if (action === 'get_weekly_reports') {
+        const { staff_id, status } = body;
+        let q = '/staff_weekly_reports?order=created_at.desc&select=*,staff:staff_users!staff_id(first_name,last_name)';
+        if (staff_id) q += `&staff_id=eq.${staff_id}`;
+        if (status) q += `&status=eq.${encodeURIComponent(status)}`;
+        const { data } = await dbGet(q);
+        return ok({ success: true, reports: Array.isArray(data) ? data : [] });
+      }
+      if (action === 'review_weekly_report') {
+        const { report_id, status, feedback, reviewed_by } = body;
+        await dbPatch(`/staff_weekly_reports?id=eq.${report_id}`, { status, feedback, reviewed_by: reviewed_by||null, reviewed_at: new Date().toISOString() });
+        return ok({ success: true });
+      }
+      if (action === 'get_master_weekly_report') {
+        const { week_start } = body;
+        let q = '/staff_weekly_reports?order=created_at.desc&select=*,staff:staff_users!staff_id(first_name,last_name,department)';
+        if (week_start) q += `&week_start=eq.${encodeURIComponent(week_start)}`;
+        const { data } = await dbGet(q);
+        return ok({ success: true, reports: Array.isArray(data) ? data : [] });
+      }
+      if (action === 'submit_deal_record') {
+        const { staff_id, deal_id, deal_data } = body;
+        const result = await dbPost('/staff_deal_records', { staff_id, deal_id, deal_data: JSON.stringify(deal_data||{}), created_at: new Date().toISOString() });
+        return ok({ success: true, record: Array.isArray(result.data) ? result.data[0] : result.data });
+      }
+      if (action === 'delete_deal_record') {
+        const { record_id } = body;
+        await dbDelete(`/staff_deal_records?id=eq.${record_id}`);
+        return ok({ success: true });
+      }
+      if (action === 'start_timer') {
+        const { staff_id, task_type, notes } = body;
+        const result = await dbPost('/staff_time_entries', { staff_id, task_type, notes, started_at: new Date().toISOString(), status: 'active', created_at: new Date().toISOString() });
+        return ok({ success: true, timer: Array.isArray(result.data) ? result.data[0] : result.data });
+      }
+      if (action === 'stop_timer') {
+        const { timer_id } = body;
+        await dbPatch(`/staff_time_entries?id=eq.${timer_id}`, { stopped_at: new Date().toISOString(), status: 'stopped', updated_at: new Date().toISOString() });
+        return ok({ success: true });
+      }
+      if (action === 'get_active_timer') {
+        const { staff_id } = body;
+        const { data } = await dbGet(`/staff_time_entries?staff_id=eq.${staff_id}&status=eq.active&order=created_at.desc&limit=1&select=*`);
+        return ok({ success: true, timer: data?.[0] || null });
+      }
+      if (action === 'get_time_entries') {
+        const { staff_id } = body;
+        let q = '/staff_time_entries?order=created_at.desc&select=*';
+        if (staff_id) q += `&staff_id=eq.${staff_id}`;
+        const { data } = await dbGet(q);
+        return ok({ success: true, entries: Array.isArray(data) ? data : [] });
+      }
+      if (action === 'get_time_stats') {
+        const { staff_id } = body;
+        let q = '/staff_time_entries?select=started_at,stopped_at';
+        if (staff_id) q += `&staff_id=eq.${staff_id}`;
+        const { data } = await dbGet(q);
+        const entries = Array.isArray(data) ? data : [];
+        const totalMs = entries.reduce((s,e)=>{ if (e.started_at&&e.stopped_at) s+=new Date(e.stopped_at)-new Date(e.started_at); return s; },0);
+        return ok({ success: true, stats: { total_hours: Math.round(totalMs/3600000*10)/10, entry_count: entries.length } });
+      }
+      if (action === 'save_payment_profile' || action === 'get_payment_profiles') {
+        if (action === 'get_payment_profiles') {
+          const { staff_id } = body;
+          let q = '/staff_payment_profiles?order=created_at.desc&select=*';
+          if (staff_id) q += `&staff_id=eq.${staff_id}`;
+          const { data } = await dbGet(q);
+          return ok({ success: true, profiles: Array.isArray(data) ? data : [] });
+        }
+        const { staff_id, ...profile } = body; delete profile.action;
+        await dbPost('/staff_payment_profiles', { staff_id, ...profile, created_at: new Date().toISOString() });
+        return ok({ success: true });
+      }
+      if (action === 'delete_payment_profile') {
+        const { profile_id } = body;
+        await dbDelete(`/staff_payment_profiles?id=eq.${profile_id}`);
+        return ok({ success: true });
+      }
+      if (action === 'get_compliance_docs' || action === 'upload_compliance_doc' || action === 'delete_compliance_doc') {
+        if (action === 'get_compliance_docs') {
+          const { staff_id } = body;
+          let q = '/staff_compliance_docs?order=created_at.desc&select=*';
+          if (staff_id) q += `&staff_id=eq.${staff_id}`;
+          const { data } = await dbGet(q);
+          return ok({ success: true, docs: Array.isArray(data) ? data : [] });
+        }
+        if (action === 'upload_compliance_doc') {
+          const { staff_id, doc_url, doc_type, file_name } = body;
+          await dbPost('/staff_compliance_docs', { staff_id, doc_url, doc_type, file_name, created_at: new Date().toISOString() });
+          return ok({ success: true });
+        }
+        if (action === 'delete_compliance_doc') {
+          const { doc_id } = body;
+          await dbDelete(`/staff_compliance_docs?id=eq.${doc_id}`);
+          return ok({ success: true });
+        }
+      }
+      if (action === 'get_executive_overview') {
+        try {
+          const [commR, repR, invR] = await Promise.all([dbGet('/staff_commissions?select=amount,status'), dbGet('/staff_weekly_reports?select=id,status'), dbGet('/investors?select=id,is_funded')]);
+          const comms = Array.isArray(commR.data) ? commR.data : [];
+          const reps = Array.isArray(repR.data) ? repR.data : [];
+          const investors = Array.isArray(invR.data) ? invR.data : [];
+          return ok({ success: true, overview: { total_commissions_paid: comms.filter(c=>c.status==='paid').reduce((s,c)=>s+parseFloat(c.amount||0),0), pending_commissions: comms.filter(c=>c.status==='pending').length, weekly_reports_submitted: reps.filter(r=>r.status==='submitted').length, total_funded_investors: investors.filter(i=>i.is_funded).length } });
+        } catch { return ok({ success: true, overview: {} }); }
+      }
+      if (action === 'send_friday_payout_summary') {
+        try {
+          const { data: staff } = await dbGet('/staff_users?is_active=eq.true&select=email,first_name');
+          for (const s of (Array.isArray(staff) ? staff : [])) {
+            try { await sendEmail({ to: s.email, subject: 'Weekly Payout Summary — Access Your Place', html: `<p>Hi ${s.first_name}, your weekly payout summary is ready.</p>` }); } catch {}
+          }
+        } catch {}
+        return ok({ success: true });
+      }
       return err(`Unknown manage-hr-commissions action: ${action}`);
     }
-
-    // ─────────────────────────── ACQUISITION REQUESTS ─────────────────────
     case 'manage-acquisition-requests':
     case 'manage-acquisition-workflow':
     case 'manage-acquisitions': {
