@@ -49,8 +49,8 @@ export function QuickViewModal({
   if (!deal) return null;
 
   const displayTitle = deal.listing_title || `${deal.bedrooms}BR ${deal.property_type?.replace('_', ' ') || 'Property'} in ${deal.city}`;
-  const hasFullAddress = !!deal.address;
-  const locationDisplay = hasFullAddress 
+  // SECURITY: never show full address in quick view
+  const locationDisplay = `${deal.city}, ${deal.state} ${deal.zip_code || ''}`.trim();
     ? `${deal.address}, ${deal.city}, ${deal.state} ${deal.zip_code || ''}`
     : `${deal.city}, ${deal.state} ${deal.zip_code || ''}`;
   // FIXED: Declare isYPApproved which was previously used but never defined
