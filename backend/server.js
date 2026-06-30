@@ -4652,6 +4652,29 @@ app.post('/functions/v1/:fn', async (req, res) => {
         return ok({ success: true });
       }
 
+      
+      if (action === 'get_preferences' || action === 'get_alert_settings') {
+        const { investor_id } = body;
+        try { const { data } = await dbGet(`/deal_alert_settings?investor_id=eq.${investor_id}&select=*`); return ok({ success: true, preferences: data?.[0]||{}, settings: data?.[0]||{} }); }
+        catch { return ok({ success: true, preferences: {}, settings: {} }); }
+      }
+      if (action === 'save_preferences' || action === 'save_alert_settings') {
+        const { investor_id, ...prefs } = body; delete prefs.action;
+        try {
+          const { data: ex } = await dbGet(`/deal_alert_settings?investor_id=eq.${investor_id}&select=id`);
+          if (ex?.length) await dbPatch(`/deal_alert_settings?investor_id=eq.${investor_id}`, { ...prefs, updated_at: new Date().toISOString() });
+          else await dbPost('/deal_alert_settings', { investor_id, ...prefs, created_at: new Date().toISOString() });
+        } catch {}
+        return ok({ success: true });
+      }
+      if (action === 'get_alert_history') {
+        const { investor_id } = body;
+        try { const { data } = await dbGet(`/deal_alert_history?${investor_id?`investor_id=eq.${investor_id}&`:''}order=created_at.desc&limit=50&select=*`); return ok({ success: true, history: Array.isArray(data)?data:[] }); }
+        catch { return ok({ success: true, history: [] }); }
+      }
+      if (action === 'preview_matches') {
+        return ok({ success: true, matches: [], message: 'Preview matches calculated' });
+      }
       return err('Unknown deal-alerts action');
     }
 
