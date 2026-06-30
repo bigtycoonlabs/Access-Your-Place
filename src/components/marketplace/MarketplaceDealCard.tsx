@@ -44,8 +44,8 @@ export function MarketplaceDealCard({
   
   const viability = Math.max(analytics?.str_viability_score || 0, analytics?.coliving_viability_score || 0);
   const displayTitle = deal.listing_title || `${deal.bedrooms}BR ${deal.property_type?.replace('_', ' ') || 'Property'} in ${deal.city}`;
-  const hasFullAddress = !!deal.address;
-  const locationDisplay = hasFullAddress 
+  // SECURITY: never show full address on public marketplace cards
+  const locationDisplay = `${deal.city}, ${deal.state}`;
     ? `${deal.address}, ${deal.city}, ${deal.state}`
     : `${deal.city}, ${deal.state}`;
 
