@@ -3338,6 +3338,107 @@ app.post('/functions/v1/:fn', async (req, res) => {
         return ok({ success: true, tasks: results.map(r => Array.isArray(r.data) ? r.data[0] : r.data) });
       }
 
+      
+      if (action === 'list') {
+        const { investor_id, project_id, status } = body;
+        let q = '/setup_tasks?order=created_at.desc&select=*';
+        if (project_id) q += `&project_id=eq.${project_id}`;
+        if (investor_id) q += `&investor_id=eq.${investor_id}`;
+        if (status) q += `&status=eq.${encodeURIComponent(status)}`;
+        const { data } = await dbGet(q);
+        return ok({ success: true, tasks: Array.isArray(data) ? data : [] });
+      }
+      if (action === 'create_project' || action === 'list_projects' || action === 'get_investor_projects') {
+        const { investor_id, property_id, ...props } = body;
+        delete props.action;
+        if (action === 'create_project') {
+          if (!investor_id) return ok({ success: false, error: 'investor_id required' });
+          const result = await dbPost('/setup_projects', { investor_id, property_id: property_id||null, ...props, status: 'active', created_at: new Date().toISOString() });
+          return ok({ success: true, project: Array.isArray(result.data) ? result.data[0] : result.data });
+        }
+        const q = `/setup_projects?investor_id=eq.${investor_id}&order=created_at.desc&select=*`;
+        const { data } = await dbGet(q);
+        return ok({ success: true, projects: Array.isArray(data) ? data : [] });
+      }
+      if (action === 'update') {
+        const { task_id, ...updates } = body; delete updates.action;
+        if (!task_id) return ok({ success: false, error: 'task_id required' });
+        await dbPatch(`/setup_tasks?id=eq.${task_id}`, { ...updates, updated_at: new Date().toISOString() });
+        return ok({ success: true });
+      }
+      if (action === 'complete') {
+        const { task_id, completed_by, notes } = body;
+        await dbPatch(`/setup_tasks?id=eq.${task_id}`, { status: 'completed', completed_by: completed_by||null, completion_notes: notes||null, completed_at: new Date().toISOString() });
+        return ok({ success: true });
+      }
+      if (action === 'create_default_tasks') {
+        const { project_id, investor_id } = body;
+        const defaults = ['Confirm lease signed','Order furniture','Schedule housekeeping','Set up Wi-Fi','Take launch photos','Verify listing is live'];
+        for (const title of defaults) {
+          await dbPost('/setup_tasks', { project_id: project_id||null, investor_id, title, status: 'pending', created_at: new Date().toISOString() });
+        }
+        return ok({ success: true, created: defaults.length });
+      }
+      if (action === 'submit_intake_form') {
+        const { investor_id, form_data } = body;
+        if (!investor_id) return ok({ success: false, error: 'investor_id required' });
+        const result = await dbPost('/setup_intake_forms', { investor_id, form_data: JSON.stringify(form_data||{}), submitted_at: new Date().toISOString(), created_at: new Date().toISOString() });
+        return ok({ success: true, form: Array.isArray(result.data) ? result.data[0] : result.data });
+      }
+      if (action === 'get_intake_fields' || action === 'configure_intake_fields') {
+        if (action === 'configure_intake_fields') {
+          const { fields, staff_id } = body;
+          await dbPost('/setup_intake_field_configs', { fields: JSON.stringify(fields||[]), configured_by: staff_id||null, created_at: new Date().toISOString() });
+          return ok({ success: true });
+        }
+        try {
+          const { data } = await dbGet('/setup_intake_field_configs?order=created_at.desc&limit=1&select=*');
+          return ok({ success: true, fields: data?.[0]?.fields ? JSON.parse(data[0].fields) : [] });
+        } catch { return ok({ success: true, fields: [] }); }
+      }
+      if (action === 'save_form_template' || action === 'list_form_templates' || action === 'load_form_template' || action === 'delete_form_template') {
+        if (action === 'list_form_templates') {
+          try { const { data } = await dbGet('/setup_form_templates?order=created_at.desc&select=*'); return ok({ success: true, templates: Array.isArray(data) ? data : [] }); }
+          catch { return ok({ success: true, templates: [] }); }
+        }
+        if (action === 'save_form_template') {
+          const { name, fields, template_id } = body;
+          if (template_id) { await dbPatch(`/setup_form_templates?id=eq.${template_id}`, { name, fields: JSON.stringify(fields||[]), updated_at: new Date().toISOString() }); }
+          else { await dbPost('/setup_form_templates', { name, fields: JSON.stringify(fields||[]), created_at: new Date().toISOString() }); }
+          return ok({ success: true });
+        }
+        if (action === 'load_form_template') {
+          const { template_id } = body;
+          const { data } = await dbGet(`/setup_form_templates?id=eq.${template_id}&select=*`);
+          return ok({ success: true, template: data?.[0] || null });
+        }
+        if (action === 'delete_form_template') {
+          const { template_id } = body;
+          await dbDelete(`/setup_form_templates?id=eq.${template_id}`);
+          return ok({ success: true });
+        }
+      }
+      if (action === 'approve_spreadsheet') {
+        const { project_id, staff_id } = body;
+        await dbPatch(`/setup_projects?id=eq.${project_id}`, { spreadsheet_approved: true, spreadsheet_approved_by: staff_id||null, spreadsheet_approved_at: new Date().toISOString() });
+        return ok({ success: true });
+      }
+      if (action === 'send_recap' || action === 'preview_recap') {
+        const { project_id, investor_id } = body;
+        if (action === 'preview_recap') return ok({ success: true, preview: 'Setup recap preview generated' });
+        try {
+          const { data: inv } = await dbGet(`/investors?id=eq.${investor_id}&select=email,full_name`);
+          if (inv?.[0]) await sendEmail({ to: inv[0].email, subject: 'Your Setup Recap — Access Your Place', html: `<p>Hi ${inv[0].full_name},</p><p>Your setup is complete. Please find your recap summary in your portal.</p>` });
+        } catch {}
+        return ok({ success: true });
+      }
+      if (action === 'pro_portal_access' || action === 'pro_sign_contract' || action === 'pro_submit_maintenance' || action === 'pro_update_delivery' || action === 'pro_upload_media') {
+        const { pro_id, project_id, ...data } = body; delete data.action;
+        try {
+          await dbPost('/setup_pro_activity', { pro_id, project_id, activity_type: action, data: JSON.stringify(data), created_at: new Date().toISOString() });
+        } catch {}
+        return ok({ success: true });
+      }
       return err(`Unknown manage-setup-tasks action: ${action}`);
     }
 
