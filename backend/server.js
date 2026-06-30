@@ -2787,6 +2787,128 @@ app.post('/functions/v1/:fn', async (req, res) => {
         return ok({ success: true, stats });
       }
 
+
+      // GET REFERRAL CODE
+      if (action === 'get_referral_code') {
+        const { investor_id } = body;
+        if (!investor_id) return ok({ success: true, referral_code: '' });
+        const { data } = await dbGet(`/investors?id=eq.${investor_id}&select=referral_code`);
+        return ok({ success: true, referral_code: data?.[0]?.referral_code || '' });
+      }
+
+      // GET REWARDS (with total credits earned)
+      if (action === 'get_rewards') {
+        const { investor_id } = body;
+        if (!investor_id) return ok({ success: true, rewards: [], total_credits: 0 });
+        const { data } = await dbGet(`/referral_rewards?investor_id=eq.${investor_id}&select=*`);
+        const rewards = Array.isArray(data) ? data : [];
+        const total = rewards
+          .filter(r => r.reward_type === 'credit' && r.status === 'applied')
+          .reduce((s, r) => s + parseFloat(r.amount || 0), 0);
+        return ok({ success: true, rewards, total_credits: total });
+      }
+
+      // CLAIM REWARD
+      if (action === 'claim_reward') {
+        const { reward_id, reward_type } = body;
+        if (!reward_id) return ok({ success: false, error: 'reward_id is required' });
+        await dbPatch(`/referral_rewards?id=eq.${reward_id}`, {
+          reward_type, status: reward_type === 'credit' ? 'applied' : 'processing',
+        });
+        return ok({ success: true });
+      }
+
+      // INVITE REFERRAL (send referral email invitation)
+      if (action === 'invite_referral') {
+        const { investor_id, invitee_email, invitee_name } = body;
+        if (!investor_id || !invitee_email) return ok({ success: false, error: 'investor_id and invitee_email are required' });
+        const { data: invData } = await dbGet(`/investors?id=eq.${investor_id}&select=full_name,referral_code`);
+        const referrer = invData?.[0];
+        if (!referrer) return ok({ success: false, error: 'Investor not found' });
+
+        await dbPost('/referral_invitations', {
+          referrer_id: investor_id, invitee_email: invitee_email.toLowerCase().trim(),
+          invitee_name, status: 'sent', created_at: new Date().toISOString(),
+        });
+        try {
+          const signupUrl = `${SITE_URL}/investor/login?ref=${referrer.referral_code}`;
+          await sendEmail({
+            to: invitee_email, subject: `${referrer.full_name} invited you to Access Your Place`,
+            html: `<p>Hi${invitee_name ? ' ' + invitee_name : ''},</p><p>${referrer.full_name} thinks you'd be a great fit for Access Your Place — a platform for building flexible housing portfolios.</p><p><a href="${signupUrl}">Sign up using their referral link</a> to get started.</p>`,
+          });
+        } catch (e) { console.error('[manage-referrals] invite email failed:', e.message); }
+        return ok({ success: true });
+      }
+
+      // GET PAYOUT PREFERENCES
+      if (action === 'get_payout_preferences') {
+        const { investor_id } = body;
+        if (!investor_id) return ok({ success: true, preferences: null });
+        try {
+          const { data } = await dbGet(`/referral_payout_preferences?investor_id=eq.${investor_id}&select=*`);
+          return ok({ success: true, preferences: data?.[0] || null });
+        } catch { return ok({ success: true, preferences: null }); }
+      }
+
+      // UPDATE PAYOUT PREFERENCES
+      if (action === 'update_payout_preferences') {
+        const { investor_id, ...prefs } = body;
+        if (!investor_id) return ok({ success: false, error: 'investor_id is required' });
+        delete prefs.action;
+        try {
+          const { data: existing } = await dbGet(`/referral_payout_preferences?investor_id=eq.${investor_id}&select=id`);
+          if (existing?.length) {
+            await dbPatch(`/referral_payout_preferences?investor_id=eq.${investor_id}`, { ...prefs, updated_at: new Date().toISOString() });
+          } else {
+            await dbPost('/referral_payout_preferences', { investor_id, ...prefs, created_at: new Date().toISOString() });
+          }
+          return ok({ success: true });
+        } catch (e) { return ok({ success: false, error: e.message }); }
+      }
+
+      // GET ANALYTICS (staff view — aggregate referral program performance)
+      if (action === 'get_analytics') {
+        try {
+          const { data: allReferrals } = await dbGet('/referrals?select=id,status,created_at');
+          const { data: allRewards } = await dbGet('/referral_rewards?select=amount,status,reward_type');
+          const referrals = Array.isArray(allReferrals) ? allReferrals : [];
+          const rewards = Array.isArray(allRewards) ? allRewards : [];
+          const totalPaidOut = rewards.filter(r => r.status === 'applied' || r.status === 'paid')
+            .reduce((s, r) => s + parseFloat(r.amount || 0), 0);
+          return ok({
+            success: true,
+            analytics: {
+              total_referrals: referrals.length,
+              converted: referrals.filter(r => r.status === 'converted').length,
+              pending: referrals.filter(r => r.status === 'pending').length,
+              total_paid_out: totalPaidOut,
+            },
+          });
+        } catch (e) { return ok({ success: true, analytics: { total_referrals: 0, converted: 0, pending: 0, total_paid_out: 0 } }); }
+      }
+
+      // PROCESS PAYOUT (staff manually processes a single payout)
+      if (action === 'process_payout') {
+        const { reward_id, staff_id } = body;
+        if (!reward_id) return ok({ success: false, error: 'reward_id is required' });
+        await dbPatch(`/referral_rewards?id=eq.${reward_id}`, {
+          status: 'paid', paid_at: new Date().toISOString(), processed_by: staff_id || null,
+        });
+        return ok({ success: true });
+      }
+
+      // PROCESS SCHEDULED PAYOUTS (batch)
+      if (action === 'process_scheduled_payouts') {
+        try {
+          const { data: pending } = await dbGet(`/referral_rewards?status=eq.processing&select=id`);
+          const ids = (Array.isArray(pending) ? pending : []).map(r => r.id);
+          for (const id of ids) {
+            try { await dbPatch(`/referral_rewards?id=eq.${id}`, { status: 'paid', paid_at: new Date().toISOString() }); } catch {}
+          }
+          return ok({ success: true, processed_count: ids.length });
+        } catch (e) { return ok({ success: false, error: e.message }); }
+      }
+
       if (action === 'get_all') {
         const { data } = await dbGet('/referrals?order=created_at.desc&select=*,investors!referrer_id(full_name,email)');
         return ok({ success: true, referrals: data || [] });
