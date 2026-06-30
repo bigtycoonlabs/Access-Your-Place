@@ -3659,6 +3659,111 @@ app.post('/functions/v1/:fn', async (req, res) => {
         return ok({ success: true });
       }
 
+      
+      // ACQUISITION REQUESTS (15 actions for manage-acquisition-requests fall-through)
+      if (action === 'get_requests' || action === 'get_all_requests' || action === 'get_my_requests') {
+        const { investor_id, am_id, status } = body;
+        let q = '/acquisition_requests?order=created_at.desc&select=*,investor:investors!investor_id(full_name,email)';
+        if (status && status !== 'all') q += `&status=eq.${status}`;
+        if (investor_id) q += `&investor_id=eq.${investor_id}`;
+        if (am_id) q += `&assigned_am_id=eq.${am_id}`;
+        const { data } = await dbGet(q);
+        return ok({ success: true, requests: Array.isArray(data) ? data : [] });
+      }
+      if (action === 'submit_request') {
+        const { investor_id, property_id, deal_id, notes, request_type } = body;
+        const result = await dbPost('/acquisition_requests', { investor_id, property_id, deal_id, notes, request_type, status: 'pending', created_at: new Date().toISOString() });
+        return ok({ success: true, request: Array.isArray(result.data) ? result.data[0] : result.data });
+      }
+      if (action === 'approve_request') {
+        const { request_id, am_id, notes } = body;
+        await dbPatch(`/acquisition_requests?id=eq.${request_id}`, { status: 'approved', assigned_am_id: am_id||null, staff_notes: notes||null, updated_at: new Date().toISOString() });
+        return ok({ success: true });
+      }
+      if (action === 'decline_request') {
+        const { request_id, reason } = body;
+        await dbPatch(`/acquisition_requests?id=eq.${request_id}`, { status: 'declined', decline_reason: reason||null, updated_at: new Date().toISOString() });
+        return ok({ success: true });
+      }
+      if (action === 'update_status') {
+        const { request_id, status, notes } = body;
+        await dbPatch(`/acquisition_requests?id=eq.${request_id}`, { status, staff_notes: notes||null, updated_at: new Date().toISOString() });
+        return ok({ success: true });
+      }
+      if (action === 'assign_manager') {
+        const { request_id, am_id } = body;
+        await dbPatch(`/acquisition_requests?id=eq.${request_id}`, { assigned_am_id: am_id, status: 'assigned', updated_at: new Date().toISOString() });
+        return ok({ success: true });
+      }
+      if (action === 'grant_am_permission') {
+        const { request_id, am_id } = body;
+        await dbPatch(`/acquisition_requests?id=eq.${request_id}`, { am_permission_granted: true, assigned_am_id: am_id||null, updated_at: new Date().toISOString() });
+        return ok({ success: true });
+      }
+      if (action === 'get_deal_reservations' || action === 'get_investor_reservations') {
+        const { deal_id, investor_id } = body;
+        let q = '/deal_reservations?order=created_at.desc&select=*';
+        if (deal_id) q += `&deal_id=eq.${deal_id}`;
+        if (investor_id) q += `&investor_id=eq.${investor_id}`;
+        const { data } = await dbGet(q);
+        return ok({ success: true, reservations: Array.isArray(data) ? data : [] });
+      }
+      if (action === 'reserve_deal_no_am') {
+        const { investor_id, deal_id } = body;
+        const result = await dbPost('/deal_reservations', { investor_id, deal_id, status: 'pending_am', created_at: new Date().toISOString() });
+        return ok({ success: true, reservation: Array.isArray(result.data) ? result.data[0] : result.data });
+      }
+      if (action === 'update_reservation_am') {
+        const { reservation_id, am_id } = body;
+        await dbPatch(`/deal_reservations?id=eq.${reservation_id}`, { assigned_am_id: am_id, updated_at: new Date().toISOString() });
+        return ok({ success: true });
+      }
+      if (action === 'accept_first_refusal' || action === 'decline_first_refusal') {
+        const { request_id } = body;
+        await dbPatch(`/acquisition_requests?id=eq.${request_id}`, { first_refusal_status: action === 'accept_first_refusal' ? 'accepted' : 'declined', updated_at: new Date().toISOString() });
+        return ok({ success: true });
+      }
+      // WORKFLOW actions
+      if (action === 'advance_stage') {
+        const { acquisition_id, stage, notes } = body;
+        await dbPatch(`/acquisitions?id=eq.${acquisition_id}`, { stage, stage_notes: notes||null, stage_updated_at: new Date().toISOString(), updated_at: new Date().toISOString() });
+        return ok({ success: true });
+      }
+      if (action === 'assign_investor') {
+        const { acquisition_id, investor_id } = body;
+        await dbPatch(`/acquisitions?id=eq.${acquisition_id}`, { investor_id, updated_at: new Date().toISOString() });
+        return ok({ success: true });
+      }
+      if (action === 'record_payment') {
+        const { acquisition_id, amount, payment_type, notes } = body;
+        const result = await dbPost('/acquisition_payments', { acquisition_id, amount, payment_type, notes, recorded_at: new Date().toISOString(), created_at: new Date().toISOString() });
+        return ok({ success: true, payment: Array.isArray(result.data) ? result.data[0] : result.data });
+      }
+      // ACQUISITIONS additional actions
+      if (action === 'add_note') {
+        const { acquisition_id, investor_id, content: noteContent, staff_id, note } = body;
+        const target_id = acquisition_id || investor_id;
+        await dbPost('/acquisition_notes', { acquisition_id: target_id, content: noteContent||note, created_by: staff_id||null, created_at: new Date().toISOString() });
+        return ok({ success: true });
+      }
+      if (action === 'update') {
+        const { acquisition_id, ...updates } = body; delete updates.action;
+        await dbPatch(`/acquisitions?id=eq.${acquisition_id}`, { ...updates, updated_at: new Date().toISOString() });
+        return ok({ success: true });
+      }
+      if (action === 'update_checklist') {
+        const { acquisition_id, checklist } = body;
+        await dbPatch(`/acquisitions?id=eq.${acquisition_id}`, { checklist: JSON.stringify(checklist||{}), updated_at: new Date().toISOString() });
+        return ok({ success: true });
+      }
+      if (action === 'update_stage') {
+        const { acquisition_id, stage } = body;
+        await dbPatch(`/acquisitions?id=eq.${acquisition_id}`, { stage, updated_at: new Date().toISOString() });
+        return ok({ success: true });
+      }
+      if (action === 'cleanup_test_data') {
+        return ok({ success: true, message: 'Test data cleanup not available in production' });
+      }
       return err(`Unknown acquisition action: ${action}`);
     }
 
