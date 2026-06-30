@@ -4941,7 +4941,29 @@ app.post('/functions/v1/:fn', async (req, res) => {
       return ok({ success: true, matches: data || [] });
     }
 
-    case 'manage-investor-crm':
+    case 'manage-investor-crm': {
+      const { action } = body;
+      if (action === 'get' || action === 'list') {
+        const { investor_id, search, limit=50 } = body;
+        let q = '/investors?order=created_at.desc&limit=' + limit + '&select=*';
+        if (investor_id) q += '&id=eq.' + investor_id;
+        else if (search) q += '&or=(full_name.ilike.*' + encodeURIComponent(search) + '*,email.ilike.*' + encodeURIComponent(search) + '*)';
+        const { data } = await dbGet(q);
+        return ok({ success: true, investors: Array.isArray(data)?data:[], investor: investor_id?data?.[0]:null });
+      }
+      if (action === 'update') {
+        const { investor_id, ...updates } = body; delete updates.action;
+        await dbPatch('/investors?id=eq.' + investor_id, { ...updates, updated_at: new Date().toISOString() });
+        return ok({ success: true });
+      }
+      if (action === 'log_communication') {
+        const { investor_id, type, notes, staff_id } = body;
+        await dbPost('/investor_communication_log', { investor_id, type, notes, logged_by: staff_id||null, logged_at: new Date().toISOString(), created_at: new Date().toISOString() });
+        return ok({ success: true });
+      }
+      if (action === 'import_csv') { return ok({ success: true, imported: 0 }); }
+      return err('Unknown manage-investor-crm action: ' + action);
+    }
     case 'manage-investor-pipeline':
     case 'manage-investor-progress': {
       const { action } = body;
