@@ -507,6 +507,134 @@ app.post('/functions/v1/:fn', async (req, res) => {
         return ok({ success: true, message: 'Request received. Our team will process this within 48 hours.' });
       }
 
+
+      // VALIDATE SESSION (token-based check, falls back gracefully)
+      if (action === 'validate_session') {
+        const { session_token } = body;
+        if (!session_token) return ok({ success: false, error: 'No token' });
+        try {
+          const { data: sessions } = await dbGet(`/investor_sessions?session_token=eq.${encodeURIComponent(session_token)}&is_active=eq.true&select=*,investors(*)`);
+          if (!sessions?.length) return ok({ success: false, error: 'Invalid session' });
+          const session = sessions[0];
+          if (new Date(session.expires_at) < new Date()) {
+            try { await dbPatch(`/investor_sessions?id=eq.${session.id}`, { is_active: false }); } catch {}
+            return ok({ success: false, error: 'Session expired' });
+          }
+          try { await dbPatch(`/investor_sessions?id=eq.${session.id}`, { last_activity: new Date().toISOString() }); } catch {}
+          const investor = session.investors;
+          return ok({
+            success: true,
+            investor: investor ? {
+              id: investor.id, email: investor.email, full_name: investor.full_name,
+              phone: investor.phone, company_name: investor.company_name,
+              referral_code: investor.referral_code, onboarding_completed: investor.onboarding_completed,
+              sms_opt_in: investor.sms_opt_in, email_opt_in: investor.email_opt_in,
+            } : null,
+            session: { token: session.session_token, expires_at: session.expires_at },
+            email_verified: investor?.email_verified || false,
+          });
+        } catch (e) {
+          // Table may not exist yet — fail soft so the frontend falls back to localStorage check
+          return ok({ success: false, error: 'Session validation unavailable' });
+        }
+      }
+
+      // REFRESH SESSION
+      if (action === 'refresh_session') {
+        const { session_token, remember_me } = body;
+        if (!session_token) return ok({ success: false, error: 'No token' });
+        try {
+          const { data: sessions } = await dbGet(`/investor_sessions?session_token=eq.${encodeURIComponent(session_token)}&is_active=eq.true&select=*`);
+          if (!sessions?.length) return ok({ success: false, error: 'Invalid session' });
+          const session = sessions[0];
+          const newExpiry = (remember_me ?? session.remember_me)
+            ? new Date(Date.now() + 30 * 24 * 60 * 60 * 1000)
+            : new Date(Date.now() + 24 * 60 * 60 * 1000);
+          await dbPatch(`/investor_sessions?id=eq.${session.id}`, {
+            expires_at: newExpiry.toISOString(), last_activity: new Date().toISOString(),
+          });
+          return ok({ success: true, session: { token: session.session_token, expires_at: newExpiry.toISOString() } });
+        } catch (e) {
+          return ok({ success: false, error: 'Unable to refresh session' });
+        }
+      }
+
+      // REVOKE SESSION (log out a specific session/device)
+      if (action === 'revoke_session') {
+        const { session_id, session_token } = body;
+        try {
+          if (session_id) await dbPatch(`/investor_sessions?id=eq.${session_id}`, { is_active: false });
+          else if (session_token) await dbPatch(`/investor_sessions?session_token=eq.${encodeURIComponent(session_token)}`, { is_active: false });
+          return ok({ success: true });
+        } catch (e) { return ok({ success: false, error: e.message }); }
+      }
+
+      // GET ACTIVE SESSIONS (for SessionManager UI)
+      if (action === 'get_active_sessions') {
+        const { investor_id } = body;
+        try {
+          const { data } = await dbGet(`/investor_sessions?investor_id=eq.${investor_id}&is_active=eq.true&order=last_activity.desc&select=id,session_token,created_at,last_activity,expires_at,user_agent,ip_address`);
+          return ok({ success: true, sessions: Array.isArray(data) ? data : [] });
+        } catch (e) { return ok({ success: true, sessions: [] }); }
+      }
+
+      // GET LOGIN HISTORY
+      if (action === 'get_login_history') {
+        const { investor_id, limit = 20 } = body;
+        try {
+          const { data } = await dbGet(`/investor_login_history?investor_id=eq.${investor_id}&order=created_at.desc&limit=${limit}&select=*`);
+          return ok({ success: true, history: Array.isArray(data) ? data : [] });
+        } catch (e) { return ok({ success: true, history: [] }); }
+      }
+
+      // VERIFY EMAIL
+      if (action === 'verify_email') {
+        const { verification_token } = body;
+        if (!verification_token) return ok({ success: false, error: 'No token provided' });
+        const { data: investors } = await dbGet(`/investors?email_verification_token=eq.${encodeURIComponent(verification_token)}&select=id,email,full_name,email_verification_expires`);
+        if (!investors?.length) return ok({ success: false, error: 'Invalid token' });
+        const investor = investors[0];
+        if (investor.email_verification_expires && new Date(investor.email_verification_expires) < new Date()) {
+          return ok({ success: false, error: 'Token expired' });
+        }
+        await dbPatch(`/investors?id=eq.${investor.id}`, {
+          email_verified: true, email_verification_token: null, email_verification_expires: null,
+        });
+        return ok({ success: true, email: investor.email, message: 'Email verified!' });
+      }
+
+      // RESEND VERIFICATION EMAIL
+      if (action === 'resend_verification') {
+        const { email, investor_id } = body;
+        try {
+          let investor;
+          if (investor_id) {
+            const { data } = await dbGet(`/investors?id=eq.${investor_id}&select=id,email,full_name,email_verified`);
+            investor = data?.[0];
+          } else if (email) {
+            const { data } = await dbGet(`/investors?email=eq.${encodeURIComponent(email.toLowerCase().trim())}&select=id,email,full_name,email_verified`);
+            investor = data?.[0];
+          }
+          // Always return success to prevent account enumeration
+          if (!investor || investor.email_verified) return ok({ success: true });
+
+          const token = uuidv4() + '-' + uuidv4();
+          const expires = new Date(Date.now() + 24 * 60 * 60 * 1000);
+          await dbPatch(`/investors?id=eq.${investor.id}`, {
+            email_verification_token: token, email_verification_expires: expires.toISOString(),
+          });
+          const verifyUrl = `${SITE_URL}/investor/verify-email?token=${token}`;
+          await sendEmail({
+            to: investor.email, subject: 'Verify Your Email — Access Your Place',
+            html: `<p>Hi ${investor.full_name || ''},</p><p><a href="${verifyUrl}">Click here to verify your email</a>. Link expires in 24 hours.</p>`,
+          });
+          return ok({ success: true });
+        } catch (e) {
+          console.error('[investor-session] resend_verification error:', e.message);
+          return ok({ success: true }); // fail soft, never leak account existence
+        }
+      }
+
       // Unknown actions — return safe empty response instead of 400
       console.warn(`[investor-auth] Unhandled action: ${action}`);
       return ok({ success: true, data: [], properties: [], message: `Action '${action}' not yet implemented` });
