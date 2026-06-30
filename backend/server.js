@@ -944,6 +944,448 @@ app.post('/functions/v1/:fn', async (req, res) => {
     case 'manage-deal-marketplace': {
       const { action } = body;
 
+      // ── GET MARKETPLACE DATA ──────────────────────────────────────────
+      if (action === 'get_marketplace_data' || action === 'get_public_listings') {
+        const { investor_id } = body;
+
+        const { data: myListings } = investor_id
+          ? await dbGet(`/deal_listings?seller_id=eq.${investor_id}&order=created_at.desc&select=*,property:investor_portfolio(*)`)
+          : { data: [] };
+
+        let receivedDeals = [];
+        if (investor_id) {
+          const { data: offers } = await dbGet(`/private_deal_offers?buyer_id=eq.${investor_id}&order=sent_at.desc&select=*,listing:deal_listings(*,property:investor_portfolio(*)),seller:investors!seller_id(full_name,email)`);
+          receivedDeals = (Array.isArray(offers) ? offers : []).map(o => ({
+            id: o.id, listing: o.listing, seller_name: o.seller?.full_name,
+            seller_email: o.seller?.email, sent_at: o.sent_at, status: o.status,
+          }));
+        }
+
+        const { data: portfolio } = investor_id
+          ? await dbGet(`/investor_portfolio?investor_id=eq.${investor_id}&property_status=eq.active&select=*`)
+          : { data: [] };
+
+        // Public marketplace listings (status=active, listing_type=public)
+        const { data: publicListings } = await dbGet(`/deal_listings?status=eq.active&listing_type=eq.public&order=created_at.desc&select=*,property:investor_portfolio(*)`);
+
+        return ok({
+          success: true,
+          my_listings: Array.isArray(myListings) ? myListings : [],
+          received_deals: receivedDeals,
+          portfolio: Array.isArray(portfolio) ? portfolio : [],
+          public_listings: Array.isArray(publicListings) ? publicListings : [],
+        });
+      }
+
+      // ── SEARCH INVESTORS (for private deal targeting) ────────────────
+      if (action === 'search_investors') {
+        const { search_query, exclude_investor_id } = body;
+        if (!search_query) return ok({ success: true, investors: [] });
+        const q = encodeURIComponent(search_query);
+        let query = `/investors?or=(full_name.ilike.*${q}*,email.ilike.*${q}*,phone.ilike.*${q}*)&select=id,full_name,email,phone,is_verified_operator&limit=10`;
+        if (exclude_investor_id) query += `&id=neq.${exclude_investor_id}`;
+        const { data } = await dbGet(query);
+        return ok({ success: true, investors: Array.isArray(data) ? data : [] });
+      }
+
+      // ── CREATE LISTING ─────────────────────────────────────────────────
+      if (action === 'create_listing') {
+        const {
+          investor_id, property_id, listing_type, buyer_investor_id,
+          asking_price, description, monthly_revenue, monthly_expenses, lease_months_remaining,
+        } = body;
+        if (!investor_id || !property_id || !asking_price) {
+          return ok({ success: false, error: 'investor_id, property_id, and asking_price are required' });
+        }
+
+        let buyerName = null, buyerEmail = null;
+        if (listing_type === 'private' && buyer_investor_id) {
+          const { data: buyer } = await dbGet(`/investors?id=eq.${buyer_investor_id}&select=full_name,email`);
+          buyerName = buyer?.[0]?.full_name || null;
+          buyerEmail = buyer?.[0]?.email || null;
+        }
+
+        const listingResult = await dbPost('/deal_listings', {
+          property_id, seller_id: investor_id, listing_type,
+          asking_price, description, monthly_revenue, monthly_expenses, lease_months_remaining,
+          buyer_investor_id: listing_type === 'private' ? buyer_investor_id : null,
+          buyer_investor_name: buyerName, buyer_investor_email: buyerEmail,
+          status: listing_type === 'public' ? 'pending_approval' : 'active',
+          created_at: new Date().toISOString(),
+        });
+        const listing = Array.isArray(listingResult.data) ? listingResult.data[0] : listingResult.data;
+        if (!listing?.id) return ok({ success: false, error: 'Failed to create listing' });
+
+        if (listing_type === 'private' && buyer_investor_id) {
+          await dbPost('/private_deal_offers', {
+            listing_id: listing.id, seller_id: investor_id, buyer_id: buyer_investor_id,
+            status: 'pending', sent_at: new Date().toISOString(),
+          });
+          try {
+            await dbPost('/investor_notifications', {
+              investor_id: buyer_investor_id, type: 'private_deal_received',
+              title: 'New Private Deal Offer',
+              message: `You've received a private deal offer for $${Number(asking_price).toLocaleString()}`,
+              data: JSON.stringify({ listing_id: listing.id }), created_at: new Date().toISOString(),
+            });
+          } catch (e) { console.error('[manage-deal-marketplace] notify buyer failed:', e.message); }
+        }
+
+        return ok({ success: true, listing_id: listing.id });
+      }
+
+      // ── CANCEL LISTING ──────────────────────────────────────────────────
+      if (action === 'cancel_listing') {
+        const { listing_id, investor_id } = body;
+        if (!listing_id) return ok({ success: false, error: 'listing_id is required' });
+        await dbPatch(`/deal_listings?id=eq.${listing_id}${investor_id ? `&seller_id=eq.${investor_id}` : ''}`, {
+          status: 'cancelled', updated_at: new Date().toISOString(),
+        });
+        return ok({ success: true });
+      }
+
+      // ── REQUEST VERIFICATION (buyer pays $100) ───────────────────────────
+      if (action === 'request_verification') {
+        const { listing_id, investor_id } = body;
+        if (!listing_id || !investor_id) return ok({ success: false, error: 'listing_id and investor_id are required' });
+
+        const verResult = await dbPost('/deal_verifications', {
+          listing_id, requested_by: investor_id, status: 'pending',
+          verification_fee_amount: 100, created_at: new Date().toISOString(),
+        });
+        const verification = Array.isArray(verResult.data) ? verResult.data[0] : verResult.data;
+
+        await dbPatch(`/deal_listings?id=eq.${listing_id}`, {
+          status: 'verification_requested', verification_status: 'pending',
+          verification_requested_at: new Date().toISOString(),
+        });
+        try {
+          await dbPatch(`/private_deal_offers?listing_id=eq.${listing_id}&buyer_id=eq.${investor_id}`, {
+            status: 'verification_requested',
+          });
+        } catch {}
+        try {
+          await dbPost('/staff_notifications', {
+            type: 'verification_requested', title: 'New Deal Verification Request',
+            message: 'A buyer has requested verification for a private deal',
+            data: JSON.stringify({ listing_id, verification_id: verification?.id }),
+            created_at: new Date().toISOString(),
+          });
+        } catch (e) { console.error('[manage-deal-marketplace] staff notify failed:', e.message); }
+
+        return ok({ success: true, verification_id: verification?.id, payment_required: true, amount: 100 });
+      }
+
+      // ── RELEASE REPORT (buyer pays $99, sees the report) ─────────────────
+      if (action === 'release_report') {
+        const { listing_id, investor_id } = body;
+        if (!listing_id) return ok({ success: false, error: 'listing_id is required' });
+
+        const { data: verData } = await dbGet(`/deal_verifications?listing_id=eq.${listing_id}&select=*&limit=1`);
+        const verification = verData?.[0];
+        if (!verification) return ok({ success: false, error: 'Verification not found' });
+
+        await dbPatch(`/deal_verifications?id=eq.${verification.id}`, {
+          report_fee_paid: true, report_fee_paid_at: new Date().toISOString(),
+        });
+        await dbPatch(`/deal_listings?id=eq.${listing_id}`, {
+          report_released: true, report_released_at: new Date().toISOString(),
+        });
+        try {
+          await dbPost('/marketplace_payments', {
+            listing_id, verification_id: verification.id, payer_id: investor_id,
+            payment_type: 'report_release_fee', amount: 99, status: 'completed',
+            paid_at: new Date().toISOString(),
+          });
+        } catch (e) { console.error('[manage-deal-marketplace] payment log failed:', e.message); }
+
+        return ok({
+          success: true,
+          report: {
+            summary: verification.report_summary, details: verification.report_details,
+            landlord_name: verification.landlord_name, landlord_phone: verification.landlord_phone,
+            landlord_email: verification.landlord_email, license_requirements: verification.license_requirements,
+          },
+        });
+      }
+
+      // ── OPT FOR FULL TRANSACTION (AYP manages it, 20% fee) ────────────────
+      if (action === 'opt_full_transaction') {
+        const { listing_id, investor_id } = body;
+        if (!listing_id) return ok({ success: false, error: 'listing_id is required' });
+
+        const { data: listingData } = await dbGet(`/deal_listings?id=eq.${listing_id}&select=*,verification:deal_verifications(*)`);
+        const listing = listingData?.[0];
+        if (!listing) return ok({ success: false, error: 'Listing not found' });
+
+        const feeAmount = Number(listing.asking_price || 0) * 0.20;
+        const txResult = await dbPost('/deal_transactions', {
+          listing_id, verification_id: listing.verification?.[0]?.id || null,
+          seller_id: listing.seller_id, buyer_id: investor_id,
+          acquisition_cost: listing.asking_price, ayp_fee_percentage: 20, ayp_fee_amount: feeAmount,
+          status: 'pending', created_at: new Date().toISOString(),
+        });
+        const transaction = Array.isArray(txResult.data) ? txResult.data[0] : txResult.data;
+
+        await dbPatch(`/deal_listings?id=eq.${listing_id}`, {
+          transaction_managed_by_ayp: true, transaction_fee_amount: feeAmount,
+        });
+        try {
+          await dbPost('/staff_notifications', {
+            type: 'full_transaction_requested', title: 'Full Transaction Management Requested',
+            message: `A buyer has opted for full transaction management. Fee: $${feeAmount.toLocaleString()}`,
+            data: JSON.stringify({ listing_id, transaction_id: transaction?.id }),
+            created_at: new Date().toISOString(),
+          });
+        } catch (e) { console.error('[manage-deal-marketplace] staff notify failed:', e.message); }
+
+        return ok({ success: true, transaction_id: transaction?.id, fee_amount: feeAmount });
+      }
+
+      // ── DECLINE DEAL (buyer rejects a private offer) ─────────────────────
+      if (action === 'decline_deal') {
+        const { listing_id, investor_id } = body;
+        if (!listing_id) return ok({ success: false, error: 'listing_id is required' });
+
+        await dbPatch(`/private_deal_offers?listing_id=eq.${listing_id}&buyer_id=eq.${investor_id}`, {
+          status: 'declined', responded_at: new Date().toISOString(),
+        });
+        try {
+          const { data: listingData } = await dbGet(`/deal_listings?id=eq.${listing_id}&select=seller_id`);
+          const sellerId = listingData?.[0]?.seller_id;
+          if (sellerId) {
+            await dbPost('/investor_notifications', {
+              investor_id: sellerId, type: 'deal_declined', title: 'Deal Offer Declined',
+              message: 'The investor has declined your private deal offer',
+              data: JSON.stringify({ listing_id }), created_at: new Date().toISOString(),
+            });
+          }
+        } catch (e) { console.error('[manage-deal-marketplace] seller notify failed:', e.message); }
+
+        return ok({ success: true });
+      }
+
+      // ── SUBMIT OFFER (buyer makes an offer on a listing) ──────────────────
+      if (action === 'submit_offer') {
+        const { listing_id, investor_id, offer_amount, message } = body;
+        if (!listing_id || !investor_id || !offer_amount) {
+          return ok({ success: false, error: 'listing_id, investor_id, and offer_amount are required' });
+        }
+        const result = await dbPost('/deal_offers', {
+          listing_id, buyer_id: investor_id, offer_amount, message,
+          status: 'pending', created_at: new Date().toISOString(),
+        });
+        const offer = Array.isArray(result.data) ? result.data[0] : result.data;
+        try {
+          const { data: listingData } = await dbGet(`/deal_listings?id=eq.${listing_id}&select=seller_id`);
+          const sellerId = listingData?.[0]?.seller_id;
+          if (sellerId) {
+            await dbPost('/investor_notifications', {
+              investor_id: sellerId, type: 'offer_received', title: 'New Offer Received',
+              message: `You've received an offer of $${Number(offer_amount).toLocaleString()}`,
+              data: JSON.stringify({ listing_id, offer_id: offer?.id }), created_at: new Date().toISOString(),
+            });
+          }
+        } catch (e) { console.error('[manage-deal-marketplace] offer notify failed:', e.message); }
+        return ok({ success: true, offer_id: offer?.id });
+      }
+
+      // ── GET LISTING OFFERS ────────────────────────────────────────────────
+      if (action === 'get_listing_offers') {
+        const { listing_id } = body;
+        if (!listing_id) return ok({ success: true, offers: [] });
+        const { data } = await dbGet(`/deal_offers?listing_id=eq.${listing_id}&order=created_at.desc&select=*,buyer:investors!buyer_id(full_name,email)`);
+        return ok({ success: true, offers: Array.isArray(data) ? data : [] });
+      }
+
+      // ── GET SELLER OFFERS (offers received on my listings) ────────────────
+      if (action === 'get_seller_offers') {
+        const { investor_id } = body;
+        if (!investor_id) return ok({ success: true, offers: [] });
+        const { data: myListings } = await dbGet(`/deal_listings?seller_id=eq.${investor_id}&select=id`);
+        const listingIds = (Array.isArray(myListings) ? myListings : []).map(l => l.id);
+        if (!listingIds.length) return ok({ success: true, offers: [] });
+        const { data } = await dbGet(`/deal_offers?listing_id=in.(${listingIds.join(',')})&order=created_at.desc&select=*,buyer:investors!buyer_id(full_name,email),listing:deal_listings(*)`);
+        return ok({ success: true, offers: Array.isArray(data) ? data : [] });
+      }
+
+      // ── ACCEPT / REJECT / COUNTER OFFER ───────────────────────────────────
+      if (action === 'accept_offer') {
+        const { offer_id } = body;
+        if (!offer_id) return ok({ success: false, error: 'offer_id is required' });
+        await dbPatch(`/deal_offers?id=eq.${offer_id}`, { status: 'accepted', responded_at: new Date().toISOString() });
+        return ok({ success: true });
+      }
+      if (action === 'reject_offer') {
+        const { offer_id } = body;
+        if (!offer_id) return ok({ success: false, error: 'offer_id is required' });
+        await dbPatch(`/deal_offers?id=eq.${offer_id}`, { status: 'rejected', responded_at: new Date().toISOString() });
+        return ok({ success: true });
+      }
+      if (action === 'counter_offer') {
+        const { offer_id, counter_amount, message } = body;
+        if (!offer_id || !counter_amount) return ok({ success: false, error: 'offer_id and counter_amount are required' });
+        await dbPatch(`/deal_offers?id=eq.${offer_id}`, {
+          status: 'countered', counter_amount, counter_message: message, responded_at: new Date().toISOString(),
+        });
+        return ok({ success: true });
+      }
+
+      // ── GET MY SELLER LISTINGS ─────────────────────────────────────────────
+      if (action === 'get_my_seller_listings') {
+        const { investor_id } = body;
+        if (!investor_id) return ok({ success: true, listings: [] });
+        const { data } = await dbGet(`/deal_listings?seller_id=eq.${investor_id}&order=created_at.desc&select=*,property:investor_portfolio(*)`);
+        return ok({ success: true, listings: Array.isArray(data) ? data : [] });
+      }
+
+      // ── GET PORTFOLIO PROPERTIES (for creating a listing) ──────────────────
+      if (action === 'get_portfolio_properties') {
+        const { investor_id } = body;
+        if (!investor_id) return ok({ success: true, properties: [] });
+        const { data } = await dbGet(`/investor_portfolio?investor_id=eq.${investor_id}&property_status=eq.active&select=*`);
+        return ok({ success: true, properties: Array.isArray(data) ? data : [] });
+      }
+
+      // ── RESUBMIT LISTING (after staff requested changes) ───────────────────
+      if (action === 'resubmit_listing') {
+        const { listing_id, ...updates } = body;
+        if (!listing_id) return ok({ success: false, error: 'listing_id is required' });
+        delete updates.action;
+        await dbPatch(`/deal_listings?id=eq.${listing_id}`, {
+          ...updates, status: 'pending_approval', updated_at: new Date().toISOString(),
+        });
+        return ok({ success: true });
+      }
+
+      // ── CHECK TOS STATUS ─────────────────────────────────────────────────
+      if (action === 'check_tos_status') {
+        const { investor_id } = body;
+        if (!investor_id) return ok({ success: true, accepted: false });
+        const { data } = await dbGet(`/investors?id=eq.${investor_id}&select=marketplace_tos_accepted`);
+        return ok({ success: true, accepted: !!data?.[0]?.marketplace_tos_accepted });
+      }
+
+      // ── SEARCH INVESTORS (deal marketplace context, same as search_investors) ─
+      if (action === 'search_investors_marketplace') {
+        const { search_query, exclude_investor_id } = body;
+        const q = encodeURIComponent(search_query || '');
+        let query = `/investors?or=(full_name.ilike.*${q}*,email.ilike.*${q}*)&select=id,full_name,email&limit=10`;
+        if (exclude_investor_id) query += `&id=neq.${exclude_investor_id}`;
+        const { data } = await dbGet(query);
+        return ok({ success: true, investors: Array.isArray(data) ? data : [] });
+      }
+
+      // ════════════════════ STAFF / ADMIN ACTIONS ════════════════════════
+
+      if (action === 'get_pending_listings' || action === 'get_pending_verifications' || action === 'get_verification_queue') {
+        const { data } = await dbGet(`/deal_listings?status=eq.pending_approval&order=created_at.desc&select=*,property:investor_portfolio(*),seller:investors!seller_id(full_name,email)`);
+        return ok({ success: true, listings: Array.isArray(data) ? data : [] });
+      }
+
+      if (action === 'get_all_negotiations') {
+        const { data } = await dbGet(`/deal_offers?status=in.(pending,countered)&order=created_at.desc&select=*,buyer:investors!buyer_id(full_name,email),listing:deal_listings(*)`);
+        return ok({ success: true, negotiations: Array.isArray(data) ? data : [] });
+      }
+
+      if (action === 'get_closed_deals') {
+        const { data } = await dbGet(`/deal_transactions?status=eq.completed&order=created_at.desc&select=*,listing:deal_listings(*)`);
+        return ok({ success: true, deals: Array.isArray(data) ? data : [] });
+      }
+
+      if (action === 'get_transactions') {
+        const { data } = await dbGet(`/deal_transactions?order=created_at.desc&select=*,listing:deal_listings(*)`);
+        return ok({ success: true, transactions: Array.isArray(data) ? data : [] });
+      }
+
+      if (action === 'approve_listing') {
+        const { listing_id, staff_id } = body;
+        if (!listing_id) return ok({ success: false, error: 'listing_id is required' });
+        await dbPatch(`/deal_listings?id=eq.${listing_id}`, {
+          status: 'active', approved_at: new Date().toISOString(), approved_by: staff_id || null,
+        });
+        return ok({ success: true });
+      }
+
+      if (action === 'reject_listing') {
+        const { listing_id, staff_id, reason } = body;
+        if (!listing_id) return ok({ success: false, error: 'listing_id is required' });
+        await dbPatch(`/deal_listings?id=eq.${listing_id}`, {
+          status: 'rejected', rejected_at: new Date().toISOString(),
+          rejected_by: staff_id || null, rejection_reason: reason || null,
+        });
+        return ok({ success: true });
+      }
+
+      if (action === 'request_listing_changes') {
+        const { listing_id, staff_id, notes } = body;
+        if (!listing_id) return ok({ success: false, error: 'listing_id is required' });
+        await dbPatch(`/deal_listings?id=eq.${listing_id}`, {
+          status: 'changes_requested', staff_notes: notes || null, reviewed_by: staff_id || null,
+        });
+        return ok({ success: true });
+      }
+
+      if (action === 'complete_verification') {
+        const {
+          verification_id, staff_id, passed, seller_verified, landlord_verified,
+          landlord_name, landlord_phone, landlord_email, report_summary, report_details,
+        } = body;
+        if (!verification_id) return ok({ success: false, error: 'verification_id is required' });
+        await dbPatch(`/deal_verifications?id=eq.${verification_id}`, {
+          status: passed ? 'passed' : 'failed', seller_verified, landlord_verified,
+          landlord_name, landlord_phone, landlord_email, report_summary,
+          report_details: report_details ? JSON.stringify(report_details) : null,
+          completed_by: staff_id || null, completed_at: new Date().toISOString(),
+        });
+        return ok({ success: true });
+      }
+
+      if (action === 'add_staff_note_to_offer') {
+        const { offer_id, note, staff_id } = body;
+        if (!offer_id) return ok({ success: false, error: 'offer_id is required' });
+        await dbPatch(`/deal_offers?id=eq.${offer_id}`, { staff_note: note, staff_note_by: staff_id || null });
+        return ok({ success: true });
+      }
+
+      if (action === 'assign_success_manager') {
+        const { transaction_id, staff_id } = body;
+        if (!transaction_id) return ok({ success: false, error: 'transaction_id is required' });
+        await dbPatch(`/deal_transactions?id=eq.${transaction_id}`, { success_manager_id: staff_id });
+        return ok({ success: true });
+      }
+
+      if (action === 'mark_as_sold') {
+        const { transaction_id } = body;
+        if (!transaction_id) return ok({ success: false, error: 'transaction_id is required' });
+        await dbPatch(`/deal_transactions?id=eq.${transaction_id}`, { status: 'completed', completed_at: new Date().toISOString() });
+        return ok({ success: true });
+      }
+
+      if (action === 'release_funds') {
+        const { transaction_id } = body;
+        if (!transaction_id) return ok({ success: false, error: 'transaction_id is required' });
+        await dbPatch(`/deal_transactions?id=eq.${transaction_id}`, { funds_released: true, funds_released_at: new Date().toISOString() });
+        return ok({ success: true });
+      }
+
+      if (action === 'update_transaction_status') {
+        const { transaction_id, staff_id, status, notes } = body;
+        if (!transaction_id) return ok({ success: false, error: 'transaction_id is required' });
+        await dbPatch(`/deal_transactions?id=eq.${transaction_id}`, {
+          status, staff_notes: notes || null, updated_by: staff_id || null, updated_at: new Date().toISOString(),
+        });
+        return ok({ success: true });
+      }
+
+      if (action === 'save_verification_checklist') {
+        const { verification_id, checklist } = body;
+        if (!verification_id) return ok({ success: false, error: 'verification_id is required' });
+        await dbPatch(`/deal_verifications?id=eq.${verification_id}`, { checklist: JSON.stringify(checklist || {}) });
+        return ok({ success: true });
+      }
+
+      // ── Legacy actions (kept for backward compatibility) ─────────────────
       if (action === 'get_deals') {
         const { status, operation_type, limit = 20, offset = 0 } = body;
         let q = `/properties?is_published=eq.true&order=created_at.desc&limit=${limit}&offset=${offset}&select=*,deal_analytics(*)`;
@@ -994,8 +1436,6 @@ app.post('/functions/v1/:fn', async (req, res) => {
 
       return err(`Unknown manage-deal-marketplace action: ${action}`);
     }
-
-    // ─────────────────────────── INVESTOR MESSAGING ───────────────────────
     case 'investor-messaging': {
       const { action, investor_id, staff_id, message_id } = body;
 
