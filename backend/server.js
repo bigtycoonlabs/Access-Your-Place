@@ -3144,30 +3144,202 @@ app.post('/functions/v1/:fn', async (req, res) => {
     case 'manage-disputes': {
       const { action } = body;
 
-      if (action === 'get_disputes') {
-        const { status } = body;
-        let q = '/disputes?order=created_at.desc&select=*';
-        if (status) q += `&status=eq.${status}`;
-        const { data } = await dbGet(q);
-        return ok({ success: true, disputes: data || [] });
+      async function getInvestorForDispute(investorId) {
+        const { data } = await dbGet(`/investors?id=eq.${investorId}&select=id,email,full_name,phone,sms_opt_in`);
+        return data?.[0] || null;
       }
 
-      if (action === 'create_dispute') {
-        const { investor_id, subject, description, category } = body;
-        const result = await dbPost('/disputes', { investor_id, subject, description, category, status: 'open', created_at: new Date().toISOString() });
-        return ok({ success: true, dispute: Array.isArray(result.data) ? result.data[0] : result.data });
+      // CREATE DISPUTE
+      if (action === 'create' || action === 'create_dispute') {
+        const { investor_id, category, subject, description, related_entity_type, related_entity_id } = body;
+        if (!investor_id || !subject) return ok({ success: false, error: 'investor_id and subject are required' });
+
+        const ticketNumber = 'DSP-' + Date.now().toString(36).toUpperCase();
+        const result = await dbPost('/disputes', {
+          investor_id, category, subject, description, related_entity_type, related_entity_id,
+          ticket_number: ticketNumber, status: 'open', priority: 'medium', created_at: new Date().toISOString(),
+        });
+        const dispute = Array.isArray(result.data) ? result.data[0] : result.data;
+
+        try {
+          const investor = await getInvestorForDispute(investor_id);
+          if (investor) {
+            const portalUrl = `${SITE_URL}/investor/portal`;
+            await sendEmail({
+              to: investor.email, subject: `Dispute Received: ${subject} [${ticketNumber}]`,
+              html: `<div style="font-family:Arial;max-width:600px;margin:0 auto;">
+                <div style="background:#1e293b;padding:20px;text-align:center;"><h1 style="color:#f59e0b;margin:0;">Access Your Place</h1></div>
+                <div style="padding:30px;background:#f8fafc;">
+                  <p>Hi ${investor.full_name},</p>
+                  <p>We've received your dispute and our team is reviewing it.</p>
+                  <div style="background:white;border:1px solid #e2e8f0;border-radius:8px;padding:20px;margin:20px 0;">
+                    <p style="margin:0 0 10px;"><strong>Ticket:</strong> ${ticketNumber}</p>
+                    <p style="margin:0 0 10px;"><strong>Subject:</strong> ${subject}</p>
+                    <p style="margin:0 0 10px;"><strong>Category:</strong> ${category || 'General'}</p>
+                    <p style="margin:0;"><strong>Status:</strong> Open</p>
+                  </div>
+                  <p>We aim to respond within 24-48 hours.</p>
+                  <p style="text-align:center;margin:30px 0;"><a href="${portalUrl}" style="background:#f59e0b;color:#1e293b;padding:14px 32px;text-decoration:none;border-radius:8px;font-weight:bold;">View in Portal</a></p>
+                </div>
+              </div>`,
+            });
+            if (investor.sms_opt_in && investor.phone) {
+              try { await sendSMS(investor.phone, `Access Your Place: Your dispute ${ticketNumber} has been received. Subject: ${subject}. We'll respond within 24-48 hours.`); } catch {}
+            }
+          }
+        } catch (e) { console.error('[manage-disputes] create notify failed:', e.message); }
+
+        return ok({ success: true, dispute });
       }
 
-      if (action === 'update_dispute') {
-        const { dispute_id, status, resolution, resolved_by } = body;
-        await dbPatch(`/disputes?id=eq.${dispute_id}`, { status, ...(resolution ? { resolution, resolved_by, resolved_at: new Date().toISOString() } : {}), updated_at: new Date().toISOString() });
+      // UPDATE STATUS
+      if (action === 'update_status' || action === 'update_dispute') {
+        const { dispute_id, status, resolution_notes, resolution, staff_id, staff_name } = body;
+        if (!dispute_id || !status) return ok({ success: false, error: 'dispute_id and status are required' });
+
+        const { data: disputeData } = await dbGet(`/disputes?id=eq.${dispute_id}&select=*`);
+        const dispute = disputeData?.[0];
+        if (!dispute) return ok({ success: false, error: 'Dispute not found' });
+        const oldStatus = dispute.status;
+
+        const updateData = { status, updated_at: new Date().toISOString() };
+        const notes = resolution_notes || resolution;
+        if (notes) updateData.resolution_notes = notes;
+        if (status === 'resolved') { updateData.resolved_at = new Date().toISOString(); if (staff_id) updateData.resolved_by = staff_id; }
+        if (staff_id) updateData.assigned_to = staff_id;
+        await dbPatch(`/disputes?id=eq.${dispute_id}`, updateData);
+
+        if (oldStatus !== status) {
+          try {
+            const investor = await getInvestorForDispute(dispute.investor_id);
+            if (investor) {
+              const portalUrl = `${SITE_URL}/investor/portal`;
+              const statusLabels = { open: 'Open', in_progress: 'In Progress', pending_info: 'Pending Your Response', resolved: 'Resolved', closed: 'Closed' };
+              await sendEmail({
+                to: investor.email, subject: `Dispute Update: ${dispute.subject} [${dispute.ticket_number}]`,
+                html: `<div style="font-family:Arial;max-width:600px;margin:0 auto;">
+                  <div style="background:#1e293b;padding:20px;text-align:center;"><h1 style="color:#f59e0b;margin:0;">Access Your Place</h1></div>
+                  <div style="padding:30px;background:#f8fafc;">
+                    <p>Hi ${investor.full_name},</p>
+                    <p>Your dispute status has been updated.</p>
+                    <div style="background:white;border:1px solid #e2e8f0;border-radius:8px;padding:20px;margin:20px 0;">
+                      <p style="margin:0 0 10px;"><strong>Ticket:</strong> ${dispute.ticket_number}</p>
+                      <p style="margin:0 0 10px;"><strong>Subject:</strong> ${dispute.subject}</p>
+                      <p style="margin:0 0 10px;"><strong>Previous Status:</strong> ${statusLabels[oldStatus] || oldStatus}</p>
+                      <p style="margin:0;"><strong>New Status:</strong> <span style="color:#f59e0b;font-weight:bold;">${statusLabels[status] || status}</span></p>
+                    </div>
+                    ${notes ? `<p><strong>Resolution Notes:</strong><br/>${notes}</p>` : ''}
+                    <p style="text-align:center;margin:30px 0;"><a href="${portalUrl}" style="background:#f59e0b;color:#1e293b;padding:14px 32px;text-decoration:none;border-radius:8px;font-weight:bold;">View Details</a></p>
+                  </div>
+                </div>`,
+              });
+              if (investor.sms_opt_in && investor.phone) {
+                try { await sendSMS(investor.phone, `Access Your Place: Dispute ${dispute.ticket_number} status updated to "${statusLabels[status] || status}". View details in your portal.`); } catch {}
+              }
+            }
+          } catch (e) { console.error('[manage-disputes] status notify failed:', e.message); }
+        }
         return ok({ success: true });
+      }
+
+      // ADD MESSAGE
+      if (action === 'add_message') {
+        const { dispute_id, sender_type, sender_id, sender_name, message, is_internal } = body;
+        if (!dispute_id || !message) return ok({ success: false, error: 'dispute_id and message are required' });
+
+        const { data: disputeData } = await dbGet(`/disputes?id=eq.${dispute_id}&select=*`);
+        const dispute = disputeData?.[0];
+        if (!dispute) return ok({ success: false, error: 'Dispute not found' });
+
+        await dbPost('/dispute_messages', {
+          dispute_id, sender_type, sender_id, sender_name, message,
+          is_internal: is_internal || false, created_at: new Date().toISOString(),
+        });
+        await dbPatch(`/disputes?id=eq.${dispute_id}`, { updated_at: new Date().toISOString() });
+
+        if (sender_type === 'staff' && !is_internal) {
+          try {
+            const investor = await getInvestorForDispute(dispute.investor_id);
+            if (investor) {
+              const portalUrl = `${SITE_URL}/investor/portal`;
+              await sendEmail({
+                to: investor.email, subject: `New Response: ${dispute.subject} [${dispute.ticket_number}]`,
+                html: `<div style="font-family:Arial;max-width:600px;margin:0 auto;">
+                  <div style="background:#1e293b;padding:20px;text-align:center;"><h1 style="color:#f59e0b;margin:0;">Access Your Place</h1></div>
+                  <div style="padding:30px;background:#f8fafc;">
+                    <p>Hi ${investor.full_name},</p>
+                    <p>You have a new response on your dispute.</p>
+                    <div style="background:white;border:1px solid #e2e8f0;border-radius:8px;padding:20px;margin:20px 0;">
+                      <p style="margin:0 0 10px;"><strong>Ticket:</strong> ${dispute.ticket_number}</p>
+                      <p style="margin:0 0 10px;"><strong>Subject:</strong> ${dispute.subject}</p>
+                      <p style="margin:0 0 10px;"><strong>From:</strong> ${sender_name || 'Support Team'}</p>
+                      <div style="background:#f1f5f9;padding:15px;border-radius:6px;margin-top:15px;"><p style="margin:0;white-space:pre-wrap;">${message}</p></div>
+                    </div>
+                    <p style="text-align:center;margin:30px 0;"><a href="${portalUrl}" style="background:#f59e0b;color:#1e293b;padding:14px 32px;text-decoration:none;border-radius:8px;font-weight:bold;">Reply Now</a></p>
+                  </div>
+                </div>`,
+              });
+              if (investor.sms_opt_in && investor.phone) {
+                try { await sendSMS(investor.phone, `Access Your Place: New response on dispute ${dispute.ticket_number}. Check your portal to view and reply.`); } catch {}
+              }
+            }
+          } catch (e) { console.error('[manage-disputes] message notify failed:', e.message); }
+        }
+        return ok({ success: true });
+      }
+
+      // GET INVESTOR DISPUTES
+      if (action === 'get_investor_disputes') {
+        const { investor_id } = body;
+        if (!investor_id) return ok({ success: true, disputes: [] });
+        const { data } = await dbGet(`/disputes?investor_id=eq.${investor_id}&order=created_at.desc&select=*`);
+        return ok({ success: true, disputes: Array.isArray(data) ? data : [] });
+      }
+
+      // GET ALL DISPUTES (staff)
+      if (action === 'get_all_disputes' || action === 'get_disputes') {
+        const { status, category, search } = body;
+        let q = '/disputes?order=created_at.desc&select=*,investors(full_name,email)';
+        if (status && status !== 'all') q += `&status=eq.${status}`;
+        if (category && category !== 'all') q += `&category=eq.${category}`;
+        const { data } = await dbGet(q);
+        let disputes = Array.isArray(data) ? data : [];
+        if (search) {
+          const s = search.toLowerCase();
+          disputes = disputes.filter(d =>
+            d.subject?.toLowerCase().includes(s) ||
+            d.ticket_number?.toLowerCase().includes(s) ||
+            d.investors?.full_name?.toLowerCase().includes(s)
+          );
+        }
+        return ok({ success: true, disputes });
+      }
+
+      // GET DISPUTE DETAILS
+      if (action === 'get_dispute_details') {
+        const { dispute_id, include_internal } = body;
+        if (!dispute_id) return ok({ success: false, error: 'dispute_id is required' });
+        const { data: disputeData } = await dbGet(`/disputes?id=eq.${dispute_id}&select=*,investors(full_name,email,phone)`);
+        let msgQuery = `/dispute_messages?dispute_id=eq.${dispute_id}&order=created_at.asc`;
+        if (!include_internal) msgQuery += '&is_internal=eq.false';
+        const { data: messages } = await dbGet(msgQuery);
+        return ok({ success: true, dispute: disputeData?.[0] || null, messages: Array.isArray(messages) ? messages : [] });
+      }
+
+      // GET STATS
+      if (action === 'get_stats') {
+        const { data } = await dbGet('/disputes?select=status,category');
+        const disputes = Array.isArray(data) ? data : [];
+        const stats = { total: disputes.length, by_status: {}, by_category: {} };
+        disputes.forEach(d => {
+          stats.by_status[d.status] = (stats.by_status[d.status] || 0) + 1;
+          stats.by_category[d.category] = (stats.by_category[d.category] || 0) + 1;
+        });
+        return ok({ success: true, stats });
       }
 
       return err(`Unknown disputes action: ${action}`);
     }
-
-    // ─────────────────────────── PLATFORM CONNECTIONS ─────────────────────
     case 'manage-platform-connections':
     case 'handle-platform-webhook': {
       const { action } = body;
