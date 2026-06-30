@@ -2646,6 +2646,193 @@ app.post('/functions/v1/:fn', async (req, res) => {
       }
 
       console.warn(`[manage-investor-admin] Unhandled action: ${action}`);
+      
+      if (action === 'list' || action === 'get_all_investors' || action === 'search_investors') {
+        const { search, status, limit = 100, offset = 0 } = body;
+        let q = `/investors?order=created_at.desc&limit=${limit}&offset=${offset}&select=*`;
+        if (status && status !== 'all') q += `&status=eq.${encodeURIComponent(status)}`;
+        const { data } = await dbGet(q);
+        let investors = Array.isArray(data) ? data : [];
+        if (search) {
+          const s = search.toLowerCase();
+          investors = investors.filter(i => (i.full_name||'').toLowerCase().includes(s)||(i.email||'').toLowerCase().includes(s)||(i.phone||'').toLowerCase().includes(s));
+        }
+        return ok({ success: true, investors, counts: { total: investors.length } });
+      }
+      if (action === 'get_unassigned_investors') {
+        const { data } = await dbGet('/investors?assigned_acquisition_manager_id=is.null&onboarding_completed=eq.true&order=created_at.desc&select=*');
+        return ok({ success: true, investors: Array.isArray(data) ? data : [] });
+      }
+      if (action === 'get_assigned_investors') {
+        const { am_id } = body;
+        if (!am_id) return ok({ success: true, investors: [] });
+        const { data } = await dbGet(`/investors?assigned_acquisition_manager_id=eq.${am_id}&order=created_at.desc&select=*`);
+        return ok({ success: true, investors: Array.isArray(data) ? data : [] });
+      }
+      if (action === 'get_assigned_managers') {
+        const { investor_id } = body;
+        const { data } = await dbGet(`/investors?id=eq.${investor_id}&select=assigned_acquisition_manager_id,assigned_setup_manager_id`);
+        const inv = data?.[0];
+        let am = null, sm = null;
+        if (inv?.assigned_acquisition_manager_id) {
+          const { data: amData } = await dbGet(`/staff_users?id=eq.${inv.assigned_acquisition_manager_id}&select=id,first_name,last_name,email,phone`);
+          am = amData?.[0] || null;
+        }
+        if (inv?.assigned_setup_manager_id) {
+          const { data: smData } = await dbGet(`/staff_users?id=eq.${inv.assigned_setup_manager_id}&select=id,first_name,last_name,email,phone`);
+          sm = smData?.[0] || null;
+        }
+        return ok({ success: true, acquisition_manager: am, setup_manager: sm });
+      }
+      if (action === 'assign_acquisition_manager') {
+        const { investor_id, am_id, staff_id } = body;
+        if (!investor_id) return ok({ success: false, error: 'investor_id required' });
+        await dbPatch(`/investors?id=eq.${investor_id}`, { assigned_acquisition_manager_id: am_id, updated_at: new Date().toISOString() });
+        return ok({ success: true });
+      }
+      if (action === 'assign_setup_manager') {
+        const { investor_id, sm_id } = body;
+        if (!investor_id) return ok({ success: false, error: 'investor_id required' });
+        await dbPatch(`/investors?id=eq.${investor_id}`, { assigned_setup_manager_id: sm_id, updated_at: new Date().toISOString() });
+        return ok({ success: true });
+      }
+      if (action === 'self_assign_am') {
+        const { investor_id, staff_id } = body;
+        if (!investor_id || !staff_id) return ok({ success: false, error: 'investor_id and staff_id required' });
+        await dbPatch(`/investors?id=eq.${investor_id}`, { assigned_acquisition_manager_id: staff_id, updated_at: new Date().toISOString() });
+        return ok({ success: true });
+      }
+      if (action === 'update_funding_status') {
+        const { investor_id, is_funded, funding_tier, funded_at } = body;
+        if (!investor_id) return ok({ success: false, error: 'investor_id required' });
+        await dbPatch(`/investors?id=eq.${investor_id}`, { is_funded: !!is_funded, funding_tier, funded_at: funded_at || (is_funded ? new Date().toISOString() : null), updated_at: new Date().toISOString() });
+        return ok({ success: true });
+      }
+      if (action === 'complete_discovery_call') {
+        const { investor_id, notes, staff_id } = body;
+        if (!investor_id) return ok({ success: false, error: 'investor_id required' });
+        await dbPatch(`/investors?id=eq.${investor_id}`, { discovery_call_completed: true, discovery_call_completed_at: new Date().toISOString(), updated_at: new Date().toISOString() });
+        if (notes) await dbPost('/investor_notes', { investor_id, content: notes, type: 'discovery_call', created_by: staff_id || null, created_at: new Date().toISOString() });
+        return ok({ success: true });
+      }
+      if (action === 'send_message') {
+        const { investor_id, message, subject, staff_id } = body;
+        if (!investor_id || !message) return ok({ success: false, error: 'investor_id and message required' });
+        try {
+          const { data: inv } = await dbGet(`/investors?id=eq.${investor_id}&select=email,full_name`);
+          if (inv?.[0]) await sendEmail({ to: inv[0].email, subject: subject || 'Message from Your Team', html: `<p>Hi ${inv[0].full_name},</p><p>${message}</p>` });
+        } catch {}
+        await dbPost('/staff_investor_messages', { investor_id, staff_id: staff_id||null, message, sender_type:'staff', is_read:false, created_at:new Date().toISOString() });
+        return ok({ success: true });
+      }
+      if (action === 'send_agreement') {
+        const { investor_id, agreement_type, staff_id } = body;
+        if (!investor_id) return ok({ success: false, error: 'investor_id required' });
+        const result = await dbPost('/investor_agreements', { investor_id, agreement_type, status: 'sent', sent_by: staff_id||null, sent_at: new Date().toISOString(), created_at: new Date().toISOString() });
+        return ok({ success: true, agreement: Array.isArray(result.data) ? result.data[0] : result.data });
+      }
+      if (action === 'get_notifications') {
+        const { investor_id } = body;
+        try {
+          const { data } = await dbGet(`/investor_notifications?investor_id=eq.${investor_id}&order=created_at.desc&limit=30&select=*`);
+          return ok({ success: true, notifications: Array.isArray(data) ? data : [] });
+        } catch { return ok({ success: true, notifications: [] }); }
+      }
+      if (action === 'mark_notification_read') {
+        const { notification_id, investor_id } = body;
+        try {
+          if (notification_id) await dbPatch(`/investor_notifications?id=eq.${notification_id}`, { is_read: true, read_at: new Date().toISOString() });
+          else if (investor_id) await dbPatch(`/investor_notifications?investor_id=eq.${investor_id}&is_read=eq.false`, { is_read: true });
+        } catch {}
+        return ok({ success: true });
+      }
+      if (action === 'notify_am_investor_action') {
+        const { investor_id, am_id, action_type, message } = body;
+        try { await dbPost('/staff_notifications', { staff_id: am_id, type: action_type||'investor_action', message: message||'Investor action recorded', investor_id, created_at: new Date().toISOString() }); } catch {}
+        return ok({ success: true });
+      }
+      if (action === 'upload_document') {
+        const { investor_id, document_url, document_type, file_name, staff_id } = body;
+        if (!investor_id || !document_url) return ok({ success: false, error: 'investor_id and document_url required' });
+        const result = await dbPost('/investor_documents', { investor_id, document_url, document_type, file_name, uploaded_by: staff_id||null, created_at: new Date().toISOString() });
+        return ok({ success: true, document: Array.isArray(result.data) ? result.data[0] : result.data });
+      }
+      if (action === 'link_staff_account') {
+        const { investor_id, staff_id } = body;
+        if (!investor_id || !staff_id) return ok({ success: false, error: 'investor_id and staff_id required' });
+        await dbPatch(`/investors?id=eq.${investor_id}`, { linked_staff_id: staff_id, updated_at: new Date().toISOString() });
+        await dbPatch(`/staff_users?id=eq.${staff_id}`, { linked_investor_id: investor_id, updated_at: new Date().toISOString() });
+        return ok({ success: true });
+      }
+      if (action === 'unlink_staff_account') {
+        const { investor_id } = body;
+        const { data } = await dbGet(`/investors?id=eq.${investor_id}&select=linked_staff_id`);
+        const staffId = data?.[0]?.linked_staff_id;
+        if (staffId) await dbPatch(`/staff_users?id=eq.${staffId}`, { linked_investor_id: null });
+        await dbPatch(`/investors?id=eq.${investor_id}`, { linked_staff_id: null, updated_at: new Date().toISOString() });
+        return ok({ success: true });
+      }
+      if (action === 'get_portfolio_credits') {
+        const { investor_id } = body;
+        try {
+          const { data } = await dbGet(`/investor_portfolio_credits?investor_id=eq.${investor_id}&order=created_at.desc&select=*`);
+          return ok({ success: true, credits: Array.isArray(data) ? data : [] });
+        } catch { return ok({ success: true, credits: [] }); }
+      }
+      if (action === 'update_credits') {
+        const { investor_id, credits, reason, staff_id } = body;
+        if (!investor_id) return ok({ success: false, error: 'investor_id required' });
+        await dbPatch(`/investors?id=eq.${investor_id}`, { portfolio_credits: credits, updated_at: new Date().toISOString() });
+        if (reason) await dbPost('/investor_portfolio_credits', { investor_id, amount: credits, reason, created_by: staff_id||null, created_at: new Date().toISOString() });
+        return ok({ success: true });
+      }
+      if (action === 'approve_portfolio_credit') {
+        const { credit_id, staff_id } = body;
+        await dbPatch(`/investor_portfolio_credits?id=eq.${credit_id}`, { status: 'approved', approved_by: staff_id||null, approved_at: new Date().toISOString() });
+        return ok({ success: true });
+      }
+      if (action === 'get_credit_history') {
+        const { investor_id } = body;
+        try {
+          const { data } = await dbGet(`/investor_portfolio_credits?investor_id=eq.${investor_id}&order=created_at.desc&select=*`);
+          return ok({ success: true, history: Array.isArray(data) ? data : [] });
+        } catch { return ok({ success: true, history: [] }); }
+      }
+      if (action === 'get_am_activity_feed') {
+        const { am_id, limit = 20 } = body;
+        try {
+          const { data } = await dbGet(`/am_activity_log?staff_id=eq.${am_id}&order=created_at.desc&limit=${limit}&select=*`);
+          return ok({ success: true, activities: Array.isArray(data) ? data : [] });
+        } catch { return ok({ success: true, activities: [] }); }
+      }
+      if (action === 'reset_search_limit') {
+        const { investor_id } = body;
+        await dbPatch(`/investors?id=eq.${investor_id}`, { search_count: 0, search_limit_reset_at: new Date().toISOString() });
+        return ok({ success: true });
+      }
+      if (action === 'sync_portfolio_counts') {
+        const { investor_id } = body;
+        try {
+          const { data } = await dbGet(`/investor_portfolio?investor_id=eq.${investor_id}&select=id`);
+          const count = Array.isArray(data) ? data.length : 0;
+          await dbPatch(`/investors?id=eq.${investor_id}`, { portfolio_count: count });
+          return ok({ success: true, portfolio_count: count });
+        } catch { return ok({ success: true }); }
+      }
+      if (action === 'add_property_to_portfolio' || action === 'add_dealflow_to_portfolio' || action === 'manage_portfolio_property') {
+        const { investor_id, property_id, ...props } = body;
+        delete props.action;
+        if (!investor_id) return ok({ success: false, error: 'investor_id required' });
+        const result = await dbPost('/investor_portfolio', { investor_id, property_id: property_id||null, ...props, created_at: new Date().toISOString() });
+        return ok({ success: true, property: Array.isArray(result.data) ? result.data[0] : result.data });
+      }
+      if (action === 'add_portfolio_note') {
+        const { investor_id, note, staff_id } = body;
+        if (!investor_id || !note) return ok({ success: false, error: 'investor_id and note required' });
+        await dbPost('/investor_notes', { investor_id, content: note, type: 'general', created_by: staff_id||null, created_at: new Date().toISOString() });
+        return ok({ success: true });
+      }
+      
       return ok({ success: true, data: [], message: `Action '${action}' not yet implemented` });
     }
 
