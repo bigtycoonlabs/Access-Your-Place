@@ -4941,68 +4941,74 @@ app.post('/functions/v1/:fn', async (req, res) => {
       return ok({ success: true, matches: data || [] });
     }
 
-    case 'manage-investor-crm':
-    case 'manage-investor-pipeline': {
+    case 'manage-investor-crm': {
       const { action } = body;
-      if (action === 'get_pipeline') {
-        const { data } = await dbGet('/investors?is_funded=eq.false&onboarding_completed=eq.true&order=created_at.desc&select=*');
-        return ok({ success: true, pipeline: Array.isArray(data)?data:[] });
-      }
-      if (action === 'update_stage') {
-        const { investor_id, stage } = body;
-        await dbPatch('/investors?id=eq.' + investor_id, { pipeline_stage: stage, updated_at: new Date().toISOString() });
-        return ok({ success: true });
-      }
-      if (action === 'get_history') {
-        try { const { data } = await dbGet('/investor_pipeline_history?investor_id=eq.' + body.investor_id + '&order=created_at.desc&select=*'); return ok({ success: true, history: Array.isArray(data)?data:[] }); }
-        catch { return ok({ success: true, history: [] }); }
-      }
-      if (action === 'get_sequences') {
-        try { const { data } = await dbGet('/pipeline_sequences?order=created_at.desc&select=*'); return ok({ success: true, sequences: Array.isArray(data)?data:[] }); }
-        catch { return ok({ success: true, sequences: [] }); }
-      }
-      if (action === 'save_sequence') {
-        const { sequence_id, ...props } = body; delete props.action;
-        if (sequence_id) await dbPatch('/pipeline_sequences?id=eq.' + sequence_id, { ...props, updated_at: new Date().toISOString() });
-        else await dbPost('/pipeline_sequences', { ...props, created_at: new Date().toISOString() });
-        return ok({ success: true });
-      }
-      if (action === 'delete_sequence') {
-        await dbDelete('/pipeline_sequences?id=eq.' + body.sequence_id);
-        return ok({ success: true });
-      }
-      return err('Unknown manage-investor-pipeline action: ' + action);
-    }
-    case 'manage-investor-progress': {
-      const { action } = body;
-      const tableName = fn === 'manage-investor-crm' ? 'investor_crm' : fn === 'manage-investor-progress' ? 'investor_progress' : 'investor_pipeline';
-
-      // Calendar events — stored locally on the client, return empty from server
-      if (action === 'get_calendar_events' || action === 'sync_calendar_events') {
-        return ok({ success: true, events: [] });
-      }
-
-      if (action === 'get') {
-        const { investor_id } = body;
-        try {
-          const { data } = await dbGet(`/${tableName}?investor_id=eq.${investor_id}&select=*`);
-          return ok({ success: true, data: Array.isArray(data) ? data : [] });
-        } catch { return ok({ success: true, data: [] }); }
+      if (action === 'get' || action === 'list') {
+        const { investor_id, search, limit=50 } = body;
+        let q = '/investors?order=created_at.desc&limit=' + limit + '&select=*';
+        if (investor_id) q += '&id=eq.' + investor_id;
+        else if (search) q += '&or=(full_name.ilike.*' + encodeURIComponent(search) + '*,email.ilike.*' + encodeURIComponent(search) + '*)';
+        const { data } = await dbGet(q);
+        return ok({ success: true, investors: Array.isArray(data)?data:[], investor: investor_id?data?.[0]:null });
       }
       if (action === 'update') {
-        const { investor_id, record_id, ...updates } = body;
-        delete updates.action;
-        try {
-          if (record_id) await dbPatch(`/${tableName}?id=eq.${record_id}`, { ...updates, updated_at: new Date().toISOString() });
-          else await dbPost('/' + tableName, { investor_id, ...updates, created_at: new Date().toISOString() });
-        } catch (e) { console.warn(`[${fn}] update failed (non-fatal):`, e.message); }
+        const { investor_id, ...updates } = body; delete updates.action;
+        await dbPatch('/investors?id=eq.' + investor_id, { ...updates, updated_at: new Date().toISOString() });
         return ok({ success: true });
       }
-      // Unknown actions return success with empty data instead of crashing the frontend
-      return ok({ success: true, data: [], events: [], message: `Action '${action}' not implemented yet` });
+      if (action === 'log_communication') {
+        const { investor_id, type, notes, staff_id } = body;
+        await dbPost('/investor_communication_log', { investor_id, type, notes, logged_by: staff_id||null, logged_at: new Date().toISOString(), created_at: new Date().toISOString() });
+        return ok({ success: true });
+      }
+      if (action === 'import_csv') { return ok({ success: true, imported: 0 }); }
+      return err('Unknown manage-investor-crm action: ' + action);
     }
-
-    // ─────────────────────────── DEAL FLOW NOTIFICATIONS ─────────────────
+    case 'manage-investor-pipeline':
+    case 'manage-investor-progress': {
+      const { action } = body;
+      if (action === 'get_checklist') {
+        try { const { data } = await dbGet('/investor_onboarding_checklist?investor_id=eq.' + body.investor_id + '&select=*'); return ok({ success: true, checklist: data?.[0]||{} }); }
+        catch { return ok({ success: true, checklist: {} }); }
+      }
+      if (action === 'update_checklist') {
+        const { investor_id, checklist } = body;
+        try {
+          const { data: ex } = await dbGet('/investor_onboarding_checklist?investor_id=eq.' + investor_id + '&select=id');
+          if (ex?.length) await dbPatch('/investor_onboarding_checklist?investor_id=eq.' + investor_id, { checklist: JSON.stringify(checklist||{}), updated_at: new Date().toISOString() });
+          else await dbPost('/investor_onboarding_checklist', { investor_id, checklist: JSON.stringify(checklist||{}), created_at: new Date().toISOString() });
+        } catch {}
+        return ok({ success: true });
+      }
+      if (action === 'get_tutorial_progress') {
+        try { const { data } = await dbGet('/investor_tutorial_progress?investor_id=eq.' + body.investor_id + '&select=*'); return ok({ success: true, progress: data?.[0]||{} }); }
+        catch { return ok({ success: true, progress: {} }); }
+      }
+      if (action === 'update_tutorial_progress') {
+        const { investor_id, ...prog } = body; delete prog.action;
+        try {
+          const { data: ex } = await dbGet('/investor_tutorial_progress?investor_id=eq.' + investor_id + '&select=id');
+          if (ex?.length) await dbPatch('/investor_tutorial_progress?investor_id=eq.' + investor_id, { ...prog, updated_at: new Date().toISOString() });
+          else await dbPost('/investor_tutorial_progress', { investor_id, ...prog, created_at: new Date().toISOString() });
+        } catch {}
+        return ok({ success: true });
+      }
+      if (action === 'add_calendar_event') {
+        const { investor_id, ...ev } = body; delete ev.action;
+        const result = await dbPost('/investor_calendar_events', { investor_id, ...ev, created_at: new Date().toISOString() });
+        return ok({ success: true, event: Array.isArray(result.data)?result.data[0]:result.data });
+      }
+      if (action === 'update_calendar_event') {
+        const { event_id, ...updates } = body; delete updates.action;
+        await dbPatch('/investor_calendar_events?id=eq.' + event_id, { ...updates, updated_at: new Date().toISOString() });
+        return ok({ success: true });
+      }
+      if (action === 'delete_calendar_event') {
+        await dbDelete('/investor_calendar_events?id=eq.' + body.event_id);
+        return ok({ success: true });
+      }
+      return err('Unknown manage-investor-progress action: ' + action);
+    }
     case 'deal-flow-notifications': {
       const { action } = body;
       const SUCCESS_EMAIL = 'success@accessyourplace.com';
