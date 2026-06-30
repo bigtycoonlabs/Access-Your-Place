@@ -1484,9 +1484,22 @@ app.post('/functions/v1/:fn', async (req, res) => {
     case 'manage-investor-admin': {
       const { action } = body;
 
-      if (action === 'get_investors') {
-        const { data } = await dbGet('/investors?order=created_at.desc&select=*');
-        return ok({ success: true, investors: data || [] });
+      if (action === 'get_investors' || action === 'list_investors') {
+        const { status, search, limit } = body;
+        let query = '/investors?order=created_at.desc&select=*';
+        if (status && status !== 'all') query += `&status=eq.${encodeURIComponent(status)}`;
+        if (limit) query += `&limit=${parseInt(limit, 10) || 500}`;
+        const { data } = await dbGet(query);
+        let investors = Array.isArray(data) ? data : [];
+        if (search) {
+          const s = search.toLowerCase();
+          investors = investors.filter(inv =>
+            (inv.full_name || '').toLowerCase().includes(s) ||
+            (inv.email || '').toLowerCase().includes(s) ||
+            (inv.phone || '').toLowerCase().includes(s)
+          );
+        }
+        return ok({ success: true, investors, counts: { total: investors.length } });
       }
 
       if (action === 'get_investor') {
@@ -1498,6 +1511,27 @@ app.post('/functions/v1/:fn', async (req, res) => {
           portfolio = Array.isArray(pData) ? pData : [];
         } catch {}
         return ok({ success: true, investor: data?.[0] || null, portfolio });
+      }
+
+      if (action === 'delete_investor') {
+        const { investor_id } = body;
+        if (!investor_id) return ok({ success: false, error: 'investor_id is required' });
+        try {
+          await dbDelete(`/investors?id=eq.${investor_id}`);
+          return ok({ success: true });
+        } catch (e) {
+          console.error('[manage-investor-admin] delete_investor error:', e.message);
+          return ok({ success: false, error: 'Failed to delete investor: ' + e.message });
+        }
+      }
+
+      if (action === 'get_unread_count') {
+        try {
+          const { data } = await dbGet('/investor_messages?is_read=eq.false&select=id');
+          return ok({ success: true, count: Array.isArray(data) ? data.length : 0 });
+        } catch (e) {
+          return ok({ success: true, count: 0 });
+        }
       }
 
       if (action === 'update_investor') {
