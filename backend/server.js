@@ -3788,6 +3788,12 @@ app.post('/functions/v1/:fn', async (req, res) => {
         } catch {}
         return ok({ success: true });
       }
+            if (action === 'get_commissions') {
+        let q = '/staff_commissions?order=created_at.desc&select=*';
+        if (body.staff_id) q += '&staff_id=eq.' + body.staff_id;
+        try { const { data } = await dbGet(q); return ok({ success: true, commissions: Array.isArray(data)?data:[] }); }
+        catch { return ok({ success: true, commissions: [] }); }
+      }
       return err(`Unknown manage-hr-commissions action: ${action}`);
     }
     case 'manage-acquisition-requests':
@@ -5890,17 +5896,6 @@ app.post('/functions/v1/:fn', async (req, res) => {
       return err('Unknown penny-property-photos action: ' + action);
     }
 
-    case 'manage-hr-commissions': {
-      const { action } = body;
-      if (action === 'get_commissions') {
-        const { staff_id } = body;
-        let q = '/staff_commissions?order=created_at.desc&select=*';
-        if (staff_id) q += '&staff_id=eq.' + staff_id;
-        try { const { data } = await dbGet(q); return ok({ success: true, commissions: Array.isArray(data)?data:[] }); }
-        catch { return ok({ success: true, commissions: [] }); }
-      }
-      return err('Unknown manage-hr-commissions (2nd) action: ' + action);
-    }
 
     default:
       return err(`Unknown function: ${fn}`, 404);
