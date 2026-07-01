@@ -4835,6 +4835,18 @@ app.post('/functions/v1/:fn', async (req, res) => {
         return ok({ success: true });
       }
 
+      
+      if (action === 'get_sops') {
+        const { category } = body;
+        let q = '/sops?order=created_at.desc&select=*';
+        if (category) q += '&category=eq.' + encodeURIComponent(category);
+        try { const { data } = await dbGet(q); return ok({ success: true, sops: Array.isArray(data)?data:[] }); }
+        catch { return ok({ success: true, sops: [] }); }
+      }
+      if (action === 'delete_sop') {
+        try { await dbDelete('/sops?id=eq.' + body.sop_id); } catch {}
+        return ok({ success: true });
+      }
       return err(`Unknown sop action: ${action}`);
     }
 
