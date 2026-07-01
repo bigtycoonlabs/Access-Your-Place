@@ -5999,6 +5999,19 @@ app.post('/functions/v1/:fn', async (req, res) => {
         await dbDelete(`/notes?id=eq.${note_id}`);
         return ok({ success: true });
       }
+      if (action === 'get_notes') {
+        let q = '/notes?order=created_at.desc&select=*';
+        if (body.investor_id) q += '&investor_id=eq.' + body.investor_id;
+        if (body.entity_id) q += '&entity_id=eq.' + body.entity_id;
+        try { const { data } = await dbGet(q); return ok({ success: true, notes: Array.isArray(data)?data:[] }); }
+        catch { return ok({ success: true, notes: [] }); }
+      }
+      if (action === 'add_note') {
+        const { investor_id, entity_id, entity_type, content: c, note, staff_id } = body;
+        const r = await dbPost('/notes', { investor_id: investor_id||null, entity_id: entity_id||null, entity_type: entity_type||null, content: c||note, created_by: staff_id||null, created_at: new Date().toISOString() });
+        return ok({ success: true, note: Array.isArray(r.data)?r.data[0]:r.data });
+      }
+
       return err('Unknown notes action');
     }
 
