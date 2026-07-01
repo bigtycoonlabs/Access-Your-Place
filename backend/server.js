@@ -1465,39 +1465,144 @@ app.post('/functions/v1/:fn', async (req, res) => {
 
     // ─────────────────────────── SEND INVESTOR INVITATION ─────────────────
     case 'send-investor-invitation': {
-      const { action, email, investor_id, staff_id: sId, base_url } = body;
+      const { action } = body;
 
-      if (action === 'send' || action === 'invite') {
-        const token = uuidv4();
-        const expires = new Date(Date.now() + 7 * 86400000).toISOString();
-        await dbPatch(`/investors?id=eq.${investor_id}`, { invitation_token: token, invitation_expires: expires });
-        const invUrl = `${base_url || SITE_URL}/investor/portal?invitation=${token}`;
-        await sendEmail({ to: email, subject: 'Your Access Your Place Investor Account Invitation', html: `<p>You have been invited to Access Your Place. <a href="${invUrl}">Click here to get started</a>. Expires in 7 days.</p>` });
+      if (action === 'get_pending') {
+        try { const { data } = await dbGet('/pending_investor_invitations?order=created_at.desc&select=*'); return ok({ success: true, pending: Array.isArray(data)?data:[] }); }
+        catch { return ok({ success: true, pending: [] }); }
+      }
+      if (action === 'add_pending') {
+        const { email, name, phone, notes, tags, assigned_am_id } = body;
+        const r = await dbPost('/pending_investor_invitations', { email, name, phone, notes, tags: tags||[], assigned_am_id: assigned_am_id||null, status: 'pending', created_at: new Date().toISOString() });
+        return ok({ success: true, invitation: Array.isArray(r.data)?r.data[0]:r.data });
+      }
+      if (action === 'update_pending') {
+        const { invitation_id, ...updates } = body; delete updates.action;
+        await dbPatch('/pending_investor_invitations?id=eq.' + invitation_id, { ...updates, updated_at: new Date().toISOString() });
         return ok({ success: true });
       }
-
-      if (action === 'get_investors') {
-        const { data } = await dbGet('/investors?order=created_at.desc&select=*');
-        return ok({ success: true, investors: data || [] });
-      }
-
-      if (action === 'update_investor') {
-        const { investor_id: iid, ...updates } = body;
-        delete updates.action;
-        await dbPatch(`/investors?id=eq.${iid}`, { ...updates, updated_at: new Date().toISOString() });
+      if (action === 'delete_pending') {
+        await dbDelete('/pending_investor_invitations?id=eq.' + body.invitation_id);
         return ok({ success: true });
       }
-
-      if (action === 'create_investor') {
-        const { email: em, full_name, phone } = body;
-        const result = await dbPost('/investors', { email: em, full_name, phone, onboarding_completed: false, referral_code: 'AYP' + Math.random().toString(36).substring(2,8).toUpperCase() });
-        return ok({ success: true, investor: Array.isArray(result.data) ? result.data[0] : result.data });
+      if (action === 'delete_pending_bulk') {
+        const { invitation_ids } = body;
+        if (Array.isArray(invitation_ids)) for (const id of invitation_ids) { try { await dbDelete('/pending_investor_invitations?id=eq.' + id); } catch {} }
+        return ok({ success: true });
       }
-
-      return err(`Unknown send-investor-invitation action: ${action}`);
+      if (action === 'send_pending') {
+        const { invitation_id } = body;
+        const { data: invData } = await dbGet('/pending_investor_invitations?id=eq.' + invitation_id + '&select=*');
+        const inv = invData?.[0];
+        if (!inv) return ok({ success: false, error: 'Not found' });
+        const token = require('crypto').randomUUID();
+        const url = (process.env.SITE_URL||'') + '/investor/login?invite=' + token;
+        try { await sendEmail({ to: inv.email, subject: 'You are invited to Access Your Place', html: '<p>Hi ' + (inv.name||'') + ',</p><p>You have been invited to Access Your Place. <a href="' + url + '">Get started</a>.</p>' }); } catch {}
+        await dbPatch('/pending_investor_invitations?id=eq.' + invitation_id, { status: 'sent', sent_at: new Date().toISOString(), invite_token: token });
+        return ok({ success: true });
+      }
+      if (action === 'resend') {
+        const { invitation_id } = body;
+        const { data: invData } = await dbGet('/pending_investor_invitations?id=eq.' + invitation_id + '&select=*');
+        const inv = invData?.[0];
+        if (inv?.email) { try { await sendEmail({ to: inv.email, subject: 'Reminder: Your Access Your Place Invitation', html: '<p>Hi ' + (inv.name||'') + ',</p><p>Reminder about your invitation to Access Your Place.</p>' }); } catch {} }
+        await dbPatch('/pending_investor_invitations?id=eq.' + invitation_id, { resent_at: new Date().toISOString() });
+        return ok({ success: true });
+      }
+      if (action === 'get_stats') {
+        try {
+          const { data } = await dbGet('/pending_investor_invitations?select=id,status');
+          const p = Array.isArray(data)?data:[];
+          return ok({ success: true, stats: { total: p.length, pending: p.filter(x=>x.status==='pending').length, sent: p.filter(x=>x.status==='sent').length } });
+        } catch { return ok({ success: true, stats: {} }); }
+      }
+      if (action === 'get_history') {
+        try { const { data } = await dbGet('/investor_invitation_history?order=created_at.desc&limit=50&select=*'); return ok({ success: true, history: Array.isArray(data)?data:[] }); }
+        catch { return ok({ success: true, history: [] }); }
+      }
+      if (action === 'get_my_leads') {
+        const { data } = await dbGet('/pending_investor_invitations?assigned_am_id=eq.' + body.am_id + '&order=created_at.desc&select=*');
+        return ok({ success: true, leads: Array.isArray(data)?data:[] });
+      }
+      if (action === 'get_tags') {
+        try { const { data } = await dbGet('/invitation_tags?order=name.asc&select=*'); return ok({ success: true, tags: Array.isArray(data)?data:[] }); }
+        catch { return ok({ success: true, tags: [] }); }
+      }
+      if (action === 'assign_tags') {
+        await dbPatch('/pending_investor_invitations?id=eq.' + body.invitation_id, { tags: body.tags||[] });
+        return ok({ success: true });
+      }
+      if (action === 'remove_tags') {
+        const { data: inv } = await dbGet('/pending_investor_invitations?id=eq.' + body.invitation_id + '&select=tags');
+        const curr = inv?.[0]?.tags||[];
+        await dbPatch('/pending_investor_invitations?id=eq.' + body.invitation_id, { tags: curr.filter(t=>!(body.tags||[]).includes(t)) });
+        return ok({ success: true });
+      }
+      if (action === 'delete_tag') {
+        try { await dbDelete('/invitation_tags?id=eq.' + body.tag_id); } catch {}
+        return ok({ success: true });
+      }
+      if (action === 'get_am_agreements' || action === 'get_agreement_for_signing') {
+        let q = '/am_agreements?order=created_at.desc&select=*';
+        if (body.investor_id) q += '&investor_id=eq.' + body.investor_id;
+        if (body.am_id) q += '&am_id=eq.' + body.am_id;
+        try { const { data } = await dbGet(q); return ok({ success: true, agreements: Array.isArray(data)?data:[], agreement: data?.[0]||null }); }
+        catch { return ok({ success: true, agreements: [], agreement: null }); }
+      }
+      if (action === 'sign_agreement') {
+        await dbPatch('/am_agreements?id=eq.' + body.agreement_id, { status: 'signed', signed_at: new Date().toISOString(), investor_id: body.investor_id||null });
+        return ok({ success: true });
+      }
+      if (action === 'resend_agreement') {
+        await dbPatch('/am_agreements?id=eq.' + body.agreement_id, { resent_at: new Date().toISOString() });
+        return ok({ success: true });
+      }
+      if (action === 'update_agreement_status') {
+        await dbPatch('/am_agreements?id=eq.' + body.agreement_id, { status: body.status, updated_at: new Date().toISOString() });
+        return ok({ success: true });
+      }
+      if (action === 'void_agreement') {
+        await dbPatch('/am_agreements?id=eq.' + body.agreement_id, { status: 'voided', void_reason: body.reason||null, voided_at: new Date().toISOString() });
+        return ok({ success: true });
+      }
+      if (action === 'send_am_welcome_email') {
+        try {
+          const { data } = await dbGet('/investors?id=eq.' + body.investor_id + '&select=email,full_name');
+          if (data?.[0]) await sendEmail({ to: data[0].email, subject: 'Welcome — Meet Your Acquisition Manager', html: '<p>Hi ' + data[0].full_name + ',</p><p>Your dedicated acquisition manager has been assigned and will be in touch shortly.</p>' });
+        } catch {}
+        return ok({ success: true });
+      }
+      if (action === 'assign_mentor' || action === 'self_assign_mentor') {
+        const target = body.trainee_id || body.am_id;
+        if (target) { try { await dbPatch('/staff_users?id=eq.' + target, { mentor_id: body.mentor_id||body.staff_id||null, updated_at: new Date().toISOString() }); } catch {} }
+        return ok({ success: true });
+      }
+      if (action === 'get_mentor_trainees') {
+        try { const { data } = await dbGet('/staff_users?mentor_id=eq.' + body.mentor_id + '&select=*'); return ok({ success: true, trainees: Array.isArray(data)?data:[] }); }
+        catch { return ok({ success: true, trainees: [] }); }
+      }
+      if (action === 'get_trainee_ams' || action === 'get_unassigned_trainees') {
+        try { const { data } = await dbGet('/staff_users?is_active=eq.true&select=*'); return ok({ success: true, staff: Array.isArray(data)?data:[] }); }
+        catch { return ok({ success: true, staff: [] }); }
+      }
+      if (action === 'get_trainee_progress') {
+        try { const { data } = await dbGet('/staff_users?id=eq.' + body.trainee_id + '&select=*'); return ok({ success: true, progress: data?.[0]||{} }); }
+        catch { return ok({ success: true, progress: {} }); }
+      }
+      if (action === 'get_certified_ams') {
+        try { const { data } = await dbGet('/staff_users?is_active=eq.true&yp_certified=eq.true&select=*'); return ok({ success: true, ams: Array.isArray(data)?data:[] }); }
+        catch { return ok({ success: true, ams: [] }); }
+      }
+      if (action === 'add_mentor_note' || action === 'update_trainee_notes') {
+        try { await dbPost('/staff_mentor_notes', { trainee_id: body.trainee_id, note: body.note||body.notes, created_at: new Date().toISOString() }); } catch {}
+        return ok({ success: true });
+      }
+      if (action === 'mentor_verify_task') {
+        try { await dbPatch('/staff_training_tasks?id=eq.' + body.task_id, { mentor_verified: body.verified, verified_at: new Date().toISOString() }); } catch {}
+        return ok({ success: true });
+      }
+      return err('Unknown send-investor-invitation action: ' + action);
     }
-
-    // ─────────────────────────── PROPERTIES ──────────────────────────────
     case 'get-properties': {
       const { action } = body;
 
@@ -4987,36 +5092,6 @@ app.post('/functions/v1/:fn', async (req, res) => {
         try { const { data } = await dbGet('/acquisition_requests?investor_id=eq.' + body.investor_id + '&status=eq.approved&select=*'); return ok({ success: true, deals: Array.isArray(data)?data:[] }); }
         catch { return ok({ success: true, deals: [] }); }
       }
-      if (action === 'get_all_documents') {
-        try { const { data } = await dbGet('/investor_agreements?order=created_at.desc&select=*,investor:investors!investor_id(full_name,email)'); return ok({ success: true, documents: Array.isArray(data)?data:[] }); }
-        catch { return ok({ success: true, documents: [] }); }
-      }
-      if (action === 'send_document') {
-        const { investor_id, agreement_type, document_url, staff_id } = body;
-        const r = await dbPost('/investor_agreements', { investor_id, agreement_type, document_url: document_url||null, status: 'sent', sent_by: staff_id||null, sent_at: new Date().toISOString(), created_at: new Date().toISOString() });
-        return ok({ success: true, document: Array.isArray(r.data)?r.data[0]:r.data });
-      }
-      if (action === 'sign_document') {
-        await dbPatch('/investor_agreements?id=eq.' + body.document_id, { status: 'signed', signed_at: new Date().toISOString() });
-        return ok({ success: true });
-      }
-      if (action === 'update_document') {
-        const { document_id, ...u } = body; delete u.action;
-        await dbPatch('/investor_agreements?id=eq.' + document_id, { ...u, updated_at: new Date().toISOString() });
-        return ok({ success: true });
-      }
-      if (action === 'mark_viewed') {
-        await dbPatch('/investor_agreements?id=eq.' + body.document_id, { viewed_at: new Date().toISOString(), status: 'viewed' });
-        return ok({ success: true });
-      }
-      if (action === 'send_reminder') {
-        try {
-          const { data } = await dbGet('/investor_agreements?id=eq.' + body.document_id + '&select=*,investor:investors!investor_id(email,full_name)');
-          if (data?.[0]?.investor) await sendEmail({ to: data[0].investor.email, subject: 'Action Required: Document Signature', html: '<p>Hi ' + data[0].investor.full_name + ',</p><p>Please sign your pending document in your portal.</p>' });
-        } catch {}
-        return ok({ success: true });
-      }
-
       return ok({ success: true, agreements: [], documents: [] });
     }
 
@@ -5532,6 +5607,25 @@ app.post('/functions/v1/:fn', async (req, res) => {
         await dbDelete('/pipeline_sequences?id=eq.' + body.sequence_id);
         return ok({ success: true });
       }
+      if (action === 'get' || action === 'list') {
+        const { investor_id, search, limit=50 } = body;
+        let q = '/investors?order=created_at.desc&limit=' + limit + '&select=*';
+        if (investor_id) q += '&id=eq.' + investor_id;
+        else if (search) q += '&or=(full_name.ilike.*' + encodeURIComponent(search) + '*,email.ilike.*' + encodeURIComponent(search) + '*)';
+        const { data } = await dbGet(q);
+        return ok({ success: true, investors: Array.isArray(data)?data:[], investor: investor_id?data?.[0]:null });
+      }
+      if (action === 'update') {
+        const { investor_id, ...updates } = body; delete updates.action;
+        await dbPatch('/investors?id=eq.' + investor_id, { ...updates, updated_at: new Date().toISOString() });
+        return ok({ success: true });
+      }
+      if (action === 'log_communication') {
+        await dbPost('/investor_communication_log', { investor_id: body.investor_id, type: body.type, notes: body.notes, logged_by: body.staff_id||null, logged_at: new Date().toISOString(), created_at: new Date().toISOString() });
+        return ok({ success: true });
+      }
+      if (action === 'import_csv') { return ok({ success: true, imported: 0 }); }
+
       return err('Unknown manage-investor-pipeline action: ' + action);
     }
     case 'manage-investor-progress': {
