@@ -4902,6 +4902,22 @@ app.post('/functions/v1/:fn', async (req, res) => {
       }
 
       console.warn(`[sign-agreement] Unhandled action: ${action}`);
+      
+      if (action === 'sign_agreement' || action === 'get_pending_agreements') {
+        if (action === 'sign_agreement') {
+          const target = body.document_id || body.agreement_id;
+          if (target) { try { await dbPatch('/investor_agreements?id=eq.' + target, { status: 'signed', signed_at: new Date().toISOString() }); } catch {} }
+          return ok({ success: true });
+        }
+        let q = '/investor_agreements?status=in.(sent,viewed)&order=created_at.desc&select=*';
+        if (body.investor_id) q += '&investor_id=eq.' + body.investor_id;
+        try { const { data } = await dbGet(q); return ok({ success: true, agreements: Array.isArray(data)?data:[] }); }
+        catch { return ok({ success: true, agreements: [] }); }
+      }
+      if (action === 'get_assigned_deals') {
+        try { const { data } = await dbGet('/acquisition_requests?investor_id=eq.' + body.investor_id + '&status=eq.approved&select=*'); return ok({ success: true, deals: Array.isArray(data)?data:[] }); }
+        catch { return ok({ success: true, deals: [] }); }
+      }
       return ok({ success: true, agreements: [], documents: [] });
     }
 
@@ -5098,20 +5114,6 @@ app.post('/functions/v1/:fn', async (req, res) => {
         return ok({ success: true });
       }
 
-      
-      if (action === 'list') {
-        const { deal_id, investor_id, status } = body;
-        let q = '/deal_inquiries?order=created_at.desc&select=*,investor:investors!investor_id(full_name,email)';
-        if (deal_id) q += '&deal_id=eq.' + deal_id;
-        if (investor_id) q += '&investor_id=eq.' + investor_id;
-        if (status) q += '&status=eq.' + status;
-        try { const { data } = await dbGet(q); return ok({ success: true, inquiries: Array.isArray(data)?data:[] }); }
-        catch { return ok({ success: true, inquiries: [] }); }
-      }
-      if (action === 'add_note') {
-        try { await dbPost('/deal_inquiry_notes', { inquiry_id: body.inquiry_id, note: body.note, created_by: body.staff_id||null, created_at: new Date().toISOString() }); } catch {}
-        return ok({ success: true });
-      }
       return err('Unknown inquiries action');
     }
 
