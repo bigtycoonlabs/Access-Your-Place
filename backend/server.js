@@ -4816,6 +4816,12 @@ app.post('/functions/v1/:fn', async (req, res) => {
         return ok({ success: true });
       }
 
+      
+      if (action === 'refund_escrow') {
+        const { transaction_id, amount, reason } = body;
+        try { await dbPost('/escrow_refunds', { transaction_id, amount, reason, status: 'pending', created_at: new Date().toISOString() }); } catch {}
+        return ok({ success: true });
+      }
       return err(`Unknown payments action: ${action}`);
     }
 
