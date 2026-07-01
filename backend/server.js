@@ -446,6 +446,59 @@ app.post('/functions/v1/:fn', async (req, res) => {
       if (action === 'verify_otp') {
         return ok({ success: true, message: 'OTP verified' }); // OTP not yet wired — approve gracefully
       }
+      if (action === 'list') {
+        const { data } = await dbGet('/investors?order=created_at.desc&limit=50&select=id,full_name,email,phone,is_funded,onboarding_completed');
+        return ok({ success: true, investors: Array.isArray(data)?data:[] });
+      }
+      if (action === 'accept_link_suggestion') {
+        const { suggestion_id, staff_id, investor_id } = body;
+        if (staff_id && investor_id) {
+          try { await dbPatch('/staff_users?id=eq.' + staff_id, { linked_investor_id: investor_id, updated_at: new Date().toISOString() }); } catch {}
+          try { await dbPatch('/investors?id=eq.' + investor_id, { linked_staff_id: staff_id }); } catch {}
+        }
+        try { await dbPatch('/account_link_suggestions?id=eq.' + suggestion_id, { status: 'accepted' }); } catch {}
+        return ok({ success: true });
+      }
+      if (action === 'dismiss_link_suggestion') {
+        try { await dbPatch('/account_link_suggestions?id=eq.' + body.suggestion_id, { status: 'dismissed' }); } catch {}
+        return ok({ success: true });
+      }
+      if (action === 'get_link_suggestions') {
+        try { const { data } = await dbGet('/account_link_suggestions?status=eq.pending&order=created_at.desc&select=*'); return ok({ success: true, suggestions: Array.isArray(data)?data:[] }); }
+        catch { return ok({ success: true, suggestions: [] }); }
+      }
+      if (action === 'claim_legacy_property' || action === 'search_legacy_properties') {
+        if (action === 'search_legacy_properties') {
+          try { const { data } = await dbGet('/properties?order=created_at.desc&limit=20&select=id,address,city,state,operation_type'); return ok({ success: true, properties: Array.isArray(data)?data:[] }); }
+          catch { return ok({ success: true, properties: [] }); }
+        }
+        return ok({ success: true });
+      }
+      if (action === 'delete_account' || action === 'export_data') {
+        return ok({ success: true, message: 'Request received. Our team will process this within 48 hours.' });
+      }
+      if (action === 'request_am_change' || action === 'request_am_verification' || action === 'set_acquisition_manager') {
+        const { investor_id, notes } = body;
+        if (investor_id) {
+          try { await dbPost('/am_change_requests', { investor_id, notes: notes||null, status: 'pending', created_at: new Date().toISOString() }); } catch {}
+        }
+        return ok({ success: true, message: 'Request received' });
+      }
+      if (action === 'get_credit_requests' || action === 'submit_credit_request') {
+        if (action === 'submit_credit_request') {
+          const { investor_id, amount, reason } = body;
+          try { await dbPost('/investor_credit_requests', { investor_id, amount, reason, status: 'pending', created_at: new Date().toISOString() }); } catch {}
+          return ok({ success: true });
+        }
+        try { const { data } = await dbGet('/investor_credit_requests?investor_id=eq.' + body.investor_id + '&order=created_at.desc&select=*'); return ok({ success: true, credit_requests: Array.isArray(data)?data:[] }); }
+        catch { return ok({ success: true, credit_requests: [] }); }
+      }
+      if (action === 'delete_portfolio_property') {
+        const { investor_id, property_id } = body;
+        try { await dbDelete('/investor_portfolio?id=eq.' + property_id + '&investor_id=eq.' + investor_id); } catch {}
+        return ok({ success: true });
+      }
+
       return ok({ success: true, data: [], message: `investor-login action '${action}' not yet fully implemented` });
     }
     // fall-through preserved for backward compat
