@@ -4779,6 +4779,77 @@ app.post('/functions/v1/:fn', async (req, res) => {
         return ok({ success: true });
       }
 
+      
+      if (action === 'create_acquisition_payment' || action === 'create_payment_intent') {
+        const { investor_id, amount, acquisition_id, payment_method } = body;
+        const r = await dbPost('/acquisition_payments', { investor_id, amount, acquisition_id, payment_method: payment_method||'card', status: 'pending', created_at: new Date().toISOString() });
+        return ok({ success: true, payment: Array.isArray(r.data)?r.data[0]:r.data, client_secret: null });
+      }
+      if (action === 'confirm_payment') {
+        await dbPatch('/acquisition_payments?id=eq.' + body.payment_id, { status: 'completed', completed_at: new Date().toISOString() });
+        return ok({ success: true });
+      }
+      if (action === 'get_payment_history') {
+        let q = '/acquisition_payments?order=created_at.desc&select=*';
+        if (body.investor_id) q += '&investor_id=eq.' + body.investor_id;
+        try { const { data } = await dbGet(q); return ok({ success: true, payments: Array.isArray(data)?data:[] }); }
+        catch { return ok({ success: true, payments: [] }); }
+      }
+      if (action === 'get_pending_payments') {
+        try { const { data } = await dbGet('/acquisition_payments?status=eq.pending&order=created_at.desc&select=*'); return ok({ success: true, payments: Array.isArray(data)?data:[] }); }
+        catch { return ok({ success: true, payments: [] }); }
+      }
+      if (action === 'get_available_credits') {
+        const { data } = await dbGet('/investors?id=eq.' + body.investor_id + '&select=portfolio_credits');
+        return ok({ success: true, credits: data?.[0]?.portfolio_credits||0 });
+      }
+      if (action === 'get_credit_usage_history') {
+        try { const { data } = await dbGet('/investor_credit_usage?investor_id=eq.' + body.investor_id + '&order=created_at.desc&select=*'); return ok({ success: true, history: Array.isArray(data)?data:[] }); }
+        catch { return ok({ success: true, history: [] }); }
+      }
+      if (action === 'submit_manual_payment_proof') {
+        await dbPatch('/acquisition_payments?id=eq.' + body.payment_id, { proof_url: body.proof_url, status: 'pending_review', submitted_at: new Date().toISOString() });
+        return ok({ success: true });
+      }
+      if (action === 'approve_manual_payment') {
+        await dbPatch('/acquisition_payments?id=eq.' + body.payment_id, { status: 'completed', approved_by: body.staff_id||null, approved_at: new Date().toISOString() });
+        return ok({ success: true });
+      }
+      if (action === 'reject_manual_payment') {
+        await dbPatch('/acquisition_payments?id=eq.' + body.payment_id, { status: 'rejected', rejection_reason: body.reason||null, rejected_at: new Date().toISOString() });
+        return ok({ success: true });
+      }
+      if (action === 'generate_receipt') {
+        try { const { data } = await dbGet('/acquisition_payments?id=eq.' + body.payment_id + '&select=*'); return ok({ success: true, receipt: data?.[0]||null }); }
+        catch { return ok({ success: true, receipt: null }); }
+      }
+      if (action === 'refund_escrow') {
+        const { transaction_id, amount, reason } = body;
+        await dbPost('/escrow_refunds', { transaction_id, amount, reason, status: 'pending', created_at: new Date().toISOString() });
+        return ok({ success: true });
+      }
+      if (action === 'get_funding_tiers') {
+        return ok({ success: true, tiers: [
+          { id: 'starter', name: 'Starter', amount: 5000 },
+          { id: 'growth', name: 'Growth', amount: 15000 },
+          { id: 'premium', name: 'Premium', amount: 30000 },
+        ]});
+      }
+      if (action === 'get_funding_status') {
+        const { data } = await dbGet('/investors?id=eq.' + body.investor_id + '&select=is_funded,funding_tier,funded_at,portfolio_credits');
+        return ok({ success: true, status: data?.[0]||{} });
+      }
+      if (action === 'create_funding_payment') {
+        const { investor_id, tier_id, amount } = body;
+        const r = await dbPost('/funding_payments', { investor_id, tier_id, amount, status: 'pending', created_at: new Date().toISOString() });
+        return ok({ success: true, payment: Array.isArray(r.data)?r.data[0]:r.data });
+      }
+      if (action === 'confirm_funding') {
+        const { investor_id, payment_id, tier_id } = body;
+        await dbPatch('/investors?id=eq.' + investor_id, { is_funded: true, funding_tier: tier_id, funded_at: new Date().toISOString() });
+        if (payment_id) await dbPatch('/funding_payments?id=eq.' + payment_id, { status: 'completed', completed_at: new Date().toISOString() });
+        return ok({ success: true });
+      }
       return err(`Unknown payments action: ${action}`);
     }
 
