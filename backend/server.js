@@ -736,6 +736,30 @@ app.post('/functions/v1/:fn', async (req, res) => {
         }
       }
 
+
+      if (action === 'list') {
+        // list all investors for admin view via investor-auth function name
+        const { data } = await dbGet('/investors?order=created_at.desc&limit=50&select=id,full_name,email,phone,is_funded,onboarding_completed');
+        return ok({ success: true, investors: Array.isArray(data)?data:[] });
+      }
+      if (action === 'accept_link_suggestion') {
+        const { suggestion_id, staff_id, investor_id } = body;
+        if (staff_id && investor_id) {
+          await dbPatch('/staff_users?id=eq.' + staff_id, { linked_investor_id: investor_id, updated_at: new Date().toISOString() });
+          await dbPatch('/investors?id=eq.' + investor_id, { linked_staff_id: staff_id });
+        }
+        try { await dbPatch('/account_link_suggestions?id=eq.' + suggestion_id, { status: 'accepted' }); } catch {}
+        return ok({ success: true });
+      }
+      if (action === 'dismiss_link_suggestion') {
+        try { await dbPatch('/account_link_suggestions?id=eq.' + body.suggestion_id, { status: 'dismissed' }); } catch {}
+        return ok({ success: true });
+      }
+      if (action === 'get_link_suggestions') {
+        try { const { data } = await dbGet('/account_link_suggestions?status=eq.pending&order=created_at.desc&select=*'); return ok({ success: true, suggestions: Array.isArray(data)?data:[] }); }
+        catch { return ok({ success: true, suggestions: [] }); }
+      }
+
       // Unknown actions — return safe empty response instead of 400
       console.warn(`[investor-auth] Unhandled action: ${action}`);
       return ok({ success: true, data: [], properties: [], message: `Action '${action}' not yet implemented` });
