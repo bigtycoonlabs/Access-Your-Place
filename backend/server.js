@@ -5553,6 +5553,23 @@ app.post('/functions/v1/:fn', async (req, res) => {
         return ok({ success: true });
       }
 
+      if (action === 'get_rules') {
+        try { const { data } = await dbGet('/followup_rules?order=created_at.desc&select=*'); return ok({ success: true, rules: Array.isArray(data)?data:[] }); }
+        catch { return ok({ success: true, rules: [] }); }
+      }
+      if (action === 'save_rule') {
+        const { rule_id, ...props } = body; delete props.action;
+        if (rule_id) await dbPatch('/followup_rules?id=eq.' + rule_id, { ...props, updated_at: new Date().toISOString() });
+        else await dbPost('/followup_rules', { ...props, created_at: new Date().toISOString() });
+        return ok({ success: true });
+      }
+      if (action === 'delete_rule') { await dbDelete('/followup_rules?id=eq.' + body.rule_id); return ok({ success: true }); }
+      if (action === 'get_logs') {
+        try { const { data } = await dbGet('/followup_logs?order=created_at.desc&limit=50&select=*'); return ok({ success: true, logs: Array.isArray(data)?data:[] }); }
+        catch { return ok({ success: true, logs: [] }); }
+      }
+      if (action === 'process_all') { return ok({ success: true, processed: 0 }); }
+
       return err('Unknown send-acquisition-emails action: ' + action);
     }
 
