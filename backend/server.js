@@ -4835,18 +4835,6 @@ app.post('/functions/v1/:fn', async (req, res) => {
         return ok({ success: true });
       }
 
-      
-      if (action === 'get_sops') {
-        const { category } = body;
-        let q = '/sops?order=created_at.desc&select=*';
-        if (category) q += '&category=eq.' + encodeURIComponent(category);
-        try { const { data } = await dbGet(q); return ok({ success: true, sops: Array.isArray(data)?data:[] }); }
-        catch { return ok({ success: true, sops: [] }); }
-      }
-      if (action === 'delete_sop') {
-        try { await dbDelete('/sops?id=eq.' + body.sop_id); } catch {}
-        return ok({ success: true });
-      }
       return err(`Unknown sop action: ${action}`);
     }
 
@@ -5694,6 +5682,12 @@ app.post('/functions/v1/:fn', async (req, res) => {
       if (action === 'unassign') {
         await dbDelete(`/property_assignments?id=eq.${assignment_id}`);
         return ok({ success: true });
+      }
+      
+      if (action === 'assign') {
+        const { property_id, investor_id, staff_id } = body;
+        const r = await dbPost('/property_assignments', { property_id, investor_id, assigned_by: staff_id||null, created_at: new Date().toISOString() });
+        return ok({ success: true, assignment: Array.isArray(r.data)?r.data[0]:r.data });
       }
       return err('Unknown property-assignments action');
     }
