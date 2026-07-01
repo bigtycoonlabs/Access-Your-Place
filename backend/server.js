@@ -4779,77 +4779,6 @@ app.post('/functions/v1/:fn', async (req, res) => {
         return ok({ success: true });
       }
 
-      
-      if (action === 'create_acquisition_payment' || action === 'create_payment_intent') {
-        const { investor_id, amount, acquisition_id, payment_method } = body;
-        const r = await dbPost('/acquisition_payments', { investor_id, amount, acquisition_id, payment_method: payment_method||'card', status: 'pending', created_at: new Date().toISOString() });
-        return ok({ success: true, payment: Array.isArray(r.data)?r.data[0]:r.data, client_secret: null });
-      }
-      if (action === 'confirm_payment') {
-        await dbPatch('/acquisition_payments?id=eq.' + body.payment_id, { status: 'completed', completed_at: new Date().toISOString() });
-        return ok({ success: true });
-      }
-      if (action === 'get_payment_history') {
-        let q = '/acquisition_payments?order=created_at.desc&select=*';
-        if (body.investor_id) q += '&investor_id=eq.' + body.investor_id;
-        try { const { data } = await dbGet(q); return ok({ success: true, payments: Array.isArray(data)?data:[] }); }
-        catch { return ok({ success: true, payments: [] }); }
-      }
-      if (action === 'get_pending_payments') {
-        try { const { data } = await dbGet('/acquisition_payments?status=eq.pending&order=created_at.desc&select=*'); return ok({ success: true, payments: Array.isArray(data)?data:[] }); }
-        catch { return ok({ success: true, payments: [] }); }
-      }
-      if (action === 'get_available_credits') {
-        const { data } = await dbGet('/investors?id=eq.' + body.investor_id + '&select=portfolio_credits');
-        return ok({ success: true, credits: data?.[0]?.portfolio_credits||0 });
-      }
-      if (action === 'get_credit_usage_history') {
-        try { const { data } = await dbGet('/investor_credit_usage?investor_id=eq.' + body.investor_id + '&order=created_at.desc&select=*'); return ok({ success: true, history: Array.isArray(data)?data:[] }); }
-        catch { return ok({ success: true, history: [] }); }
-      }
-      if (action === 'submit_manual_payment_proof') {
-        await dbPatch('/acquisition_payments?id=eq.' + body.payment_id, { proof_url: body.proof_url, status: 'pending_review', submitted_at: new Date().toISOString() });
-        return ok({ success: true });
-      }
-      if (action === 'approve_manual_payment') {
-        await dbPatch('/acquisition_payments?id=eq.' + body.payment_id, { status: 'completed', approved_by: body.staff_id||null, approved_at: new Date().toISOString() });
-        return ok({ success: true });
-      }
-      if (action === 'reject_manual_payment') {
-        await dbPatch('/acquisition_payments?id=eq.' + body.payment_id, { status: 'rejected', rejection_reason: body.reason||null, rejected_at: new Date().toISOString() });
-        return ok({ success: true });
-      }
-      if (action === 'generate_receipt') {
-        try { const { data } = await dbGet('/acquisition_payments?id=eq.' + body.payment_id + '&select=*'); return ok({ success: true, receipt: data?.[0]||null }); }
-        catch { return ok({ success: true, receipt: null }); }
-      }
-      if (action === 'refund_escrow') {
-        const { transaction_id, amount, reason } = body;
-        await dbPost('/escrow_refunds', { transaction_id, amount, reason, status: 'pending', created_at: new Date().toISOString() });
-        return ok({ success: true });
-      }
-      if (action === 'get_funding_tiers') {
-        return ok({ success: true, tiers: [
-          { id: 'starter', name: 'Starter', amount: 5000 },
-          { id: 'growth', name: 'Growth', amount: 15000 },
-          { id: 'premium', name: 'Premium', amount: 30000 },
-        ]});
-      }
-      if (action === 'get_funding_status') {
-        const { data } = await dbGet('/investors?id=eq.' + body.investor_id + '&select=is_funded,funding_tier,funded_at,portfolio_credits');
-        return ok({ success: true, status: data?.[0]||{} });
-      }
-      if (action === 'create_funding_payment') {
-        const { investor_id, tier_id, amount } = body;
-        const r = await dbPost('/funding_payments', { investor_id, tier_id, amount, status: 'pending', created_at: new Date().toISOString() });
-        return ok({ success: true, payment: Array.isArray(r.data)?r.data[0]:r.data });
-      }
-      if (action === 'confirm_funding') {
-        const { investor_id, payment_id, tier_id } = body;
-        await dbPatch('/investors?id=eq.' + investor_id, { is_funded: true, funding_tier: tier_id, funded_at: new Date().toISOString() });
-        if (payment_id) await dbPatch('/funding_payments?id=eq.' + payment_id, { status: 'completed', completed_at: new Date().toISOString() });
-        return ok({ success: true });
-      }
       return err(`Unknown payments action: ${action}`);
     }
 
@@ -5005,6 +4934,28 @@ app.post('/functions/v1/:fn', async (req, res) => {
           const s = Array.isArray(data)?data:[];
           return ok({ success: true, stats: { total: s.length, pending: s.filter(r=>r.status==='pending').length, approved: s.filter(r=>r.status==='approved').length, rejected: s.filter(r=>r.status==='rejected').length } });
         } catch { return ok({ success: true, stats: {} }); }
+      }
+      
+      if (action === 'get_portfolio_with_performance') {
+        try { const { data } = await dbGet('/investor_portfolio?investor_id=eq.' + body.investor_id + '&select=*'); return ok({ success: true, portfolio: Array.isArray(data)?data:[] }); }
+        catch { return ok({ success: true, portfolio: [] }); }
+      }
+      if (action === 'save_monthly_data') {
+        const { property_id, month, ...metrics } = body; delete metrics.action;
+        const r = await dbPost('/property_monthly_performance', { property_id, month, ...metrics, created_at: new Date().toISOString() });
+        return ok({ success: true, record: Array.isArray(r.data)?r.data[0]:r.data });
+      }
+      if (action === 'get_suggestions') {
+        try { const { data } = await dbGet('/portfolio_ai_suggestions?investor_id=eq.' + body.investor_id + '&order=created_at.desc&select=*'); return ok({ success: true, suggestions: Array.isArray(data)?data:[] }); }
+        catch { return ok({ success: true, suggestions: [] }); }
+      }
+      if (action === 'generate_ai_suggestions') {
+        const r = await dbPost('/portfolio_ai_suggestions', { investor_id: body.investor_id, suggestion: 'Consider reviewing your lowest-performing property for optimization opportunities.', type: 'optimization', created_at: new Date().toISOString() });
+        return ok({ success: true, suggestions: [Array.isArray(r.data)?r.data[0]:r.data] });
+      }
+      if (action === 'update_suggestion') {
+        await dbPatch('/portfolio_ai_suggestions?id=eq.' + body.suggestion_id, { status: body.status, updated_at: new Date().toISOString() });
+        return ok({ success: true });
       }
       return err(`Unknown portfolio action: ${action}`);
     }
