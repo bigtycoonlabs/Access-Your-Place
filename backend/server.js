@@ -6145,6 +6145,30 @@ app.post('/functions/v1/:fn', async (req, res) => {
     }
 
 
+
+    case 'manage-deal-inquiries': {
+      const { action } = body;
+      if (action === 'list') {
+        const { deal_id, investor_id, status } = body;
+        let q = '/deal_inquiries?order=created_at.desc&select=*,investor:investors!investor_id(full_name,email)';
+        if (deal_id) q += '&deal_id=eq.' + deal_id;
+        if (investor_id) q += '&investor_id=eq.' + investor_id;
+        if (status) q += '&status=eq.' + status;
+        try { const { data } = await dbGet(q); return ok({ success: true, inquiries: Array.isArray(data)?data:[] }); }
+        catch { return ok({ success: true, inquiries: [] }); }
+      }
+      if (action === 'update_status') {
+        const { inquiry_id, status, notes } = body;
+        await dbPatch('/deal_inquiries?id=eq.' + inquiry_id, { status, staff_notes: notes||null, updated_at: new Date().toISOString() });
+        return ok({ success: true });
+      }
+      if (action === 'add_note') {
+        try { await dbPost('/deal_inquiry_notes', { inquiry_id: body.inquiry_id, note: body.note, created_by: body.staff_id||null, created_at: new Date().toISOString() }); } catch {}
+        return ok({ success: true });
+      }
+      return err('Unknown manage-deal-inquiries action: ' + action);
+    }
+
     default:
       return err(`Unknown function: ${fn}`, 404);
 
