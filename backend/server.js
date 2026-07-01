@@ -3420,6 +3420,20 @@ app.post('/functions/v1/:fn', async (req, res) => {
         return ok({ success: true, sent: false, message: 'Notification queued' });
       }
 
+      if (action === 'investor_notification') {
+        const { investor_id, subject, message } = body;
+        try { const { data } = await dbGet('/investors?id=eq.' + investor_id + '&select=email,full_name'); if (data?.[0]) await sendEmail({ to: data[0].email, subject: subject||'Notification from Access Your Place', html: '<p>Hi ' + data[0].full_name + ',</p><p>' + (message||'') + '</p>' }); } catch {}
+        return ok({ success: true });
+      }
+      if (action === 'am_notification' || action === 'team_notification') {
+        const { subject, message } = body;
+        try { const { data } = await dbGet('/staff_users?is_active=eq.true&select=email,first_name'); for (const s of (Array.isArray(data)?data:[])) { try { await sendEmail({ to: s.email, subject: subject||'Team Update', html: '<p>Hi ' + s.first_name + ',</p><p>' + (message||'') + '</p>' }); } catch {} } } catch {}
+        return ok({ success: true });
+      }
+      if (action === 'new_message' || action === 'agreement_sent' || action === 'document_uploaded') {
+        return ok({ success: true });
+      }
+
       return err('Unknown investor-email-notifications action: ' + action);
     }
 
