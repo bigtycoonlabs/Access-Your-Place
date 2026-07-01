@@ -2949,6 +2949,124 @@ app.post('/functions/v1/:fn', async (req, res) => {
         return ok({ success: true });
       }
 
+      
+      if (action === 'get_all_portal_landlords' || action === 'get_unassigned_landlords') {
+        let q = '/landlords?order=created_at.desc&select=*';
+        if (action === 'get_unassigned_landlords') q += '&assigned_staff_id=is.null';
+        try { const { data } = await dbGet(q); return ok({ success: true, landlords: Array.isArray(data)?data:[] }); }
+        catch { return ok({ success: true, landlords: [] }); }
+      }
+      if (action === 'get_landlord_properties' || action === 'get_landlord_properties_for_review') {
+        let q = '/landlord_properties?order=created_at.desc&select=*';
+        if (body.landlord_id) q += '&landlord_id=eq.' + body.landlord_id;
+        if (action === 'get_landlord_properties_for_review') q += '&status=eq.pending_review';
+        try { const { data } = await dbGet(q); return ok({ success: true, properties: Array.isArray(data)?data:[] }); }
+        catch { return ok({ success: true, properties: [] }); }
+      }
+      if (action === 'submit_property') {
+        const { landlord_id, ...props } = body; delete props.action;
+        const r = await dbPost('/landlord_properties', { landlord_id, ...props, status: 'pending_review', created_at: new Date().toISOString() });
+        return ok({ success: true, property: Array.isArray(r.data)?r.data[0]:r.data });
+      }
+      if (action === 'review_property') {
+        const { property_id, status, notes, staff_id } = body;
+        await dbPatch('/landlord_properties?id=eq.' + property_id, { status, review_notes: notes||null, reviewed_by: staff_id||null, reviewed_at: new Date().toISOString() });
+        return ok({ success: true });
+      }
+      if (action === 'get_applications') {
+        let q = '/landlord_applications?order=created_at.desc&select=*';
+        if (body.landlord_id) q += '&landlord_id=eq.' + body.landlord_id;
+        try { const { data } = await dbGet(q); return ok({ success: true, applications: Array.isArray(data)?data:[] }); }
+        catch { return ok({ success: true, applications: [] }); }
+      }
+      if (action === 'submit_application') {
+        const { landlord_id, ...props } = body; delete props.action;
+        const r = await dbPost('/landlord_applications', { landlord_id, ...props, status: 'pending', created_at: new Date().toISOString() });
+        return ok({ success: true, application: Array.isArray(r.data)?r.data[0]:r.data });
+      }
+      if (action === 'update_application_status') {
+        const { application_id, status, notes } = body;
+        await dbPatch('/landlord_applications?id=eq.' + application_id, { status, staff_notes: notes||null, updated_at: new Date().toISOString() });
+        return ok({ success: true });
+      }
+      if (action === 'get_documents') {
+        let q = '/landlord_documents?order=created_at.desc&select=*';
+        if (body.landlord_id) q += '&landlord_id=eq.' + body.landlord_id;
+        try { const { data } = await dbGet(q); return ok({ success: true, documents: Array.isArray(data)?data:[] }); }
+        catch { return ok({ success: true, documents: [] }); }
+      }
+      if (action === 'upload_document') {
+        const { landlord_id, document_url, document_type, file_name } = body;
+        const r = await dbPost('/landlord_documents', { landlord_id, document_url, document_type, file_name, created_at: new Date().toISOString() });
+        return ok({ success: true, document: Array.isArray(r.data)?r.data[0]:r.data });
+      }
+      if (action === 'delete_document') {
+        await dbDelete('/landlord_documents?id=eq.' + body.document_id);
+        return ok({ success: true });
+      }
+      if (action === 'send_message') {
+        const { landlord_id, message, staff_id, subject } = body;
+        await dbPost('/landlord_messages', { landlord_id, message, subject, staff_id: staff_id||null, sender_type: 'staff', created_at: new Date().toISOString() });
+        return ok({ success: true });
+      }
+      if (action === 'mark_messages_read') {
+        try { await dbPatch('/landlord_messages?landlord_id=eq.' + body.landlord_id + '&is_read=eq.false', { is_read: true }); } catch {}
+        return ok({ success: true });
+      }
+      if (action === 'assign_landlord') {
+        await dbPatch('/landlords?id=eq.' + body.landlord_id, { assigned_staff_id: body.staff_id, updated_at: new Date().toISOString() });
+        return ok({ success: true });
+      }
+      if (action === 'update_profile') {
+        const { landlord_id, ...u } = body; delete u.action;
+        await dbPatch('/landlords?id=eq.' + landlord_id, { ...u, updated_at: new Date().toISOString() });
+        return ok({ success: true });
+      }
+      if (action === 'create_deal_from_property') {
+        const { property_id, landlord_id, ...props } = body; delete props.action;
+        const r = await dbPost('/properties', { ...props, landlord_id, landlord_property_id: property_id, is_published: false, created_at: new Date().toISOString() });
+        return ok({ success: true, deal: Array.isArray(r.data)?r.data[0]:r.data });
+      }
+      if (action === 'save_corporate_app_pdf' || action === 'remove_corporate_app_pdf') {
+        await dbPatch('/landlords?id=eq.' + body.landlord_id, { corporate_app_pdf: action === 'save_corporate_app_pdf' ? body.pdf_url : null, updated_at: new Date().toISOString() });
+        return ok({ success: true });
+      }
+      if (action === 'update_property_application_handling') {
+        await dbPatch('/landlord_properties?id=eq.' + body.property_id, { application_handling: body.handling, updated_at: new Date().toISOString() });
+        return ok({ success: true });
+      }
+      // manage-landlords actions
+      if (action === 'list') {
+        const { data } = await dbGet('/landlords?order=created_at.desc&select=*');
+        return ok({ success: true, landlords: Array.isArray(data)?data:[] });
+      }
+      if (action === 'get_analytics') {
+        try {
+          const { data: l } = await dbGet('/landlords?select=id,status');
+          const { data: p } = await dbGet('/landlord_properties?select=id,status');
+          return ok({ success: true, analytics: { total_landlords: Array.isArray(l)?l.length:0, total_properties: Array.isArray(p)?p.length:0 } });
+        } catch { return ok({ success: true, analytics: {} }); }
+      }
+      if (action === 'get_communications') {
+        let q = '/landlord_messages?order=created_at.desc&select=*';
+        if (body.landlord_id) q += '&landlord_id=eq.' + body.landlord_id;
+        try { const { data } = await dbGet(q); return ok({ success: true, communications: Array.isArray(data)?data:[] }); }
+        catch { return ok({ success: true, communications: [] }); }
+      }
+      if (action === 'log_communication') {
+        const { landlord_id, type, notes, staff_id } = body;
+        await dbPost('/landlord_communications', { landlord_id, type, notes, logged_by: staff_id||null, created_at: new Date().toISOString() });
+        return ok({ success: true });
+      }
+      if (action === 'get_follow_ups') {
+        try { const { data } = await dbGet('/landlord_follow_ups?completed=eq.false&order=due_date.asc&select=*'); return ok({ success: true, follow_ups: Array.isArray(data)?data:[] }); }
+        catch { return ok({ success: true, follow_ups: [] }); }
+      }
+      if (action === 'submit_inquiry') {
+        const { landlord_id, ...props } = body; delete props.action;
+        const r = await dbPost('/landlord_inquiries', { landlord_id, ...props, status: 'pending', created_at: new Date().toISOString() });
+        return ok({ success: true, inquiry: Array.isArray(r.data)?r.data[0]:r.data });
+      }
       return err(`Unknown landlord-auth action: ${action}`);
     }
 
