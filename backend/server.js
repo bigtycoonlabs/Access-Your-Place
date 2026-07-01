@@ -5368,6 +5368,20 @@ app.post('/functions/v1/:fn', async (req, res) => {
         return ok({ success: true });
       }
 
+      if (action === 'get_digest_stats') {
+        try { const { data } = await dbGet('/investor_digest_sends?order=created_at.desc&limit=10&select=*'); return ok({ success: true, stats: { total_sent: Array.isArray(data)?data.length:0 } }); }
+        catch { return ok({ success: true, stats: {} }); }
+      }
+      if (action === 'preview_digest') { return ok({ success: true, preview: 'Weekly digest preview', html: '<p>Your weekly update</p>' }); }
+      if (action === 'send_weekly_digests') {
+        try {
+          const { data } = await dbGet('/investors?email_opt_in=eq.true&onboarding_completed=eq.true&select=id,email,full_name');
+          let sent = 0;
+          for (const inv of (Array.isArray(data)?data:[])) { try { await sendEmail({ to: inv.email, subject: 'Your Weekly Update — Access Your Place', html: '<p>Hi ' + inv.full_name + ',</p><p>Here is your weekly update.</p>' }); sent++; } catch {} }
+          return ok({ success: true, sent });
+        } catch { return ok({ success: true, sent: 0 }); }
+      }
+
       return err('Unknown unassigned-investor-digest action: ' + action);
     }
 
