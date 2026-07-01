@@ -4726,6 +4726,16 @@ app.post('/functions/v1/:fn', async (req, res) => {
         return ok({ success: true });
       }
 
+      
+      if (action === 'upload') {
+        const { listing_id, document_url, file_name, document_type } = body;
+        const r = await dbPost('/deal_listing_documents', { listing_id, document_url, file_name, document_type, created_at: new Date().toISOString() });
+        return ok({ success: true, document: Array.isArray(r.data)?r.data[0]:r.data });
+      }
+      if (action === 'delete') {
+        await dbDelete('/deal_listing_documents?id=eq.' + body.document_id);
+        return ok({ success: true });
+      }
       return err('Unknown seller-document action');
     }
 
