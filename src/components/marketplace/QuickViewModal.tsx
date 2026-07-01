@@ -1,4 +1,4 @@
-import { useState, useMemo } from 'react';
+﻿import { useState, useMemo } from 'react';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from '@/components/ui/dialog';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
@@ -48,15 +48,15 @@ export function QuickViewModal({
 
   if (!deal) return null;
 
-  const displayTitle = deal.listing_title || `${deal.bedrooms}BR ${deal.property_type?.replace('_', ' ') || 'Property'} in ${deal.city}`;
+  const displayTitle = deal.listing_title || `${deal.bedrooms}BR ${deal.property_type?.replace("_", " ") || "Property"} in ${deal.city}`;
   // SECURITY: never show full address in quick view
-  const locationDisplay = `${deal.city}, ${deal.state} ${deal.zip_code || ''}`.trim();
-    ? `${deal.address}, ${deal.city}, ${deal.state} ${deal.zip_code || ''}`
-    : `${deal.city}, ${deal.state} ${deal.zip_code || ''}`;
+  const locationDisplay = `${deal.city}, ${deal.state} ${deal.zip_code || ""}`.trim();
+
+
   // FIXED: Declare isYPApproved which was previously used but never defined
   const isYPApproved = deal.is_verified || deal.staff_verified || deal.yp_approved;
 
-  // Normalize analytics field names — schema has both `str_yearly_revenue` and
+  // Normalize analytics field names â€” schema has both `str_yearly_revenue` and
   // `str_projected_yearly_revenue` depending on edge-function vs DB query.
   const strRevenue = analytics?.str_yearly_revenue ?? analytics?.str_projected_yearly_revenue ?? 0;
   const colivingRevenue = analytics?.coliving_yearly_revenue ?? analytics?.coliving_projected_yearly_revenue ?? 0;
@@ -71,15 +71,15 @@ export function QuickViewModal({
 
   const isFlagged = deal.penny_score !== undefined && deal.penny_score < 40;
 
-  // ──────────────────────────────────────────────────────────────────────────
+  // â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
   // STAFF-ENTERED FINANCIALS (from properties table, set in AMSubmitDealModal)
-  // These are the authoritative numbers entered by the staff team — display
+  // These are the authoritative numbers entered by the staff team â€” display
   // them prominently to public clients, NOT just the auto-generated analytics.
   // Fields: adr_peak_season, adr_slow_season, monthly_room_rate,
   // avg_occupancy_rate, projected_yearly_revenue,
   // projected_monthly_revenue_peak, projected_monthly_revenue_slow,
   // peak_season_description, deposits_concessions_notes
-  // ──────────────────────────────────────────────────────────────────────────
+  // â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
   const adrPeak = Number(deal.adr_peak_season) || 0;
   const adrSlow = Number(deal.adr_slow_season) || 0;
   const roomRate = Number(deal.monthly_room_rate) || 0;
@@ -90,17 +90,17 @@ export function QuickViewModal({
   const peakSeasonDesc = deal.peak_season_description || '';
   const depositsNotes = deal.deposits_concessions_notes || '';
 
-  // Resolve the headline ADR — prefer staff-entered peak ADR, then slow ADR,
+  // Resolve the headline ADR â€” prefer staff-entered peak ADR, then slow ADR,
   // then analytics-derived ADR.
   const headlineADR = adrPeak || adrSlow || strADR;
-  // Resolve headline projected monthly revenue: peak entered → slow entered →
-  // staff-entered yearly/12 → analytics-derived
+  // Resolve headline projected monthly revenue: peak entered â†’ slow entered â†’
+  // staff-entered yearly/12 â†’ analytics-derived
   const headlineMonthlyRev =
     projMonthlyPeak ||
     projMonthlySlow ||
     (projYearly ? Math.round(projYearly / 12) : 0) ||
     Math.max(strRevenue / 12, colivingRevenue / 12);
-  // Headline yearly revenue: staff-entered → analytics
+  // Headline yearly revenue: staff-entered â†’ analytics
   const headlineYearlyRev = projYearly || Math.max(strRevenue, colivingRevenue);
 
   // Quick-flag: do we have ANY staff-entered financials? Used to decide if the
@@ -274,7 +274,7 @@ export function QuickViewModal({
                 )}
               </div>
 
-              {/* Quick Financial Highlights — uses staff-entered values
+              {/* Quick Financial Highlights â€” uses staff-entered values
                   (headlineADR, headlineMonthlyRev) so the public deal flow
                   surfaces the team's authoritative ADR / monthly revenue, not
                   just auto-generated analytics. Falls back to analytics. */}
@@ -395,7 +395,7 @@ export function QuickViewModal({
               </TabsContent>
 
               <TabsContent value="analytics" className="p-6 space-y-6" role="tabpanel" aria-label="Financial Analytics">
-                {/* Staff-entered financial projections — these are the
+                {/* Staff-entered financial projections â€” these are the
                     AUTHORITATIVE numbers entered by the YP team in the staff
                     dashboard (AMSubmitDealModal). Show them at the top so the
                     public client always sees the team's curated numbers. */}
