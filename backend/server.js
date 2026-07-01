@@ -4791,6 +4791,54 @@ app.post('/functions/v1/:fn', async (req, res) => {
       }
 
       console.warn(`[sign-agreement] Unhandled action: ${action}`);
+      if (action === 'get_documents') {
+        const { investor_id } = body;
+        let q = '/investor_agreements?order=created_at.desc&select=*';
+        if (investor_id) q += '&investor_id=eq.' + investor_id;
+        try { const { data } = await dbGet(q); return ok({ success: true, documents: Array.isArray(data)?data:[] }); }
+        catch { return ok({ success: true, documents: [] }); }
+      }
+      if (action === 'get_all_documents') {
+        try { const { data } = await dbGet('/investor_agreements?order=created_at.desc&select=*,investor:investors!investor_id(full_name,email)'); return ok({ success: true, documents: Array.isArray(data)?data:[] }); }
+        catch { return ok({ success: true, documents: [] }); }
+      }
+      if (action === 'send_document') {
+        const { investor_id, agreement_type, document_url, staff_id } = body;
+        const r = await dbPost('/investor_agreements', { investor_id, agreement_type, document_url: document_url||null, status: 'sent', sent_by: staff_id||null, sent_at: new Date().toISOString(), created_at: new Date().toISOString() });
+        return ok({ success: true, document: Array.isArray(r.data)?r.data[0]:r.data });
+      }
+      if (action === 'sign_document') {
+        await dbPatch('/investor_agreements?id=eq.' + body.document_id, { status: 'signed', signed_at: new Date().toISOString() });
+        return ok({ success: true });
+      }
+      if (action === 'update_document') {
+        const { document_id, ...u } = body; delete u.action;
+        await dbPatch('/investor_agreements?id=eq.' + document_id, { ...u, updated_at: new Date().toISOString() });
+        return ok({ success: true });
+      }
+      if (action === 'mark_viewed') {
+        await dbPatch('/investor_agreements?id=eq.' + body.document_id, { viewed_at: new Date().toISOString(), status: 'viewed' });
+        return ok({ success: true });
+      }
+      if (action === 'send_reminder') {
+        try {
+          const { data } = await dbGet('/investor_agreements?id=eq.' + body.document_id + '&select=*,investor:investors!investor_id(email,full_name)');
+          if (data?.[0]?.investor) await sendEmail({ to: data[0].investor.email, subject: 'Action Required: Document Signature', html: '<p>Hi ' + data[0].investor.full_name + ',</p><p>Please sign your pending document in your portal.</p>' });
+        } catch {}
+        return ok({ success: true });
+      }
+      if (action === 'get_pending_agreements' || action === 'sign_agreement') {
+        if (action === 'get_pending_agreements') {
+          const { investor_id } = body;
+          let q = '/investor_agreements?status=in.(sent,viewed)&order=created_at.desc&select=*';
+          if (investor_id) q += '&investor_id=eq.' + investor_id;
+          try { const { data } = await dbGet(q); return ok({ success: true, agreements: Array.isArray(data)?data:[] }); }
+          catch { return ok({ success: true, agreements: [] }); }
+        }
+        await dbPatch('/investor_agreements?id=eq.' + body.document_id, { status: 'signed', signed_at: new Date().toISOString() });
+        return ok({ success: true });
+      }
+      
       return ok({ success: true, agreements: [], documents: [] });
     }
 
