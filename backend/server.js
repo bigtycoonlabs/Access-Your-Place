@@ -5654,6 +5654,47 @@ app.post('/functions/v1/:fn', async (req, res) => {
         return ok({ success: true });
       }
       // Unknown actions return success with empty data instead of crashing the frontend
+      if (action === 'get_checklist') {
+        try { const { data } = await dbGet('/investor_onboarding_checklist?investor_id=eq.' + body.investor_id + '&select=*'); return ok({ success: true, checklist: data?.[0]||{} }); }
+        catch { return ok({ success: true, checklist: {} }); }
+      }
+      if (action === 'update_checklist') {
+        const { investor_id, checklist } = body;
+        try {
+          const { data: ex } = await dbGet('/investor_onboarding_checklist?investor_id=eq.' + investor_id + '&select=id');
+          if (ex?.length) await dbPatch('/investor_onboarding_checklist?investor_id=eq.' + investor_id, { checklist: JSON.stringify(checklist||{}), updated_at: new Date().toISOString() });
+          else await dbPost('/investor_onboarding_checklist', { investor_id, checklist: JSON.stringify(checklist||{}), created_at: new Date().toISOString() });
+        } catch {}
+        return ok({ success: true });
+      }
+      if (action === 'get_tutorial_progress') {
+        try { const { data } = await dbGet('/investor_tutorial_progress?investor_id=eq.' + body.investor_id + '&select=*'); return ok({ success: true, progress: data?.[0]||{} }); }
+        catch { return ok({ success: true, progress: {} }); }
+      }
+      if (action === 'update_tutorial_progress') {
+        const { investor_id, ...prog } = body; delete prog.action;
+        try {
+          const { data: ex } = await dbGet('/investor_tutorial_progress?investor_id=eq.' + investor_id + '&select=id');
+          if (ex?.length) await dbPatch('/investor_tutorial_progress?investor_id=eq.' + investor_id, { ...prog, updated_at: new Date().toISOString() });
+          else await dbPost('/investor_tutorial_progress', { investor_id, ...prog, created_at: new Date().toISOString() });
+        } catch {}
+        return ok({ success: true });
+      }
+      if (action === 'add_calendar_event') {
+        const { investor_id, ...ev } = body; delete ev.action;
+        const r = await dbPost('/investor_calendar_events', { investor_id, ...ev, created_at: new Date().toISOString() });
+        return ok({ success: true, event: Array.isArray(r.data)?r.data[0]:r.data });
+      }
+      if (action === 'update_calendar_event') {
+        const { event_id, ...updates } = body; delete updates.action;
+        await dbPatch('/investor_calendar_events?id=eq.' + event_id, { ...updates, updated_at: new Date().toISOString() });
+        return ok({ success: true });
+      }
+      if (action === 'delete_calendar_event') {
+        await dbDelete('/investor_calendar_events?id=eq.' + body.event_id);
+        return ok({ success: true });
+      }
+
       return ok({ success: true, data: [], events: [], message: `Action '${action}' not implemented yet` });
     }
 
