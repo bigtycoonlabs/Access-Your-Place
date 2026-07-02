@@ -51,6 +51,7 @@ console.log(`[PostgREST Proxy] target: ${PROXY_TARGET}`);
 app.use('/rest/v1', createProxyMiddleware({
   target: PROXY_TARGET,
   changeOrigin: true,
+  fixRequestBody: true,
   pathRewrite: POSTGREST_INTERNAL.includes('supabase.co')
     ? {} // Supabase already has /rest/v1 in its URL â€” don't strip
     : { '^/rest/v1': '' }, // internal PostgREST â€” strip the prefix
