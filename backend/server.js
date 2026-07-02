@@ -87,6 +87,8 @@ const dbHeaders = () => ({
   'apikey': SERVICE_ROLE_KEY,
   'Authorization': `Bearer ${SERVICE_ROLE_KEY}`,
   'Content-Type': 'application/json',
+    'Content-Profile': 'prj_X-ZoVQv6LKXT',
+    'Accept-Profile': 'prj_X-ZoVQv6LKXT',
 });
 
 async function db(path, opts = {}) {
