@@ -499,7 +499,45 @@ app.post('/functions/v1/:fn', async (req, res) => {
         return ok({ success: true });
       }
 
-      return ok({ success: true, data: [], message: `investor-login action '${action}' not yet fully implemented` });
+
+      if (action === 'get_am_info') {
+        const { investor_id } = body;
+        const { data: inv } = await dbGet('/investors?id=eq.' + investor_id + '&select=assigned_acquisition_manager_id,assigned_setup_manager_id');
+        const amId = inv?.[0]?.assigned_acquisition_manager_id;
+        if (!amId) return ok({ success: true, am: null });
+        const { data: am } = await dbGet('/staff_users?id=eq.' + amId + '&select=id,first_name,last_name,email,phone,department');
+        return ok({ success: true, am: am?.[0]||null });
+      }
+      if (action === 'get_linked_staff') {
+        const { investor_id } = body;
+        const { data: inv } = await dbGet('/investors?id=eq.' + investor_id + '&select=linked_staff_id');
+        const staffId = inv?.[0]?.linked_staff_id;
+        if (!staffId) return ok({ success: true, staff: null });
+        const { data: staff } = await dbGet('/staff_users?id=eq.' + staffId + '&select=id,first_name,last_name,email,department');
+        return ok({ success: true, staff: staff?.[0]||null });
+      }
+      if (action === 'get_portfolio_properties') {
+        const { investor_id } = body;
+        try { const { data } = await dbGet('/investor_portfolio?investor_id=eq.' + investor_id + '&property_status=eq.active&select=*'); return ok({ success: true, properties: Array.isArray(data)?data:[] }); }
+        catch { return ok({ success: true, properties: [] }); }
+      }
+      if (action === 'update_portfolio_property') {
+        const { property_id, investor_id, ...updates } = body; delete updates.action;
+        await dbPatch('/investor_portfolio?id=eq.' + property_id + '&investor_id=eq.' + investor_id, { ...updates, updated_at: new Date().toISOString() });
+        return ok({ success: true });
+      }
+      if (action === 'switch_to_staff') {
+        const { investor_id } = body;
+        try {
+          const { data: inv } = await dbGet('/investors?id=eq.' + investor_id + '&select=linked_staff_id');
+          const staffId = inv?.[0]?.linked_staff_id;
+          if (!staffId) return ok({ success: false, error: 'No linked staff account' });
+          const { data: staff } = await dbGet('/staff_users?id=eq.' + staffId + '&select=*');
+          if (!staff?.[0]) return ok({ success: false, error: 'Staff account not found' });
+          return ok({ success: true, staff: staff[0] });
+        } catch(e) { return ok({ success: false, error: e.message }); }
+      }
+            return ok({ success: true, data: [], message: `investor-login action '${action}' not yet fully implemented` });
     }
     // fall-through preserved for backward compat
     case 'investor-register':
@@ -5173,6 +5211,38 @@ app.post('/functions/v1/:fn', async (req, res) => {
         try { const { data } = await dbGet('/acquisition_requests?investor_id=eq.' + body.investor_id + '&status=eq.approved&select=*'); return ok({ success: true, deals: Array.isArray(data)?data:[] }); }
         catch { return ok({ success: true, deals: [] }); }
       }
+
+      if (action === 'get_all_documents') {
+        try { const { data } = await dbGet('/investor_agreements?order=created_at.desc&select=*,investor:investors!investor_id(full_name,email)'); return ok({ success: true, documents: Array.isArray(data)?data:[] }); }
+        catch { return ok({ success: true, documents: [] }); }
+      }
+      if (action === 'send_document') {
+        const { investor_id, agreement_type, document_url, staff_id } = body;
+        const r = await dbPost('/investor_agreements', { investor_id, agreement_type, document_url: document_url||null, status: 'sent', sent_by: staff_id||null, sent_at: new Date().toISOString(), created_at: new Date().toISOString() });
+        return ok({ success: true, document: Array.isArray(r.data)?r.data[0]:r.data });
+      }
+      if (action === 'sign_document') {
+        const target = body.document_id || body.agreement_id;
+        if (target) await dbPatch('/investor_agreements?id=eq.' + target, { status: 'signed', signed_at: new Date().toISOString() });
+        return ok({ success: true });
+      }
+      if (action === 'update_document') {
+        const { document_id, ...u } = body; delete u.action;
+        await dbPatch('/investor_agreements?id=eq.' + document_id, { ...u, updated_at: new Date().toISOString() });
+        return ok({ success: true });
+      }
+      if (action === 'mark_viewed') {
+        const target = body.document_id || body.agreement_id;
+        if (target) await dbPatch('/investor_agreements?id=eq.' + target, { viewed_at: new Date().toISOString(), status: 'viewed' });
+        return ok({ success: true });
+      }
+      if (action === 'send_reminder') {
+        try {
+          const { data } = await dbGet('/investor_agreements?id=eq.' + body.document_id + '&select=*,investor:investors!investor_id(email,full_name)');
+          if (data?.[0]?.investor) await sendEmail({ to: data[0].investor.email, subject: 'Action Required: Document Signature', html: '<p>Hi ' + data[0].investor.full_name + ',</p><p>Please sign your pending document in your portal.</p>' });
+        } catch {}
+        return ok({ success: true });
+      }
       return ok({ success: true, agreements: [], documents: [] });
     }
 
@@ -5449,7 +5519,21 @@ app.post('/functions/v1/:fn', async (req, res) => {
         return ok({ success: true });
       }
 
-      return err('Unknown unassigned-investor-digest action: ' + action);
+      
+      if (action === 'get_digest_stats') {
+        try { const { data } = await dbGet('/investor_digest_sends?order=created_at.desc&limit=10&select=*'); return ok({ success: true, stats: { total_sent: Array.isArray(data)?data.length:0 } }); }
+        catch { return ok({ success: true, stats: {} }); }
+      }
+      if (action === 'preview_digest') { return ok({ success: true, preview: 'Weekly digest preview', html: '<p>Your weekly digest</p>' }); }
+      if (action === 'send_weekly_digests') {
+        try {
+          const { data } = await dbGet('/investors?email_opt_in=eq.true&onboarding_completed=eq.true&select=id,email,full_name');
+          let sent = 0;
+          for (const inv of (Array.isArray(data)?data:[])) { try { await sendEmail({ to: inv.email, subject: 'Your Weekly Update — Access Your Place', html: '<p>Hi ' + inv.full_name + ',</p><p>Your weekly update is ready.</p>' }); sent++; } catch {} }
+          return ok({ success: true, sent });
+        } catch { return ok({ success: true, sent: 0 }); }
+      }
+return err('Unknown unassigned-investor-digest action: ' + action);
     }
 
     case 'security-alerts': {
