@@ -14,7 +14,7 @@ const cors = require('cors');
 const crypto = require('crypto');
 const { v4: uuidv4 } = require('uuid');
 const path = require('path');
-const { createProxyMiddleware } = require('http-proxy-middleware');
+const { createProxyMiddleware, fixRequestBody } = require('http-proxy-middleware');
 
 const app = express();
 const PORT = process.env.PORT || 4000;
@@ -57,6 +57,7 @@ app.use('/rest/v1', createProxyMiddleware({
     : { '^/rest/v1': '' }, // internal PostgREST â€” strip the prefix
   on: {
     proxyReq: (proxyReq, req) => {
+      fixRequestBody(proxyReq, req);
       if (req.headers.authorization) proxyReq.setHeader('Authorization', req.headers.authorization);
       if (req.headers.apikey) proxyReq.setHeader('apikey', req.headers.apikey);
       if (req.headers.prefer) proxyReq.setHeader('Prefer', req.headers.prefer);
@@ -90,7 +91,7 @@ const dbHeaders = () => ({
 
 async function db(path, opts = {}) {
   // Build the correct URL depending on whether we're hitting real Supabase or internal PostgREST
-  const base = (process.env.POSTGREST_URL || SUPABASE_URL || '').replace(/\/+$/, '');
+  const base = (process.env.POSTGREST_URL || SUPABASE_URL || '').replace(/\/+$/, '').replace(/\/rest\/v1$/, '');
   const cleanPath = path.startsWith('/') ? path : '/' + path;
   // Real Supabase URLs need /rest/v1 prefix; internal PostgREST already serves at root
   const needsRestPrefix = /supabase\.co/i.test(base);
