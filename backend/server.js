@@ -499,7 +499,45 @@ app.post('/functions/v1/:fn', async (req, res) => {
         return ok({ success: true });
       }
 
-      return ok({ success: true, data: [], message: `investor-login action '${action}' not yet fully implemented` });
+
+      if (action === 'get_am_info') {
+        const { investor_id } = body;
+        const { data: inv } = await dbGet('/investors?id=eq.' + investor_id + '&select=assigned_acquisition_manager_id,assigned_setup_manager_id');
+        const amId = inv?.[0]?.assigned_acquisition_manager_id;
+        if (!amId) return ok({ success: true, am: null });
+        const { data: am } = await dbGet('/staff_users?id=eq.' + amId + '&select=id,first_name,last_name,email,phone,department');
+        return ok({ success: true, am: am?.[0]||null });
+      }
+      if (action === 'get_linked_staff') {
+        const { investor_id } = body;
+        const { data: inv } = await dbGet('/investors?id=eq.' + investor_id + '&select=linked_staff_id');
+        const staffId = inv?.[0]?.linked_staff_id;
+        if (!staffId) return ok({ success: true, staff: null });
+        const { data: staff } = await dbGet('/staff_users?id=eq.' + staffId + '&select=id,first_name,last_name,email,department');
+        return ok({ success: true, staff: staff?.[0]||null });
+      }
+      if (action === 'get_portfolio_properties') {
+        const { investor_id } = body;
+        try { const { data } = await dbGet('/investor_portfolio?investor_id=eq.' + investor_id + '&property_status=eq.active&select=*'); return ok({ success: true, properties: Array.isArray(data)?data:[] }); }
+        catch { return ok({ success: true, properties: [] }); }
+      }
+      if (action === 'update_portfolio_property') {
+        const { property_id, investor_id, ...updates } = body; delete updates.action;
+        await dbPatch('/investor_portfolio?id=eq.' + property_id + '&investor_id=eq.' + investor_id, { ...updates, updated_at: new Date().toISOString() });
+        return ok({ success: true });
+      }
+      if (action === 'switch_to_staff') {
+        const { investor_id } = body;
+        try {
+          const { data: inv } = await dbGet('/investors?id=eq.' + investor_id + '&select=linked_staff_id');
+          const staffId = inv?.[0]?.linked_staff_id;
+          if (!staffId) return ok({ success: false, error: 'No linked staff account' });
+          const { data: staff } = await dbGet('/staff_users?id=eq.' + staffId + '&select=*');
+          if (!staff?.[0]) return ok({ success: false, error: 'Staff account not found' });
+          return ok({ success: true, staff: staff[0] });
+        } catch(e) { return ok({ success: false, error: e.message }); }
+      }
+            return ok({ success: true, data: [], message: `investor-login action '${action}' not yet fully implemented` });
     }
     // fall-through preserved for backward compat
     case 'investor-register':
