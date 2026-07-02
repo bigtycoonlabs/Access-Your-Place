@@ -1,10 +1,10 @@
-/**
+﻿/**
  * Access Your Place - Railway Functions Server
  * Replaces all famous.ai/Supabase Edge Functions.
  *
  * Routes:
- *   POST /functions/v1/:functionName  → edge function handler
- *   GET  /health                      → health check
+ *   POST /functions/v1/:functionName  â†’ edge function handler
+ *   GET  /health                      â†’ health check
  */
 
 'use strict';
@@ -19,7 +19,7 @@ const { createProxyMiddleware } = require('http-proxy-middleware');
 const app = express();
 const PORT = process.env.PORT || 4000;
 
-// ── Env helpers ───────────────────────────────────────────────────────────────
+// â”€â”€ Env helpers â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 const SUPABASE_URL       = process.env.SUPABASE_URL;          // PostgREST public URL
 const SERVICE_ROLE_KEY   = process.env.SUPABASE_SERVICE_ROLE_KEY;
 const RESEND_KEY         = process.env.RESEND_API_KEY;
@@ -31,20 +31,20 @@ const TWILIO_TOKEN       = process.env.TWILIO_AUTH_TOKEN;
 const TWILIO_FROM        = process.env.TWILIO_FROM_NUMBER;
 const SITE_URL           = process.env.SITE_URL || 'https://accessyourplace.com';
 
-// ── Middleware ────────────────────────────────────────────────────────────────
+// â”€â”€ Middleware â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 app.use(cors({ origin: '*', methods: ['GET','POST','PUT','PATCH','DELETE','OPTIONS'] }));
 app.use(express.json({ limit: '10mb' }));
 app.use(express.urlencoded({ extended: true, limit: '10mb' }));
 
-// ── PostgREST Proxy (/rest/v1/* → PostgREST) ──────────────────────────────────
-// Priority: POSTGREST_URL env var → Railway internal PostgREST → real Supabase URL
+// â”€â”€ PostgREST Proxy (/rest/v1/* â†’ PostgREST) â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+// Priority: POSTGREST_URL env var â†’ Railway internal PostgREST â†’ real Supabase URL
 const POSTGREST_INTERNAL = process.env.POSTGREST_URL
   || (process.env.SUPABASE_URL && !process.env.SUPABASE_URL.includes('localhost') ? process.env.SUPABASE_URL : null)
   || 'http://postgrest.railway.internal:3000';
 
 const PROXY_TARGET = POSTGREST_INTERNAL.includes('supabase.co')
-  ? POSTGREST_INTERNAL  // real Supabase — path already includes /rest/v1
-  : POSTGREST_INTERNAL; // internal PostgREST — strip /rest/v1 prefix
+  ? POSTGREST_INTERNAL  // real Supabase â€” path already includes /rest/v1
+  : POSTGREST_INTERNAL; // internal PostgREST â€” strip /rest/v1 prefix
 
 console.log(`[PostgREST Proxy] target: ${PROXY_TARGET}`);
 
@@ -52,8 +52,8 @@ app.use('/rest/v1', createProxyMiddleware({
   target: PROXY_TARGET,
   changeOrigin: true,
   pathRewrite: POSTGREST_INTERNAL.includes('supabase.co')
-    ? {} // Supabase already has /rest/v1 in its URL — don't strip
-    : { '^/rest/v1': '' }, // internal PostgREST — strip the prefix
+    ? {} // Supabase already has /rest/v1 in its URL â€” don't strip
+    : { '^/rest/v1': '' }, // internal PostgREST â€” strip the prefix
   on: {
     proxyReq: (proxyReq, req) => {
       if (req.headers.authorization) proxyReq.setHeader('Authorization', req.headers.authorization);
@@ -76,11 +76,11 @@ app.use('/rest/v1', createProxyMiddleware({
   }
 }));
 
-// ── Serve built React frontend (static files) ─────────────────────────────────
+// â”€â”€ Serve built React frontend (static files) â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 const DIST_DIR = path.join(__dirname, 'dist');
 app.use(express.static(DIST_DIR));
 
-// ── DB helper (calls PostgREST) ───────────────────────────────────────────────
+// â”€â”€ DB helper (calls PostgREST) â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 const dbHeaders = () => ({
   'apikey': SERVICE_ROLE_KEY,
   'Authorization': `Bearer ${SERVICE_ROLE_KEY}`,
@@ -108,7 +108,7 @@ async function dbPost(path, body)   { return db(path, { method: 'POST', headers:
 async function dbPatch(path, body)  { return db(path, { method: 'PATCH', headers: { ...dbHeaders(), 'Prefer': 'return=minimal' }, body: JSON.stringify(body) }); }
 async function dbDelete(path)       { return db(path, { method: 'DELETE', headers: { ...dbHeaders() } }); }
 
-// ── Email helper (Resend) ─────────────────────────────────────────────────────
+// â”€â”€ Email helper (Resend) â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 async function sendEmail({ to, subject, html, from }) {
   if (!RESEND_KEY) {
     console.error('[sendEmail] BLOCKED: No RESEND_API_KEY configured. Email NOT sent:', { to, subject });
@@ -132,7 +132,7 @@ async function sendEmail({ to, subject, html, from }) {
   }
 }
 
-// ── SMS helper (Twilio) ───────────────────────────────────────────────────────
+// â”€â”€ SMS helper (Twilio) â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 async function sendSMS(to, body) {
   if (!TWILIO_SID || !TWILIO_TOKEN) return { ok: false };
   const url = `https://api.twilio.com/2010-04-01/Accounts/${TWILIO_SID}/Messages.json`;
@@ -145,7 +145,7 @@ async function sendSMS(to, body) {
   return { ok: res.ok };
 }
 
-// ── Anthropic helper ──────────────────────────────────────────────────────────
+// â”€â”€ Anthropic helper â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 async function callAnthropic({ model = 'claude-3-5-sonnet-20241022', max_tokens = 2048, messages, system }) {
   const res = await fetch('https://api.anthropic.com/v1/messages', {
     method: 'POST',
@@ -155,12 +155,12 @@ async function callAnthropic({ model = 'claude-3-5-sonnet-20241022', max_tokens 
   return res.json();
 }
 
-// ── REAL password schemes, ported faithfully from the deployed famous.ai
+// â”€â”€ REAL password schemes, ported faithfully from the deployed famous.ai
 //    Edge Functions (staff-login v39, investor-login v18, landlord-auth v1).
-//    bcrypt was NEVER used in production — every real stored hash is one of
+//    bcrypt was NEVER used in production â€” every real stored hash is one of
 //    the formats below. Using bcrypt.compare() against any of these would
 //    always fail, which was the root cause of the login outage.
-// ────────────────────────────────────────────────────────────────────────────
+// â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 
 function sha256Hex(input) {
   return crypto.createHash('sha256').update(input, 'utf8').digest('hex');
@@ -188,10 +188,10 @@ function verifyLandlordPassword(password, stored) {
 }
 
 // ===== INVESTOR: 4-format fallback chain (oldest -> newest migration history) =====
-// v1$salt$hash  — legacy custom "simpleHash" (100-round DJB2-style, non-cryptographic)
-// v2$salt$hash  — SHA-256(salt + password), the modern standard going forward
-// 64-hex (no prefix) — SHA-256(password + 'yp_salt_2024'), the investor-auth-v2 era format
-// anything else — plaintext (oldest, pre-hashing accounts)
+// v1$salt$hash  â€” legacy custom "simpleHash" (100-round DJB2-style, non-cryptographic)
+// v2$salt$hash  â€” SHA-256(salt + password), the modern standard going forward
+// 64-hex (no prefix) â€” SHA-256(password + 'yp_salt_2024'), the investor-auth-v2 era format
+// anything else â€” plaintext (oldest, pre-hashing accounts)
 function simpleHashLegacy(str) {
   let hash1 = 5381, hash2 = 52711;
   for (let i = 0; i < str.length; i++) {
@@ -225,7 +225,7 @@ function createV2Hash(password) {
 const INVESTOR_AUTH_V2_SALT = 'yp_salt_2024';
 function authV2Hash(password) { return sha256Hex(password + INVESTOR_AUTH_V2_SALT); }
 
-/** Returns { valid, format } — format tells the caller whether to silently upgrade the stored hash. */
+/** Returns { valid, format } â€” format tells the caller whether to silently upgrade the stored hash. */
 function verifyInvestorPassword(password, storedHash) {
   if (!storedHash) return { valid: false, format: 'empty' };
 
@@ -241,7 +241,7 @@ function verifyInvestorPassword(password, storedHash) {
   }
   if (/^[0-9a-f]{64}$/i.test(storedHash)) {
     if (constantTimeEqual(authV2Hash(password), storedHash)) return { valid: true, format: 'auth_v2_sha256' };
-    // fall through — a 64-hex string that doesn't match this format might still be plaintext-by-coincidence; unlikely, but keep checking
+    // fall through â€” a 64-hex string that doesn't match this format might still be plaintext-by-coincidence; unlikely, but keep checking
   }
   if (constantTimeEqual(password, storedHash)) return { valid: true, format: 'plain_text' };
   return { valid: false, format: 'unknown' };
@@ -272,13 +272,13 @@ async function verifyPassword(input, stored) { return verifyStaffPassword(input,
 async function hashPassword(plain) { return hashStaffPassword(plain); }
 function isBcryptHash(_str) { return false; } // bcrypt was never real; always false now
 
-// ── CORS preflight ────────────────────────────────────────────────────────────
+// â”€â”€ CORS preflight â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 app.options('*', cors());
 
-// ── Health check ──────────────────────────────────────────────────────────────
+// â”€â”€ Health check â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 app.get('/health', (req, res) => res.json({ ok: true, ts: new Date().toISOString() }));
 
-// ── One-time migration endpoint — runs the missing column additions safely ────
+// â”€â”€ One-time migration endpoint â€” runs the missing column additions safely â”€â”€â”€â”€
 // Uses IF NOT EXISTS so safe to call multiple times. Remove after confirmed done.
 app.post('/admin/run-migration', async (req, res) => {
   const secret = req.headers['x-migration-secret'];
@@ -332,9 +332,9 @@ app.post('/admin/run-migration', async (req, res) => {
 
 
 
-// ══════════════════════════════════════════════════════════════════════════════
+// â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•
 // EDGE FUNCTION ROUTER
-// ══════════════════════════════════════════════════════════════════════════════
+// â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•
 app.post('/functions/v1/:fn', async (req, res) => {
   const fn = req.params.fn;
   const body = req.body || {};
@@ -345,7 +345,7 @@ app.post('/functions/v1/:fn', async (req, res) => {
   try {
     switch (fn) {
 
-    // ─────────────────────────── AUTH: INVESTOR ───────────────────────────
+    // â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€ AUTH: INVESTOR â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
     case 'investor-auth':
     case 'investor-login': {
       const { action } = body;
@@ -403,7 +403,7 @@ app.post('/functions/v1/:fn', async (req, res) => {
             const expires = new Date(Date.now() + 3600000);
             await dbPatch(`/investors?id=eq.${users[0].id}`, { reset_token: token, reset_token_expires: expires.toISOString() });
             const resetUrl = `${SITE_URL}/investor/reset-password?token=${token}`;
-            await sendEmail({ to: email, subject: 'Reset Your Password — Access Your Place', html: `<p>Hi ${users[0].full_name},</p><p><a href="${resetUrl}">Click here to reset your password</a>. Expires in 1 hour.</p>` });
+            await sendEmail({ to: email, subject: 'Reset Your Password â€” Access Your Place', html: `<p>Hi ${users[0].full_name},</p><p><a href="${resetUrl}">Click here to reset your password</a>. Expires in 1 hour.</p>` });
           }
         } catch {}
         return ok({ success: true }); // always succeed to prevent enumeration
@@ -444,7 +444,7 @@ app.post('/functions/v1/:fn', async (req, res) => {
         } catch { return ok({ success: true, quotes: [] }); }
       }
       if (action === 'verify_otp') {
-        return ok({ success: true, message: 'OTP verified' }); // OTP not yet wired — approve gracefully
+        return ok({ success: true, message: 'OTP verified' }); // OTP not yet wired â€” approve gracefully
       }
       if (action === 'list') {
         const { data } = await dbGet('/investors?order=created_at.desc&limit=50&select=id,full_name,email,phone,is_funded,onboarding_completed');
@@ -673,7 +673,7 @@ app.post('/functions/v1/:fn', async (req, res) => {
             email_verified: investor?.email_verified || false,
           });
         } catch (e) {
-          // Table may not exist yet — fail soft so the frontend falls back to localStorage check
+          // Table may not exist yet â€” fail soft so the frontend falls back to localStorage check
           return ok({ success: false, error: 'Session validation unavailable' });
         }
       }
@@ -758,7 +758,7 @@ app.post('/functions/v1/:fn', async (req, res) => {
           });
           const verifyUrl = `${SITE_URL}/investor/verify-email?token=${token}`;
           await sendEmail({
-            to: investor.email, subject: 'Verify Your Email — Access Your Place',
+            to: investor.email, subject: 'Verify Your Email â€” Access Your Place',
             html: `<p>Hi ${investor.full_name || ''},</p><p><a href="${verifyUrl}">Click here to verify your email</a>. Link expires in 24 hours.</p>`,
           });
           return ok({ success: true });
@@ -881,7 +881,7 @@ app.post('/functions/v1/:fn', async (req, res) => {
           const emailResult = await sendEmail({ to: users[0].email, subject: 'Reset Your Staff Password - Access Your Place', html: `<p>Hi ${userName},</p><p><a href="${resetUrl}">Click here to reset your password</a>. Expires in 1 hour.</p>` });
           if (!emailResult.ok) console.error('[staff-forgot-password] Email failed to send:', emailResult.error);
         }
-        // Always return success regardless of whether the email was found/sent — intentional,
+        // Always return success regardless of whether the email was found/sent â€” intentional,
         // to avoid leaking which emails are registered. Failures are logged server-side above.
         return ok({ success: true, message: 'If an account exists with that email, you will receive a password reset link.' });
       }
@@ -1049,7 +1049,7 @@ app.post('/functions/v1/:fn', async (req, res) => {
       return ok({ success: true, ...buildStaffSession(user, agreementInfo, sessionTok) });
     }
 
-    // ─────────────────────────── INVESTOR FAVORITES ───────────────────────
+    // â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€ INVESTOR FAVORITES â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
     case 'investor-favorites': {
       const { action, investor_id, property_id } = body;
       if (action === 'get' || action === 'list') {
@@ -1073,7 +1073,7 @@ app.post('/functions/v1/:fn', async (req, res) => {
       return err('Unknown favorites action');
     }
 
-    // ─────────────────────────── MANAGE STAFF ────────────────────────────
+    // â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€ MANAGE STAFF â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
     case 'manage-staff': {
       const { action } = body;
 
@@ -1092,7 +1092,7 @@ app.post('/functions/v1/:fn', async (req, res) => {
         const emailResult = await sendEmail({ to: email, subject: 'Welcome to Access Your Place - Complete Your Account Setup', html: `<p>Hi ${first_name},</p><p>You have been added as ${department}. <a href="${inviteUrl}">Click here to complete your account setup</a>. Link expires in 7 days.</p>` });
         const createdStaff = Array.isArray(result.data) ? result.data[0] : result.data;
         if (!emailResult.ok) {
-          // Staff record was created, but the invite never went out — surface this clearly
+          // Staff record was created, but the invite never went out â€” surface this clearly
           // rather than reporting blanket success while the new hire silently can't log in.
           return ok({
             success: true,
@@ -1463,7 +1463,7 @@ app.post('/functions/v1/:fn', async (req, res) => {
       return err(`Unknown manage-staff action: ${action}`);
     }
 
-    // ─────────────────────────── SEND INVESTOR INVITATION ─────────────────
+    // â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€ SEND INVESTOR INVITATION â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
     case 'send-investor-invitation': {
       const { action } = body;
 
@@ -1568,7 +1568,7 @@ app.post('/functions/v1/:fn', async (req, res) => {
       if (action === 'send_am_welcome_email') {
         try {
           const { data } = await dbGet('/investors?id=eq.' + body.investor_id + '&select=email,full_name');
-          if (data?.[0]) await sendEmail({ to: data[0].email, subject: 'Welcome — Meet Your Acquisition Manager', html: '<p>Hi ' + data[0].full_name + ',</p><p>Your dedicated acquisition manager has been assigned and will be in touch shortly.</p>' });
+          if (data?.[0]) await sendEmail({ to: data[0].email, subject: 'Welcome â€” Meet Your Acquisition Manager', html: '<p>Hi ' + data[0].full_name + ',</p><p>Your dedicated acquisition manager has been assigned and will be in touch shortly.</p>' });
         } catch {}
         return ok({ success: true });
       }
@@ -1640,11 +1640,11 @@ app.post('/functions/v1/:fn', async (req, res) => {
       return ok({ success: true });
     }
 
-    // ─────────────────────────── DEAL MARKETPLACE ─────────────────────────
+    // â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€ DEAL MARKETPLACE â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
     case 'manage-deal-marketplace': {
       const { action } = body;
 
-      // ── GET MARKETPLACE DATA ──────────────────────────────────────────
+      // â”€â”€ GET MARKETPLACE DATA â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
       if (action === 'get_marketplace_data' || action === 'get_public_listings') {
         const { investor_id } = body;
 
@@ -1677,7 +1677,7 @@ app.post('/functions/v1/:fn', async (req, res) => {
         });
       }
 
-      // ── SEARCH INVESTORS (for private deal targeting) ────────────────
+      // â”€â”€ SEARCH INVESTORS (for private deal targeting) â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
       if (action === 'search_investors') {
         const { search_query, exclude_investor_id } = body;
         if (!search_query) return ok({ success: true, investors: [] });
@@ -1688,7 +1688,7 @@ app.post('/functions/v1/:fn', async (req, res) => {
         return ok({ success: true, investors: Array.isArray(data) ? data : [] });
       }
 
-      // ── CREATE LISTING ─────────────────────────────────────────────────
+      // â”€â”€ CREATE LISTING â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
       if (action === 'create_listing') {
         const {
           investor_id, property_id, listing_type, buyer_investor_id,
@@ -1734,7 +1734,7 @@ app.post('/functions/v1/:fn', async (req, res) => {
         return ok({ success: true, listing_id: listing.id });
       }
 
-      // ── CANCEL LISTING ──────────────────────────────────────────────────
+      // â”€â”€ CANCEL LISTING â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
       if (action === 'cancel_listing') {
         const { listing_id, investor_id } = body;
         if (!listing_id) return ok({ success: false, error: 'listing_id is required' });
@@ -1744,7 +1744,7 @@ app.post('/functions/v1/:fn', async (req, res) => {
         return ok({ success: true });
       }
 
-      // ── REQUEST VERIFICATION (buyer pays $100) ───────────────────────────
+      // â”€â”€ REQUEST VERIFICATION (buyer pays $100) â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
       if (action === 'request_verification') {
         const { listing_id, investor_id } = body;
         if (!listing_id || !investor_id) return ok({ success: false, error: 'listing_id and investor_id are required' });
@@ -1776,7 +1776,7 @@ app.post('/functions/v1/:fn', async (req, res) => {
         return ok({ success: true, verification_id: verification?.id, payment_required: true, amount: 100 });
       }
 
-      // ── RELEASE REPORT (buyer pays $99, sees the report) ─────────────────
+      // â”€â”€ RELEASE REPORT (buyer pays $99, sees the report) â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
       if (action === 'release_report') {
         const { listing_id, investor_id } = body;
         if (!listing_id) return ok({ success: false, error: 'listing_id is required' });
@@ -1809,7 +1809,7 @@ app.post('/functions/v1/:fn', async (req, res) => {
         });
       }
 
-      // ── OPT FOR FULL TRANSACTION (AYP manages it, 20% fee) ────────────────
+      // â”€â”€ OPT FOR FULL TRANSACTION (AYP manages it, 20% fee) â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
       if (action === 'opt_full_transaction') {
         const { listing_id, investor_id } = body;
         if (!listing_id) return ok({ success: false, error: 'listing_id is required' });
@@ -1842,7 +1842,7 @@ app.post('/functions/v1/:fn', async (req, res) => {
         return ok({ success: true, transaction_id: transaction?.id, fee_amount: feeAmount });
       }
 
-      // ── DECLINE DEAL (buyer rejects a private offer) ─────────────────────
+      // â”€â”€ DECLINE DEAL (buyer rejects a private offer) â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
       if (action === 'decline_deal') {
         const { listing_id, investor_id } = body;
         if (!listing_id) return ok({ success: false, error: 'listing_id is required' });
@@ -1865,7 +1865,7 @@ app.post('/functions/v1/:fn', async (req, res) => {
         return ok({ success: true });
       }
 
-      // ── SUBMIT OFFER (buyer makes an offer on a listing) ──────────────────
+      // â”€â”€ SUBMIT OFFER (buyer makes an offer on a listing) â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
       if (action === 'submit_offer') {
         const { listing_id, investor_id, offer_amount, message } = body;
         if (!listing_id || !investor_id || !offer_amount) {
@@ -1890,7 +1890,7 @@ app.post('/functions/v1/:fn', async (req, res) => {
         return ok({ success: true, offer_id: offer?.id });
       }
 
-      // ── GET LISTING OFFERS ────────────────────────────────────────────────
+      // â”€â”€ GET LISTING OFFERS â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
       if (action === 'get_listing_offers') {
         const { listing_id } = body;
         if (!listing_id) return ok({ success: true, offers: [] });
@@ -1898,7 +1898,7 @@ app.post('/functions/v1/:fn', async (req, res) => {
         return ok({ success: true, offers: Array.isArray(data) ? data : [] });
       }
 
-      // ── GET SELLER OFFERS (offers received on my listings) ────────────────
+      // â”€â”€ GET SELLER OFFERS (offers received on my listings) â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
       if (action === 'get_seller_offers') {
         const { investor_id } = body;
         if (!investor_id) return ok({ success: true, offers: [] });
@@ -1909,7 +1909,7 @@ app.post('/functions/v1/:fn', async (req, res) => {
         return ok({ success: true, offers: Array.isArray(data) ? data : [] });
       }
 
-      // ── ACCEPT / REJECT / COUNTER OFFER ───────────────────────────────────
+      // â”€â”€ ACCEPT / REJECT / COUNTER OFFER â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
       if (action === 'accept_offer') {
         const { offer_id } = body;
         if (!offer_id) return ok({ success: false, error: 'offer_id is required' });
@@ -1931,7 +1931,7 @@ app.post('/functions/v1/:fn', async (req, res) => {
         return ok({ success: true });
       }
 
-      // ── GET MY SELLER LISTINGS ─────────────────────────────────────────────
+      // â”€â”€ GET MY SELLER LISTINGS â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
       if (action === 'get_my_seller_listings') {
         const { investor_id } = body;
         if (!investor_id) return ok({ success: true, listings: [] });
@@ -1939,7 +1939,7 @@ app.post('/functions/v1/:fn', async (req, res) => {
         return ok({ success: true, listings: Array.isArray(data) ? data : [] });
       }
 
-      // ── GET PORTFOLIO PROPERTIES (for creating a listing) ──────────────────
+      // â”€â”€ GET PORTFOLIO PROPERTIES (for creating a listing) â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
       if (action === 'get_portfolio_properties') {
         const { investor_id } = body;
         if (!investor_id) return ok({ success: true, properties: [] });
@@ -1947,7 +1947,7 @@ app.post('/functions/v1/:fn', async (req, res) => {
         return ok({ success: true, properties: Array.isArray(data) ? data : [] });
       }
 
-      // ── RESUBMIT LISTING (after staff requested changes) ───────────────────
+      // â”€â”€ RESUBMIT LISTING (after staff requested changes) â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
       if (action === 'resubmit_listing') {
         const { listing_id, ...updates } = body;
         if (!listing_id) return ok({ success: false, error: 'listing_id is required' });
@@ -1958,7 +1958,7 @@ app.post('/functions/v1/:fn', async (req, res) => {
         return ok({ success: true });
       }
 
-      // ── CHECK TOS STATUS ─────────────────────────────────────────────────
+      // â”€â”€ CHECK TOS STATUS â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
       if (action === 'check_tos_status') {
         const { investor_id } = body;
         if (!investor_id) return ok({ success: true, accepted: false });
@@ -1966,7 +1966,7 @@ app.post('/functions/v1/:fn', async (req, res) => {
         return ok({ success: true, accepted: !!data?.[0]?.marketplace_tos_accepted });
       }
 
-      // ── SEARCH INVESTORS (deal marketplace context, same as search_investors) ─
+      // â”€â”€ SEARCH INVESTORS (deal marketplace context, same as search_investors) â”€
       if (action === 'search_investors_marketplace') {
         const { search_query, exclude_investor_id } = body;
         const q = encodeURIComponent(search_query || '');
@@ -1976,7 +1976,7 @@ app.post('/functions/v1/:fn', async (req, res) => {
         return ok({ success: true, investors: Array.isArray(data) ? data : [] });
       }
 
-      // ════════════════════ STAFF / ADMIN ACTIONS ════════════════════════
+      // â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â• STAFF / ADMIN ACTIONS â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•
 
       if (action === 'get_pending_listings' || action === 'get_pending_verifications' || action === 'get_verification_queue') {
         const { data } = await dbGet(`/deal_listings?status=eq.pending_approval&order=created_at.desc&select=*,property:investor_portfolio(*),seller:investors!seller_id(full_name,email)`);
@@ -2085,7 +2085,7 @@ app.post('/functions/v1/:fn', async (req, res) => {
         return ok({ success: true });
       }
 
-      // ── Legacy actions (kept for backward compatibility) ─────────────────
+      // â”€â”€ Legacy actions (kept for backward compatibility) â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
       if (action === 'get_deals') {
         const { status, operation_type, limit = 20, offset = 0 } = body;
         let q = `/properties?is_published=eq.true&order=created_at.desc&limit=${limit}&offset=${offset}&select=*,deal_analytics(*)`;
@@ -2733,7 +2733,7 @@ app.post('/functions/v1/:fn', async (req, res) => {
       return err(`Unknown am-submit-deal action: ${action}`);
     }
 
-    // ─────────────────────────── MANAGE INVESTOR ADMIN ────────────────────
+    // â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€ MANAGE INVESTOR ADMIN â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
     case 'manage-investor-admin': {
       const { action } = body;
 
@@ -2997,12 +2997,13 @@ app.post('/functions/v1/:fn', async (req, res) => {
       return ok({ success: true, data: [], message: `Action '${action}' not yet implemented` });
     }
 
-    // ─────────────────────────── MANAGE LANDLORD PORTAL ───────────────────
+    // â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€ MANAGE LANDLORD PORTAL â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
     case 'manage-landlord-portal':
     case 'manage-landlords':
     case 'landlord-auth': {
+      const action = body?.action || body?.operation || body?.type || '';
 
-            if (action === 'register') {
+      if (action === 'register') {
         const { email, password, contact_name, company_name, phone, account_type, location, unit_count, property_type } = body;
         if (!email || !password || !contact_name) return ok({ success: false, error: 'Email, password, and name are required' });
         const emailLower = email.toLowerCase().trim();
@@ -3282,7 +3283,7 @@ app.post('/functions/v1/:fn', async (req, res) => {
       return ok({ success: true, analysis });
     }
 
-    // ─────────────────────────── AI - PENNY DEAL SCORING ──────────────────
+    // â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€ AI - PENNY DEAL SCORING â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
     case 'penny-deal-scoring':
     case 'nightly-penny-score-refresh': {
       const { action } = body;
@@ -3308,7 +3309,7 @@ app.post('/functions/v1/:fn', async (req, res) => {
       return ok({ success: true, description });
     }
 
-    // ─────────────────────────── AI - PENNY PORTFOLIO ANALYSIS ────────────
+    // â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€ AI - PENNY PORTFOLIO ANALYSIS â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
     case 'penny-portfolio-analysis': {
       const { action } = body;
 
@@ -3333,7 +3334,7 @@ app.post('/functions/v1/:fn', async (req, res) => {
       return ok({ success: true, article: Array.isArray(result.data) ? result.data[0] : result.data });
     }
 
-    // ─────────────────────────── ARTICLES ─────────────────────────────────
+    // â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€ ARTICLES â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
     case 'get-draft-articles': {
       const { status } = body;
       let q = '/draft_articles?order=created_at.desc&select=*';
@@ -3360,7 +3361,7 @@ app.post('/functions/v1/:fn', async (req, res) => {
       return ok({ success: true, articles: data || [], synced: data?.length || 0 });
     }
 
-    // ─────────────────────────── LEAD MANAGEMENT ──────────────────────────
+    // â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€ LEAD MANAGEMENT â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
     case 'submit-lead':
     case 'get-leads': {
       const { action } = body;
@@ -3387,7 +3388,7 @@ app.post('/functions/v1/:fn', async (req, res) => {
       return ok({ success: true });
     }
 
-    // ─────────────────────────── NOTIFICATIONS ─────────────────────────────
+    // â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€ NOTIFICATIONS â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
     case 'send-notification-email':
     case 'investor-email-notifications': {
 
@@ -3502,7 +3503,7 @@ app.post('/functions/v1/:fn', async (req, res) => {
       return err('Unknown notifications action');
     }
 
-    // ─────────────────────────── REFERRALS ────────────────────────────────
+    // â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€ REFERRALS â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
     case 'manage-referrals': {
       const { action } = body;
 
@@ -3573,7 +3574,7 @@ app.post('/functions/v1/:fn', async (req, res) => {
           const signupUrl = `${SITE_URL}/investor/login?ref=${referrer.referral_code}`;
           await sendEmail({
             to: invitee_email, subject: `${referrer.full_name} invited you to Access Your Place`,
-            html: `<p>Hi${invitee_name ? ' ' + invitee_name : ''},</p><p>${referrer.full_name} thinks you'd be a great fit for Access Your Place — a platform for building flexible housing portfolios.</p><p><a href="${signupUrl}">Sign up using their referral link</a> to get started.</p>`,
+            html: `<p>Hi${invitee_name ? ' ' + invitee_name : ''},</p><p>${referrer.full_name} thinks you'd be a great fit for Access Your Place â€” a platform for building flexible housing portfolios.</p><p><a href="${signupUrl}">Sign up using their referral link</a> to get started.</p>`,
           });
         } catch (e) { console.error('[manage-referrals] invite email failed:', e.message); }
         return ok({ success: true });
@@ -3605,7 +3606,7 @@ app.post('/functions/v1/:fn', async (req, res) => {
         } catch (e) { return ok({ success: false, error: e.message }); }
       }
 
-      // GET ANALYTICS (staff view — aggregate referral program performance)
+      // GET ANALYTICS (staff view â€” aggregate referral program performance)
       if (action === 'get_analytics') {
         try {
           const { data: allReferrals } = await dbGet('/referrals?select=id,status,created_at');
@@ -3656,7 +3657,7 @@ app.post('/functions/v1/:fn', async (req, res) => {
       return err(`Unknown manage-referrals action: ${action}`);
     }
 
-    // ─────────────────────────── SETUP TASKS ──────────────────────────────
+    // â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€ SETUP TASKS â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
     case 'manage-setup-tasks': {
       const { action, investor_id, task_id } = body;
 
@@ -3766,7 +3767,7 @@ app.post('/functions/v1/:fn', async (req, res) => {
         if (action === 'preview_recap') return ok({ success: true, preview: 'Setup recap preview generated' });
         try {
           const { data: inv } = await dbGet(`/investors?id=eq.${investor_id}&select=email,full_name`);
-          if (inv?.[0]) await sendEmail({ to: inv[0].email, subject: 'Your Setup Recap — Access Your Place', html: `<p>Hi ${inv[0].full_name},</p><p>Your setup is complete. Please find your recap summary in your portal.</p>` });
+          if (inv?.[0]) await sendEmail({ to: inv[0].email, subject: 'Your Setup Recap â€” Access Your Place', html: `<p>Hi ${inv[0].full_name},</p><p>Your setup is complete. Please find your recap summary in your portal.</p>` });
         } catch {}
         return ok({ success: true });
       }
@@ -3780,7 +3781,7 @@ app.post('/functions/v1/:fn', async (req, res) => {
       return err(`Unknown manage-setup-tasks action: ${action}`);
     }
 
-    // ─────────────────────────── MARKET REPORTS ───────────────────────────
+    // â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€ MARKET REPORTS â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
     case 'manage-market-reports':
     case 'generate-market-report': {
 
@@ -3955,7 +3956,7 @@ app.post('/functions/v1/:fn', async (req, res) => {
         try {
           const { data: staff } = await dbGet('/staff_users?is_active=eq.true&select=email,first_name');
           for (const s of (Array.isArray(staff) ? staff : [])) {
-            try { await sendEmail({ to: s.email, subject: 'Weekly Payout Summary — Access Your Place', html: `<p>Hi ${s.first_name}, your weekly payout summary is ready.</p>` }); } catch {}
+            try { await sendEmail({ to: s.email, subject: 'Weekly Payout Summary â€” Access Your Place', html: `<p>Hi ${s.first_name}, your weekly payout summary is ready.</p>` }); } catch {}
           }
         } catch {}
         return ok({ success: true });
@@ -4107,7 +4108,7 @@ app.post('/functions/v1/:fn', async (req, res) => {
       return err(`Unknown acquisition action: ${action}`);
     }
 
-    // ─────────────────────────── MANAGE AM ASSIGNMENTS ────────────────────
+    // â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€ MANAGE AM ASSIGNMENTS â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
     case 'manage-am-assignments': {
       const { action } = body;
 
@@ -4156,7 +4157,7 @@ app.post('/functions/v1/:fn', async (req, res) => {
       return err(`Unknown am-assignments action: ${action}`);
     }
 
-    // ─────────────────────────── EMAIL TEMPLATES ───────────────────────────
+    // â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€ EMAIL TEMPLATES â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
     case 'manage-email-templates': {
       const { action, template_id } = body;
 
@@ -4290,7 +4291,7 @@ app.post('/functions/v1/:fn', async (req, res) => {
       return err(`Unknown email-templates action: ${action}`);
     }
 
-    // ─────────────────────────── SEND BULK EMAIL ──────────────────────────
+    // â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€ SEND BULK EMAIL â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
     case 'send-bulk-email': {
       const { recipients, subject, html, from } = body;
       if (!Array.isArray(recipients) || !recipients.length) return err('No recipients');
@@ -4314,7 +4315,7 @@ app.post('/functions/v1/:fn', async (req, res) => {
       return ok({ success: true });
     }
 
-    // ─────────────────────────── MANAGE SUPPORT REQUESTS ──────────────────
+    // â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€ MANAGE SUPPORT REQUESTS â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
     case 'manage-support-requests':
     case 'submit-issue-report': {
       const { action } = body;
@@ -4387,7 +4388,7 @@ app.post('/functions/v1/:fn', async (req, res) => {
         try {
           let investorEmail = email;
           if (!investorEmail && investor_id) { const { data } = await dbGet('/investors?id=eq.' + investor_id + '&select=email'); investorEmail = data?.[0]?.email; }
-          if (investorEmail) await sendEmail({ to: investorEmail, subject: 'Verify Your Email — Access Your Place', html: '<p>Please verify your email to access your account. If you need further help, contact support.</p>' });
+          if (investorEmail) await sendEmail({ to: investorEmail, subject: 'Verify Your Email â€” Access Your Place', html: '<p>Please verify your email to access your account. If you need further help, contact support.</p>' });
         } catch {}
         return ok({ success: true });
       }
@@ -4399,7 +4400,7 @@ app.post('/functions/v1/:fn', async (req, res) => {
             const token = require('crypto').randomUUID();
             await dbPatch('/investors?id=eq.' + investor_id, { reset_token: token, reset_token_expires: new Date(Date.now()+3600000).toISOString() });
             const resetUrl = process.env.SITE_URL + '/investor/reset-password?token=' + token;
-            await sendEmail({ to: data[0].email, subject: 'Password Reset — Access Your Place', html: '<p>Hi ' + data[0].full_name + ',</p><p><a href="' + resetUrl + '">Click here to reset your password</a>. Expires in 1 hour.</p>' });
+            await sendEmail({ to: data[0].email, subject: 'Password Reset â€” Access Your Place', html: '<p>Hi ' + data[0].full_name + ',</p><p><a href="' + resetUrl + '">Click here to reset your password</a>. Expires in 1 hour.</p>' });
           }
         } catch {}
         return ok({ success: true });
@@ -4412,7 +4413,7 @@ app.post('/functions/v1/:fn', async (req, res) => {
       return err(`Unknown support action: ${action}`);
     }
 
-    // ─────────────────────────── ANALYTICS / TRACKING ─────────────────────
+    // â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€ ANALYTICS / TRACKING â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
     case 'track-event': {
       const { event_name, user_id, user_type, properties: props } = body;
       await dbPost('/analytics_events', { event_name, user_id, user_type, properties: props || {}, created_at: new Date().toISOString() }).catch(() => {});
@@ -4521,7 +4522,7 @@ app.post('/functions/v1/:fn', async (req, res) => {
       return err(`Unknown investor-documents action: ${action}`);
     }
 
-    // ─────────────────────────── INVESTOR CREDITS ──────────────────────────
+    // â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€ INVESTOR CREDITS â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
     case 'manage-investor-credits': {
       const { action, investor_id } = body;
 
@@ -4608,7 +4609,7 @@ app.post('/functions/v1/:fn', async (req, res) => {
       return err(`Unknown investor-credits action: ${action}`);
     }
 
-    // ─────────────────────────── DISPUTES ─────────────────────────────────
+    // â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€ DISPUTES â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
     case 'manage-disputes': {
       const { action } = body;
 
@@ -4958,7 +4959,7 @@ app.post('/functions/v1/:fn', async (req, res) => {
       return err('Unknown digital-products action');
     }
 
-    // ─────────────────────────── PAYMENTS (DB-only stub) ─────────────────
+    // â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€ PAYMENTS (DB-only stub) â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
     case 'manage-payments': {
       const { action } = body;
       if (action === 'get_payment_history') {
@@ -5082,7 +5083,7 @@ app.post('/functions/v1/:fn', async (req, res) => {
       return err(`Unknown payments action: ${action}`);
     }
 
-    // ─────────────────────────── SOP REPOSITORY ───────────────────────────
+    // â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€ SOP REPOSITORY â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
     case 'manage-sop-repository': {
       const { action } = body;
 
@@ -5175,7 +5176,7 @@ app.post('/functions/v1/:fn', async (req, res) => {
       return ok({ success: true, agreements: [], documents: [] });
     }
 
-    // ─────────────────────────── PORTFOLIO PERFORMANCE ────────────────────
+    // â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€ PORTFOLIO PERFORMANCE â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
     case 'manage-portfolio-performance':
     case 'manage-portfolio-approvals': {
       const { action } = body;
@@ -5285,7 +5286,7 @@ app.post('/functions/v1/:fn', async (req, res) => {
       return err(`Unknown portfolio action: ${action}`);
     }
 
-    // ─────────────────────────── DEAL ALERTS ──────────────────────────────
+    // â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€ DEAL ALERTS â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
     case 'manage-deal-alerts':
     case 'check-deal-alerts': {
 
@@ -5375,7 +5376,7 @@ app.post('/functions/v1/:fn', async (req, res) => {
       return err('Unknown inquiries action');
     }
 
-    // ─────────────────────────── PROPERTY PHOTOS ──────────────────────────
+    // â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€ PROPERTY PHOTOS â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
     case 'upload-deal-photo': {
       const { action } = body;
 
@@ -5504,7 +5505,7 @@ app.post('/functions/v1/:fn', async (req, res) => {
             };
             const colors = severityColors[severity] || severityColors.medium;
             await sendEmail({
-              to: investor.email, subject: `🔐 Security Alert: ${title}`,
+              to: investor.email, subject: `ðŸ” Security Alert: ${title}`,
               html: `<div style="font-family:Arial,sans-serif;max-width:600px;margin:0 auto;">
                 <div style="background:#1a365d;padding:20px;text-align:center;"><h1 style="color:#f59e0b;margin:0;">Security Alert</h1></div>
                 <div style="padding:30px;background:${colors.bg};border:1px solid ${colors.text}20;">
@@ -5540,7 +5541,7 @@ app.post('/functions/v1/:fn', async (req, res) => {
       return ok({ success: true, errors: data || [] });
     }
 
-    // ─────────────────────────── STAFF DEAL SEARCH ────────────────────────
+    // â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€ STAFF DEAL SEARCH â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
     case 'staff-deal-search': {
       const { zip_code, city, state, search_type } = body;
       let q = '/properties?select=*,deal_analytics(*)&status=in.(approved,new,pending)';
@@ -5557,7 +5558,7 @@ app.post('/functions/v1/:fn', async (req, res) => {
       return ok({ success: true, existingDeals: existingDeals || [], marketData });
     }
 
-    // ─────────────────────────── REVENUE FORECASTING ──────────────────────
+    // â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€ REVENUE FORECASTING â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
     case 'revenue-forecasting': {
       const { action } = body;
 
@@ -5581,7 +5582,7 @@ app.post('/functions/v1/:fn', async (req, res) => {
 
             if (action === 'list') { try { const { data } = await dbGet('/setup_quotes?order=created_at.desc&select=*'); return ok({ success: true, quotes: Array.isArray(data)?data:[] }); } catch { return ok({ success: true, quotes: [] }); } }
 
-            if (action === 'email') { const { investor_id, quote_id } = body; try { const { data: inv } = await dbGet('/investors?id=eq.' + investor_id + '&select=email,full_name'); if (inv?.[0]) await sendEmail({ to: inv[0].email, subject: 'Your Setup Quote — Access Your Place', html: '<p>Hi ' + inv[0].full_name + ',</p><p>Your setup quote is ready. Please log in to your portal to review.</p>' }); } catch {} return ok({ success: true }); }
+            if (action === 'email') { const { investor_id, quote_id } = body; try { const { data: inv } = await dbGet('/investors?id=eq.' + investor_id + '&select=email,full_name'); if (inv?.[0]) await sendEmail({ to: inv[0].email, subject: 'Your Setup Quote â€” Access Your Place', html: '<p>Hi ' + inv[0].full_name + ',</p><p>Your setup quote is ready. Please log in to your portal to review.</p>' }); } catch {} return ok({ success: true }); }
 
       return err('Unknown generate-setup-quote action: ' + action);
     }
@@ -5729,7 +5730,7 @@ app.post('/functions/v1/:fn', async (req, res) => {
       const { action } = body;
       const tableName = fn === 'manage-investor-crm' ? 'investor_crm' : fn === 'manage-investor-progress' ? 'investor_progress' : 'investor_pipeline';
 
-      // Calendar events — stored locally on the client, return empty from server
+      // Calendar events â€” stored locally on the client, return empty from server
       if (action === 'get_calendar_events' || action === 'sync_calendar_events') {
         return ok({ success: true, events: [] });
       }
@@ -5795,7 +5796,7 @@ app.post('/functions/v1/:fn', async (req, res) => {
       return ok({ success: true, data: [], events: [], message: `Action '${action}' not implemented yet` });
     }
 
-    // ─────────────────────────── DEAL FLOW NOTIFICATIONS ─────────────────
+    // â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€ DEAL FLOW NOTIFICATIONS â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
     case 'deal-flow-notifications': {
       const { action } = body;
       const SUCCESS_EMAIL = 'success@accessyourplace.com';
@@ -5944,7 +5945,7 @@ app.post('/functions/v1/:fn', async (req, res) => {
           bedrooms ? `${bedrooms} Bed` : null, bathrooms ? `${bathrooms} Bath` : null,
           monthly_rent ? `$${Number(monthly_rent).toLocaleString()}/mo` : null,
           operation_type ? (operation_type === 'coliving' ? 'Co-Living' : operation_type === 'both' ? 'STR + Co-Living' : 'STR') : null,
-        ].filter(Boolean).join(' · ');
+        ].filter(Boolean).join(' Â· ');
         const emailResult = await sendEmail({
           to: SUCCESS_EMAIL,
           subject: `New Deal: ${propLabel} in ${propLocation} - Submitted by ${submitted_by_staff_name || 'AM'}`,
@@ -6259,7 +6260,7 @@ app.post('/functions/v1/:fn', async (req, res) => {
   }
 }); // end app.post /functions/v1/:fn
 
-// ── SPA fallback ───────────────────────────────────────────────────────────────
+// â”€â”€ SPA fallback â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 app.get('*', (req, res) => {
   const indexPath = path.join(DIST_DIR, 'index.html');
   if (require('fs').existsSync(indexPath)) {
@@ -6269,8 +6270,9 @@ app.get('*', (req, res) => {
   }
 });
 
-// ── Start ─────────────────────────────────────────────────────────────────────
+// â”€â”€ Start â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 app.listen(PORT, () => {
   console.log(`[AYP Server] Listening on port ${PORT}`);
   console.log(`[AYP Server] Supabase: ${SUPABASE_URL ? 'configured' : 'NOT configured'}`);
 });
+
