@@ -281,6 +281,39 @@ app.options('*', cors());
 // â”€â”€ Health check â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 app.get('/health', (req, res) => res.json({ ok: true, ts: new Date().toISOString() }));
 
+// Diagnostic endpoint - safe (no secrets exposed)
+app.get('/diag', async (req, res) => {
+  const supaUrl = process.env.SUPABASE_URL || '';
+  const postUrl = process.env.POSTGREST_URL || '';
+  const hasKey  = !!(process.env.SUPABASE_SERVICE_ROLE_KEY);
+  const base    = (postUrl || supaUrl).replace(/\/+$/, '').replace(/\/rest\/v1$/, '');
+  const testUrl = base + (/supabase\.co/i.test(base) ? '/rest/v1' : '') + '/staff_users?limit=1&select=id';
+  
+  let dbStatus = null, dbBody = null, dbErr = null;
+  try {
+    const r = await fetch(testUrl, {
+      headers: {
+        'apikey': process.env.SUPABASE_SERVICE_ROLE_KEY || '',
+        'Authorization': 'Bearer ' + (process.env.SUPABASE_SERVICE_ROLE_KEY || ''),
+        'Content-Type': 'application/json',
+      }
+    });
+    dbStatus = r.status;
+    dbBody   = (await r.text()).slice(0, 300);
+  } catch(e) { dbErr = e.message; }
+  
+  res.json({
+    supabase_url_set:      !!supaUrl,
+    postgrest_url_set:     !!postUrl,
+    service_key_set:       hasKey,
+    effective_url_preview: (base || 'EMPTY').slice(0, 60),
+    test_url:              testUrl.slice(0, 100),
+    db_status:             dbStatus,
+    db_body:               dbBody,
+    db_error:              dbErr,
+  });
+});
+
 // â”€â”€ One-time migration endpoint â€” runs the missing column additions safely â”€â”€â”€â”€
 // Uses IF NOT EXISTS so safe to call multiple times. Remove after confirmed done.
 app.post('/admin/run-migration', async (req, res) => {
