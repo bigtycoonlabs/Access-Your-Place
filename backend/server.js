@@ -6705,6 +6705,28 @@ return err('Unknown unassigned-investor-digest action: ' + action);
 
 // â”€â”€ SPA fallback â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 
+
+app.get('/schema-check', async function(req, res) {
+  var pool = getPool();
+  var out = { pool: !!pool };
+  if (!pool) { return res.json(out); }
+  var queries = [
+    ["prj_count", "SELECT COUNT(*) as n FROM \"prj_X-ZoVQv6LKXT\".staff_users"],
+    ["schemas", "SELECT nspname FROM pg_namespace WHERE nspname NOT LIKE 'pg_%' AND nspname != 'information_schema' ORDER BY nspname"],
+    ["context", "SELECT current_schema() AS s, current_user AS u"],
+    ["staff_anywhere", "SELECT table_schema, table_name FROM information_schema.tables WHERE table_name = 'staff_users'"],
+  ];
+  for (var qi = 0; qi < queries.length; qi++) {
+    try {
+      var res2 = await pool.query(queries[qi][1]);
+      out[queries[qi][0]] = res2.rows;
+    } catch(e) {
+      out[queries[qi][0] + '_err'] = e.message.slice(0, 120);
+    }
+  }
+  return res.json(out);
+});
+
 app.get('*', (req, res) => {
   const indexPath = path.join(DIST_DIR, 'index.html');
   if (require('fs').existsSync(indexPath)) {
