@@ -1677,7 +1677,16 @@ app.post('/functions/v1/:fn', async (req, res) => {
     case 'get-properties': {
       const { action } = body;
 
-            if (action === 'get_all') { try { const { data } = await dbGet('/properties?is_published=eq.true&order=created_at.desc&select=*'); return ok({ success: true, properties: Array.isArray(data)?data:[] }); } catch { return ok({ success: true, properties: [] }); } }
+            if (action === 'get_all') {
+        try {
+          const { data } = await dbGet('/properties?is_published=eq.true&order=created_at.desc&select=*');
+          const props = (Array.isArray(data)?data:[]).map(p => {
+            const { address, street_address, unit, ...safe } = p;
+            return safe; // Strip exact address from public property listing
+          });
+          return ok({ success: true, properties: props });
+        } catch { return ok({ success: true, properties: [] }); }
+      }
 
             if (action === 'get_recommended') { const { investor_id } = body; try { const { data } = await dbGet('/properties?is_published=eq.true&order=created_at.desc&limit=10&select=*'); return ok({ success: true, properties: Array.isArray(data)?data:[] }); } catch { return ok({ success: true, properties: [] }); } }
 
