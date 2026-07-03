@@ -1,4 +1,5 @@
 ﻿/**
+// Railway deploy trigger: 1783058565
  * Access Your Place - Railway Functions Server
  * Replaces all famous.ai/Supabase Edge Functions.
  *
