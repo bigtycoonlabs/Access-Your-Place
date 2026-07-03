@@ -1746,14 +1746,46 @@ app.post('/functions/v1/:fn', async (req, res) => {
           : { data: [] };
 
         // Public marketplace listings (status=active, listing_type=public)
-        const { data: publicListings } = await dbGet(`/deal_listings?status=eq.active&listing_type=eq.public&order=created_at.desc&select=*,property:investor_portfolio(*)`);
+        // Try deal_listings first; fall back to properties table (legacy active deal source)
+        let publicListings = [];
+        try {
+          const { data: dlData } = await dbGet(`/deal_listings?status=eq.active&listing_type=eq.public&order=created_at.desc&select=*,property:investor_portfolio(*)`);
+          if (Array.isArray(dlData) && dlData.length > 0) {
+            publicListings = dlData.map(l => {
+              const p = l.property || {};
+              return { ...l, property: { ...p, address: null, street_address: null, unit: null, city: p.city, state: p.state, market: p.market } };
+            });
+          } else {
+            const { data: propData } = await dbGet(`/properties?is_published=eq.true&deal_status=eq.published&order=created_at.desc&select=*`);
+            publicListings = (Array.isArray(propData) ? propData : []).map(p => ({
+              id: p.id, listing_type: 'public', status: 'active',
+              description: p.listing_description,
+              asking_price: p.acquisition_cost || p.asking_price,
+              monthly_revenue: p.projected_monthly_revenue || p.monthly_revenue,
+              monthly_expenses: p.monthly_expenses, monthly_rent: p.monthly_rent,
+              operation_type: p.operation_type, property_type: p.property_type,
+              adr: p.adr_peak_season, occupancy_rate: p.avg_occupancy_rate,
+              is_furnished: p.is_furnished, include_furniture: p.is_furnished,
+              penny_score: p.penny_score, photos: p.photos,
+              video_walkthrough_url: p.video_walkthrough_url,
+              verification_status: p.is_verified ? 'verified' : 'unverified',
+              staff_verified: p.is_verified, created_at: p.created_at,
+              property: {
+                city: p.city, state: p.state, market: p.market,
+                bedrooms: p.bedrooms, bathrooms: p.bathrooms,
+                property_type: p.property_type, operation_type: p.operation_type,
+                listing_title: p.listing_title,
+              },
+            }));
+          }
+        } catch (e) { publicListings = []; }
 
         return ok({
           success: true,
           my_listings: Array.isArray(myListings) ? myListings : [],
           received_deals: receivedDeals,
           portfolio: Array.isArray(portfolio) ? portfolio : [],
-          public_listings: Array.isArray(publicListings) ? publicListings : [],
+          public_listings: publicListings,
         });
       }
 
