@@ -1737,7 +1737,26 @@ app.post('/functions/v1/:fn', async (req, res) => {
           : { data: [] };
 
         // Public marketplace listings (status=active, listing_type=public)
-        const { data: publicListings } = await dbGet(`/deal_listings?status=eq.active&listing_type=eq.public&order=created_at.desc&select=*,property:investor_portfolio(*)`);
+        // Strip address from public listings unless investor has purchased/unlocked
+        const { data: rawPublicListings } = await dbGet(`/deal_listings?status=eq.active&listing_type=eq.public&order=created_at.desc&select=*,property:investor_portfolio(*)`);
+        const publicListings = (Array.isArray(rawPublicListings) ? rawPublicListings : []).map(listing => {
+          const prop = listing.property || {};
+          const addressUnlocked = investor_id && listing.buyer_investor_id === investor_id;
+          return {
+            ...listing,
+            property: {
+              ...prop,
+              // Hide exact address on public marketplace - show city/state only
+              address: addressUnlocked ? prop.address : null,
+              street_address: addressUnlocked ? prop.street_address : null,
+              full_address: addressUnlocked ? prop.full_address : null,
+              // Keep city/state/market visible for browsing
+              city: prop.city,
+              state: prop.state,
+              market: prop.market,
+            }
+          };
+        });
 
         return ok({
           success: true,
