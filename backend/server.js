@@ -88,8 +88,6 @@ const dbHeaders = () => ({
   'apikey': SERVICE_ROLE_KEY,
   'Authorization': `Bearer ${SERVICE_ROLE_KEY}`,
   'Content-Type': 'application/json',
-  // Using public schema — views in public proxy to prj_X-ZoVQv6LKXT tables
-  // Content-Profile/Accept-Profile removed: prj_X-ZoVQv6LKXT causes PGRST002 schema cache error
 });
 
 async function db(path, opts = {}) {
@@ -1750,7 +1748,32 @@ app.post('/functions/v1/:fn', async (req, res) => {
         // Try deal_listings first; fall back to properties table (legacy active deal source)
         let publicListings = [];
         try {
-          const { data: dlData } = await dbGet(`/deal_listings?status=eq.active&listing_type=eq.public&order=created_at.desc&select=*,property:investor_portfolio(*)`);
+        // Try deal_listings; fall back to properties table (primary active deal source)
+        let publicListings = [];
+        try {
+          const { data: dlData } = await dbGet(`/deal_listings?status=eq.active&listing_type=eq.public&order=created_at.desc&select=*`);
+          if (Array.isArray(dlData) && dlData.length > 0) {
+            publicListings = dlData.map(l => ({ ...l, address: null, street_address: null }));
+          } else {
+            const { data: propData } = await dbGet(`/properties?is_published=eq.true&deal_status=eq.published&order=created_at.desc&select=*`);
+            publicListings = (Array.isArray(propData) ? propData : []).map(p => ({
+              id: p.id, listing_type: 'public', status: 'active',
+              description: p.listing_description, asking_price: p.acquisition_cost || p.asking_price,
+              monthly_revenue: p.projected_monthly_revenue || p.monthly_revenue,
+              monthly_expenses: p.monthly_expenses, monthly_rent: p.monthly_rent,
+              operation_type: p.operation_type, property_type: p.property_type,
+              adr: p.adr_peak_season, occupancy_rate: p.avg_occupancy_rate,
+              is_furnished: p.is_furnished, penny_score: p.penny_score,
+              photos: p.photos, video_walkthrough_url: p.video_walkthrough_url,
+              verification_status: p.is_verified ? 'verified' : 'unverified',
+              created_at: p.created_at, bedrooms: p.bedrooms, bathrooms: p.bathrooms,
+              listing_title: p.listing_title,
+              property: { city: p.city, state: p.state, market: p.market,
+                bedrooms: p.bedrooms, bathrooms: p.bathrooms,
+                listing_title: p.listing_title, operation_type: p.operation_type },
+            }));
+          }
+        } catch(e) { publicListings = []; }
           if (Array.isArray(dlData) && dlData.length > 0) {
             publicListings = dlData.map(l => {
               const p = l.property || {};
@@ -6516,25 +6539,6 @@ return err('Unknown unassigned-investor-digest action: ' + action);
 }); // end app.post /functions/v1/:fn
 
 // â”€â”€ SPA fallback â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
-
-// ── DB debug endpoint ─────────────────────────────────────────────────────────
-app.get('/db-debug', async (req, res) => {
-  const rawUrl = process.env.POSTGREST_URL || process.env.SUPABASE_URL || 'NOT_SET';
-  const key = process.env.SUPABASE_SERVICE_ROLE_KEY;
-  const base = rawUrl.replace(/\/+$/, '').replace(/\/rest\/v1$/, '');
-  const needsRest = /supabase\.co/i.test(base);
-  const testUrl = base + (needsRest ? '/rest/v1' : '') + '/staff_users?limit=2&select=id,email';
-  
-  let withSchema = null, withoutSchema = null;
-  
-  const headers1 = { 'apikey': key||'', 'Authorization': `Bearer ${key||''}`, 'Content-Profile': 'prj_X-ZoVQv6LKXT', 'Accept-Profile': 'prj_X-ZoVQv6LKXT' };
-  const headers2 = { 'apikey': key||'', 'Authorization': `Bearer ${key||''}` };
-  
-  try { const r = await fetch(testUrl, { headers: headers1 }); withSchema = { status: r.status, body: (await r.text()).slice(0, 400) }; } catch(e) { withSchema = { error: e.message }; }
-  try { const r = await fetch(testUrl, { headers: headers2 }); withoutSchema = { status: r.status, body: (await r.text()).slice(0, 400) }; } catch(e) { withoutSchema = { error: e.message }; }
-  
-  res.json({ rawUrl: rawUrl.slice(0,80), key: key ? key.slice(0,20)+'...' : 'MISSING', testUrl, withSchema, withoutSchema });
-});
 
 app.get('*', (req, res) => {
   const indexPath = path.join(DIST_DIR, 'index.html');
