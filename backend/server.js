@@ -90,31 +90,128 @@ const dbHeaders = () => ({
   'Content-Type': 'application/json',
 });
 
-async function db(path, opts = {}, attempt = 0) {
-  const base = (process.env.POSTGREST_URL || SUPABASE_URL || '').replace(/\/+$/, '').replace(/\/rest\/v1$/, '');
-  const cleanPath = path.startsWith('/') ? path : '/' + path;
-  const needsRestPrefix = /supabase\.co/i.test(base);
-  const url = base + (needsRestPrefix ? '/rest/v1' : '') + cleanPath;
+// ── DB helpers ──────────────────────────────────────────────────────────────
+// Uses Supabase RPC (ayp_query + ayp_mutate) to bypass PostgREST schema cache.
+// The public.ayp_query function runs directly in the prj_X-ZoVQv6LKXT schema.
 
-  const res = await fetch(url, { headers: dbHeaders(), ...opts });
-  const text = await res.text();
+const SUPABASE_REST = (() => {
+  const base = (process.env.POSTGREST_URL || SUPABASE_URL || '').replace(/\/+$/, '');
+  return base.replace(/\/rest\/v1$/, '') + '/rest/v1';
+})();
 
-  // PGRST002 = schema cache not ready yet — retry up to 5 times with backoff
-  if (res.status === 503 && text.includes('PGRST002') && attempt < 5) {
-    await new Promise(r => setTimeout(r, 800 * (attempt + 1)));
-    return db(path, opts, attempt + 1);
+// Parse PostgREST-style query string into filter, select, order, limit
+function parsePostgrestPath(path) {
+  const [tablePart, queryPart] = path.split('?');
+  const table = tablePart.replace(/^\//, '');
+  const params = new URLSearchParams(queryPart || '');
+  const select  = params.get('select') || '*';
+  const limit   = parseInt(params.get('limit') || '500');
+  const order   = params.get('order') || 'created_at.desc';
+
+  // Build filter from remaining params (not select/limit/order/offset)
+  const filterParts = [];
+  for (const [k, v] of params) {
+    if (['select','limit','order','offset'].includes(k)) continue;
+    // PostgREST operator format: column=op.value
+    const dotIdx = v.indexOf('.');
+    if (dotIdx === -1) { filterParts.push(`${k} = '${v.replace(/'/g,"''")}'`); continue; }
+    const op  = v.slice(0, dotIdx);
+    const val = v.slice(dotIdx + 1);
+    const ops = { eq:'=', neq:'!=', lt:'<', lte:'<=', gt:'>', gte:'>=',
+                  like:'LIKE', ilike:'ILIKE', is:'IS', in:'= ANY' };
+    if (op === 'is') {
+      filterParts.push(`${k} IS ${val === 'null' ? 'NULL' : val === 'true' ? 'TRUE' : 'FALSE'}`);
+    } else if (op === 'in') {
+      const vals = val.replace(/^\(|\)$/g,'').split(',').map(v2=>`'${v2.replace(/'/g,"''")}'`).join(',');
+      filterParts.push(`${k} IN (${vals})`);
+    } else if (op === 'ilike') {
+      filterParts.push(`${k} ILIKE '${val.replace(/'/g,"''")}'`);
+    } else if (op === 'like') {
+      filterParts.push(`${k} LIKE '${val.replace(/'/g,"''")}'`);
+    } else {
+      const sqlOp = ops[op] || '=';
+      filterParts.push(`${k} ${sqlOp} '${val.replace(/'/g,"''")}'`);
+    }
   }
 
+  return { table, select, filter: filterParts.join(' AND '), order, limit };
+}
+
+// Direct PostgREST call (fallback)
+async function dbDirect(path, opts = {}) {
+  const url = SUPABASE_REST + (path.startsWith('/') ? path : '/' + path);
+  const res  = await fetch(url, { headers: dbHeaders(), ...opts });
+  const text = await res.text();
   try { return { ok: res.ok, status: res.status, data: JSON.parse(text) }; }
   catch { return { ok: res.ok, status: res.status, data: text }; }
 }
 
-async function dbGet(path)          { return db(path); }
-async function dbPost(path, body)   { return db(path, { method: 'POST', headers: { ...dbHeaders(), 'Prefer': 'return=representation' }, body: JSON.stringify(body) }); }
-async function dbPatch(path, body)  { return db(path, { method: 'PATCH', headers: { ...dbHeaders(), 'Prefer': 'return=minimal' }, body: JSON.stringify(body) }); }
-async function dbDelete(path)       { return db(path, { method: 'DELETE', headers: { ...dbHeaders() } }); }
+// GET via RPC function (bypasses PGRST002 schema cache issue)
+async function dbGet(path) {
+  try {
+    const { table, select, filter, order, limit } = parsePostgrestPath(path);
+    const rpcUrl  = `${SUPABASE_REST}/rpc/ayp_query`;
+    const payload = { p_table: table, p_filter: filter, p_limit: limit, p_select: select, p_order: order };
+    const res     = await fetch(rpcUrl, {
+      method: 'POST',
+      headers: { ...dbHeaders(), 'Prefer': '' },
+      body: JSON.stringify(payload),
+    });
+    const text = await res.text();
+    let data;
+    try { data = JSON.parse(text); } catch { data = []; }
+    // data is a JSON array returned by the function
+    if (res.ok && Array.isArray(data)) return { ok: true, status: 200, data };
+    if (res.ok && data !== null && typeof data === 'object' && !data.error) return { ok: true, status: 200, data: Array.isArray(data) ? data : [data] };
+    // Fallback to direct PostgREST if RPC fails
+    console.warn('[db] RPC failed, falling back to direct:', text.slice(0,200));
+    return dbDirect(path);
+  } catch(e) {
+    console.error('[dbGet] Error:', e.message);
+    return dbDirect(path);
+  }
+}
 
-// â”€â”€ Email helper (Resend) â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+// WRITE operations go direct (PostgREST handles writes fine even with schema issues sometimes,
+// but we also have a write RPC for robustness)
+async function db(path, opts = {}) {
+  return dbDirect(path, opts);
+}
+
+async function dbPost(path, body) {
+  // Try direct PostgREST first
+  try {
+    return await dbDirect(path, {
+      method: 'POST',
+      headers: { ...dbHeaders(), 'Prefer': 'return=representation' },
+      body: JSON.stringify(body)
+    });
+  } catch(e) {
+    return { ok: false, status: 500, data: { error: e.message } };
+  }
+}
+
+async function dbPatch(path, body) {
+  try {
+    return await dbDirect(path, {
+      method: 'PATCH',
+      headers: { ...dbHeaders(), 'Prefer': 'return=representation' },
+      body: JSON.stringify(body)
+    });
+  } catch(e) {
+    return { ok: false, status: 500, data: { error: e.message } };
+  }
+}
+
+async function dbDelete(path) {
+  try {
+    return await dbDirect(path, { method: 'DELETE', headers: dbHeaders() });
+  } catch(e) {
+    return { ok: false, status: 500, data: { error: e.message } };
+  }
+}
+
+
 async function sendEmail({ to, subject, html, from }) {
   if (!RESEND_KEY) {
     console.error('[sendEmail] BLOCKED: No RESEND_API_KEY configured. Email NOT sent:', { to, subject });
