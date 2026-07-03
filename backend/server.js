@@ -87,8 +87,8 @@ const dbHeaders = () => ({
   'apikey': SERVICE_ROLE_KEY,
   'Authorization': `Bearer ${SERVICE_ROLE_KEY}`,
   'Content-Type': 'application/json',
-    'Content-Profile': 'prj_X-ZoVQv6LKXT',
-    'Accept-Profile': 'prj_X-ZoVQv6LKXT',
+  // Using public schema — views in public proxy to prj_X-ZoVQv6LKXT tables
+  // Content-Profile/Accept-Profile removed: prj_X-ZoVQv6LKXT causes PGRST002 schema cache error
 });
 
 async function db(path, opts = {}) {
