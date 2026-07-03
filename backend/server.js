@@ -878,7 +878,7 @@ app.post('/functions/v1/:fn', async (req, res) => {
       if (action === 'login') {
         if (!email || !password) return ok({ success: false, error: 'Email and password are required' });
         const emailLower = email.toLowerCase().trim();
-        const { data: users } = await dbGet(`/staff_users?email=eq.${encodeURIComponent(emailLower)}&select=${STAFF_SELECT},session_token,session_expires,trainee_status,commission_split,notification_preferences,yp_certified&is_active=eq.true`);
+        const { data: users } = await dbGet(`/staff_users?email=eq.${encodeURIComponent(emailLower)}&select=${STAFF_SELECT},session_token,session_expires,trainee_status,commission_split,notification_preferences&is_active=eq.true`);
         if (!users?.length) return ok({ success: false, error: 'Invalid email or password' });
         const user = users[0];
         if (!verifyStaffPassword(password, user.password_hash)) {
