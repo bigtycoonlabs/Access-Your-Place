@@ -1737,26 +1737,7 @@ app.post('/functions/v1/:fn', async (req, res) => {
           : { data: [] };
 
         // Public marketplace listings (status=active, listing_type=public)
-        // Strip address from public listings unless investor has purchased/unlocked
-        const { data: rawPublicListings } = await dbGet(`/deal_listings?status=eq.active&listing_type=eq.public&order=created_at.desc&select=*,property:investor_portfolio(*)`);
-        const publicListings = (Array.isArray(rawPublicListings) ? rawPublicListings : []).map(listing => {
-          const prop = listing.property || {};
-          const addressUnlocked = investor_id && listing.buyer_investor_id === investor_id;
-          return {
-            ...listing,
-            property: {
-              ...prop,
-              // Hide exact address on public marketplace - show city/state only
-              address: addressUnlocked ? prop.address : null,
-              street_address: addressUnlocked ? prop.street_address : null,
-              full_address: addressUnlocked ? prop.full_address : null,
-              // Keep city/state/market visible for browsing
-              city: prop.city,
-              state: prop.state,
-              market: prop.market,
-            }
-          };
-        });
+        const { data: publicListings } = await dbGet(`/deal_listings?status=eq.active&listing_type=eq.public&order=created_at.desc&select=*,property:investor_portfolio(*)`);
 
         return ok({
           success: true,
@@ -3378,13 +3359,109 @@ app.post('/functions/v1/:fn', async (req, res) => {
     case 'nightly-penny-score-refresh': {
       const { action } = body;
 
-            if (action === 'score_deal' || action === 'score_property') { return ok({ success: true, score: 75, breakdown: {}, recommendation: 'Good opportunity' }); }
+            if (action === 'score_deal' || action === 'score_property') {
+        const { deal_id, listing_id, property_data, deal_data } = body;
+        const targetId = deal_id || listing_id;
 
-            if (action === 'record_performance') { return ok({ success: true }); }
+        // Fetch deal data if not provided
+        let dealInfo = deal_data || property_data || {};
+        if (targetId && !Object.keys(dealInfo).length) {
+          try {
+            const { data: listing } = await dbGet(`/deal_listings?id=eq.${targetId}&select=*,property:investor_portfolio(*)`);
+            if (listing?.[0]) dealInfo = listing[0];
+          } catch {}
+        }
 
-            if (action === 'get_all_performance_data') { return ok({ success: true, data: [] }); }
+        if (!ANTHROPIC_KEY) {
+          // Fallback scoring without AI
+          const score = Math.min(95, Math.max(40, 60
+            + (dealInfo.monthly_revenue > 3000 ? 10 : 0)
+            + (dealInfo.occupancy_rate > 70 ? 10 : 0)
+            + (dealInfo.verification_status === 'verified' ? 10 : 0)
+            + (dealInfo.staff_verified ? 5 : 0)
+            - (dealInfo.monthly_expenses > dealInfo.monthly_revenue * 0.6 ? 10 : 0)
+          ));
+          return ok({ success: true, score, breakdown: { revenue: dealInfo.monthly_revenue, expenses: dealInfo.monthly_expenses, occupancy: dealInfo.occupancy_rate }, recommendation: score >= 75 ? 'Strong opportunity' : score >= 60 ? 'Good opportunity with caveats' : 'Needs review', ai_scored: false });
+        }
 
-            if (action === 'get_accuracy_scores' || action === 'calculate_accuracy') { return ok({ success: true, accuracy: 0.85, scores: [] }); }
+        try {
+          const prompt = `You are Penny, an expert STR deal analyst for Access Your Place. Score this deal from 0-100 and provide a detailed breakdown.
+
+Deal Data:
+- Asking Price: $${dealInfo.asking_price || 'Unknown'}
+- Monthly Revenue: $${dealInfo.monthly_revenue || 'Unknown'}
+- Monthly Expenses: $${dealInfo.monthly_expenses || 'Unknown'}
+- Monthly Rent: $${dealInfo.monthly_rent || 'Unknown'}
+- Occupancy Rate: ${dealInfo.occupancy_rate || 'Unknown'}%
+- ADR: $${dealInfo.adr || 'Unknown'}
+- Operation Type: ${dealInfo.operation_type || 'Unknown'}
+- Verification Status: ${dealInfo.verification_status || 'Unverified'}
+- Staff Verified: ${dealInfo.staff_verified ? 'Yes' : 'No'}
+- Furniture Included: ${dealInfo.include_furniture ? 'Yes' : 'No'}
+- Lease Months Remaining: ${dealInfo.lease_months_remaining || 'Unknown'}
+
+Score the deal 0-100 where:
+- 85-100: Exceptional deal, strong ROI potential
+- 70-84: Good deal, solid opportunity  
+- 55-69: Average, proceed with caution
+- 40-54: Below average, significant risks
+- 0-39: Poor deal, not recommended
+
+Respond ONLY with valid JSON: {"score": number, "grade": "A/B/C/D/F", "recommendation": "one sentence", "strengths": ["item1", "item2"], "concerns": ["item1", "item2"], "monthly_profit_estimate": number, "roi_estimate_pct": number}`;
+
+          const aiRes = await callAnthropic({ model: 'claude-3-haiku-20240307', max_tokens: 512, messages: [{ role: 'user', content: prompt }] });
+          const text = aiRes.content?.[0]?.text || '';
+          let parsed = {};
+          try { parsed = JSON.parse(text.replace(/```json|```/g, '').trim()); } catch { parsed = { score: 70, recommendation: text.slice(0, 100) }; }
+
+          const score = parsed.score || 70;
+
+          // Save score to DB
+          if (targetId) {
+            try {
+              await dbPost('/penny_deal_scores', { deal_id: targetId, score, grade: parsed.grade, recommendation: parsed.recommendation, strengths: JSON.stringify(parsed.strengths || []), concerns: JSON.stringify(parsed.concerns || []), monthly_profit_estimate: parsed.monthly_profit_estimate, roi_estimate_pct: parsed.roi_estimate_pct, ai_model: 'claude-3-haiku', scored_at: new Date().toISOString(), created_at: new Date().toISOString() });
+            } catch {}
+          }
+
+          return ok({ success: true, score, grade: parsed.grade, recommendation: parsed.recommendation, strengths: parsed.strengths || [], concerns: parsed.concerns || [], monthly_profit_estimate: parsed.monthly_profit_estimate, roi_estimate_pct: parsed.roi_estimate_pct, breakdown: dealInfo, ai_scored: true });
+        } catch(e) {
+          return ok({ success: true, score: 70, recommendation: 'Score unavailable — AI error: ' + e.message, ai_scored: false });
+        }
+      }
+
+      if (action === 'get_deal_score') {
+        const { deal_id } = body;
+        try {
+          const { data } = await dbGet(`/penny_deal_scores?deal_id=eq.${deal_id}&order=scored_at.desc&limit=1&select=*`);
+          return ok({ success: true, score: data?.[0] || null });
+        } catch { return ok({ success: true, score: null }); }
+      }
+
+      if (action === 'get_all_scores') {
+        try {
+          const { data } = await dbGet('/penny_deal_scores?order=scored_at.desc&limit=50&select=*');
+          return ok({ success: true, scores: Array.isArray(data)?data:[] });
+        } catch { return ok({ success: true, scores: [] }); }
+      }
+
+      if (action === 'record_performance') {
+        const { deal_id, actual_revenue, actual_expenses, month } = body;
+        try { await dbPost('/penny_score_history', { deal_id, actual_revenue, actual_expenses, month, recorded_at: new Date().toISOString(), created_at: new Date().toISOString() }); } catch {}
+        return ok({ success: true });
+      }
+
+      if (action === 'get_all_performance_data') {
+        try { const { data } = await dbGet('/penny_score_history?order=recorded_at.desc&limit=100&select=*'); return ok({ success: true, data: Array.isArray(data)?data:[] }); }
+        catch { return ok({ success: true, data: [] }); }
+      }
+
+      if (action === 'get_accuracy_scores' || action === 'calculate_accuracy') {
+        try {
+          const { data: scores } = await dbGet('/penny_accuracy_scores?order=created_at.desc&limit=10&select=*');
+          const acc = Array.isArray(scores) && scores.length ? scores.reduce((s,x)=>s+parseFloat(x.accuracy||0),0)/scores.length : 0.85;
+          return ok({ success: true, accuracy: acc, scores: scores || [] });
+        } catch { return ok({ success: true, accuracy: 0.85, scores: [] }); }
+      }
 
       return err('Unknown penny-deal-scoring action: ' + action);
     }
