@@ -6525,6 +6525,65 @@ app.get('*', (req, res) => {
 });
 
 // â”€â”€ Start â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+
+// ── DB debug endpoint (remove after fix) ──────────────────────────────────────
+app.get('/db-debug', async (req, res) => {
+  const url = (process.env.POSTGREST_URL || process.env.SUPABASE_URL || 'NOT_SET');
+  const key = process.env.SUPABASE_SERVICE_ROLE_KEY;
+  const hasKey = !!key;
+  const keyPreview = key ? key.slice(0,20) + '...' : 'MISSING';
+  
+  // Build the actual URL we'd use
+  const base = url.replace(/\/+$/, '').replace(/\/rest\/v1$/, '');
+  const needsRestPrefix = /supabase\.co/i.test(base);
+  const testUrl = base + (needsRestPrefix ? '/rest/v1' : '') + '/staff_users?limit=1&select=id,email';
+  
+  let dbResult = null;
+  let dbError = null;
+  try {
+    const dbRes = await fetch(testUrl, {
+      headers: {
+        'apikey': key || '',
+        'Authorization': `Bearer ${key || ''}`,
+        'Content-Type': 'application/json',
+        'Content-Profile': 'prj_X-ZoVQv6LKXT',
+        'Accept-Profile': 'prj_X-ZoVQv6LKXT',
+      }
+    });
+    const text = await dbRes.text();
+    dbResult = { status: dbRes.status, body: text.slice(0, 300) };
+  } catch(e) {
+    dbError = e.message;
+  }
+  
+  // Also try without schema headers to see if that's the issue
+  let dbResult2 = null;
+  try {
+    const dbRes2 = await fetch(base + (needsRestPrefix ? '/rest/v1' : '') + '/staff_users?limit=1&select=id,email', {
+      headers: {
+        'apikey': key || '',
+        'Authorization': `Bearer ${key || ''}`,
+        'Content-Type': 'application/json',
+      }
+    });
+    const text2 = await dbRes2.text();
+    dbResult2 = { status: dbRes2.status, body: text2.slice(0, 300) };
+  } catch(e) {
+    dbResult2 = { error: e.message };
+  }
+
+  res.json({
+    env_url: url,
+    url_preview: url.slice(0, 60),
+    has_service_key: hasKey,
+    key_preview: keyPreview,
+    built_url: testUrl,
+    with_schema_header: dbResult,
+    without_schema_header: dbResult2,
+    db_error: dbError,
+  });
+});
+
 app.listen(PORT, () => {
   console.log(`[AYP Server] Listening on port ${PORT}`);
   console.log(`[AYP Server] Supabase: ${SUPABASE_URL ? 'configured' : 'NOT configured'}`);
