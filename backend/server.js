@@ -90,126 +90,148 @@ const dbHeaders = () => ({
   'Content-Type': 'application/json',
 });
 
-// ── DB helpers ──────────────────────────────────────────────────────────────
-// Uses Supabase RPC (ayp_query + ayp_mutate) to bypass PostgREST schema cache.
-// The public.ayp_query function runs directly in the prj_X-ZoVQv6LKXT schema.
+// ── DB helpers (direct pg connection — bypasses broken PostgREST) ───────────
+const { Pool } = require('pg');
+const DB_SCHEMA = 'prj_X-ZoVQv6LKXT';
+let _pool = null;
 
-const SUPABASE_REST = (() => {
-  const base = (process.env.POSTGREST_URL || SUPABASE_URL || '').replace(/\/+$/, '');
-  return base.replace(/\/rest\/v1$/, '') + '/rest/v1';
-})();
+function getPool() {
+  if (_pool) return _pool;
+  const cs = process.env.DATABASE_URL || process.env.SUPABASE_DB_URL || process.env.POSTGRES_URL;
+  if (!cs) { console.warn('[db] No DATABASE_URL — falling back to PostgREST'); return null; }
+  _pool = new Pool({ connectionString: cs, ssl: { rejectUnauthorized: false }, max: 8, idleTimeoutMillis: 30000, connectionTimeoutMillis: 10000 });
+  _pool.on('error', err => console.error('[pg pool]', err.message));
+  console.log('[db] pg pool initialized');
+  return _pool;
+}
 
-// Parse PostgREST-style query string into filter, select, order, limit
-function parsePostgrestPath(path) {
-  const [tablePart, queryPart] = path.split('?');
-  const table = tablePart.replace(/^\//, '');
-  const params = new URLSearchParams(queryPart || '');
-  const select  = params.get('select') || '*';
-  const limit   = parseInt(params.get('limit') || '500');
-  const order   = params.get('order') || 'created_at.desc';
-
-  // Build filter from remaining params (not select/limit/order/offset)
-  const filterParts = [];
+function parseQ(path) {
+  const [tp, qp] = path.split('?');
+  const table = tp.replace(/^\//, '');
+  const params = new URLSearchParams(qp || '');
+  let sel = params.get('select') || '*';
+  // Remove join notation: alias:table(*) 
+  sel = sel.replace(/\w+:\w+!?\w*\([^)]*\),?/g, '').replace(/,+/g, ',').replace(/^,|,$/g, '') || '*';
+  const limit = Math.min(parseInt(params.get('limit') || '500'), 1000);
+  const orderParts = (params.get('order') || 'created_at.desc').split('.');
+  const oCol = /^\w+$/.test(orderParts[0]) ? orderParts[0] : 'created_at';
+  const oDir = orderParts[1] === 'asc' ? 'ASC' : 'DESC';
+  const conds = []; const cVals = []; let pi = 1;
   for (const [k, v] of params) {
     if (['select','limit','order','offset'].includes(k)) continue;
-    // PostgREST operator format: column=op.value
-    const dotIdx = v.indexOf('.');
-    if (dotIdx === -1) { filterParts.push(`${k} = '${v.replace(/'/g,"''")}'`); continue; }
-    const op  = v.slice(0, dotIdx);
-    const val = v.slice(dotIdx + 1);
-    const ops = { eq:'=', neq:'!=', lt:'<', lte:'<=', gt:'>', gte:'>=',
-                  like:'LIKE', ilike:'ILIKE', is:'IS', in:'= ANY' };
-    if (op === 'is') {
-      filterParts.push(`${k} IS ${val === 'null' ? 'NULL' : val === 'true' ? 'TRUE' : 'FALSE'}`);
-    } else if (op === 'in') {
-      const vals = val.replace(/^\(|\)$/g,'').split(',').map(v2=>`'${v2.replace(/'/g,"''")}'`).join(',');
-      filterParts.push(`${k} IN (${vals})`);
-    } else if (op === 'ilike') {
-      filterParts.push(`${k} ILIKE '${val.replace(/'/g,"''")}'`);
-    } else if (op === 'like') {
-      filterParts.push(`${k} LIKE '${val.replace(/'/g,"''")}'`);
-    } else {
-      const sqlOp = ops[op] || '=';
-      filterParts.push(`${k} ${sqlOp} '${val.replace(/'/g,"''")}'`);
+    const d = v.indexOf('.');
+    if (d < 0) continue;
+    const op = v.slice(0, d), val = v.slice(d + 1);
+    switch(op) {
+      case 'eq':   conds.push('"' + k + '" = $' + pi++); cVals.push(val === 'null' ? null : val); break;
+      case 'neq':  conds.push('"' + k + '" != $' + pi++); cVals.push(val); break;
+      case 'gt':   conds.push('"' + k + '" > $' + pi++); cVals.push(val); break;
+      case 'gte':  conds.push('"' + k + '" >= $' + pi++); cVals.push(val); break;
+      case 'lt':   conds.push('"' + k + '" < $' + pi++); cVals.push(val); break;
+      case 'lte':  conds.push('"' + k + '" <= $' + pi++); cVals.push(val); break;
+      case 'ilike':conds.push('"' + k + '" ILIKE $' + pi++); cVals.push(val); break;
+      case 'like': conds.push('"' + k + '" LIKE $' + pi++); cVals.push(val); break;
+      case 'is':   conds.push('"' + k + '" IS ' + (val==='null'?'NULL':val==='true'?'TRUE':'FALSE')); break;
+      case 'in': {
+        const ins = val.replace(/^\(|\)$/g,'').split(',');
+        conds.push('"' + k + '" IN (' + ins.map(() => '$' + pi++).join(',') + ')');
+        cVals.push(...ins);
+        break;
+      }
     }
   }
-
-  return { table, select, filter: filterParts.join(' AND '), order, limit };
+  const where = conds.length ? 'WHERE ' + conds.join(' AND ') : '';
+  return { table, sel, where, cVals, limit, oCol, oDir };
 }
 
-// Direct PostgREST call (fallback)
-async function dbDirect(path, opts = {}) {
-  const url = SUPABASE_REST + (path.startsWith('/') ? path : '/' + path);
-  const res  = await fetch(url, { headers: dbHeaders(), ...opts });
-  const text = await res.text();
-  try { return { ok: res.ok, status: res.status, data: JSON.parse(text) }; }
-  catch { return { ok: res.ok, status: res.status, data: text }; }
-}
-
-// GET via RPC function (bypasses PGRST002 schema cache issue)
 async function dbGet(path) {
-  try {
-    const { table, select, filter, order, limit } = parsePostgrestPath(path);
-    const rpcUrl  = `${SUPABASE_REST}/rpc/ayp_query`;
-    const payload = { p_table: table, p_filter: filter, p_limit: limit, p_select: select, p_order: order };
-    const res     = await fetch(rpcUrl, {
-      method: 'POST',
-      headers: { ...dbHeaders(), 'Prefer': '' },
-      body: JSON.stringify(payload),
-    });
-    const text = await res.text();
-    let data;
-    try { data = JSON.parse(text); } catch { data = []; }
-    // data is a JSON array returned by the function
-    if (res.ok && Array.isArray(data)) return { ok: true, status: 200, data };
-    if (res.ok && data !== null && typeof data === 'object' && !data.error) return { ok: true, status: 200, data: Array.isArray(data) ? data : [data] };
-    // Fallback to direct PostgREST if RPC fails
-    console.warn('[db] RPC failed, falling back to direct:', text.slice(0,200));
-    return dbDirect(path);
-  } catch(e) {
-    console.error('[dbGet] Error:', e.message);
-    return dbDirect(path);
+  const pool = getPool();
+  if (!pool) return dbDirect(path);
+  const { table, sel, where, cVals, limit, oCol, oDir } = parseQ(path);
+  const sqls = [
+    'SELECT ' + sel + ' FROM "' + DB_SCHEMA + '"."' + table + '" ' + where + ' ORDER BY "' + oCol + '" ' + oDir + ' LIMIT ' + limit,
+    'SELECT ' + sel + ' FROM "' + DB_SCHEMA + '"."' + table + '" ' + where + ' LIMIT ' + limit,
+    'SELECT * FROM "' + DB_SCHEMA + '"."' + table + '" ' + where + ' LIMIT ' + limit,
+  ];
+  for (const sql of sqls) {
+    try { const r = await pool.query(sql, cVals); return { ok: true, status: 200, data: r.rows }; }
+    catch(e) { if (e.message.includes('does not exist') && !sql.includes('SELECT *')) continue; console.error('[dbGet]', e.message.slice(0,80), table); return { ok: true, status: 200, data: [] }; }
   }
-}
-
-// WRITE operations go direct (PostgREST handles writes fine even with schema issues sometimes,
-// but we also have a write RPC for robustness)
-async function db(path, opts = {}) {
-  return dbDirect(path, opts);
+  return { ok: true, status: 200, data: [] };
 }
 
 async function dbPost(path, body) {
-  // Try direct PostgREST first
+  const pool = getPool();
+  if (!pool) return dbDirect(path, { method:'POST', headers:{...dbHeaders(),'Prefer':'return=representation'}, body:JSON.stringify(body) });
+  const table = path.split('?')[0].replace(/^\//, '');
+  const cols = Object.keys(body).filter(k => body[k] !== undefined);
+  const vals = cols.map(k => body[k]);
+  if (!cols.length) return { ok: false, status: 400, data: { error: 'empty body' } };
   try {
-    return await dbDirect(path, {
-      method: 'POST',
-      headers: { ...dbHeaders(), 'Prefer': 'return=representation' },
-      body: JSON.stringify(body)
-    });
-  } catch(e) {
-    return { ok: false, status: 500, data: { error: e.message } };
-  }
+    const sql = 'INSERT INTO "' + DB_SCHEMA + '"."' + table + '" (' + cols.map(c => '"' + c + '"').join(',') + ') VALUES (' + cols.map((_,i) => '$'+(i+1)).join(',') + ') RETURNING *';
+    const r = await pool.query(sql, vals);
+    return { ok: true, status: 201, data: r.rows };
+  } catch(e) { console.error('[dbPost]', e.message.slice(0,80), table); return { ok: false, status: 500, data: { error: e.message } }; }
 }
 
 async function dbPatch(path, body) {
-  try {
-    return await dbDirect(path, {
-      method: 'PATCH',
-      headers: { ...dbHeaders(), 'Prefer': 'return=representation' },
-      body: JSON.stringify(body)
-    });
-  } catch(e) {
-    return { ok: false, status: 500, data: { error: e.message } };
+  const pool = getPool();
+  if (!pool) return dbDirect(path, { method:'PATCH', headers:{...dbHeaders(),'Prefer':'return=representation'}, body:JSON.stringify(body) });
+  const [tp, qp] = path.split('?');
+  const table = tp.replace(/^\//, '');
+  const params = new URLSearchParams(qp || '');
+  const cols = Object.keys(body); const vals = Object.values(body);
+  let pi = cols.length + 1;
+  const conds = []; const cVals = [];
+  for (const [k, v] of params) {
+    const d = v.indexOf('.');
+    if (d < 0) continue;
+    const op = v.slice(0, d), val = v.slice(d + 1);
+    if (op === 'eq') { conds.push('"' + k + '" = $' + pi++); cVals.push(val === 'null' ? null : val); }
+    else if (op === 'is') { conds.push('"' + k + '" IS ' + (val==='null'?'NULL':val.toUpperCase())); }
   }
+  try {
+    const setClause = cols.map((c,i) => '"' + c + '" = $' + (i+1)).join(', ');
+    const where = conds.length ? 'WHERE ' + conds.join(' AND ') : '';
+    const sql = 'UPDATE "' + DB_SCHEMA + '"."' + table + '" SET ' + setClause + ' ' + where + ' RETURNING *';
+    const r = await pool.query(sql, [...vals, ...cVals]);
+    return { ok: true, status: 200, data: r.rows };
+  } catch(e) { console.error('[dbPatch]', e.message.slice(0,80), table); return { ok: false, status: 500, data: { error: e.message } }; }
 }
 
 async function dbDelete(path) {
-  try {
-    return await dbDirect(path, { method: 'DELETE', headers: dbHeaders() });
-  } catch(e) {
-    return { ok: false, status: 500, data: { error: e.message } };
+  const pool = getPool();
+  if (!pool) return dbDirect(path, { method:'DELETE', headers:dbHeaders() });
+  const [tp, qp] = path.split('?');
+  const table = tp.replace(/^\//, '');
+  const params = new URLSearchParams(qp || '');
+  let pi = 1; const conds = []; const cVals = [];
+  for (const [k, v] of params) {
+    const d = v.indexOf('.');
+    if (d < 0) continue;
+    const op = v.slice(0, d), val = v.slice(d + 1);
+    if (op === 'eq') { conds.push('"' + k + '" = $' + pi++); cVals.push(val); }
   }
+  if (!conds.length) return { ok: false, status: 400, data: { error: 'DELETE requires filter' } };
+  try {
+    const sql = 'DELETE FROM "' + DB_SCHEMA + '"."' + table + '" WHERE ' + conds.join(' AND ');
+    await pool.query(sql, cVals);
+    return { ok: true, status: 200, data: [] };
+  } catch(e) { console.error('[dbDelete]', e.message.slice(0,80), table); return { ok: false, status: 500, data: { error: e.message } }; }
 }
+
+async function dbDirect(path, opts = {}) {
+  const base = (process.env.POSTGREST_URL || SUPABASE_URL || '').replace(/\/+$/, '').replace(/\/rest\/v1$/, '');
+  const url = base + (/supabase\.co/i.test(base) ? '/rest/v1' : '') + (path.startsWith('/') ? path : '/' + path);
+  try {
+    const res = await fetch(url, { headers: dbHeaders(), ...opts });
+    const text = await res.text();
+    try { return { ok: res.ok, status: res.status, data: JSON.parse(text) }; }
+    catch { return { ok: res.ok, status: res.status, data: text }; }
+  } catch(e) { return { ok: false, status: 500, data: { error: e.message } }; }
+}
+
+async function db(path, opts = {}) { return dbDirect(path, opts); }
 
 
 async function sendEmail({ to, subject, html, from }) {
