@@ -381,36 +381,46 @@ app.options('*', cors());
 // â”€â”€ Health check â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 app.get('/health', (req, res) => res.json({ ok: true, ts: new Date().toISOString(), v: '1783106939', rpc: true }));
 
-// Diagnostic endpoint - safe (no secrets exposed)
+// Diagnostic endpoint
 app.get('/diag', async (req, res) => {
   const supaUrl = process.env.SUPABASE_URL || '';
   const postUrl = process.env.POSTGREST_URL || '';
-  const hasKey  = !!(process.env.SUPABASE_SERVICE_ROLE_KEY);
+  const key     = process.env.SUPABASE_SERVICE_ROLE_KEY || '';
   const base    = (postUrl || supaUrl).replace(/\/+$/, '').replace(/\/rest\/v1$/, '');
-  const testUrl = base + (/supabase\.co/i.test(base) ? '/rest/v1' : '') + '/staff_users?limit=1&select=id';
-  
-  let dbStatus = null, dbBody = null, dbErr = null;
+  const restBase = base + (/supabase\.co/i.test(base) ? '/rest/v1' : '');
+  const headers  = { 'apikey': key, 'Authorization': 'Bearer ' + key, 'Content-Type': 'application/json' };
+
+  // Test 1: direct PostgREST (expected to fail with PGRST002)
+  let directResult = null;
   try {
-    const r = await fetch(testUrl, {
-      headers: {
-        'apikey': process.env.SUPABASE_SERVICE_ROLE_KEY || '',
-        'Authorization': 'Bearer ' + (process.env.SUPABASE_SERVICE_ROLE_KEY || ''),
-        'Content-Type': 'application/json',
-      }
+    const r = await fetch(restBase + '/staff_users?limit=1&select=id', { headers });
+    directResult = { status: r.status, body: (await r.text()).slice(0, 150) };
+  } catch(e) { directResult = { error: e.message }; }
+
+  // Test 2: ayp_query RPC (our bypass)
+  let rpcResult = null;
+  try {
+    const r = await fetch(restBase + '/rpc/ayp_query', {
+      method: 'POST',
+      headers: { ...headers, 'Prefer': '' },
+      body: JSON.stringify({ p_table: 'staff_users', p_filter: '', p_limit: 3, p_select: 'id,email,first_name', p_order: 'created_at.desc' })
     });
-    dbStatus = r.status;
-    dbBody   = (await r.text()).slice(0, 300);
-  } catch(e) { dbErr = e.message; }
-  
+    const text = await r.text();
+    rpcResult = { status: r.status, body: text.slice(0, 300) };
+  } catch(e) { rpcResult = { error: e.message }; }
+
+  // Test 3: dbGet via our helper (what the app actually uses)
+  let dbGetResult = null;
+  try {
+    const r = await dbGet('/staff_users?limit=3&select=id,email,first_name');
+    dbGetResult = { ok: r.ok, status: r.status, count: Array.isArray(r.data) ? r.data.length : 'not array', sample: JSON.stringify(r.data).slice(0, 200) };
+  } catch(e) { dbGetResult = { error: e.message }; }
+
   res.json({
-    supabase_url_set:      !!supaUrl,
-    postgrest_url_set:     !!postUrl,
-    service_key_set:       hasKey,
-    effective_url_preview: (base || 'EMPTY').slice(0, 60),
-    test_url:              testUrl.slice(0, 100),
-    db_status:             dbStatus,
-    db_body:               dbBody,
-    db_error:              dbErr,
+    config: { url_set: !!supaUrl, postgrest_set: !!postUrl, key_set: !!key, rest_base: restBase.slice(0,80) },
+    direct_postgrest: directResult,
+    rpc_ayp_query: rpcResult,
+    dbget_helper: dbGetResult,
   });
 });
 
