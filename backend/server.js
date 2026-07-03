@@ -874,6 +874,35 @@ app.post('/functions/v1/:fn', async (req, res) => {
 
       const STAFF_SELECT = 'id,email,is_active,password_hash,account_completed,first_name,last_name,name,phone,whatsapp_number,team,role,department,permissions,linked_investor_id,roles,yp_certified';
 
+      // ==================== LOGIN ====================
+      if (action === 'login') {
+        if (!email || !password) return ok({ success: false, error: 'Email and password are required' });
+        const emailLower = email.toLowerCase().trim();
+        const { data: users } = await dbGet(`/staff_users?email=eq.${encodeURIComponent(emailLower)}&select=${STAFF_SELECT},session_token,session_expires,trainee_status,commission_split,notification_preferences,yp_certified&is_active=eq.true`);
+        if (!users?.length) return ok({ success: false, error: 'Invalid email or password' });
+        const user = users[0];
+        if (!verifyStaffPassword(password, user.password_hash)) {
+          return ok({ success: false, error: 'Invalid email or password' });
+        }
+        // Create session token
+        const sessionTok = 'st_' + require('crypto').randomBytes(32).toString('hex');
+        const sessionExpires = new Date(Date.now() + 7 * 24 * 60 * 60 * 1000).toISOString();
+        await dbPatch(`/staff_users?id=eq.${user.id}`, {
+          session_token: sessionTok,
+          session_expires: sessionExpires,
+          last_login: new Date().toISOString()
+        });
+        const isAM = user.department === 'acquisition_managers' || (user.roles || []).includes('acquisition_managers');
+        const agreementInfo = isAM ? await checkAgreementSigned(user.id) : null;
+        return ok({
+          success: true,
+          session_token: sessionTok,
+          staff: buildStaffSession(user, agreementInfo, sessionTok),
+          ...buildStaffSession(user, agreementInfo, sessionTok)
+        });
+      }
+
+
       // ==================== REFRESH SESSION ====================
       if (action === 'refresh_session') {
         if (!staff_id) return ok({ success: false, error: 'staff_id required' });
