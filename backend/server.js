@@ -90,18 +90,21 @@ const dbHeaders = () => ({
   'Content-Type': 'application/json',
 });
 
-async function db(path, opts = {}) {
-  // Build the correct URL depending on whether we're hitting real Supabase or internal PostgREST
+async function db(path, opts = {}, attempt = 0) {
   const base = (process.env.POSTGREST_URL || SUPABASE_URL || '').replace(/\/+$/, '').replace(/\/rest\/v1$/, '');
   const cleanPath = path.startsWith('/') ? path : '/' + path;
-  // Real Supabase URLs need /rest/v1 prefix; internal PostgREST already serves at root
   const needsRestPrefix = /supabase\.co/i.test(base);
   const url = base + (needsRestPrefix ? '/rest/v1' : '') + cleanPath;
-  const res = await fetch(url, {
-    headers: dbHeaders(),
-    ...opts,
-  });
+
+  const res = await fetch(url, { headers: dbHeaders(), ...opts });
   const text = await res.text();
+
+  // PGRST002 = schema cache not ready yet — retry up to 5 times with backoff
+  if (res.status === 503 && text.includes('PGRST002') && attempt < 5) {
+    await new Promise(r => setTimeout(r, 800 * (attempt + 1)));
+    return db(path, opts, attempt + 1);
+  }
+
   try { return { ok: res.ok, status: res.status, data: JSON.parse(text) }; }
   catch { return { ok: res.ok, status: res.status, data: text }; }
 }
