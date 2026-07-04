@@ -86,149 +86,117 @@ app.use(express.static(DIST_DIR));
 // â”€â”€ DB helper (calls PostgREST) â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 
 
-// ── DB helpers — RPC-based, bypasses PostgREST schema cache & IPv6 ──────────
-// Uses ayp_read/ayp_insert/ayp_update RPC functions in public schema.
-// These are SECURITY DEFINER and query prj_X-ZoVQv6LKXT directly.
-// Called via HTTP /rest/v1/rpc/ — no pg client, no IPv6 dependency.
+// ── DB helpers — Supabase /pg/query SQL endpoint, no PostgREST needed ────────
+var SUPA_URL  = (process.env.SUPABASE_URL || '').replace(/\/rest\/v1$/, '');
+var SUPA_KEY  = process.env.SUPABASE_SERVICE_ROLE_KEY || '';
+var DB_SCHEMA = 'prj_X-ZoVQv6LKXT';
 
-function rpcBase() {
-  var url = (process.env.POSTGREST_URL || SUPABASE_URL || '').replace(/\/+$/, '');
-  return url.replace(/\/rest\/v1$/, '') + '/rest/v1';
+async function sqlExec(sql) {
+  var url = SUPA_URL + '/pg/query';
+  try {
+    var res = await fetch(url, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json', 'apikey': SUPA_KEY, 'Authorization': 'Bearer ' + SUPA_KEY },
+      body: JSON.stringify({ query: sql }),
+    });
+    var text = await res.text();
+    var data = JSON.parse(text);
+    if (data && data.rows) return { ok: true, rows: data.rows };
+    if (Array.isArray(data)) return { ok: true, rows: data };
+    return { ok: false, error: JSON.stringify(data).slice(0, 200) };
+  } catch(e) { return { ok: false, error: e.message }; }
 }
 
-function rpcHeaders() {
-  var key = process.env.SUPABASE_SERVICE_ROLE_KEY || '';
-  return {
-    'apikey':        key,
-    'Authorization': 'Bearer ' + key,
-    'Content-Type':  'application/json',
-    'Accept-Profile': 'public',
-    'Prefer':        'return=representation',
-  };
+function esc(v) {
+  if (v === null || v === undefined) return 'NULL';
+  if (typeof v === 'boolean') return v ? 'TRUE' : 'FALSE';
+  if (typeof v === 'number') return String(v);
+  return "'" + String(v).replace(/'/g, "''") + "'";
 }
 
-// Parse PostgREST-style path into args for ayp_read
-function parseForRPC(path) {
-  var parts  = path.split('?');
-  var table  = parts[0].replace(/^\//, '');
-  var params = new URLSearchParams(parts[1] || '');
+function parseQ(path) {
+  var tp = path.split('?')[0], qp = path.split('?')[1] || '';
+  var table  = tp.replace(/^\//, '');
+  var params = new URLSearchParams(qp);
   var sel    = (params.get('select') || '*').replace(/\w+:\w+!?\w*\([^)]*\),?/g, '').replace(/,+/g, ',').replace(/^,|,$/g, '') || '*';
   var limit  = Math.min(parseInt(params.get('limit') || '500'), 1000);
   var op     = (params.get('order') || 'created_at.desc').split('.');
   var oCol   = /^\w+$/.test(op[0]) ? op[0] : 'created_at';
   var oDir   = op[1] === 'asc' ? 'ASC' : 'DESC';
-  var filter = {};
+  var conds  = [];
   for (var _i of params) {
     var k = _i[0], v = _i[1];
     if (['select','limit','order','offset'].includes(k)) continue;
     var d = v.indexOf('.');
     if (d < 0) continue;
-    var op2 = v.slice(0, d), val = v.slice(d + 1);
-    if (op2 === 'eq') filter[k] = val === 'null' ? null : val;
-    else if (op2 === 'is') filter[k] = val === 'null' ? null : (val === 'true');
+    var oper = v.slice(0, d), val = v.slice(d + 1);
+    var col = '"' + k + '"';
+    if (oper === 'eq')    conds.push(col + ' = ' + esc(val === 'null' ? null : val));
+    else if (oper === 'neq')   conds.push(col + ' != ' + esc(val));
+    else if (oper === 'is')    conds.push(col + ' IS ' + (val === 'null' ? 'NULL' : val === 'true' ? 'TRUE' : 'FALSE'));
+    else if (oper === 'ilike') conds.push(col + ' ILIKE ' + esc(val));
+    else if (oper === 'like')  conds.push(col + ' LIKE ' + esc(val));
+    else if (oper === 'gt')    conds.push(col + ' > ' + esc(val));
+    else if (oper === 'gte')   conds.push(col + ' >= ' + esc(val));
+    else if (oper === 'lt')    conds.push(col + ' < ' + esc(val));
+    else if (oper === 'lte')   conds.push(col + ' <= ' + esc(val));
   }
-  return { table, sel, limit, oCol, oDir, filter };
+  return { table: table, sel: sel, limit: limit, oCol: oCol, oDir: oDir,
+           where: conds.length ? 'WHERE ' + conds.join(' AND ') : '' };
 }
 
 async function dbGet(path) {
-  try {
-    var q   = parseForRPC(path);
-    var res = await fetch(rpcBase() + '/rpc/ayp_read', {
-      method:  'POST',
-      headers: rpcHeaders(),
-      body:    JSON.stringify({ p_table: q.table, p_filter: q.filter, p_limit: q.limit, p_select: q.sel, p_order_by: q.oCol, p_order_dir: q.oDir }),
-    });
-    var text = await res.text();
-    var raw  = JSON.parse(text);
-    // ayp_read is SECURITY DEFINER returning jsonb.
-    // PostgREST returns the jsonb value directly (already an array).
-    // Unwrap if wrapped: [[...]] or [{ayp_read:[...]}]
-    var data = raw;
-    if (Array.isArray(data) && data.length > 0) {
-      var first = data[0];
-      if (Array.isArray(first)) {
-        data = first; // unwrap [[...]]
-      } else if (first && typeof first === 'object' && Array.isArray(first.ayp_read)) {
-        data = first.ayp_read; // unwrap [{ayp_read:[...]}]
-      }
-    }
-    if (!Array.isArray(data)) data = [];
-    if (data.length > 0 && data[0] && data[0]._error) {
-      console.error('[dbGet] RPC error:', data[0]._error, 'table:', q.table);
-      return { ok: true, status: 200, data: [] };
-    }
-    return { ok: true, status: 200, data: data };
-  } catch(e) {
-    console.error('[dbGet]', e.message.slice(0,100), path.slice(0,60));
-    return { ok: true, status: 200, data: [] };
-  }
+  var q = parseQ(path);
+  var sql1 = 'SELECT ' + q.sel + ' FROM "' + DB_SCHEMA + '"."' + q.table + '" ' + q.where + ' ORDER BY "' + q.oCol + '" ' + q.oDir + ' NULLS LAST LIMIT ' + q.limit;
+  var sql2 = 'SELECT ' + q.sel + ' FROM "' + DB_SCHEMA + '"."' + q.table + '" ' + q.where + ' LIMIT ' + q.limit;
+  var r = await sqlExec(sql1);
+  if (!r.ok && r.error && r.error.indexOf('does not exist') > -1) r = await sqlExec(sql2);
+  if (!r.ok) { console.error('[dbGet]', r.error, q.table); return { ok: true, status: 200, data: [] }; }
+  return { ok: true, status: 200, data: r.rows };
 }
 
 async function dbPost(path, body) {
-  try {
-    var table = path.split('?')[0].replace(/^\//, '');
-    var res = await fetch(rpcBase() + '/rpc/ayp_insert', {
-      method:  'POST',
-      headers: rpcHeaders(),
-      body:    JSON.stringify({ p_table: table, p_data: body }),
-    });
-    var text = await res.text();
-    var data = JSON.parse(text);
-    if (Array.isArray(data)) data = data[0];
-    if (data && data._error) return { ok: false, status: 500, data: { error: data._error } };
-    return { ok: true, status: 201, data: [data] };
-  } catch(e) {
-    console.error('[dbPost]', e.message.slice(0,80), path.slice(0,40));
-    return { ok: false, status: 500, data: { error: e.message } };
-  }
+  var table = path.split('?')[0].replace(/^\//, '');
+  var cols  = Object.keys(body).filter(function(k) { return body[k] !== undefined; });
+  if (!cols.length) return { ok: false, status: 400, data: { error: 'empty body' } };
+  var sql = 'INSERT INTO "' + DB_SCHEMA + '"."' + table + '" (' +
+    cols.map(function(c) { return '"' + c + '"'; }).join(', ') + ') VALUES (' +
+    cols.map(function(c) { return esc(body[c]); }).join(', ') + ') RETURNING *';
+  var r = await sqlExec(sql);
+  if (!r.ok) { console.error('[dbPost]', r.error, table); return { ok: false, status: 500, data: { error: r.error } }; }
+  return { ok: true, status: 201, data: r.rows };
 }
 
 async function dbPatch(path, body) {
-  try {
-    var parts  = path.split('?');
-    var table  = parts[0].replace(/^\//, '');
-    var params = new URLSearchParams(parts[1] || '');
-    var filter = {};
-    for (var _i of params) {
-      var k = _i[0], v = _i[1], d = v.indexOf('.');
-      if (d < 0) continue;
-      var op = v.slice(0, d), val = v.slice(d + 1);
-      if (op === 'eq') filter[k] = val === 'null' ? null : val;
-    }
-    var res = await fetch(rpcBase() + '/rpc/ayp_update', {
-      method:  'POST',
-      headers: rpcHeaders(),
-      body:    JSON.stringify({ p_table: table, p_data: body, p_filter: filter }),
-    });
-    var text = await res.text();
-    var data = JSON.parse(text);
-    if (Array.isArray(data)) data = data[0];
-    if (data && data._error) return { ok: false, status: 500, data: { error: data._error } };
-    return { ok: true, status: 200, data: [data] };
-  } catch(e) {
-    console.error('[dbPatch]', e.message.slice(0,80));
-    return { ok: false, status: 500, data: { error: e.message } };
-  }
+  var q    = parseQ(path);
+  var sets = Object.keys(body).filter(function(k) { return body[k] !== undefined; })
+             .map(function(c) { return '"' + c + '" = ' + esc(body[c]); });
+  if (!sets.length || !q.where) return { ok: false, status: 400, data: { error: 'PATCH requires body and filter' } };
+  var r = await sqlExec('UPDATE "' + DB_SCHEMA + '"."' + q.table + '" SET ' + sets.join(', ') + ' ' + q.where + ' RETURNING *');
+  if (!r.ok) { console.error('[dbPatch]', r.error); return { ok: false, status: 500, data: { error: r.error } }; }
+  return { ok: true, status: 200, data: r.rows };
 }
 
 async function dbDelete(path) {
-  // ayp_delete not yet created — fall through to direct PostgREST DELETE
-  return dbDirect(path, { method: 'DELETE', headers: rpcHeaders() });
+  var q = parseQ(path);
+  if (!q.where) return { ok: false, status: 400, data: { error: 'DELETE requires filter' } };
+  var r = await sqlExec('DELETE FROM "' + DB_SCHEMA + '"."' + q.table + '" ' + q.where);
+  if (!r.ok) { console.error('[dbDelete]', r.error); return { ok: false, status: 500, data: { error: r.error } }; }
+  return { ok: true, status: 200, data: [] };
 }
 
-async function dbDirect(path, opts) {
-  opts = opts || {};
-  var base = rpcBase();
-  var url  = base + (path.startsWith('/') ? path : '/' + path);
-  try {
-    var res  = await fetch(url, Object.assign({ headers: rpcHeaders() }, opts));
-    var text = await res.text();
-    try { return { ok: res.ok, status: res.status, data: JSON.parse(text) }; }
-    catch { return { ok: res.ok, status: res.status, data: text }; }
-  } catch(e) { return { ok: false, status: 500, data: { error: e.message } }; }
+async function db(path, opts) {
+  if (!opts) return dbGet(path);
+  if (opts.method === 'POST')   return dbPost(path, JSON.parse(opts.body || '{}'));
+  if (opts.method === 'PATCH')  return dbPatch(path, JSON.parse(opts.body || '{}'));
+  if (opts.method === 'DELETE') return dbDelete(path);
+  return dbGet(path);
 }
 
-async function db(path, opts) { return dbDirect(path, opts); }
+function dbHeaders() {
+  return { 'apikey': SUPA_KEY, 'Authorization': 'Bearer ' + SUPA_KEY, 'Content-Type': 'application/json' };
+}
+
 
 
 async function sendEmail({ to, subject, html, from }) {
@@ -398,7 +366,7 @@ function isBcryptHash(_str) { return false; } // bcrypt was never real; always f
 app.options('*', cors());
 
 // â”€â”€ Health check â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
-app.get('/health', (req, res) => res.json({ ok: true, ts: new Date().toISOString(), v: '1783202022', rpc: true }));
+app.get('/health', (req, res) => res.json({ ok: true, ts: new Date().toISOString(), v: '1783202129', rpc: true }));
 
 // Diagnostic endpoint
 app.get('/diag', async (req, res) => {
@@ -6704,27 +6672,17 @@ return err('Unknown unassigned-investor-digest action: ' + action);
 
 
 app.get('/conn-check', async function(req, res) {
-  var base = rpcBase();
-  var out = { rpc_base: base.slice(0, 60) };
-  try {
-    var r = await fetch(base + '/rpc/ayp_read', {
-      method: 'POST', headers: rpcHeaders(),
-      body: JSON.stringify({ p_table: 'staff_users', p_filter: {}, p_limit: 3, p_select: 'id,email,first_name', p_order_by: 'created_at', p_order_dir: 'DESC' })
-    });
-    var text = await r.text();
-    var data = JSON.parse(text);
-    if (Array.isArray(data) && data.length === 1 && Array.isArray(data[0])) data = data[0];
-    if (Array.isArray(data) && data.length === 1 && data[0] && !data[0]._error) {
-      var inner = Object.values(data[0])[0];
-      if (Array.isArray(inner)) data = inner;
-    }
-    out.http_status = r.status;
-    out.staff_sample = Array.isArray(data) ? data : data;
-    out.connected = r.status === 200;
-  } catch(e) { out.error = e.message; }
-  res.json(out);
-});
-app.get('/url-debug', function(req, res) {
+  var r1 = await sqlExec('SELECT COUNT(*) as n FROM "prj_X-ZoVQv6LKXT".staff_users');
+  var r2 = await sqlExec('SELECT COUNT(*) as n FROM "prj_X-ZoVQv6LKXT".investors');
+  var r3 = await sqlExec('SELECT id, email FROM "prj_X-ZoVQv6LKXT".staff_users LIMIT 2');
+  res.json({
+    endpoint: SUPA_URL + '/pg/query',
+    staff_count:    r1.ok ? r1.rows[0] : { error: r1.error },
+    investor_count: r2.ok ? r2.rows[0] : { error: r2.error },
+    staff_sample:   r3.ok ? r3.rows    : { error: r3.error },
+    all_ok: r1.ok && r2.ok,
+  });
+});app.get('/url-debug', function(req, res) {
   var raw = process.env.DATABASE_URL || '';
   var dbEnvs = Object.keys(process.env)
     .filter(function(k) { return /^(DATABASE|POSTGRES|PG|SUPABASE|DB)/.test(k); })
