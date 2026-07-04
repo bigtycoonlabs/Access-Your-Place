@@ -429,7 +429,7 @@ function isBcryptHash(_str) { return false; } // bcrypt was never real; always f
 app.options('*', cors());
 
 // â”€â”€ Health check â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
-app.get('/health', (req, res) => res.json({ ok: true, ts: new Date().toISOString(), v: '1783185441', rpc: true }));
+app.get('/health', (req, res) => res.json({ ok: true, ts: new Date().toISOString(), v: '1783185749', rpc: true }));
 
 // Diagnostic endpoint
 app.get('/diag', async (req, res) => {
@@ -6735,23 +6735,31 @@ return err('Unknown unassigned-investor-digest action: ' + action);
 
 
 app.get('/conn-check', async function(req, res) {
-  var POOLER = 'postgresql://postgres.adcbrclppmnguzkzwiys:verryw-jugwu0-xanqoF@aws-0-us-east-2.pooler.supabase.com:5432/postgres';
-  var out = { is_pooler: true, cs_preview: POOLER.replace(/:[^@]+@/, ':***@') };
-  try {
-    var { Pool: P } = require('pg');
-    var tp = new P({ connectionString: POOLER, ssl: { rejectUnauthorized: false }, connectionTimeoutMillis: 12000 });
-    var r1 = await tp.query('SELECT COUNT(*) as n FROM "prj_X-ZoVQv6LKXT".staff_users');
-    var r2 = await tp.query('SELECT COUNT(*) as n FROM "prj_X-ZoVQv6LKXT".investors');
-    var r3 = await tp.query('SELECT COUNT(*) as n FROM "prj_X-ZoVQv6LKXT".properties WHERE is_published = true');
-    out.staff_count = r1.rows[0].n;
-    out.investor_count = r2.rows[0].n;
-    out.property_count = r3.rows[0].n;
-    out.connected = true;
-    await tp.end();
-  } catch(e) { out.error = e.message.slice(0, 200); }
-  res.json(out);
+  var { Pool: P } = require('pg');
+  var PROJ = 'adcbrclppmnguzkzwiys';
+  var PASS = 'verryw-jugwu0-xanqoF';
+  var urls = [
+    // Option 1: Transaction pooler port 6543 (often more reliable)
+    'postgresql://postgres.' + PROJ + ':' + PASS + '@aws-0-us-east-2.pooler.supabase.com:6543/postgres?sslmode=require&pgbouncer=true',
+    // Option 2: Session pooler port 5432
+    'postgresql://postgres.' + PROJ + ':' + PASS + '@aws-0-us-east-2.pooler.supabase.com:5432/postgres?sslmode=require',
+    // Option 3: Direct with IPv4 forced via DNS hint
+    'postgresql://postgres:' + PASS + '@db.' + PROJ + '.supabase.co:5432/postgres?sslmode=require',
+  ];
+  var results = [];
+  for (var i = 0; i < urls.length; i++) {
+    var url = urls[i];
+    try {
+      var tp = new P({ connectionString: url, ssl: { rejectUnauthorized: false }, connectionTimeoutMillis: 8000, max: 1 });
+      var r = await tp.query('SELECT COUNT(*) as n FROM "prj_X-ZoVQv6LKXT".staff_users');
+      results.push({ url: url.replace(/:[^@]+@/, ':***@').slice(0,80), ok: true, staff: r.rows[0].n });
+      await tp.end();
+    } catch(e) {
+      results.push({ url: url.replace(/:[^@]+@/, ':***@').slice(0,80), ok: false, err: e.message.slice(0,100) });
+    }
+  }
+  res.json({ results: results });
 });
-
 app.get('/schema-check', async function(req, res) {
   var pool = getPool();
   var dbUrl = process.env.DATABASE_URL || 'NOT_SET';
