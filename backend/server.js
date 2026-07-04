@@ -97,61 +97,31 @@ let _pool = null;
 
 function getPool() {
   if (_pool) return _pool;
-  var raw = process.env.DATABASE_URL || process.env.SUPABASE_DB_URL || process.env.POSTGRES_URL;
+  var raw = process.env.DATABASE_URL || process.env.SUPABASE_DB_URL || process.env.POSTGRES_URL || '';
   if (!raw) { console.warn('[db] No DATABASE_URL — pg disabled'); return null; }
-  // Rewrite IPv6 Supabase direct URL → IPv4 Session Pooler (Railway has no IPv6 egress)
   var cs = raw;
-  var m = raw.match(/postgres(?:ql)?:\/\/([^:@]+):([^@]+)@db\.([a-z0-9]+)\.supabase\.co/i);
-  if (m) {
-    var pass = m[2], proj = m[3];
-    cs = 'postgresql://postgres.' + proj + ':' + pass + '@aws-0-us-east-2.pooler.supabase.com:5432/postgres?sslmode=require';
-    console.log('[db] Rewrote direct IPv6 URL to IPv4 session pooler, project:', proj);
-  } else {
-    console.log('[db] Using DATABASE_URL as-is:', raw.replace(/:[^@]+@/, ':***@').slice(0,70));
-  }
-  _pool = new Pool({ connectionString: cs, ssl: { rejectUnauthorized: false }, max: 5, idleTimeoutMillis: 30000, connectionTimeoutMillis: 15000 });
-  _pool.on('error', function(err) { console.error('[pg pool]', err.message); _pool = null; });
-  console.log('[db] pg pool ready:', cs.replace(/:[^@]+@/, ':***@').slice(0,70));
-  return _pool;
-}function parseQ(path) {
-  const [tp, qp] = path.split('?');
-  const table = tp.replace(/^\//, '');
-  const params = new URLSearchParams(qp || '');
-  let sel = params.get('select') || '*';
-  // Remove join notation: alias:table(*) 
-  sel = sel.replace(/\w+:\w+!?\w*\([^)]*\),?/g, '').replace(/,+/g, ',').replace(/^,|,$/g, '') || '*';
-  const limit = Math.min(parseInt(params.get('limit') || '500'), 1000);
-  const orderParts = (params.get('order') || 'created_at.desc').split('.');
-  const oCol = /^\w+$/.test(orderParts[0]) ? orderParts[0] : 'created_at';
-  const oDir = orderParts[1] === 'asc' ? 'ASC' : 'DESC';
-  const conds = []; const cVals = []; let pi = 1;
-  for (const [k, v] of params) {
-    if (['select','limit','order','offset'].includes(k)) continue;
-    const d = v.indexOf('.');
-    if (d < 0) continue;
-    const op = v.slice(0, d), val = v.slice(d + 1);
-    switch(op) {
-      case 'eq':   conds.push('"' + k + '" = $' + pi++); cVals.push(val === 'null' ? null : val); break;
-      case 'neq':  conds.push('"' + k + '" != $' + pi++); cVals.push(val); break;
-      case 'gt':   conds.push('"' + k + '" > $' + pi++); cVals.push(val); break;
-      case 'gte':  conds.push('"' + k + '" >= $' + pi++); cVals.push(val); break;
-      case 'lt':   conds.push('"' + k + '" < $' + pi++); cVals.push(val); break;
-      case 'lte':  conds.push('"' + k + '" <= $' + pi++); cVals.push(val); break;
-      case 'ilike':conds.push('"' + k + '" ILIKE $' + pi++); cVals.push(val); break;
-      case 'like': conds.push('"' + k + '" LIKE $' + pi++); cVals.push(val); break;
-      case 'is':   conds.push('"' + k + '" IS ' + (val==='null'?'NULL':val==='true'?'TRUE':'FALSE')); break;
-      case 'in': {
-        const ins = val.replace(/^\(|\)$/g,'').split(',');
-        conds.push('"' + k + '" IN (' + ins.map(() => '$' + pi++).join(',') + ')');
-        cVals.push(...ins);
-        break;
-      }
+  // Detect if it points to Supabase direct host (IPv6 on new projects) and rewrite to IPv4 pooler
+  if (raw.indexOf('.supabase.co') > -1 && raw.indexOf('pooler.supabase.com') === -1) {
+    // Extract password and project ID using simple string operations
+    var atSign = raw.lastIndexOf('@');
+    var hostPart = raw.slice(atSign + 1); // e.g. db.PROJECT.supabase.co:5432/postgres
+    var projMatch = hostPart.match(/([a-z0-9]{20,})/i); // project ref is 20+ chars
+    var credPart = raw.slice(0, atSign); // e.g. postgresql://user:pass
+    var colonPos = credPart.lastIndexOf(':');
+    var pass = credPart.slice(colonPos + 1);
+    if (projMatch && pass) {
+      var proj = projMatch[1];
+      cs = 'postgresql://postgres.' + proj + ':' + encodeURIComponent(pass) + '@aws-0-us-east-2.pooler.supabase.com:5432/postgres?sslmode=require';
+      console.log('[db] Rewrote to IPv4 session pooler, project:', proj);
+    } else {
+      console.warn('[db] Could not parse URL for rewrite, using raw');
     }
   }
-  const where = conds.length ? 'WHERE ' + conds.join(' AND ') : '';
-  return { table, sel, where, cVals, limit, oCol, oDir };
+  console.log('[db] Connecting:', cs.replace(/:[^@]+@/, ':***@').slice(0, 80));
+  _pool = new Pool({ connectionString: cs, ssl: { rejectUnauthorized: false }, max: 5, idleTimeoutMillis: 30000, connectionTimeoutMillis: 15000 });
+  _pool.on('error', function(err) { console.error('[pg]', err.message); _pool = null; });
+  return _pool;
 }
-
 async function dbGet(path) {
   const pool = getPool();
   if (!pool) return dbDirect(path);
@@ -409,7 +379,7 @@ function isBcryptHash(_str) { return false; } // bcrypt was never real; always f
 app.options('*', cors());
 
 // â”€â”€ Health check â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
-app.get('/health', (req, res) => res.json({ ok: true, ts: new Date().toISOString(), v: '1783180529', rpc: true }));
+app.get('/health', (req, res) => res.json({ ok: true, ts: new Date().toISOString(), v: '1783180856', rpc: true }));
 
 // Diagnostic endpoint
 app.get('/diag', async (req, res) => {
@@ -6713,6 +6683,38 @@ return err('Unknown unassigned-investor-digest action: ' + action);
 
 // â”€â”€ SPA fallback â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 
+
+app.get('/conn-check', async function(req, res) {
+  var raw = process.env.DATABASE_URL || process.env.SUPABASE_DB_URL || '';
+  var cs = raw;
+  if (raw.indexOf('.supabase.co') > -1 && raw.indexOf('pooler.supabase.com') === -1) {
+    var atSign = raw.lastIndexOf('@');
+    var hostPart = raw.slice(atSign + 1);
+    var projMatch = hostPart.match(/([a-z0-9]{20,})/i);
+    var credPart = raw.slice(0, atSign);
+    var colonPos = credPart.lastIndexOf(':');
+    var pass = credPart.slice(colonPos + 1);
+    if (projMatch && pass) {
+      cs = 'postgresql://postgres.' + projMatch[1] + ':' + pass + '@aws-0-us-east-2.pooler.supabase.com:5432/postgres?sslmode=require';
+    }
+  }
+  var out = {
+    raw_preview: raw.replace(/:[^@]+@/, ':***@').slice(0, 80),
+    cs_preview: cs.replace(/:[^@]+@/, ':***@').slice(0, 80),
+    is_pooler: cs.indexOf('pooler.supabase.com') > -1,
+  };
+  if (out.is_pooler) {
+    try {
+      var { Pool: P } = require('pg');
+      var tp = new P({ connectionString: cs, ssl: { rejectUnauthorized: false }, connectionTimeoutMillis: 10000 });
+      var r2 = await tp.query('SELECT COUNT(*) as n FROM "prj_X-ZoVQv6LKXT".staff_users');
+      out.staff_count = r2.rows[0].n;
+      out.connected = true;
+      await tp.end();
+    } catch(e) { out.error = e.message.slice(0, 150); }
+  }
+  res.json(out);
+});
 
 app.get('/schema-check', async function(req, res) {
   var pool = getPool();
