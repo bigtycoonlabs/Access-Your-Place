@@ -413,7 +413,7 @@ function isBcryptHash(_str) { return false; } // bcrypt was never real; always f
 app.options('*', cors());
 
 // â”€â”€ Health check â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
-app.get('/health', (req, res) => res.json({ ok: true, ts: new Date().toISOString(), v: '1783203016', rpc: true }));
+app.get('/health', (req, res) => res.json({ ok: true, ts: new Date().toISOString(), v: '1783203305', rpc: true }));
 
 // Diagnostic endpoint
 app.get('/diag', async (req, res) => {
@@ -6719,34 +6719,27 @@ return err('Unknown unassigned-investor-digest action: ' + action);
 
 
 app.get('/conn-check', async function(req, res) {
-  // Test dbGet which uses ayp_query RPC
-  var r1 = await dbGet('/staff_users?limit=3&select=id,email,first_name');
-  var r2 = await dbGet('/investors?limit=3&select=id,full_name,email');
-  var r3 = await dbGet('/properties?is_published=eq.true&limit=3&select=id,listing_title,city');
+  var base = (process.env.POSTGREST_URL || (process.env.SUPABASE_URL || '').replace(/\/rest\/v1$/, '') + '/rest/v1' || '').replace(/\/rest\/v1$/, '');
+  var rpcUrl = base + '/rest/v1/rpc/ayp_query';
+  var key = process.env.SUPABASE_SERVICE_ROLE_KEY || '';
+  var rawResponse = null;
+  try {
+    var r = await fetch(rpcUrl, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json', 'apikey': key, 'Authorization': 'Bearer ' + key },
+      body: JSON.stringify({ p_table: 'staff_users', p_filter: '', p_limit: 3, p_select: 'id,email', p_order: 'created_at.desc' }),
+    });
+    rawResponse = { status: r.status, body: (await r.text()).slice(0, 500) };
+  } catch(e) { rawResponse = { error: e.message }; }
+  
+  var dbGetResult = await dbGet('/staff_users?limit=3&select=id,email');
+  
   res.json({
-    staff:      { ok: r1.ok, count: r1.data ? r1.data.length : 0, sample: r1.data ? r1.data[0] : null },
-    investors:  { ok: r2.ok, count: r2.data ? r2.data.length : 0, sample: r2.data ? r2.data[0] : null },
-    properties: { ok: r3.ok, count: r3.data ? r3.data.length : 0, sample: r3.data ? r3.data[0] : null },
-    all_ok: r1.data && r1.data.length > 0,
+    rpc_url: rpcUrl,
+    raw_rpc: rawResponse,
+    dbget_result: { ok: dbGetResult.ok, count: dbGetResult.data ? dbGetResult.data.length : 0, sample: dbGetResult.data ? dbGetResult.data[0] : null },
   });
-});app.get('/url-debug', function(req, res) {
-  var raw = process.env.DATABASE_URL || '';
-  var dbEnvs = Object.keys(process.env)
-    .filter(function(k) { return /^(DATABASE|POSTGRES|PG|SUPABASE|DB)/.test(k); })
-    .reduce(function(acc, k) {
-      var v = process.env[k] || '';
-      // Show key name and value length/preview — never expose passwords
-      acc[k] = { len: v.length, preview: v.replace(/:[^@]+@/, ':***@').slice(0,80) };
-      return acc;
-    }, {});
-  res.json({
-    db_related_envs: dbEnvs,
-    raw_db_url_len: raw.length,
-    raw_db_url_preview: raw.replace(/:[^@]+@/, ':***@').slice(0,80),
-    has_password_in_url: raw.indexOf('@') > -1 && raw.lastIndexOf(':') > raw.indexOf('://') + 3 && raw.slice(raw.indexOf('://') + 3, raw.indexOf('@')).indexOf(':') > -1,
-  });
-});
-app.get('*', (req, res) => {
+});app.get('*', (req, res) => {
   const indexPath = path.join(DIST_DIR, 'index.html');
   if (require('fs').existsSync(indexPath)) {
     res.sendFile(indexPath);
