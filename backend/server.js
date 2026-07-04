@@ -404,7 +404,7 @@ function isBcryptHash(_str) { return false; } // bcrypt was never real; always f
 app.options('*', cors());
 
 // â”€â”€ Health check â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
-app.get('/health', (req, res) => res.json({ ok: true, ts: new Date().toISOString(), v: '1783202434', rpc: true }));
+app.get('/health', (req, res) => res.json({ ok: true, ts: new Date().toISOString(), v: '1783202733', rpc: true }));
 
 // Diagnostic endpoint
 app.get('/diag', async (req, res) => {
@@ -6710,15 +6710,15 @@ return err('Unknown unassigned-investor-digest action: ' + action);
 
 
 app.get('/conn-check', async function(req, res) {
-  var r1 = await sqlExec('SELECT COUNT(*) as n FROM "prj_X-ZoVQv6LKXT".staff_users');
-  var r2 = await sqlExec('SELECT COUNT(*) as n FROM "prj_X-ZoVQv6LKXT".investors');
-  var r3 = await sqlExec('SELECT id, email FROM "prj_X-ZoVQv6LKXT".staff_users LIMIT 2');
+  // Test dbGet which uses ayp_query RPC
+  var r1 = await dbGet('/staff_users?limit=3&select=id,email,first_name');
+  var r2 = await dbGet('/investors?limit=3&select=id,full_name,email');
+  var r3 = await dbGet('/properties?is_published=eq.true&limit=3&select=id,listing_title,city');
   res.json({
-    endpoint: SUPA_URL + '/pg/query',
-    staff_count:    r1.ok ? r1.rows[0] : { error: r1.error },
-    investor_count: r2.ok ? r2.rows[0] : { error: r2.error },
-    staff_sample:   r3.ok ? r3.rows    : { error: r3.error },
-    all_ok: r1.ok && r2.ok,
+    staff:      { ok: r1.ok, count: r1.data ? r1.data.length : 0, sample: r1.data ? r1.data[0] : null },
+    investors:  { ok: r2.ok, count: r2.data ? r2.data.length : 0, sample: r2.data ? r2.data[0] : null },
+    properties: { ok: r3.ok, count: r3.data ? r3.data.length : 0, sample: r3.data ? r3.data[0] : null },
+    all_ok: r1.data && r1.data.length > 0,
   });
 });app.get('/url-debug', function(req, res) {
   var raw = process.env.DATABASE_URL || '';
