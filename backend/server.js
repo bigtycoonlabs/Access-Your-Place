@@ -92,18 +92,56 @@ var SUPA_KEY  = process.env.SUPABASE_SERVICE_ROLE_KEY || '';
 var DB_SCHEMA = 'prj_X-ZoVQv6LKXT';
 
 async function sqlExec(sql) {
-  var url = SUPA_URL + '/pg/query';
+  // Use ayp_read/ayp_insert/ayp_update via the public schema RPC
+  // These bypass PostgREST table routing entirely
+  // The public schema now has 0 views — PostgREST can cache it instantly
+  var base = (process.env.POSTGREST_URL || SUPA_URL + '/rest/v1' || '').replace(/\/rest\/v1$/, '');
+  var rpcUrl = base + '/rest/v1/rpc/ayp_query';
+  // Parse the SQL to extract table/filter for ayp_query
+  // ayp_query(p_table, p_filter, p_limit, p_select, p_order) returns jsonb
+  // For complex SQL, use a passthrough approach
+  var q = sql.trim();
+  // Extract table name from simple SELECT
+  var selMatch = q.match(/^SELECT (.+?) FROM "prj_X-ZoVQv6LKXT"\."(\w+)"(.*?)(?:ORDER BY.*?)?(?:LIMIT (\d+))?$/is);
+  if (!selMatch) {
+    // For INSERT/UPDATE/DELETE, call the Supabase REST API directly on public schema
+    // (tables are in prj_X-ZoVQv6LKXT but we'll handle writes separately)
+    return { ok: false, error: 'sqlExec: complex SQL not supported, use dbPost/dbPatch/dbDelete' };
+  }
+  var sel   = selMatch[1].trim();
+  var table = selMatch[2];
+  var rest  = (selMatch[3] || '').trim();
+  var limit = parseInt(selMatch[4] || '500');
+  // Extract WHERE conditions as filter string for ayp_query
+  var filterStr = '';
+  var wMatch = rest.match(/WHERE (.+?)(?:\s+ORDER|\s+LIMIT|$)/is);
+  if (wMatch) filterStr = wMatch[1].trim();
+  // ORDER BY
+  var orderStr = 'created_at.desc';
+  var oMatch = rest.match(/ORDER BY "?(\w+)"?\s+(ASC|DESC)/i);
+  if (oMatch) orderStr = oMatch[1] + '.' + oMatch[2].toLowerCase();
+
   try {
-    var res = await fetch(url, {
+    var res = await fetch(rpcUrl, {
       method: 'POST',
-      headers: { 'Content-Type': 'application/json', 'apikey': SUPA_KEY, 'Authorization': 'Bearer ' + SUPA_KEY },
-      body: JSON.stringify({ query: sql }),
+      headers: {
+        'Content-Type':  'application/json',
+        'apikey':        SUPA_KEY,
+        'Authorization': 'Bearer ' + SUPA_KEY,
+      },
+      body: JSON.stringify({
+        p_table: table, p_filter: filterStr, p_limit: limit,
+        p_select: sel,  p_order: orderStr,
+      }),
     });
     var text = await res.text();
+    if (res.status === 503 || res.status === 404) {
+      return { ok: false, error: 'PostgREST unavailable: ' + text.slice(0,100) };
+    }
     var data = JSON.parse(text);
-    if (data && data.rows) return { ok: true, rows: data.rows };
     if (Array.isArray(data)) return { ok: true, rows: data };
-    return { ok: false, error: JSON.stringify(data).slice(0, 200) };
+    if (data && typeof data === 'object' && !data.code) return { ok: true, rows: [data] };
+    return { ok: false, error: JSON.stringify(data).slice(0,200) };
   } catch(e) { return { ok: false, error: e.message }; }
 }
 
@@ -366,7 +404,7 @@ function isBcryptHash(_str) { return false; } // bcrypt was never real; always f
 app.options('*', cors());
 
 // â”€â”€ Health check â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
-app.get('/health', (req, res) => res.json({ ok: true, ts: new Date().toISOString(), v: '1783202129', rpc: true }));
+app.get('/health', (req, res) => res.json({ ok: true, ts: new Date().toISOString(), v: '1783202434', rpc: true }));
 
 // Diagnostic endpoint
 app.get('/diag', async (req, res) => {
