@@ -90,169 +90,132 @@ const dbHeaders = () => ({
   'Content-Type': 'application/json',
 });
 
-// ── DB helpers (direct pg — bypasses PostgREST) ─────────────────────────────
-const { Pool } = require('pg');
-const DB_SCHEMA = 'prj_X-ZoVQv6LKXT';
-let _pool = null;
+// ── DB helpers — RPC-based, bypasses PostgREST schema cache & IPv6 ──────────
+// Uses ayp_read/ayp_insert/ayp_update RPC functions in public schema.
+// These are SECURITY DEFINER and query prj_X-ZoVQv6LKXT directly.
+// Called via HTTP /rest/v1/rpc/ — no pg client, no IPv6 dependency.
 
-// Rewrite Supabase direct (IPv6) URL to IPv4 session pooler
-function toPoolerUrl(raw) {
-  if (!raw) return raw;
-  if (raw.indexOf('pooler.supabase.com') > -1) return raw; // already pooler
-  // Known project: hardcode IPv4 pooler (Railway env var has no password embedded)
-  if (raw.indexOf('adcbrclppmnguzkzwiys') > -1) {
-    var url = 'postgresql://postgres.adcbrclppmnguzkzwiys:verryw-jugwu0-xanqoF@aws-0-us-east-2.pooler.supabase.com:6543/postgres';
-    console.log('[db] Using hardcoded IPv4 pooler URL for project adcbrclppmnguzkzwiys');
-    return url;
-  }
-  // Generic rewrite: db.PROJECT.supabase.co → pooler
-  if (raw.indexOf('.supabase.co') > -1) {
-    var atIdx = raw.indexOf('@');
-    var before = raw.slice(0, atIdx);
-    var after  = raw.slice(atIdx + 1);
-    var hostOnly = after.split(':')[0].split('/')[0];
-    var parts = hostOnly.split('.');
-    var proj = parts[1] || '';
-    var lastColon = before.lastIndexOf(':');
-    var pass = before.slice(lastColon + 1);
-    if (proj && pass) {
-      return 'postgresql://postgres.' + proj + ':' + pass + '@aws-0-us-east-2.pooler.supabase.com:6543/postgres';
-    }
-  }
-  return raw;
-}
-function getPool() {
-  if (_pool) return _pool;
-  var raw = process.env.DATABASE_URL || process.env.SUPABASE_DB_URL || process.env.POSTGRES_URL || '';
-  if (!raw) { console.warn('[db] No DATABASE_URL — pg disabled'); return null; }
-  var cs = toPoolerUrl(raw);
-  _pool = new Pool({ connectionString: cs, ssl: { rejectUnauthorized: false }, max: 5, idleTimeoutMillis: 30000, connectionTimeoutMillis: 15000 });
-  _pool.on('error', function(err) { console.error('[pg]', err.message); _pool = null; });
-  console.log('[db] pg pool connecting to:', cs.replace(/:[^@]+@/, ':***@').slice(0, 80));
-  return _pool;
+function rpcBase() {
+  var url = (process.env.POSTGREST_URL || SUPABASE_URL || '').replace(/\/+$/, '');
+  return url.replace(/\/rest\/v1$/, '') + '/rest/v1';
 }
 
-// IMPORTANT: parseQ must be defined before dbGet (no hoisting for const)
-function parseQ(path) {
-  var tp = path.split('?')[0], qp = path.split('?')[1] || '';
-  var table = tp.replace(/^\//, '');
-  var params = new URLSearchParams(qp);
-  var sel = params.get('select') || '*';
-  sel = sel.replace(/\w+:\w+!?\w*\([^)]*\),?/g, '').replace(/,+/g, ',').replace(/^,|,$/g, '') || '*';
-  var limit = Math.min(parseInt(params.get('limit') || '500'), 1000);
-  var orderParts = (params.get('order') || 'created_at.desc').split('.');
-  var oCol = /^\w+$/.test(orderParts[0]) ? orderParts[0] : 'created_at';
-  var oDir = orderParts[1] === 'asc' ? 'ASC' : 'DESC';
-  var conds = [], cVals = [], pi = 1;
+function rpcHeaders() {
+  return {
+    'apikey':        SUPABASE_SERVICE_ROLE_KEY,
+    'Authorization': 'Bearer ' + SUPABASE_SERVICE_ROLE_KEY,
+    'Content-Type':  'application/json',
+    'Prefer':        '',
+  };
+}
+
+// Parse PostgREST-style path into args for ayp_read
+function parseForRPC(path) {
+  var parts  = path.split('?');
+  var table  = parts[0].replace(/^\//, '');
+  var params = new URLSearchParams(parts[1] || '');
+  var sel    = (params.get('select') || '*').replace(/\w+:\w+!?\w*\([^)]*\),?/g, '').replace(/,+/g, ',').replace(/^,|,$/g, '') || '*';
+  var limit  = Math.min(parseInt(params.get('limit') || '500'), 1000);
+  var op     = (params.get('order') || 'created_at.desc').split('.');
+  var oCol   = /^\w+$/.test(op[0]) ? op[0] : 'created_at';
+  var oDir   = op[1] === 'asc' ? 'ASC' : 'DESC';
+  var filter = {};
   for (var _i of params) {
     var k = _i[0], v = _i[1];
     if (['select','limit','order','offset'].includes(k)) continue;
     var d = v.indexOf('.');
     if (d < 0) continue;
-    var op = v.slice(0, d), val = v.slice(d + 1);
-    if (op === 'eq')    { conds.push('"' + k + '" = $' + pi++);   cVals.push(val === 'null' ? null : val); }
-    else if (op === 'neq')  { conds.push('"' + k + '" != $' + pi++);  cVals.push(val); }
-    else if (op === 'gt')   { conds.push('"' + k + '" > $' + pi++);   cVals.push(val); }
-    else if (op === 'gte')  { conds.push('"' + k + '" >= $' + pi++);  cVals.push(val); }
-    else if (op === 'lt')   { conds.push('"' + k + '" < $' + pi++);   cVals.push(val); }
-    else if (op === 'lte')  { conds.push('"' + k + '" <= $' + pi++);  cVals.push(val); }
-    else if (op === 'ilike'){ conds.push('"' + k + '" ILIKE $' + pi++); cVals.push(val); }
-    else if (op === 'like') { conds.push('"' + k + '" LIKE $' + pi++); cVals.push(val); }
-    else if (op === 'is')   { conds.push('"' + k + '" IS ' + (val==='null'?'NULL':val==='true'?'TRUE':'FALSE')); }
-    else if (op === 'in') {
-      var ins = val.replace(/^\(|\)$/g,'').split(',');
-      conds.push('"' + k + '" IN (' + ins.map(function() { return '$' + pi++; }).join(',') + ')');
-      cVals.push.apply(cVals, ins);
-    }
+    var op2 = v.slice(0, d), val = v.slice(d + 1);
+    if (op2 === 'eq') filter[k] = val === 'null' ? null : val;
+    else if (op2 === 'is') filter[k] = val === 'null' ? null : (val === 'true');
   }
-  return { table: table, sel: sel, where: conds.length ? 'WHERE ' + conds.join(' AND ') : '', cVals: cVals, limit: limit, oCol: oCol, oDir: oDir };
+  return { table, sel, limit, oCol, oDir, filter };
 }
 
 async function dbGet(path) {
-  var pool = getPool();
-  if (!pool) return dbDirect(path);
-  var q = parseQ(path);
-  var sqls = [
-    'SELECT ' + q.sel + ' FROM "' + DB_SCHEMA + '"."' + q.table + '" ' + q.where + ' ORDER BY "' + q.oCol + '" ' + q.oDir + ' LIMIT ' + q.limit,
-    'SELECT ' + q.sel + ' FROM "' + DB_SCHEMA + '"."' + q.table + '" ' + q.where + ' LIMIT ' + q.limit,
-    'SELECT * FROM "' + DB_SCHEMA + '"."' + q.table + '" ' + q.where + ' LIMIT ' + q.limit,
-  ];
-  for (var si = 0; si < sqls.length; si++) {
-    try {
-      var r = await pool.query(sqls[si], q.cVals);
-      return { ok: true, status: 200, data: r.rows };
-    } catch(e) {
-      if (e.message.indexOf('does not exist') > -1 && si < sqls.length - 1) continue;
-      console.error('[dbGet]', e.message.slice(0,80), q.table);
+  try {
+    var q   = parseForRPC(path);
+    var res = await fetch(rpcBase() + '/rpc/ayp_read', {
+      method:  'POST',
+      headers: rpcHeaders(),
+      body:    JSON.stringify({ p_table: q.table, p_filter: q.filter, p_limit: q.limit, p_select: q.sel, p_order_by: q.oCol, p_order_dir: q.oDir }),
+    });
+    var text = await res.text();
+    var data = JSON.parse(text);
+    // ayp_read returns jsonb array; PostgREST wraps RPC result in array
+    if (Array.isArray(data) && data.length === 1 && Array.isArray(data[0])) data = data[0];
+    if (Array.isArray(data) && data.length === 1 && Array.isArray(Object.values(data[0])[0])) data = Object.values(data[0])[0];
+    if (!Array.isArray(data)) data = data && typeof data === 'object' ? [data] : [];
+    // Filter out error objects
+    if (data.length > 0 && data[0] && data[0]._error) {
+      console.error('[dbGet] RPC error:', data[0]._error, q.table);
       return { ok: true, status: 200, data: [] };
     }
+    return { ok: true, status: 200, data };
+  } catch(e) {
+    console.error('[dbGet]', e.message.slice(0,100), path.slice(0,60));
+    return { ok: true, status: 200, data: [] };
   }
-  return { ok: true, status: 200, data: [] };
 }
 
 async function dbPost(path, body) {
-  var pool = getPool();
-  if (!pool) return dbDirect(path, { method:'POST', headers:Object.assign({}, dbHeaders(), {'Prefer':'return=representation'}), body:JSON.stringify(body) });
-  var table = path.split('?')[0].replace(/^\//, '');
-  var cols = Object.keys(body).filter(function(k) { return body[k] !== undefined; });
-  var vals = cols.map(function(k) { return body[k]; });
-  if (!cols.length) return { ok: false, status: 400, data: { error: 'empty body' } };
   try {
-    var sql = 'INSERT INTO "' + DB_SCHEMA + '"."' + table + '" (' + cols.map(function(c) { return '"' + c + '"'; }).join(',') + ') VALUES (' + cols.map(function(_,i) { return '$'+(i+1); }).join(',') + ') RETURNING *';
-    var r = await pool.query(sql, vals);
-    return { ok: true, status: 201, data: r.rows };
-  } catch(e) { console.error('[dbPost]', e.message.slice(0,80), table); return { ok: false, status: 500, data: { error: e.message } }; }
+    var table = path.split('?')[0].replace(/^\//, '');
+    var res = await fetch(rpcBase() + '/rpc/ayp_insert', {
+      method:  'POST',
+      headers: rpcHeaders(),
+      body:    JSON.stringify({ p_table: table, p_data: body }),
+    });
+    var text = await res.text();
+    var data = JSON.parse(text);
+    if (Array.isArray(data)) data = data[0];
+    if (data && data._error) return { ok: false, status: 500, data: { error: data._error } };
+    return { ok: true, status: 201, data: [data] };
+  } catch(e) {
+    console.error('[dbPost]', e.message.slice(0,80), path.slice(0,40));
+    return { ok: false, status: 500, data: { error: e.message } };
+  }
 }
 
 async function dbPatch(path, body) {
-  var pool = getPool();
-  if (!pool) return dbDirect(path, { method:'PATCH', headers:Object.assign({}, dbHeaders(), {'Prefer':'return=representation'}), body:JSON.stringify(body) });
-  var parts = path.split('?');
-  var table = parts[0].replace(/^\//, '');
-  var params = new URLSearchParams(parts[1] || '');
-  var cols = Object.keys(body), vals = Object.values(body);
-  var pi = cols.length + 1, conds = [], cVals = [];
-  for (var _i of params) {
-    var k = _i[0], v = _i[1], d = v.indexOf('.');
-    if (d < 0) continue;
-    var op = v.slice(0, d), val = v.slice(d + 1);
-    if (op === 'eq') { conds.push('"' + k + '" = $' + pi++); cVals.push(val === 'null' ? null : val); }
-    else if (op === 'is') { conds.push('"' + k + '" IS ' + (val==='null'?'NULL':val.toUpperCase())); }
-  }
   try {
-    var setClause = cols.map(function(c,i) { return '"' + c + '" = $' + (i+1); }).join(', ');
-    var where = conds.length ? 'WHERE ' + conds.join(' AND ') : '';
-    var sql = 'UPDATE "' + DB_SCHEMA + '"."' + table + '" SET ' + setClause + ' ' + where + ' RETURNING *';
-    var r = await pool.query(sql, vals.concat(cVals));
-    return { ok: true, status: 200, data: r.rows };
-  } catch(e) { console.error('[dbPatch]', e.message.slice(0,80), table); return { ok: false, status: 500, data: { error: e.message } }; }
+    var parts  = path.split('?');
+    var table  = parts[0].replace(/^\//, '');
+    var params = new URLSearchParams(parts[1] || '');
+    var filter = {};
+    for (var _i of params) {
+      var k = _i[0], v = _i[1], d = v.indexOf('.');
+      if (d < 0) continue;
+      var op = v.slice(0, d), val = v.slice(d + 1);
+      if (op === 'eq') filter[k] = val === 'null' ? null : val;
+    }
+    var res = await fetch(rpcBase() + '/rpc/ayp_update', {
+      method:  'POST',
+      headers: rpcHeaders(),
+      body:    JSON.stringify({ p_table: table, p_data: body, p_filter: filter }),
+    });
+    var text = await res.text();
+    var data = JSON.parse(text);
+    if (Array.isArray(data)) data = data[0];
+    if (data && data._error) return { ok: false, status: 500, data: { error: data._error } };
+    return { ok: true, status: 200, data: [data] };
+  } catch(e) {
+    console.error('[dbPatch]', e.message.slice(0,80));
+    return { ok: false, status: 500, data: { error: e.message } };
+  }
 }
 
 async function dbDelete(path) {
-  var pool = getPool();
-  if (!pool) return dbDirect(path, { method:'DELETE', headers:dbHeaders() });
-  var parts = path.split('?');
-  var table = parts[0].replace(/^\//, '');
-  var params = new URLSearchParams(parts[1] || '');
-  var pi = 1, conds = [], cVals = [];
-  for (var _i of params) {
-    var k = _i[0], v = _i[1], d = v.indexOf('.');
-    if (d < 0) continue;
-    if (v.slice(0,d) === 'eq') { conds.push('"' + k + '" = $' + pi++); cVals.push(v.slice(d+1)); }
-  }
-  if (!conds.length) return { ok: false, status: 400, data: { error: 'DELETE requires filter' } };
-  try {
-    var r = await pool.query('DELETE FROM "' + DB_SCHEMA + '"."' + table + '" WHERE ' + conds.join(' AND '), cVals);
-    return { ok: true, status: 200, data: [] };
-  } catch(e) { console.error('[dbDelete]', e.message.slice(0,80), table); return { ok: false, status: 500, data: { error: e.message } }; }
+  // ayp_delete not yet created — fall through to direct PostgREST DELETE
+  return dbDirect(path, { method: 'DELETE', headers: rpcHeaders() });
 }
 
 async function dbDirect(path, opts) {
   opts = opts || {};
-  var base = (process.env.POSTGREST_URL || SUPABASE_URL || '').replace(/\/+$/, '').replace(/\/rest\/v1$/, '');
-  var url = base + (/supabase\.co/i.test(base) ? '/rest/v1' : '') + (path.startsWith('/') ? path : '/' + path);
+  var base = rpcBase();
+  var url  = base + (path.startsWith('/') ? path : '/' + path);
   try {
-    var res = await fetch(url, Object.assign({ headers: dbHeaders() }, opts));
+    var res  = await fetch(url, Object.assign({ headers: rpcHeaders() }, opts));
     var text = await res.text();
     try { return { ok: res.ok, status: res.status, data: JSON.parse(text) }; }
     catch { return { ok: res.ok, status: res.status, data: text }; }
@@ -429,7 +392,7 @@ function isBcryptHash(_str) { return false; } // bcrypt was never real; always f
 app.options('*', cors());
 
 // â”€â”€ Health check â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
-app.get('/health', (req, res) => res.json({ ok: true, ts: new Date().toISOString(), v: '1783186311', rpc: true }));
+app.get('/health', (req, res) => res.json({ ok: true, ts: new Date().toISOString(), v: '1783192727', rpc: true }));
 
 // Diagnostic endpoint
 app.get('/diag', async (req, res) => {
@@ -6735,32 +6698,26 @@ return err('Unknown unassigned-investor-digest action: ' + action);
 
 
 app.get('/conn-check', async function(req, res) {
-  var { Pool: P } = require('pg');
-  var PROJ = 'adcbrclppmnguzkzwiys';
-  var PASS = 'verryw-jugwu0-xanqoF';
-  var HOST = 'db.' + PROJ + '.supabase.co';
-  var SSL_OPT = { rejectUnauthorized: false };
-  var results = [];
-
-  // Test 1: Direct connection forcing IPv4 (family:4)
+  var base = rpcBase();
+  var out = { rpc_base: base.slice(0, 60) };
   try {
-    var tp1 = new P({ host: HOST, port: 5432, user: 'postgres', password: PASS, database: 'postgres', ssl: SSL_OPT, family: 4, connectionTimeoutMillis: 10000, max: 1 });
-    var r1 = await tp1.query('SELECT COUNT(*) as n FROM "prj_X-ZoVQv6LKXT".staff_users');
-    results.push({ method: 'direct-ipv4-family4', ok: true, staff: r1.rows[0].n });
-    await tp1.end();
-  } catch(e) { results.push({ method: 'direct-ipv4-family4', ok: false, err: e.message.slice(0,120) }); }
-
-  // Test 2: Direct connection without family override
-  try {
-    var tp2 = new P({ host: HOST, port: 5432, user: 'postgres', password: PASS, database: 'postgres', ssl: SSL_OPT, connectionTimeoutMillis: 10000, max: 1 });
-    var r2 = await tp2.query('SELECT 1');
-    results.push({ method: 'direct-no-family', ok: true });
-    await tp2.end();
-  } catch(e) { results.push({ method: 'direct-no-family', ok: false, err: e.message.slice(0,120) }); }
-
-  res.json({ results: results, host: HOST });
+    var r = await fetch(base + '/rpc/ayp_read', {
+      method: 'POST', headers: rpcHeaders(),
+      body: JSON.stringify({ p_table: 'staff_users', p_filter: {}, p_limit: 3, p_select: 'id,email,first_name', p_order_by: 'created_at', p_order_dir: 'DESC' })
+    });
+    var text = await r.text();
+    var data = JSON.parse(text);
+    if (Array.isArray(data) && data.length === 1 && Array.isArray(data[0])) data = data[0];
+    if (Array.isArray(data) && data.length === 1 && data[0] && !data[0]._error) {
+      var inner = Object.values(data[0])[0];
+      if (Array.isArray(inner)) data = inner;
+    }
+    out.http_status = r.status;
+    out.staff_sample = Array.isArray(data) ? data : data;
+    out.connected = r.status === 200;
+  } catch(e) { out.error = e.message; }
+  res.json(out);
 });
-
 app.get('/url-debug', function(req, res) {
   var raw = process.env.DATABASE_URL || '';
   var dbEnvs = Object.keys(process.env)
