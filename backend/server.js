@@ -97,14 +97,21 @@ let _pool = null;
 
 function getPool() {
   if (_pool) return _pool;
-  const cs = process.env.DATABASE_URL || process.env.SUPABASE_DB_URL || process.env.POSTGRES_URL;
-  if (!cs) { console.warn('[db] No DATABASE_URL — falling back to PostgREST'); return null; }
-  _pool = new Pool({ connectionString: cs, ssl: { rejectUnauthorized: false }, max: 8, idleTimeoutMillis: 30000, connectionTimeoutMillis: 10000 });
-  _pool.on('error', err => console.error('[pg pool]', err.message));
-  console.log('[db] pg pool initialized');
+  var raw = process.env.DATABASE_URL || process.env.SUPABASE_DB_URL || process.env.POSTGRES_URL;
+  if (!raw) { console.warn('[db] No DATABASE_URL — pg disabled'); return null; }
+  // Rewrite IPv6 Supabase direct URL to IPv4 Session Pooler (Railway has no IPv6 egress)
+  var cs = raw;
+  var m = raw.match(/postgres(?:ql)?:\/\/([^:]+):([^@]+)@db\.([a-z0-9]+)\.supabase\.co/i);
+  if (m) {
+    var user = m[1], pass = m[2], proj = m[3];
+    cs = 'postgresql://postgres.' + proj + ':' + pass + '@aws-0-us-east-2.pooler.supabase.com:5432/postgres?sslmode=require';
+    console.log('[db] Rewrote to IPv4 session pooler for project', proj);
+  }
+  _pool = new Pool({ connectionString: cs, ssl: { rejectUnauthorized: false }, max: 5, idleTimeoutMillis: 30000, connectionTimeoutMillis: 15000 });
+  _pool.on('error', function(err) { console.error('[pg pool]', err.message); _pool = null; });
+  console.log('[db] pg pool ready:', cs.replace(/:[^@]+@/, ':***@').slice(0, 70));
   return _pool;
 }
-
 function parseQ(path) {
   const [tp, qp] = path.split('?');
   const table = tp.replace(/^\//, '');
