@@ -97,26 +97,30 @@ let _pool = null;
 
 // Rewrite Supabase direct (IPv6) URL to IPv4 session pooler
 function toPoolerUrl(raw) {
-  if (!raw || raw.indexOf('pooler.supabase.com') > -1) return raw; // already pooler
-  if (raw.indexOf('.supabase.co') === -1) return raw; // not supabase direct
-  // URL format: postgresql://postgres:PASS@db.PROJECT.supabase.co:5432/postgres
-  var atIdx = raw.indexOf('@');
-  if (atIdx < 0) return raw;
-  var before = raw.slice(0, atIdx);   // postgresql://postgres:PASS
-  var after  = raw.slice(atIdx + 1);  // db.PROJECT.supabase.co:5432/postgres
-  // Extract project ID from host
-  var hostOnly = after.split(':')[0].split('/')[0]; // db.PROJECT.supabase.co
-  var parts = hostOnly.split('.');
-  var proj = parts[1] || ''; // PROJECT
-  // Extract password
-  var lastColon = before.lastIndexOf(':');
-  var pass = before.slice(lastColon + 1);
-  if (!proj || !pass) { console.warn('[db] toPoolerUrl: could not parse, raw=', raw.slice(0,60)); return raw; }
-  var result = 'postgresql://postgres.' + proj + ':' + pass + '@aws-0-us-east-2.pooler.supabase.com:5432/postgres?sslmode=require';
-  console.log('[db] IPv6→IPv4 pooler: project=' + proj + ' host=aws-0-us-east-2.pooler.supabase.com');
-  return result;
+  if (!raw) return raw;
+  if (raw.indexOf('pooler.supabase.com') > -1) return raw; // already pooler
+  // Known project: hardcode IPv4 pooler (Railway env var has no password embedded)
+  if (raw.indexOf('adcbrclppmnguzkzwiys') > -1) {
+    var url = 'postgresql://postgres.adcbrclppmnguzkzwiys:verryw-jugwu0-xanqoF@aws-0-us-east-2.pooler.supabase.com:5432/postgres';
+    console.log('[db] Using hardcoded IPv4 pooler URL for project adcbrclppmnguzkzwiys');
+    return url;
+  }
+  // Generic rewrite: db.PROJECT.supabase.co → pooler
+  if (raw.indexOf('.supabase.co') > -1) {
+    var atIdx = raw.indexOf('@');
+    var before = raw.slice(0, atIdx);
+    var after  = raw.slice(atIdx + 1);
+    var hostOnly = after.split(':')[0].split('/')[0];
+    var parts = hostOnly.split('.');
+    var proj = parts[1] || '';
+    var lastColon = before.lastIndexOf(':');
+    var pass = before.slice(lastColon + 1);
+    if (proj && pass) {
+      return 'postgresql://postgres.' + proj + ':' + pass + '@aws-0-us-east-2.pooler.supabase.com:5432/postgres?sslmode=require';
+    }
+  }
+  return raw;
 }
-
 function getPool() {
   if (_pool) return _pool;
   var raw = process.env.DATABASE_URL || process.env.SUPABASE_DB_URL || process.env.POSTGRES_URL || '';
@@ -425,7 +429,7 @@ function isBcryptHash(_str) { return false; } // bcrypt was never real; always f
 app.options('*', cors());
 
 // â”€â”€ Health check â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
-app.get('/health', (req, res) => res.json({ ok: true, ts: new Date().toISOString(), v: '1783181899', rpc: true }));
+app.get('/health', (req, res) => res.json({ ok: true, ts: new Date().toISOString(), v: '1783185140', rpc: true }));
 
 // Diagnostic endpoint
 app.get('/diag', async (req, res) => {
