@@ -429,7 +429,7 @@ function isBcryptHash(_str) { return false; } // bcrypt was never real; always f
 app.options('*', cors());
 
 // â”€â”€ Health check â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
-app.get('/health', (req, res) => res.json({ ok: true, ts: new Date().toISOString(), v: '1783185140', rpc: true }));
+app.get('/health', (req, res) => res.json({ ok: true, ts: new Date().toISOString(), v: '1783185441', rpc: true }));
 
 // Diagnostic endpoint
 app.get('/diag', async (req, res) => {
@@ -6735,34 +6735,20 @@ return err('Unknown unassigned-investor-digest action: ' + action);
 
 
 app.get('/conn-check', async function(req, res) {
-  var raw = process.env.DATABASE_URL || process.env.SUPABASE_DB_URL || '';
-  var cs = raw;
-  if (raw.indexOf('.supabase.co') > -1 && raw.indexOf('pooler.supabase.com') === -1) {
-    var atSign = raw.lastIndexOf('@');
-    var hostPart = raw.slice(atSign + 1);
-    var projMatch = hostPart.match(/([a-z0-9]{20,})/i);
-    var credPart = raw.slice(0, atSign);
-    var colonPos = credPart.lastIndexOf(':');
-    var pass = credPart.slice(colonPos + 1);
-    if (projMatch && pass) {
-      cs = 'postgresql://postgres.' + projMatch[1] + ':' + pass + '@aws-0-us-east-2.pooler.supabase.com:5432/postgres?sslmode=require';
-    }
-  }
-  var out = {
-    raw_preview: raw.replace(/:[^@]+@/, ':***@').slice(0, 80),
-    cs_preview: cs.replace(/:[^@]+@/, ':***@').slice(0, 80),
-    is_pooler: cs.indexOf('pooler.supabase.com') > -1,
-  };
-  if (out.is_pooler) {
-    try {
-      var { Pool: P } = require('pg');
-      var tp = new P({ connectionString: cs, ssl: { rejectUnauthorized: false }, connectionTimeoutMillis: 10000 });
-      var r2 = await tp.query('SELECT COUNT(*) as n FROM "prj_X-ZoVQv6LKXT".staff_users');
-      out.staff_count = r2.rows[0].n;
-      out.connected = true;
-      await tp.end();
-    } catch(e) { out.error = e.message.slice(0, 150); }
-  }
+  var POOLER = 'postgresql://postgres.adcbrclppmnguzkzwiys:verryw-jugwu0-xanqoF@aws-0-us-east-2.pooler.supabase.com:5432/postgres';
+  var out = { is_pooler: true, cs_preview: POOLER.replace(/:[^@]+@/, ':***@') };
+  try {
+    var { Pool: P } = require('pg');
+    var tp = new P({ connectionString: POOLER, ssl: { rejectUnauthorized: false }, connectionTimeoutMillis: 12000 });
+    var r1 = await tp.query('SELECT COUNT(*) as n FROM "prj_X-ZoVQv6LKXT".staff_users');
+    var r2 = await tp.query('SELECT COUNT(*) as n FROM "prj_X-ZoVQv6LKXT".investors');
+    var r3 = await tp.query('SELECT COUNT(*) as n FROM "prj_X-ZoVQv6LKXT".properties WHERE is_published = true');
+    out.staff_count = r1.rows[0].n;
+    out.investor_count = r2.rows[0].n;
+    out.property_count = r3.rows[0].n;
+    out.connected = true;
+    await tp.end();
+  } catch(e) { out.error = e.message.slice(0, 200); }
   res.json(out);
 });
 
