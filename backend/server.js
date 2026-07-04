@@ -101,9 +101,10 @@ function rpcBase() {
 }
 
 function rpcHeaders() {
+  var key = process.env.SUPABASE_SERVICE_ROLE_KEY || '';
   return {
-    'apikey':        SUPABASE_SERVICE_ROLE_KEY,
-    'Authorization': 'Bearer ' + SUPABASE_SERVICE_ROLE_KEY,
+    'apikey':        key,
+    'Authorization': 'Bearer ' + key,
     'Content-Type':  'application/json',
     'Prefer':        '',
   };
@@ -392,7 +393,7 @@ function isBcryptHash(_str) { return false; } // bcrypt was never real; always f
 app.options('*', cors());
 
 // â”€â”€ Health check â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
-app.get('/health', (req, res) => res.json({ ok: true, ts: new Date().toISOString(), v: '1783192727', rpc: true }));
+app.get('/health', (req, res) => res.json({ ok: true, ts: new Date().toISOString(), v: '1783193013', rpc: true }));
 
 // Diagnostic endpoint
 app.get('/diag', async (req, res) => {
