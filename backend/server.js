@@ -106,7 +106,8 @@ function rpcHeaders() {
     'apikey':        key,
     'Authorization': 'Bearer ' + key,
     'Content-Type':  'application/json',
-    'Prefer':        '',
+    'Accept-Profile': 'public',
+    'Prefer':        'return=representation',
   };
 }
 
@@ -142,17 +143,25 @@ async function dbGet(path) {
       body:    JSON.stringify({ p_table: q.table, p_filter: q.filter, p_limit: q.limit, p_select: q.sel, p_order_by: q.oCol, p_order_dir: q.oDir }),
     });
     var text = await res.text();
-    var data = JSON.parse(text);
-    // ayp_read returns jsonb array; PostgREST wraps RPC result in array
-    if (Array.isArray(data) && data.length === 1 && Array.isArray(data[0])) data = data[0];
-    if (Array.isArray(data) && data.length === 1 && Array.isArray(Object.values(data[0])[0])) data = Object.values(data[0])[0];
-    if (!Array.isArray(data)) data = data && typeof data === 'object' ? [data] : [];
-    // Filter out error objects
+    var raw  = JSON.parse(text);
+    // ayp_read is SECURITY DEFINER returning jsonb.
+    // PostgREST returns the jsonb value directly (already an array).
+    // Unwrap if wrapped: [[...]] or [{ayp_read:[...]}]
+    var data = raw;
+    if (Array.isArray(data) && data.length > 0) {
+      var first = data[0];
+      if (Array.isArray(first)) {
+        data = first; // unwrap [[...]]
+      } else if (first && typeof first === 'object' && Array.isArray(first.ayp_read)) {
+        data = first.ayp_read; // unwrap [{ayp_read:[...]}]
+      }
+    }
+    if (!Array.isArray(data)) data = [];
     if (data.length > 0 && data[0] && data[0]._error) {
-      console.error('[dbGet] RPC error:', data[0]._error, q.table);
+      console.error('[dbGet] RPC error:', data[0]._error, 'table:', q.table);
       return { ok: true, status: 200, data: [] };
     }
-    return { ok: true, status: 200, data };
+    return { ok: true, status: 200, data: data };
   } catch(e) {
     console.error('[dbGet]', e.message.slice(0,100), path.slice(0,60));
     return { ok: true, status: 200, data: [] };
@@ -393,7 +402,7 @@ function isBcryptHash(_str) { return false; } // bcrypt was never real; always f
 app.options('*', cors());
 
 // â”€â”€ Health check â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
-app.get('/health', (req, res) => res.json({ ok: true, ts: new Date().toISOString(), v: '1783193013', rpc: true }));
+app.get('/health', (req, res) => res.json({ ok: true, ts: new Date().toISOString(), v: '1783193314', rpc: true }));
 
 // Diagnostic endpoint
 app.get('/diag', async (req, res) => {
