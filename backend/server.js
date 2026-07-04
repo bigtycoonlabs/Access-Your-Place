@@ -90,126 +90,172 @@ const dbHeaders = () => ({
   'Content-Type': 'application/json',
 });
 
-// ── DB helpers (direct pg connection — bypasses broken PostgREST) ───────────
+// ── DB helpers (direct pg — bypasses PostgREST) ─────────────────────────────
 const { Pool } = require('pg');
 const DB_SCHEMA = 'prj_X-ZoVQv6LKXT';
 let _pool = null;
+
+// Rewrite Supabase direct (IPv6) URL to IPv4 session pooler
+function toPoolerUrl(raw) {
+  if (!raw || raw.indexOf('pooler.supabase.com') > -1) return raw; // already pooler
+  if (raw.indexOf('.supabase.co') === -1) return raw; // not supabase direct
+  // URL format: postgresql://postgres:PASS@db.PROJECT.supabase.co:5432/postgres
+  var atIdx = raw.indexOf('@');
+  if (atIdx < 0) return raw;
+  var before = raw.slice(0, atIdx);   // postgresql://postgres:PASS
+  var after  = raw.slice(atIdx + 1);  // db.PROJECT.supabase.co:5432/postgres
+  // Extract project ID from host
+  var hostOnly = after.split(':')[0].split('/')[0]; // db.PROJECT.supabase.co
+  var parts = hostOnly.split('.');
+  var proj = parts[1] || ''; // PROJECT
+  // Extract password
+  var lastColon = before.lastIndexOf(':');
+  var pass = before.slice(lastColon + 1);
+  if (!proj || !pass) { console.warn('[db] toPoolerUrl: could not parse, raw=', raw.slice(0,60)); return raw; }
+  var result = 'postgresql://postgres.' + proj + ':' + pass + '@aws-0-us-east-2.pooler.supabase.com:5432/postgres?sslmode=require';
+  console.log('[db] IPv6→IPv4 pooler: project=' + proj + ' host=aws-0-us-east-2.pooler.supabase.com');
+  return result;
+}
 
 function getPool() {
   if (_pool) return _pool;
   var raw = process.env.DATABASE_URL || process.env.SUPABASE_DB_URL || process.env.POSTGRES_URL || '';
   if (!raw) { console.warn('[db] No DATABASE_URL — pg disabled'); return null; }
-  var cs = raw;
-  // Detect if it points to Supabase direct host (IPv6 on new projects) and rewrite to IPv4 pooler
-  if (raw.indexOf('.supabase.co') > -1 && raw.indexOf('pooler.supabase.com') === -1) {
-    // Extract password and project ID using simple string operations
-    var atSign = raw.lastIndexOf('@');
-    var hostPart = raw.slice(atSign + 1); // e.g. db.PROJECT.supabase.co:5432/postgres
-    var projMatch = hostPart.match(/([a-z0-9]{20,})/i); // project ref is 20+ chars
-    var credPart = raw.slice(0, atSign); // e.g. postgresql://user:pass
-    var colonPos = credPart.lastIndexOf(':');
-    var pass = credPart.slice(colonPos + 1);
-    if (projMatch && pass) {
-      var proj = projMatch[1];
-      cs = 'postgresql://postgres.' + proj + ':' + encodeURIComponent(pass) + '@aws-0-us-east-2.pooler.supabase.com:5432/postgres?sslmode=require';
-      console.log('[db] Rewrote to IPv4 session pooler, project:', proj);
-    } else {
-      console.warn('[db] Could not parse URL for rewrite, using raw');
-    }
-  }
-  console.log('[db] Connecting:', cs.replace(/:[^@]+@/, ':***@').slice(0, 80));
+  var cs = toPoolerUrl(raw);
   _pool = new Pool({ connectionString: cs, ssl: { rejectUnauthorized: false }, max: 5, idleTimeoutMillis: 30000, connectionTimeoutMillis: 15000 });
   _pool.on('error', function(err) { console.error('[pg]', err.message); _pool = null; });
+  console.log('[db] pg pool connecting to:', cs.replace(/:[^@]+@/, ':***@').slice(0, 80));
   return _pool;
 }
+
+// IMPORTANT: parseQ must be defined before dbGet (no hoisting for const)
+function parseQ(path) {
+  var tp = path.split('?')[0], qp = path.split('?')[1] || '';
+  var table = tp.replace(/^\//, '');
+  var params = new URLSearchParams(qp);
+  var sel = params.get('select') || '*';
+  sel = sel.replace(/\w+:\w+!?\w*\([^)]*\),?/g, '').replace(/,+/g, ',').replace(/^,|,$/g, '') || '*';
+  var limit = Math.min(parseInt(params.get('limit') || '500'), 1000);
+  var orderParts = (params.get('order') || 'created_at.desc').split('.');
+  var oCol = /^\w+$/.test(orderParts[0]) ? orderParts[0] : 'created_at';
+  var oDir = orderParts[1] === 'asc' ? 'ASC' : 'DESC';
+  var conds = [], cVals = [], pi = 1;
+  for (var _i of params) {
+    var k = _i[0], v = _i[1];
+    if (['select','limit','order','offset'].includes(k)) continue;
+    var d = v.indexOf('.');
+    if (d < 0) continue;
+    var op = v.slice(0, d), val = v.slice(d + 1);
+    if (op === 'eq')    { conds.push('"' + k + '" = $' + pi++);   cVals.push(val === 'null' ? null : val); }
+    else if (op === 'neq')  { conds.push('"' + k + '" != $' + pi++);  cVals.push(val); }
+    else if (op === 'gt')   { conds.push('"' + k + '" > $' + pi++);   cVals.push(val); }
+    else if (op === 'gte')  { conds.push('"' + k + '" >= $' + pi++);  cVals.push(val); }
+    else if (op === 'lt')   { conds.push('"' + k + '" < $' + pi++);   cVals.push(val); }
+    else if (op === 'lte')  { conds.push('"' + k + '" <= $' + pi++);  cVals.push(val); }
+    else if (op === 'ilike'){ conds.push('"' + k + '" ILIKE $' + pi++); cVals.push(val); }
+    else if (op === 'like') { conds.push('"' + k + '" LIKE $' + pi++); cVals.push(val); }
+    else if (op === 'is')   { conds.push('"' + k + '" IS ' + (val==='null'?'NULL':val==='true'?'TRUE':'FALSE')); }
+    else if (op === 'in') {
+      var ins = val.replace(/^\(|\)$/g,'').split(',');
+      conds.push('"' + k + '" IN (' + ins.map(function() { return '$' + pi++; }).join(',') + ')');
+      cVals.push.apply(cVals, ins);
+    }
+  }
+  return { table: table, sel: sel, where: conds.length ? 'WHERE ' + conds.join(' AND ') : '', cVals: cVals, limit: limit, oCol: oCol, oDir: oDir };
+}
+
 async function dbGet(path) {
-  const pool = getPool();
+  var pool = getPool();
   if (!pool) return dbDirect(path);
-  const { table, sel, where, cVals, limit, oCol, oDir } = parseQ(path);
-  const sqls = [
-    'SELECT ' + sel + ' FROM "' + DB_SCHEMA + '"."' + table + '" ' + where + ' ORDER BY "' + oCol + '" ' + oDir + ' LIMIT ' + limit,
-    'SELECT ' + sel + ' FROM "' + DB_SCHEMA + '"."' + table + '" ' + where + ' LIMIT ' + limit,
-    'SELECT * FROM "' + DB_SCHEMA + '"."' + table + '" ' + where + ' LIMIT ' + limit,
+  var q = parseQ(path);
+  var sqls = [
+    'SELECT ' + q.sel + ' FROM "' + DB_SCHEMA + '"."' + q.table + '" ' + q.where + ' ORDER BY "' + q.oCol + '" ' + q.oDir + ' LIMIT ' + q.limit,
+    'SELECT ' + q.sel + ' FROM "' + DB_SCHEMA + '"."' + q.table + '" ' + q.where + ' LIMIT ' + q.limit,
+    'SELECT * FROM "' + DB_SCHEMA + '"."' + q.table + '" ' + q.where + ' LIMIT ' + q.limit,
   ];
-  for (const sql of sqls) {
-    try { const r = await pool.query(sql, cVals); return { ok: true, status: 200, data: r.rows }; }
-    catch(e) { if (e.message.includes('does not exist') && !sql.includes('SELECT *')) continue; console.error('[dbGet]', e.message.slice(0,80), table); return { ok: true, status: 200, data: [] }; }
+  for (var si = 0; si < sqls.length; si++) {
+    try {
+      var r = await pool.query(sqls[si], q.cVals);
+      return { ok: true, status: 200, data: r.rows };
+    } catch(e) {
+      if (e.message.indexOf('does not exist') > -1 && si < sqls.length - 1) continue;
+      console.error('[dbGet]', e.message.slice(0,80), q.table);
+      return { ok: true, status: 200, data: [] };
+    }
   }
   return { ok: true, status: 200, data: [] };
 }
 
 async function dbPost(path, body) {
-  const pool = getPool();
-  if (!pool) return dbDirect(path, { method:'POST', headers:{...dbHeaders(),'Prefer':'return=representation'}, body:JSON.stringify(body) });
-  const table = path.split('?')[0].replace(/^\//, '');
-  const cols = Object.keys(body).filter(k => body[k] !== undefined);
-  const vals = cols.map(k => body[k]);
+  var pool = getPool();
+  if (!pool) return dbDirect(path, { method:'POST', headers:Object.assign({}, dbHeaders(), {'Prefer':'return=representation'}), body:JSON.stringify(body) });
+  var table = path.split('?')[0].replace(/^\//, '');
+  var cols = Object.keys(body).filter(function(k) { return body[k] !== undefined; });
+  var vals = cols.map(function(k) { return body[k]; });
   if (!cols.length) return { ok: false, status: 400, data: { error: 'empty body' } };
   try {
-    const sql = 'INSERT INTO "' + DB_SCHEMA + '"."' + table + '" (' + cols.map(c => '"' + c + '"').join(',') + ') VALUES (' + cols.map((_,i) => '$'+(i+1)).join(',') + ') RETURNING *';
-    const r = await pool.query(sql, vals);
+    var sql = 'INSERT INTO "' + DB_SCHEMA + '"."' + table + '" (' + cols.map(function(c) { return '"' + c + '"'; }).join(',') + ') VALUES (' + cols.map(function(_,i) { return '$'+(i+1); }).join(',') + ') RETURNING *';
+    var r = await pool.query(sql, vals);
     return { ok: true, status: 201, data: r.rows };
   } catch(e) { console.error('[dbPost]', e.message.slice(0,80), table); return { ok: false, status: 500, data: { error: e.message } }; }
 }
 
 async function dbPatch(path, body) {
-  const pool = getPool();
-  if (!pool) return dbDirect(path, { method:'PATCH', headers:{...dbHeaders(),'Prefer':'return=representation'}, body:JSON.stringify(body) });
-  const [tp, qp] = path.split('?');
-  const table = tp.replace(/^\//, '');
-  const params = new URLSearchParams(qp || '');
-  const cols = Object.keys(body); const vals = Object.values(body);
-  let pi = cols.length + 1;
-  const conds = []; const cVals = [];
-  for (const [k, v] of params) {
-    const d = v.indexOf('.');
+  var pool = getPool();
+  if (!pool) return dbDirect(path, { method:'PATCH', headers:Object.assign({}, dbHeaders(), {'Prefer':'return=representation'}), body:JSON.stringify(body) });
+  var parts = path.split('?');
+  var table = parts[0].replace(/^\//, '');
+  var params = new URLSearchParams(parts[1] || '');
+  var cols = Object.keys(body), vals = Object.values(body);
+  var pi = cols.length + 1, conds = [], cVals = [];
+  for (var _i of params) {
+    var k = _i[0], v = _i[1], d = v.indexOf('.');
     if (d < 0) continue;
-    const op = v.slice(0, d), val = v.slice(d + 1);
+    var op = v.slice(0, d), val = v.slice(d + 1);
     if (op === 'eq') { conds.push('"' + k + '" = $' + pi++); cVals.push(val === 'null' ? null : val); }
     else if (op === 'is') { conds.push('"' + k + '" IS ' + (val==='null'?'NULL':val.toUpperCase())); }
   }
   try {
-    const setClause = cols.map((c,i) => '"' + c + '" = $' + (i+1)).join(', ');
-    const where = conds.length ? 'WHERE ' + conds.join(' AND ') : '';
-    const sql = 'UPDATE "' + DB_SCHEMA + '"."' + table + '" SET ' + setClause + ' ' + where + ' RETURNING *';
-    const r = await pool.query(sql, [...vals, ...cVals]);
+    var setClause = cols.map(function(c,i) { return '"' + c + '" = $' + (i+1); }).join(', ');
+    var where = conds.length ? 'WHERE ' + conds.join(' AND ') : '';
+    var sql = 'UPDATE "' + DB_SCHEMA + '"."' + table + '" SET ' + setClause + ' ' + where + ' RETURNING *';
+    var r = await pool.query(sql, vals.concat(cVals));
     return { ok: true, status: 200, data: r.rows };
   } catch(e) { console.error('[dbPatch]', e.message.slice(0,80), table); return { ok: false, status: 500, data: { error: e.message } }; }
 }
 
 async function dbDelete(path) {
-  const pool = getPool();
+  var pool = getPool();
   if (!pool) return dbDirect(path, { method:'DELETE', headers:dbHeaders() });
-  const [tp, qp] = path.split('?');
-  const table = tp.replace(/^\//, '');
-  const params = new URLSearchParams(qp || '');
-  let pi = 1; const conds = []; const cVals = [];
-  for (const [k, v] of params) {
-    const d = v.indexOf('.');
+  var parts = path.split('?');
+  var table = parts[0].replace(/^\//, '');
+  var params = new URLSearchParams(parts[1] || '');
+  var pi = 1, conds = [], cVals = [];
+  for (var _i of params) {
+    var k = _i[0], v = _i[1], d = v.indexOf('.');
     if (d < 0) continue;
-    const op = v.slice(0, d), val = v.slice(d + 1);
-    if (op === 'eq') { conds.push('"' + k + '" = $' + pi++); cVals.push(val); }
+    if (v.slice(0,d) === 'eq') { conds.push('"' + k + '" = $' + pi++); cVals.push(v.slice(d+1)); }
   }
   if (!conds.length) return { ok: false, status: 400, data: { error: 'DELETE requires filter' } };
   try {
-    const sql = 'DELETE FROM "' + DB_SCHEMA + '"."' + table + '" WHERE ' + conds.join(' AND ');
-    await pool.query(sql, cVals);
+    var r = await pool.query('DELETE FROM "' + DB_SCHEMA + '"."' + table + '" WHERE ' + conds.join(' AND '), cVals);
     return { ok: true, status: 200, data: [] };
   } catch(e) { console.error('[dbDelete]', e.message.slice(0,80), table); return { ok: false, status: 500, data: { error: e.message } }; }
 }
 
-async function dbDirect(path, opts = {}) {
-  const base = (process.env.POSTGREST_URL || SUPABASE_URL || '').replace(/\/+$/, '').replace(/\/rest\/v1$/, '');
-  const url = base + (/supabase\.co/i.test(base) ? '/rest/v1' : '') + (path.startsWith('/') ? path : '/' + path);
+async function dbDirect(path, opts) {
+  opts = opts || {};
+  var base = (process.env.POSTGREST_URL || SUPABASE_URL || '').replace(/\/+$/, '').replace(/\/rest\/v1$/, '');
+  var url = base + (/supabase\.co/i.test(base) ? '/rest/v1' : '') + (path.startsWith('/') ? path : '/' + path);
   try {
-    const res = await fetch(url, { headers: dbHeaders(), ...opts });
-    const text = await res.text();
+    var res = await fetch(url, Object.assign({ headers: dbHeaders() }, opts));
+    var text = await res.text();
     try { return { ok: res.ok, status: res.status, data: JSON.parse(text) }; }
     catch { return { ok: res.ok, status: res.status, data: text }; }
   } catch(e) { return { ok: false, status: 500, data: { error: e.message } }; }
 }
 
-async function db(path, opts = {}) { return dbDirect(path, opts); }
+async function db(path, opts) { return dbDirect(path, opts); }
 
 
 async function sendEmail({ to, subject, html, from }) {
@@ -379,7 +425,7 @@ function isBcryptHash(_str) { return false; } // bcrypt was never real; always f
 app.options('*', cors());
 
 // â”€â”€ Health check â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
-app.get('/health', (req, res) => res.json({ ok: true, ts: new Date().toISOString(), v: '1783180856', rpc: true }));
+app.get('/health', (req, res) => res.json({ ok: true, ts: new Date().toISOString(), v: '1783181194', rpc: true }));
 
 // Diagnostic endpoint
 app.get('/diag', async (req, res) => {
