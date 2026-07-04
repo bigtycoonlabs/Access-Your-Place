@@ -429,7 +429,7 @@ function isBcryptHash(_str) { return false; } // bcrypt was never real; always f
 app.options('*', cors());
 
 // â”€â”€ Health check â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
-app.get('/health', (req, res) => res.json({ ok: true, ts: new Date().toISOString(), v: '1783186031', rpc: true }));
+app.get('/health', (req, res) => res.json({ ok: true, ts: new Date().toISOString(), v: '1783186311', rpc: true }));
 
 // Diagnostic endpoint
 app.get('/diag', async (req, res) => {
@@ -6738,50 +6738,28 @@ app.get('/conn-check', async function(req, res) {
   var { Pool: P } = require('pg');
   var PROJ = 'adcbrclppmnguzkzwiys';
   var PASS = 'verryw-jugwu0-xanqoF';
+  var HOST = 'db.' + PROJ + '.supabase.co';
   var SSL_OPT = { rejectUnauthorized: false };
-  var POOL_OPTS = { ssl: SSL_OPT, connectionTimeoutMillis: 10000, max: 1 };
-  var urls = [
-    // Transaction pooler 6543 (no sslmode in URL — handled by ssl option)
-    'postgresql://postgres.' + PROJ + ':' + PASS + '@aws-0-us-east-2.pooler.supabase.com:6543/postgres',
-    // Session pooler 5432
-    'postgresql://postgres.' + PROJ + ':' + PASS + '@aws-0-us-east-2.pooler.supabase.com:5432/postgres',
-  ];
   var results = [];
-  for (var i = 0; i < urls.length; i++) {
-    var url = urls[i];
-    try {
-      var tp = new P(Object.assign({ connectionString: url }, POOL_OPTS));
-      var r = await tp.query('SELECT COUNT(*) as n FROM "prj_X-ZoVQv6LKXT".staff_users');
-      results.push({ url: url.replace(/:[^@]+@/, ':***@').slice(0,80), ok: true, staff: r.rows[0].n });
-      await tp.end();
-      break; // stop on first success
-    } catch(e) {
-      results.push({ url: url.replace(/:[^@]+@/, ':***@').slice(0,80), ok: false, err: e.message.slice(0,120) });
-    }
-  }
-  res.json({ results: results });
-});app.get('/schema-check', async function(req, res) {
-  var pool = getPool();
-  var dbUrl = process.env.DATABASE_URL || 'NOT_SET';
-  var out = { pool: !!pool, db_url_preview: dbUrl.replace(/:[^@]+@/, ':***@').slice(0, 80) };
-  if (!pool) { return res.json(out); }
-  var queries = [
-    ["prj_count", "SELECT COUNT(*) as n FROM \"prj_X-ZoVQv6LKXT\".staff_users"],
-    ["schemas", "SELECT nspname FROM pg_namespace WHERE nspname NOT LIKE 'pg_%' AND nspname != 'information_schema' ORDER BY nspname"],
-    ["context", "SELECT current_schema() AS s, current_user AS u, inet_server_addr() AS srv"],
-    ["staff_anywhere", "SELECT table_schema, table_name FROM information_schema.tables WHERE table_name = 'staff_users'"],
-  ];
-  for (var qi = 0; qi < queries.length; qi++) {
-    try {
-      var r2 = await pool.query(queries[qi][1]);
-      out[queries[qi][0]] = r2.rows;
-    } catch(e) {
-      out[queries[qi][0] + '_err'] = e.message.slice(0, 120);
-    }
-  }
-  return res.json(out);
-});
 
+  // Test 1: Direct connection forcing IPv4 (family:4)
+  try {
+    var tp1 = new P({ host: HOST, port: 5432, user: 'postgres', password: PASS, database: 'postgres', ssl: SSL_OPT, family: 4, connectionTimeoutMillis: 10000, max: 1 });
+    var r1 = await tp1.query('SELECT COUNT(*) as n FROM "prj_X-ZoVQv6LKXT".staff_users');
+    results.push({ method: 'direct-ipv4-family4', ok: true, staff: r1.rows[0].n });
+    await tp1.end();
+  } catch(e) { results.push({ method: 'direct-ipv4-family4', ok: false, err: e.message.slice(0,120) }); }
+
+  // Test 2: Direct connection without family override
+  try {
+    var tp2 = new P({ host: HOST, port: 5432, user: 'postgres', password: PASS, database: 'postgres', ssl: SSL_OPT, connectionTimeoutMillis: 10000, max: 1 });
+    var r2 = await tp2.query('SELECT 1');
+    results.push({ method: 'direct-no-family', ok: true });
+    await tp2.end();
+  } catch(e) { results.push({ method: 'direct-no-family', ok: false, err: e.message.slice(0,120) }); }
+
+  res.json({ results: results, host: HOST });
+});
 
 app.get('/url-debug', function(req, res) {
   var raw = process.env.DATABASE_URL || '';
