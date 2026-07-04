@@ -84,11 +84,7 @@ const DIST_DIR = path.join(__dirname, 'dist');
 app.use(express.static(DIST_DIR));
 
 // â”€â”€ DB helper (calls PostgREST) â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
-const dbHeaders = () => ({
-  'apikey': SERVICE_ROLE_KEY,
-  'Authorization': `Bearer ${SERVICE_ROLE_KEY}`,
-  'Content-Type': 'application/json',
-});
+
 
 // ── DB helpers — RPC-based, bypasses PostgREST schema cache & IPv6 ──────────
 // Uses ayp_read/ayp_insert/ayp_update RPC functions in public schema.
@@ -402,7 +398,7 @@ function isBcryptHash(_str) { return false; } // bcrypt was never real; always f
 app.options('*', cors());
 
 // â”€â”€ Health check â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
-app.get('/health', (req, res) => res.json({ ok: true, ts: new Date().toISOString(), v: '1783201878', rpc: true }));
+app.get('/health', (req, res) => res.json({ ok: true, ts: new Date().toISOString(), v: '1783202022', rpc: true }));
 
 // Diagnostic endpoint
 app.get('/diag', async (req, res) => {
