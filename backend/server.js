@@ -425,7 +425,7 @@ function isBcryptHash(_str) { return false; } // bcrypt was never real; always f
 app.options('*', cors());
 
 // â”€â”€ Health check â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
-app.get('/health', (req, res) => res.json({ ok: true, ts: new Date().toISOString(), v: '1783181713', rpc: true }));
+app.get('/health', (req, res) => res.json({ ok: true, ts: new Date().toISOString(), v: '1783181899', rpc: true }));
 
 // Diagnostic endpoint
 app.get('/diag', async (req, res) => {
@@ -6786,23 +6786,20 @@ app.get('/schema-check', async function(req, res) {
 
 
 app.get('/url-debug', function(req, res) {
-  var raw = process.env.DATABASE_URL || process.env.SUPABASE_DB_URL || process.env.POSTGRES_URL || '';
-  var atIdx = raw.indexOf('@');
-  var hostPart = atIdx > -1 ? raw.slice(atIdx + 1) : 'NO_AT_SIGN';
-  var schemePart = raw.split('://')[0] || 'NO_SCHEME';
-  var credPart = atIdx > -1 ? raw.slice(0, atIdx) : '';
-  var lastColon = credPart.lastIndexOf(':');
-  var passLen = lastColon > -1 ? credPart.slice(lastColon + 1).length : 0;
+  var raw = process.env.DATABASE_URL || '';
+  var dbEnvs = Object.keys(process.env)
+    .filter(function(k) { return /^(DATABASE|POSTGRES|PG|SUPABASE|DB)/.test(k); })
+    .reduce(function(acc, k) {
+      var v = process.env[k] || '';
+      // Show key name and value length/preview — never expose passwords
+      acc[k] = { len: v.length, preview: v.replace(/:[^@]+@/, ':***@').slice(0,80) };
+      return acc;
+    }, {});
   res.json({
-    length: raw.length,
-    scheme: schemePart,
-    has_at: atIdx > -1,
-    host_part: hostPart,
-    has_supabase_co: raw.indexOf('.supabase.co') > -1,
-    has_pooler: raw.indexOf('pooler.supabase.com') > -1,
-    pass_len: passLen,
-    first_20: raw.slice(0, 20),
-    after_at_30: hostPart.slice(0, 30),
+    db_related_envs: dbEnvs,
+    raw_db_url_len: raw.length,
+    raw_db_url_preview: raw.replace(/:[^@]+@/, ':***@').slice(0,80),
+    has_password_in_url: raw.indexOf('@') > -1 && raw.lastIndexOf(':') > raw.indexOf('://') + 3 && raw.slice(raw.indexOf('://') + 3, raw.indexOf('@')).indexOf(':') > -1,
   });
 });
 app.get('*', (req, res) => {
