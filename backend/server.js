@@ -99,20 +99,21 @@ function getPool() {
   if (_pool) return _pool;
   var raw = process.env.DATABASE_URL || process.env.SUPABASE_DB_URL || process.env.POSTGRES_URL;
   if (!raw) { console.warn('[db] No DATABASE_URL — pg disabled'); return null; }
-  // Rewrite IPv6 Supabase direct URL to IPv4 Session Pooler (Railway has no IPv6 egress)
+  // Rewrite IPv6 Supabase direct URL → IPv4 Session Pooler (Railway has no IPv6 egress)
   var cs = raw;
-  var m = raw.match(/postgres(?:ql)?:\/\/([^:]+):([^@]+)@db\.([a-z0-9]+)\.supabase\.co/i);
+  var m = raw.match(/postgres(?:ql)?:\/\/([^:@]+):([^@]+)@db\.([a-z0-9]+)\.supabase\.co/i);
   if (m) {
-    var user = m[1], pass = m[2], proj = m[3];
+    var pass = m[2], proj = m[3];
     cs = 'postgresql://postgres.' + proj + ':' + pass + '@aws-0-us-east-2.pooler.supabase.com:5432/postgres?sslmode=require';
-    console.log('[db] Rewrote to IPv4 session pooler for project', proj);
+    console.log('[db] Rewrote direct IPv6 URL to IPv4 session pooler, project:', proj);
+  } else {
+    console.log('[db] Using DATABASE_URL as-is:', raw.replace(/:[^@]+@/, ':***@').slice(0,70));
   }
   _pool = new Pool({ connectionString: cs, ssl: { rejectUnauthorized: false }, max: 5, idleTimeoutMillis: 30000, connectionTimeoutMillis: 15000 });
   _pool.on('error', function(err) { console.error('[pg pool]', err.message); _pool = null; });
-  console.log('[db] pg pool ready:', cs.replace(/:[^@]+@/, ':***@').slice(0, 70));
+  console.log('[db] pg pool ready:', cs.replace(/:[^@]+@/, ':***@').slice(0,70));
   return _pool;
-}
-function parseQ(path) {
+}function parseQ(path) {
   const [tp, qp] = path.split('?');
   const table = tp.replace(/^\//, '');
   const params = new URLSearchParams(qp || '');
@@ -6715,18 +6716,19 @@ return err('Unknown unassigned-investor-digest action: ' + action);
 
 app.get('/schema-check', async function(req, res) {
   var pool = getPool();
-  var out = { pool: !!pool };
+  var dbUrl = process.env.DATABASE_URL || 'NOT_SET';
+  var out = { pool: !!pool, db_url_preview: dbUrl.replace(/:[^@]+@/, ':***@').slice(0, 80) };
   if (!pool) { return res.json(out); }
   var queries = [
     ["prj_count", "SELECT COUNT(*) as n FROM \"prj_X-ZoVQv6LKXT\".staff_users"],
     ["schemas", "SELECT nspname FROM pg_namespace WHERE nspname NOT LIKE 'pg_%' AND nspname != 'information_schema' ORDER BY nspname"],
-    ["context", "SELECT current_schema() AS s, current_user AS u"],
+    ["context", "SELECT current_schema() AS s, current_user AS u, inet_server_addr() AS srv"],
     ["staff_anywhere", "SELECT table_schema, table_name FROM information_schema.tables WHERE table_name = 'staff_users'"],
   ];
   for (var qi = 0; qi < queries.length; qi++) {
     try {
-      var res2 = await pool.query(queries[qi][1]);
-      out[queries[qi][0]] = res2.rows;
+      var r2 = await pool.query(queries[qi][1]);
+      out[queries[qi][0]] = r2.rows;
     } catch(e) {
       out[queries[qi][0] + '_err'] = e.message.slice(0, 120);
     }
