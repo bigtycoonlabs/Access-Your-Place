@@ -136,12 +136,21 @@ async function sqlExec(sql) {
     });
     var text = await res.text();
     if (res.status === 503 || res.status === 404) {
-      return { ok: false, error: 'PostgREST unavailable: ' + text.slice(0,100) };
+      return { ok: false, error: 'PostgREST: ' + text.slice(0,100) };
     }
-    var data = JSON.parse(text);
-    if (Array.isArray(data)) return { ok: true, rows: data };
-    if (data && typeof data === 'object' && !data.code) return { ok: true, rows: [data] };
-    return { ok: false, error: JSON.stringify(data).slice(0,200) };
+    var raw = JSON.parse(text);
+    // ayp_query returns jsonb — PostgREST wraps it: [{"ayp_query": [...rows...]}]
+    var rows = raw;
+    if (Array.isArray(raw) && raw.length > 0 && raw[0] && raw[0].ayp_query !== undefined) {
+      rows = raw[0].ayp_query; // unwrap [{ayp_query:[...]}] -> [...]
+    } else if (Array.isArray(raw) && raw.length > 0 && raw[0] && raw[0].ayp_read !== undefined) {
+      rows = raw[0].ayp_read;
+    }
+    if (!Array.isArray(rows)) rows = (rows && typeof rows === 'object') ? [rows] : [];
+    if (rows.length > 0 && rows[0] && rows[0]._error) {
+      return { ok: false, error: rows[0]._error };
+    }
+    return { ok: true, rows: rows };
   } catch(e) { return { ok: false, error: e.message }; }
 }
 
@@ -404,7 +413,7 @@ function isBcryptHash(_str) { return false; } // bcrypt was never real; always f
 app.options('*', cors());
 
 // â”€â”€ Health check â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
-app.get('/health', (req, res) => res.json({ ok: true, ts: new Date().toISOString(), v: '1783202733', rpc: true }));
+app.get('/health', (req, res) => res.json({ ok: true, ts: new Date().toISOString(), v: '1783203016', rpc: true }));
 
 // Diagnostic endpoint
 app.get('/diag', async (req, res) => {
