@@ -101,7 +101,7 @@ function toPoolerUrl(raw) {
   if (raw.indexOf('pooler.supabase.com') > -1) return raw; // already pooler
   // Known project: hardcode IPv4 pooler (Railway env var has no password embedded)
   if (raw.indexOf('adcbrclppmnguzkzwiys') > -1) {
-    var url = 'postgresql://postgres.adcbrclppmnguzkzwiys:verryw-jugwu0-xanqoF@aws-0-us-east-2.pooler.supabase.com:5432/postgres';
+    var url = 'postgresql://postgres.adcbrclppmnguzkzwiys:verryw-jugwu0-xanqoF@aws-0-us-east-2.pooler.supabase.com:6543/postgres';
     console.log('[db] Using hardcoded IPv4 pooler URL for project adcbrclppmnguzkzwiys');
     return url;
   }
@@ -116,7 +116,7 @@ function toPoolerUrl(raw) {
     var lastColon = before.lastIndexOf(':');
     var pass = before.slice(lastColon + 1);
     if (proj && pass) {
-      return 'postgresql://postgres.' + proj + ':' + pass + '@aws-0-us-east-2.pooler.supabase.com:5432/postgres?sslmode=require';
+      return 'postgresql://postgres.' + proj + ':' + pass + '@aws-0-us-east-2.pooler.supabase.com:6543/postgres';
     }
   }
   return raw;
@@ -429,7 +429,7 @@ function isBcryptHash(_str) { return false; } // bcrypt was never real; always f
 app.options('*', cors());
 
 // â”€â”€ Health check â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
-app.get('/health', (req, res) => res.json({ ok: true, ts: new Date().toISOString(), v: '1783185749', rpc: true }));
+app.get('/health', (req, res) => res.json({ ok: true, ts: new Date().toISOString(), v: '1783186031', rpc: true }));
 
 // Diagnostic endpoint
 app.get('/diag', async (req, res) => {
@@ -6738,29 +6738,29 @@ app.get('/conn-check', async function(req, res) {
   var { Pool: P } = require('pg');
   var PROJ = 'adcbrclppmnguzkzwiys';
   var PASS = 'verryw-jugwu0-xanqoF';
+  var SSL_OPT = { rejectUnauthorized: false };
+  var POOL_OPTS = { ssl: SSL_OPT, connectionTimeoutMillis: 10000, max: 1 };
   var urls = [
-    // Option 1: Transaction pooler port 6543 (often more reliable)
-    'postgresql://postgres.' + PROJ + ':' + PASS + '@aws-0-us-east-2.pooler.supabase.com:6543/postgres?sslmode=require&pgbouncer=true',
-    // Option 2: Session pooler port 5432
-    'postgresql://postgres.' + PROJ + ':' + PASS + '@aws-0-us-east-2.pooler.supabase.com:5432/postgres?sslmode=require',
-    // Option 3: Direct with IPv4 forced via DNS hint
-    'postgresql://postgres:' + PASS + '@db.' + PROJ + '.supabase.co:5432/postgres?sslmode=require',
+    // Transaction pooler 6543 (no sslmode in URL — handled by ssl option)
+    'postgresql://postgres.' + PROJ + ':' + PASS + '@aws-0-us-east-2.pooler.supabase.com:6543/postgres',
+    // Session pooler 5432
+    'postgresql://postgres.' + PROJ + ':' + PASS + '@aws-0-us-east-2.pooler.supabase.com:5432/postgres',
   ];
   var results = [];
   for (var i = 0; i < urls.length; i++) {
     var url = urls[i];
     try {
-      var tp = new P({ connectionString: url, ssl: { rejectUnauthorized: false }, connectionTimeoutMillis: 8000, max: 1 });
+      var tp = new P(Object.assign({ connectionString: url }, POOL_OPTS));
       var r = await tp.query('SELECT COUNT(*) as n FROM "prj_X-ZoVQv6LKXT".staff_users');
       results.push({ url: url.replace(/:[^@]+@/, ':***@').slice(0,80), ok: true, staff: r.rows[0].n });
       await tp.end();
+      break; // stop on first success
     } catch(e) {
-      results.push({ url: url.replace(/:[^@]+@/, ':***@').slice(0,80), ok: false, err: e.message.slice(0,100) });
+      results.push({ url: url.replace(/:[^@]+@/, ':***@').slice(0,80), ok: false, err: e.message.slice(0,120) });
     }
   }
   res.json({ results: results });
-});
-app.get('/schema-check', async function(req, res) {
+});app.get('/schema-check', async function(req, res) {
   var pool = getPool();
   var dbUrl = process.env.DATABASE_URL || 'NOT_SET';
   var out = { pool: !!pool, db_url_preview: dbUrl.replace(/:[^@]+@/, ':***@').slice(0, 80) };
