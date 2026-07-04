@@ -128,6 +128,8 @@ async function sqlExec(sql) {
         'Content-Type':  'application/json',
         'apikey':        SUPA_KEY,
         'Authorization': 'Bearer ' + SUPA_KEY,
+        'Accept-Profile': 'public',
+        'Prefer': '',
       },
       body: JSON.stringify({
         p_table: table, p_filter: filterStr, p_limit: limit,
@@ -413,7 +415,7 @@ function isBcryptHash(_str) { return false; } // bcrypt was never real; always f
 app.options('*', cors());
 
 // â”€â”€ Health check â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
-app.get('/health', (req, res) => res.json({ ok: true, ts: new Date().toISOString(), v: '1783203305', rpc: true }));
+app.get('/health', (req, res) => res.json({ ok: true, ts: new Date().toISOString(), v: '1783203583', rpc: true }));
 
 // Diagnostic endpoint
 app.get('/diag', async (req, res) => {
@@ -6726,7 +6728,7 @@ app.get('/conn-check', async function(req, res) {
   try {
     var r = await fetch(rpcUrl, {
       method: 'POST',
-      headers: { 'Content-Type': 'application/json', 'apikey': key, 'Authorization': 'Bearer ' + key },
+      headers: { 'Content-Type': 'application/json', 'apikey': key, 'Authorization': 'Bearer ' + key, 'Accept-Profile': 'public', 'Prefer': '' },
       body: JSON.stringify({ p_table: 'staff_users', p_filter: '', p_limit: 3, p_select: 'id,email', p_order: 'created_at.desc' }),
     });
     rawResponse = { status: r.status, body: (await r.text()).slice(0, 500) };
