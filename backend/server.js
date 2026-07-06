@@ -1,4 +1,4 @@
-﻿/**
+/**
  * Access Your Place - Railway Functions Server
  * Replaces all famous.ai/Supabase Edge Functions.
  *
@@ -89,13 +89,18 @@ const dbHeaders = () => ({
   'Content-Type': 'application/json',
 });
 
-async function db(path, opts = {}) {
-  // Build the correct URL depending on whether we're hitting real Supabase or internal PostgREST
-  const base = (process.env.POSTGREST_URL || SUPABASE_URL || '').replace(/\/+$/, '').replace(/\/rest\/v1$/, '');
+function buildDbUrl(path) {
+  const base = (process.env.POSTGREST_URL || SUPABASE_URL || '').replace(/\/+$/, '');
+  if (!base) throw new Error('POSTGREST_URL or SUPABASE_URL is not configured');
   const cleanPath = path.startsWith('/') ? path : '/' + path;
-  // Real Supabase URLs need /rest/v1 prefix; internal PostgREST already serves at root
-  const needsRestPrefix = /supabase\.co/i.test(base);
-  const url = base + (needsRestPrefix ? '/rest/v1' : '') + cleanPath;
+  const isSupabaseProject = /supabase\.co/i.test(base);
+  const alreadyRestBase = /\/rest\/v1$/i.test(base);
+  const restPrefix = isSupabaseProject && !alreadyRestBase ? '/rest/v1' : '';
+  return base + restPrefix + cleanPath;
+}
+
+async function db(path, opts = {}) {
+  const url = buildDbUrl(path);
   const res = await fetch(url, {
     headers: dbHeaders(),
     ...opts,
@@ -1646,9 +1651,12 @@ app.post('/functions/v1/:fn', async (req, res) => {
     case 'get-properties': {
       const { action } = body;
 
-            if (action === 'get_all') { try { const { data } = await dbGet('/properties?is_published=eq.true&order=created_at.desc&select=*'); return ok({ success: true, properties: Array.isArray(data)?data:[] }); } catch { return ok({ success: true, properties: [] }); } }
+      // Public fields only — strip exact address/unit from unauthenticated listing calls
+      const PUBLIC_FIELDS = 'id,community_name,city,state,zip_code,bedrooms,bathrooms,property_type,operation_type,asking_price,monthly_revenue,description,photos,penny_score,is_published,status,created_at,deal_analytics(*)';
 
-            if (action === 'get_recommended') { const { investor_id } = body; try { const { data } = await dbGet('/properties?is_published=eq.true&order=created_at.desc&limit=10&select=*'); return ok({ success: true, properties: Array.isArray(data)?data:[] }); } catch { return ok({ success: true, properties: [] }); } }
+      if (action === 'get_all') { try { const { data } = await dbGet(`/properties?is_published=eq.true&order=created_at.desc&select=${PUBLIC_FIELDS}`); return ok({ success: true, properties: Array.isArray(data)?data:[] }); } catch { return ok({ success: true, properties: [] }); } }
+
+      if (action === 'get_recommended') { const { investor_id } = body; try { const { data } = await dbGet(`/properties?is_published=eq.true&order=created_at.desc&limit=10&select=${PUBLIC_FIELDS}`); return ok({ success: true, properties: Array.isArray(data)?data:[] }); } catch { return ok({ success: true, properties: [] }); } }
 
       return err('Unknown get-properties action: ' + action);
     }
@@ -6356,9 +6364,4 @@ app.get('*', (req, res) => {
   }
 });
 
-// â”€â”€ Start â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
-app.listen(PORT, () => {
-  console.log(`[AYP Server] Listening on port ${PORT}`);
-  console.log(`[AYP Server] Supabase: ${SUPABASE_URL ? 'configured' : 'NOT configured'}`);
-});
-
+// â”€â”€ Start â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
