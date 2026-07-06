@@ -6751,8 +6751,50 @@ app.get('/conn-check', async function(req, res) {
 });
 
 // â”€â”€ Start â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+
+// ─────────────────────────── EMERGENCY SUPABASE REST PROXY ───────────────────────────
+// Keeps browser from calling Supabase REST directly when Supabase hostname/Cloudflare fails.
+app.use('/rest/v1', async (req, res) => {
+  try {
+    const supabaseUrl = (process.env.SUPABASE_URL || '').replace(/\/$/, '');
+    const serviceKey = process.env.SUPABASE_SERVICE_ROLE_KEY || process.env.SUPABASE_SERVICE_KEY;
+
+    if (!supabaseUrl || !serviceKey) {
+      return res.status(500).json({ error: 'Supabase proxy not configured' });
+    }
+
+    const targetUrl = `${supabaseUrl}/rest/v1${req.originalUrl.replace(/^\/rest\/v1/, '')}`;
+
+    const headers = {
+      apikey: serviceKey,
+      authorization: `Bearer ${serviceKey}`,
+      'content-type': req.headers['content-type'] || 'application/json',
+      accept: req.headers.accept || 'application/json',
+      prefer: req.headers.prefer || ''
+    };
+
+    const method = req.method.toUpperCase();
+    const options = { method, headers };
+
+    if (!['GET', 'HEAD'].includes(method)) {
+      options.body = typeof req.body === 'string' ? req.body : JSON.stringify(req.body || {});
+    }
+
+    const upstream = await fetch(targetUrl, options);
+    const text = await upstream.text();
+
+    res.status(upstream.status);
+    res.setHeader('content-type', upstream.headers.get('content-type') || 'application/json');
+    return res.send(text);
+  } catch (error) {
+    console.error('[REST proxy] failed:', error);
+    return res.status(500).json({ error: 'REST proxy failed', details: error.message });
+  }
+});
+
 app.listen(PORT, () => {
   console.log(`[AYP Server] Listening on port ${PORT}`);
   console.log(`[AYP Server] Supabase: ${SUPABASE_URL ? 'configured' : 'NOT configured'}`);
 });
+
 
