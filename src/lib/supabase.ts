@@ -1,11 +1,8 @@
 import { createClient } from '@supabase/supabase-js';
 
-const supabaseUrl = import.meta.env.VITE_SUPABASE_URL ||
-  (typeof window !== 'undefined' ? window.location.origin : 'http://localhost:4000');
+const supabaseUrl = 'https://adcbrclppmnguzkzwiys.supabase.co';
 
-const supabaseKey = import.meta.env.VITE_SUPABASE_ANON_KEY ||
-  import.meta.env.VITE_SUPABASE_ANON_KEhY ||
-  'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJyb2xlIjoiYW5vbiIsImlhdCI6MTc4MjYxNTM0MywiZXhwIjoyMDk3OTc1MzQzfQ.2_Zy92Q4PWwyRE_3Rk71nroMRWksTm3amkwv9Lli8tE';
+const supabaseKey = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImFkY2JyY2xwcG1uZ3V6a3p3aXlzIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODE5MjgyOTAsImV4cCI6MjA5NzUwNDI5MH0.wBv4AZYvndsvnj8XrkT5VNGBuT3GE6j1w-LI5k1Jr-U';
 
 const supabaseSchema = import.meta.env.VITE_SUPABASE_DB_SCHEMA || 'prj_X-ZoVQv6LKXT';
 
