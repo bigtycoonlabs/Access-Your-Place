@@ -222,8 +222,8 @@ export default function Deals() {
   // return 0 rows (what we were hitting). A blacklist reliably hides drafts
   // and internal-only rows while keeping every legit listing visible.
   const fetchPropertiesViaRest = async (signal: AbortSignal): Promise<Property[] | null> => {
-    const SUPABASE_URL = 'https://zhobqrmkbtsqugtiahyn.databasepad.com';
-    const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCIsImtpZCI6IjE5NzdmNTg3LWRiYzAtNDMwNi05YTIwLTEwNDg1OGU5NGUxMyJ9.eyJwcm9qZWN0SWQiOiJ6aG9icXJta2J0c3F1Z3RpYWh5biIsInJvbGUiOiJhbm9uIiwiaWF0IjoxNzYyODI4OTQ4LCJleHAiOjIwNzgxODg5NDgsImlzcyI6ImZhbW91cy5kYXRhYmFzZXBhZCIsImF1ZCI6ImZhbW91cy5jbGllbnRzIn0.2U5bzJ9__u_Ae4PPUPQzI8wEpdIXbr_IqQy2UhOzqAI';
+    const SUPABASE_URL = 'https://adcbrclppmnguzkzwiys.supabase.co';
+    const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImFkY2JyY2xwcG1uZ3V6a3p3aXlzIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODE5MjgyOTAsImV4cCI6MjA5NzUwNDI5MH0.wBv4AZYvndsvnj8XrkT5VNGBuT3GE6j1w-LI5k1Jr-U';
 
     // Blacklist hidden statuses. `status.is.null` keeps legacy rows with no
     // status value visible. Also keep rows that are explicitly published OR

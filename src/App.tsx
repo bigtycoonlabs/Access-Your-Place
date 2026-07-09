@@ -19,6 +19,7 @@ import InvestorVerifyEmail from "./pages/InvestorVerifyEmail";
 import InvestorUnsubscribe from "./pages/InvestorUnsubscribe";
 import StaffLogin from "./pages/StaffLogin";
 import StaffDashboard from "./pages/StaffDashboard";
+import StaffLeadForge from "./pages/StaffLeadForge";
 import StaffResetPassword from "./pages/StaffResetPassword";
 import StaffQuickAddContact from "./pages/StaffQuickAddContact";
 import AMAgreementSign from "./pages/AMAgreementSign";
@@ -107,6 +108,7 @@ const App = () => (
                   <Route path="/staff/login" element={<StaffLogin />} />
                   <Route path="/staff-login" element={<Navigate to="/staff/login" replace />} />
                   <Route path="/staff/dashboard" element={<StaffDashboard />} />
+                  <Route path="/staff/leadforge" element={<StaffLeadForge />} />
                   <Route path="/staff/reset-password" element={<StaffResetPassword />} />
                   <Route path="/staff/quick-add" element={<StaffQuickAddContact />} />
                   {/* Redirect /staff to /staff/dashboard */}

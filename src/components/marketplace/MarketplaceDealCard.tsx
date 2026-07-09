@@ -1,4 +1,4 @@
-import { useState, useMemo } from 'react';
+﻿import { useState, useMemo } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
@@ -43,11 +43,11 @@ export function MarketplaceDealCard({
   }, [photos]);
   
   const viability = Math.max(analytics?.str_viability_score || 0, analytics?.coliving_viability_score || 0);
-  const displayTitle = deal.listing_title || `${deal.bedrooms}BR ${deal.property_type?.replace('_', ' ') || 'Property'} in ${deal.city}`;
-  const hasFullAddress = !!deal.address;
-  const locationDisplay = hasFullAddress 
-    ? `${deal.address}, ${deal.city}, ${deal.state}`
-    : `${deal.city}, ${deal.state}`;
+  const displayTitle = deal.listing_title || `${deal.bedrooms}BR ${deal.property_type?.replace("_", " ") || "Property"} in ${deal.city}`;
+  // SECURITY: never show full address on public marketplace cards
+  const locationDisplay = `${deal.city}, ${deal.state}`;
+
+
 
   const isYPApproved = deal.is_verified || deal.staff_verified;
   const operationType = deal.operation_type || 'str';
