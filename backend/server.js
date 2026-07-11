@@ -82,38 +82,123 @@ app.use('/rest/v1', createProxyMiddleware({
 const DIST_DIR = path.join(__dirname, 'dist');
 app.use(express.static(DIST_DIR));
 
-// â”€â”€ DB helper (calls PostgREST) â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
-const dbHeaders = () => ({
-  'apikey': SERVICE_ROLE_KEY,
-  'Authorization': `Bearer ${SERVICE_ROLE_KEY}`,
-  'Content-Type': 'application/json',
-});
+// ── DB helpers — ayp_query/insert/update RPC (public schema) ─────────────────
+const DB_SCHEMA = '{prj_X-ZoVQv6LKXT}';
 
-function buildDbUrl(path) {
-  const base = (process.env.POSTGREST_URL || SUPABASE_URL || '').replace(/\/+$/, '');
-  if (!base) throw new Error('POSTGREST_URL or SUPABASE_URL is not configured');
-  const cleanPath = path.startsWith('/') ? path : '/' + path;
-  const isSupabaseProject = /supabase\.co/i.test(base);
-  const alreadyRestBase = /\/rest\/v1$/i.test(base);
-  const restPrefix = isSupabaseProject && !alreadyRestBase ? '/rest/v1' : '';
-  return base + restPrefix + cleanPath;
+function dbHeaders() {
+  return {
+    'apikey': SERVICE_ROLE_KEY,
+    'Authorization': `Bearer ${SERVICE_ROLE_KEY}`,
+    'Content-Type': 'application/json',
+  };
 }
 
-async function db(path, opts = {}) {
-  const url = buildDbUrl(path);
-  const res = await fetch(url, {
-    headers: dbHeaders(),
-    ...opts,
-  });
-  const text = await res.text();
-  try { return { ok: res.ok, status: res.status, data: JSON.parse(text) }; }
-  catch { return { ok: res.ok, status: res.status, data: text }; }
+function rpcBase() {
+  const u = (process.env.POSTGREST_URL || SUPABASE_URL || '').replace(/\/rest\/v1$/, '').replace(/\/+$/, '');
+  return u + '/rest/v1';
 }
 
-async function dbGet(path)          { return db(path); }
-async function dbPost(path, body)   { return db(path, { method: 'POST', headers: { ...dbHeaders(), 'Prefer': 'return=representation' }, body: JSON.stringify(body) }); }
-async function dbPatch(path, body)  { return db(path, { method: 'PATCH', headers: { ...dbHeaders(), 'Prefer': 'return=minimal' }, body: JSON.stringify(body) }); }
-async function dbDelete(path)       { return db(path, { method: 'DELETE', headers: { ...dbHeaders() } }); }
+function esc(v) {
+  if (v === null || v === undefined) return 'NULL';
+  if (typeof v === 'boolean') return v ? 'TRUE' : 'FALSE';
+  if (typeof v === 'number') return String(v);
+  return "'" + String(v).replace(/'/g, "''") + "'";
+}
+
+function parseQ(path) {
+  const [tp, qp] = [path.split('?')[0], path.split('?')[1] || ''];
+  const table  = tp.replace(/^\//, '');
+  const params = new URLSearchParams(qp);
+  const sel    = (params.get('select') || '*').replace(/\w+:\w+!?\w*\([^)]*\),?/g,'').replace(/,+/g,',').replace(/^,|,$/,'') || '*';
+  const limit  = Math.min(parseInt(params.get('limit') || '500'), 1000);
+  const op     = (params.get('order') || 'created_at.desc').split('.');
+  const oCol   = /^\w+$/.test(op[0]) ? op[0] : 'created_at';
+  const oDir   = op[1] === 'asc' ? 'ASC' : 'DESC';
+  const conds  = [];
+  for (const [k, v] of params) {
+    if (['select','limit','order','offset'].includes(k)) continue;
+    const d = v.indexOf('.');
+    if (d < 0) continue;
+    const oper = v.slice(0, d), val = v.slice(d + 1);
+    const col  = `"${k}"`;
+    if      (oper === 'eq')    conds.push(`${col} = ${esc(val === 'null' ? null : val)}`);
+    else if (oper === 'neq')   conds.push(`${col} != ${esc(val)}`);
+    else if (oper === 'is')    conds.push(`${col} IS ${val === 'null' ? 'NULL' : val === 'true' ? 'TRUE' : 'FALSE'}`);
+    else if (oper === 'ilike') conds.push(`${col} ILIKE ${esc(val)}`);
+    else if (oper === 'like')  conds.push(`${col} LIKE ${esc(val)}`);
+    else if (oper === 'gt')    conds.push(`${col} > ${esc(val)}`);
+    else if (oper === 'gte')   conds.push(`${col} >= ${esc(val)}`);
+    else if (oper === 'lt')    conds.push(`${col} < ${esc(val)}`);
+    else if (oper === 'lte')   conds.push(`${col} <= ${esc(val)}`);
+  }
+  return { table, sel, limit, oCol, oDir, where: conds.length ? 'WHERE ' + conds.join(' AND ') : '' };
+}
+
+async function sqlRpc(fn, params) {
+  try {
+    const res  = await fetch(`${rpcBase()}/rpc/${fn}`, {
+      method:  'POST',
+      headers: { ...dbHeaders(), 'Accept-Profile': 'public', 'Prefer': '' },
+      body:    JSON.stringify(params),
+    });
+    const text = await res.text();
+    const raw  = JSON.parse(text);
+    if (Array.isArray(raw) && raw.length > 0 && raw[0] && raw[0][fn] !== undefined) {
+      const rows = raw[0][fn];
+      if (rows && rows._error) return { ok: false, error: rows._error };
+      return { ok: true, rows: Array.isArray(rows) ? rows : [rows] };
+    }
+    if (Array.isArray(raw)) return { ok: true, rows: raw };
+    if (raw && raw.code) return { ok: false, error: raw.message || raw.code };
+    return { ok: true, rows: raw ? [raw] : [] };
+  } catch(e) { return { ok: false, error: e.message }; }
+}
+
+async function dbGet(path) {
+  const q = parseQ(path);
+  const r = await sqlRpc('ayp_query', { p_table: q.table, p_filter: q.where.replace(/^WHERE /, ''), p_limit: q.limit, p_select: q.sel, p_order: q.oCol + '.' + q.oDir.toLowerCase() });
+  if (!r.ok) { console.error('[dbGet]', r.error, q.table); return { ok: true, status: 200, data: [] }; }
+  return { ok: true, status: 200, data: r.rows };
+}
+
+async function dbPost(path, body) {
+  const table = path.split('?')[0].replace(/^\//, '');
+  const r = await sqlRpc('ayp_insert', { p_table: table, p_data: body });
+  if (!r.ok) { console.error('[dbPost]', r.error, table); return { ok: false, status: 500, data: { error: r.error } }; }
+  return { ok: true, status: 201, data: Array.isArray(r.rows) ? r.rows : [r.rows] };
+}
+
+async function dbPatch(path, body) {
+  const q = parseQ(path);
+  const filter = {};
+  for (const part of q.where.replace(/^WHERE /, '').split(' AND ')) {
+    const m = part.match(/"(\w+)" = '([^']+)'/);
+    if (m) filter[m[1]] = m[2];
+    const m2 = part.match(/"(\w+)" = (TRUE|FALSE|NULL)/);
+    if (m2) filter[m2[1]] = m2[2] === 'NULL' ? null : m2[2] === 'TRUE';
+  }
+  const r = await sqlRpc('ayp_update', { p_table: q.table, p_data: body, p_filter: filter });
+  if (!r.ok) { console.error('[dbPatch]', r.error, q.table); return { ok: false, status: 500, data: { error: r.error } }; }
+  return { ok: true, status: 200, data: Array.isArray(r.rows) ? r.rows : [r.rows] };
+}
+
+async function dbDelete(path) {
+  const q   = parseQ(path);
+  const url = rpcBase() + '/' + q.table + (q.where ? '?' + new URLSearchParams({ [q.where.split('"')[1] + '.eq']: q.where.match(/'([^']+)'/)?.[1] || '' }).toString() : '');
+  try {
+    const res = await fetch(url, { method: 'DELETE', headers: dbHeaders() });
+    return { ok: res.ok, status: res.status, data: [] };
+  } catch(e) { return { ok: false, status: 500, data: { error: e.message } }; }
+}
+
+async function db(path, opts) {
+  if (!opts || !opts.method || opts.method === 'GET') return dbGet(path);
+  if (opts.method === 'POST')   return dbPost(path, JSON.parse(opts.body || '{}'));
+  if (opts.method === 'PATCH')  return dbPatch(path, JSON.parse(opts.body || '{}'));
+  if (opts.method === 'DELETE') return dbDelete(path);
+  return dbGet(path);
+}
+
 
 // â”€â”€ Email helper (Resend) â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 async function sendEmail({ to, subject, html, from }) {
