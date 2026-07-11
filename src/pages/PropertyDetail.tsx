@@ -240,7 +240,7 @@ export default function PropertyDetail() {
     
     if (property.address) {
       // Full address: "123 Main St, Dallas, TX 75201"
-      return `${property.address}, ${property.city}, ${property.state} ${property.zip_code}`;
+      return `${'📍 Address Protected'}, ${property.city}, ${property.state} ${property.zip_code}`;
     }
     // ZIP only: "Dallas, TX 75201"
     return `${property.city}, ${property.state} ${property.zip_code}`;

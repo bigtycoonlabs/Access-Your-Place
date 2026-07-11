@@ -630,7 +630,7 @@ function BrowseListingCard({ listing, isOwnListing, onView }: { listing: DealLis
             </h3>
             <p className="text-sm text-gray-500 truncate flex items-center gap-1">
               <MapPin className="w-3 h-3 flex-shrink-0" />
-              {listing.property?.address || 'Address hidden until verified'}
+              {'📍 Address released after account funding'}
             </p>
           </div>
         </div>
@@ -691,7 +691,7 @@ function ListingCard({ listing, onView }: { listing: DealListing; onView: () => 
                   </span>
                 )}
               </div>
-              <h3 className="font-semibold text-gray-900">{listing.property?.address || 'Property Address'}</h3>
+              <h3 className="font-semibold text-gray-900">{'📍 Address released after account funding'}</h3>
               <p className="text-sm text-gray-500 flex items-center gap-1">
                 <MapPin className="w-3 h-3" /> {listing.property?.city}, {listing.property?.state}
               </p>
@@ -1071,7 +1071,7 @@ function CreateListingModal({ open, onClose, portfolio, investorId, investorName
                 <div className="flex items-center gap-4">
                   <div className="w-16 h-16 bg-gray-100 rounded-lg flex items-center justify-center"><Building2 className="w-6 h-6 text-gray-400" /></div>
                   <div className="flex-1">
-                    <h4 className="font-semibold">{property.address}</h4>
+                    <h4 className="font-semibold">📍 Address Protected</h4>
                     <p className="text-sm text-gray-500">{property.city}, {property.state}</p>
                     <div className="flex gap-4 mt-1 text-sm">
                       <span>{property.bedrooms} bed / {property.bathrooms} bath</span>
@@ -1292,7 +1292,7 @@ function ListingDetailModal({ open, onClose, listing, isOwner, investorId, inves
           offer_amount: amount, message: offerMessage.trim() || null,
           offer_type: 'initial', status: 'pending',
           buyer_name: investorName, buyer_email: investorEmail,
-          property_address: listing.property ? `${listing.property.address}, ${listing.property.city}, ${listing.property.state}` : 'Property',
+          property_address: listing.property ? `${listing.property.city}, ${listing.property.state}` : 'Property',
           listing_asking_price: listing.asking_price,
           expires_at: new Date(Date.now() + 7 * 24 * 60 * 60 * 1000).toISOString()
         });
@@ -1314,7 +1314,7 @@ function ListingDetailModal({ open, onClose, listing, isOwner, investorId, inves
         <DialogHeader>
           <DialogTitle>Listing Details</DialogTitle>
           <DialogDescription>
-            {listing.property?.address ? `${listing.property.address}, ${listing.property.city}, ${listing.property.state}` : `${listing.property?.city || ''}, ${listing.property?.state || ''}`}
+            {`${listing.property?.city || ''}, ${listing.property?.state || ''}`}
           </DialogDescription>
         </DialogHeader>
 
@@ -1347,7 +1347,7 @@ function ListingDetailModal({ open, onClose, listing, isOwner, investorId, inves
                   </div>
                 )}
                 <div className="flex-1">
-                  <h3 className="font-semibold text-lg">{listing.property?.address || 'Property Address'}</h3>
+                  <h3 className="font-semibold text-lg">{'📍 Address released after account funding'}</h3>
                   <p className="text-gray-500">{listing.property?.city}, {listing.property?.state}</p>
                   <div className="flex gap-4 mt-2 flex-wrap">
                     {listing.property?.bedrooms && <Badge variant="outline">{listing.property.bedrooms} bed</Badge>}

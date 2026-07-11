@@ -1,0 +1,124 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Confirm Your Agreement — Access Your Place</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400;500;600;700&family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500;600&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="ayp-shared.css">
+<style>
+  body{display:flex;align-items:center;justify-content:center;min-height:100vh;padding:24px;}
+  .gate-card{
+    max-width:560px;
+    width:100%;
+    border:1px solid var(--hairline);
+    border-radius:16px;
+    background:var(--slate-panel);
+    padding:44px;
+  }
+  .gate-icon{
+    width:48px;height:48px;
+    border-radius:10px;
+    background:rgba(244,217,118,0.1);
+    display:flex;align-items:center;justify-content:center;
+    margin-bottom:24px;
+  }
+  .gate-card h1{font-size:24px;margin-bottom:10px;}
+  .gate-card .lede{color:var(--ink-dim);font-size:14.5px;margin-bottom:28px;}
+  .doc-checklist{
+    display:flex;
+    flex-direction:column;
+    gap:14px;
+    margin-bottom:28px;
+  }
+  .doc-check-item{
+    display:flex;
+    align-items:flex-start;
+    gap:12px;
+    padding:16px 18px;
+    border:1px solid var(--hairline);
+    border-radius:10px;
+    transition:border-color .2s ease, background .2s ease;
+    cursor:pointer;
+  }
+  .doc-check-item:hover{border-color:var(--ink-faint);background:rgba(255,255,255,0.015);}
+  .doc-check-item input[type="checkbox"]{
+    margin-top:3px;
+    width:16px;height:16px;
+    accent-color:var(--gold-b);
+    cursor:pointer;
+    flex-shrink:0;
+  }
+  .doc-check-text{font-size:14px;color:var(--ink);}
+  .doc-check-text a{color:var(--cyan);text-decoration:underline;text-decoration-color:rgba(94,234,212,0.3);}
+  .doc-check-text a:hover{text-decoration-color:var(--cyan);}
+  .doc-check-sub{font-size:12.5px;color:var(--ink-faint);margin-top:3px;}
+
+  .gate-actions{display:flex;flex-direction:column;gap:12px;}
+  .btn-continue{
+    width:100%;
+    background:linear-gradient(135deg,var(--gold-b),var(--gold-a));
+    color:#1A1404;font-weight:600;font-size:15px;padding:14px;border-radius:8px;
+    border:none;cursor:pointer;
+    transition:opacity .2s ease, transform .2s ease;
+  }
+  .btn-continue:disabled{opacity:0.35;cursor:not-allowed;}
+  .btn-continue:not(:disabled):hover{transform:translateY(-1px);}
+  .gate-note{
+    font-size:12px;
+    color:var(--ink-faint);
+    text-align:center;
+  }
+</style>
+</head>
+<body>
+
+<div class="gate-card">
+  <div class="gate-icon">
+    <svg width="22" height="22" viewBox="0 0 22 22" fill="none"><path d="M11 2L19 5.5V11C19 15.5 15.5 18.7 11 20C6.5 18.7 3 15.5 3 11V5.5L11 2Z" stroke="#F4D976" stroke-width="1.5"/></svg>
+  </div>
+  <h1>Before you enter your dashboard</h1>
+  <p class="lede">Access Your Place is a B2B platform governed by a binding commercial agreement. Please review and accept each document below to activate your account.</p>
+
+  <div class="doc-checklist">
+    <label class="doc-check-item">
+      <input type="checkbox" onchange="checkGate()">
+      <div>
+        <div class="doc-check-text">I have read and agree to the <a href="terms-of-service.html" target="_blank">Terms of Service</a></div>
+        <div class="doc-check-sub">Includes platform structure, fees, the No Refunds policy, and Master Lease terms.</div>
+      </div>
+    </label>
+    <label class="doc-check-item">
+      <input type="checkbox" onchange="checkGate()">
+      <div>
+        <div class="doc-check-text">I have read and agree to the <a href="privacy-policy.html" target="_blank">Privacy Policy</a></div>
+        <div class="doc-check-sub">Covers data collection, redaction, and law enforcement disclosure.</div>
+      </div>
+    </label>
+    <label class="doc-check-item">
+      <input type="checkbox" onchange="checkGate()">
+      <div>
+        <div class="doc-check-text">I have read and agree to the <a href="community-standards.html" target="_blank">Community Standards</a></div>
+        <div class="doc-check-sub">Conduct expectations for Clients, Landlords, and Vendors across the network.</div>
+      </div>
+    </label>
+  </div>
+
+  <div class="gate-actions">
+    <button class="btn-continue" id="continueBtn" disabled onclick="alert('In production, this proceeds into the Investor or Landlord Portal Dashboard.')">Accept & Continue to Dashboard</button>
+    <p class="gate-note">This acceptance is logged with a timestamp on your account record.</p>
+  </div>
+</div>
+
+<script>
+  function checkGate(){
+    const boxes = document.querySelectorAll('.doc-check-item input[type="checkbox"]');
+    const allChecked = Array.from(boxes).every(b => b.checked);
+    document.getElementById('continueBtn').disabled = !allChecked;
+  }
+</script>
+
+</body>
+</html>
