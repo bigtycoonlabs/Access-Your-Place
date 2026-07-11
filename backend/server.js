@@ -368,7 +368,32 @@ function isBcryptHash(_str) { return false; } // bcrypt was never real; always f
 app.options('*', cors());
 
 // â”€â”€ Health check â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
-app.get('/health', (req, res) => res.json({ ok: true, ts: new Date().toISOString() }));
+app.get('/health', (req, res) => res.json({ ok: true, ts: new Date().toISOString(), v: '1783799248' }));
+
+app.get('/__diag', async (req, res) => {
+  const out = { v: '1783799248', env: {} };
+  out.env.SUPABASE_URL = (process.env.SUPABASE_URL || 'MISSING').slice(0, 45);
+  out.env.POSTGREST_URL = (process.env.POSTGREST_URL || 'unset').slice(0, 45);
+  out.env.has_SERVICE_ROLE = !!process.env.SUPABASE_SERVICE_ROLE_KEY;
+  out.env.SERVICE_ROLE_len = (process.env.SUPABASE_SERVICE_ROLE_KEY || '').length;
+  out.rpcBase = rpcBase();
+  // Raw RPC probe
+  try {
+    const res2 = await fetch(rpcBase() + '/rpc/ayp_query', {
+      method: 'POST',
+      headers: { ...dbHeaders(), 'Accept-Profile': 'public', 'Prefer': '' },
+      body: JSON.stringify({ p_table: 'staff_users', p_filter: '', p_limit: 2, p_select: 'id,email', p_order: 'created_at.desc' }),
+    });
+    out.rpc_status = res2.status;
+    out.rpc_body = (await res2.text()).slice(0, 500);
+  } catch(e) { out.rpc_error = e.message; }
+  // dbGet probe
+  try {
+    const g = await dbGet('/staff_users?limit=2&select=id,email');
+    out.dbGet = { ok: g.ok, count: g.data?.length, sample: g.data?.[0] };
+  } catch(e) { out.dbGet_error = e.message; }
+  res.json(out);
+});
 
 // â”€â”€ One-time migration endpoint â€” runs the missing column additions safely â”€â”€â”€â”€
 // Uses IF NOT EXISTS so safe to call multiple times. Remove after confirmed done.
