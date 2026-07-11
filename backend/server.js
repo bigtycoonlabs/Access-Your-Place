@@ -138,7 +138,7 @@ async function sqlRpc(fn, params) {
   try {
     const res  = await fetch(`${rpcBase()}/rpc/${fn}`, {
       method:  'POST',
-      headers: { ...dbHeaders(), 'Accept-Profile': 'public', 'Prefer': '' },
+      headers: { ...dbHeaders(), 'Content-Profile': 'public', 'Accept-Profile': 'public', 'Prefer': '' },
       body:    JSON.stringify(params),
     });
     const text = await res.text();
