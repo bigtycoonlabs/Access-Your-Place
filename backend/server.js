@@ -82,19 +82,27 @@ app.use('/rest/v1', createProxyMiddleware({
 const DIST_DIR = path.join(__dirname, 'dist');
 app.use(express.static(DIST_DIR));
 
-// ── DB helpers — ayp_query/insert/update RPC (public schema) ─────────────────
-const DB_SCHEMA = '{prj_X-ZoVQv6LKXT}';
+// ── DB helpers — Edge Function proxy v1783810139 ───────────────────────────────────
+// PostgREST is Cloudflare-blocked from Railway. All queries go through the
+// ayp-db Supabase Edge Function which has native Postgres access.
+
+const DB_SCHEMA = 'prj_X-ZoVQv6LKXT';
+const EF_URL = (() => {
+  const base = (process.env.SUPABASE_URL || '').replace(/\/rest\/v1$/, '').replace(/\/+$/, '');
+  return base ? base + '/functions/v1/ayp-db' : null;
+})();
+const AYP_DB_SECRET = process.env.AYP_DB_SECRET || 'ayp-db-proxy-2024';
 
 function dbHeaders() {
-  return {
-    'apikey': SERVICE_ROLE_KEY,
-    'Authorization': `Bearer ${SERVICE_ROLE_KEY}`,
-    'Content-Type': 'application/json',
-  };
+  return { 'apikey': SERVICE_ROLE_KEY, 'Authorization': `Bearer ${SERVICE_ROLE_KEY}`, 'Content-Type': 'application/json' };
+}
+
+function efHeaders() {
+  return { 'Content-Type': 'application/json', 'x-ayp-secret': AYP_DB_SECRET, 'Authorization': `Bearer ${SERVICE_ROLE_KEY}` };
 }
 
 function rpcBase() {
-  const u = (process.env.POSTGREST_URL || SUPABASE_URL || '').replace(/\/rest\/v1$/, '').replace(/\/+$/, '');
+  const u = (process.env.POSTGREST_URL || process.env.SUPABASE_URL || '').replace(/\/rest\/v1$/, '').replace(/\/+$/, '');
   return u + '/rest/v1';
 }
 
@@ -121,7 +129,7 @@ function parseQ(path) {
     if (d < 0) continue;
     const oper = v.slice(0, d), val = v.slice(d + 1);
     const col  = `"${k}"`;
-    if      (oper === 'eq')    conds.push(`${col} = ${esc(val === 'null' ? null : val)}`);
+    if (oper === 'eq')    conds.push(`${col} = ${esc(val === 'null' ? null : val)}`);
     else if (oper === 'neq')   conds.push(`${col} != ${esc(val)}`);
     else if (oper === 'is')    conds.push(`${col} IS ${val === 'null' ? 'NULL' : val === 'true' ? 'TRUE' : 'FALSE'}`);
     else if (oper === 'ilike') conds.push(`${col} ILIKE ${esc(val)}`);
@@ -130,67 +138,66 @@ function parseQ(path) {
     else if (oper === 'gte')   conds.push(`${col} >= ${esc(val)}`);
     else if (oper === 'lt')    conds.push(`${col} < ${esc(val)}`);
     else if (oper === 'lte')   conds.push(`${col} <= ${esc(val)}`);
+    else if (oper === 'in') {
+      const vals = val.replace(/^\(|\)$/g,'').split(',').map(x => esc(x.replace(/^"|"$/g,'')));
+      if (vals.length) conds.push(`${col} IN (${vals.join(',')})`);
+    }
   }
-  return { table, sel, limit, oCol, oDir, where: conds.length ? 'WHERE ' + conds.join(' AND ') : '' };
+  return { table, sel, limit, oCol, oDir, order: `${oCol}.${oDir.toLowerCase()}`, where: conds.join(' AND ') };
 }
 
-async function sqlRpc(fn, params) {
+async function efCall(body) {
+  if (!EF_URL) return { ok: false, error: 'SUPABASE_URL not set', data: [] };
   try {
-    const res  = await fetch(`${rpcBase()}/rpc/${fn}`, {
-      method:  'POST',
-      headers: { ...dbHeaders(), 'Content-Profile': 'public', 'Accept-Profile': 'public', 'Prefer': '' },
-      body:    JSON.stringify(params),
-    });
-    const text = await res.text();
-    const raw  = JSON.parse(text);
-    if (Array.isArray(raw) && raw.length > 0 && raw[0] && raw[0][fn] !== undefined) {
-      const rows = raw[0][fn];
-      if (rows && rows._error) return { ok: false, error: rows._error };
-      return { ok: true, rows: Array.isArray(rows) ? rows : [rows] };
-    }
-    if (Array.isArray(raw)) return { ok: true, rows: raw };
-    if (raw && raw.code) return { ok: false, error: raw.message || raw.code };
-    return { ok: true, rows: raw ? [raw] : [] };
-  } catch(e) { return { ok: false, error: e.message }; }
+    const r = await fetch(EF_URL, { method: 'POST', headers: efHeaders(), body: JSON.stringify(body) });
+    const d = await r.json();
+    if (d && d.error) return { ok: false, error: d.error, data: [] };
+    return { ok: true, data: d.data || [] };
+  } catch(e) { return { ok: false, error: e.message, data: [] }; }
 }
 
 async function dbGet(path) {
   const q = parseQ(path);
-  const r = await sqlRpc('ayp_query', { p_table: q.table, p_filter: q.where.replace(/^WHERE /, ''), p_limit: q.limit, p_select: q.sel, p_order: q.oCol + '.' + q.oDir.toLowerCase() });
-  if (!r.ok) { console.error('[dbGet]', r.error, q.table); return { ok: true, status: 200, data: [] }; }
-  return { ok: true, status: 200, data: r.rows };
+  const r = await efCall({ action: 'select_raw', table: q.table, filter: q.where, select: q.sel, order: q.order, limit: q.limit });
+  if (!r.ok) console.error('[dbGet]', r.error, q.table);
+  return { ok: true, status: 200, data: r.data };
 }
 
 async function dbPost(path, body) {
   const table = path.split('?')[0].replace(/^\//, '');
-  const r = await sqlRpc('ayp_insert', { p_table: table, p_data: body });
-  if (!r.ok) { console.error('[dbPost]', r.error, table); return { ok: false, status: 500, data: { error: r.error } }; }
-  return { ok: true, status: 201, data: Array.isArray(r.rows) ? r.rows : [r.rows] };
+  const r = await efCall({ action: 'insert', table, data: body });
+  if (!r.ok) console.error('[dbPost]', r.error, table);
+  return { ok: r.ok, status: r.ok ? 201 : 500, data: r.data, error: r.error };
 }
 
 async function dbPatch(path, body) {
   const q = parseQ(path);
-  const filter = {};
-  for (const part of q.where.replace(/^WHERE /, '').split(' AND ')) {
-    const m = part.match(/"(\w+)" = '([^']+)'/);
-    if (m) filter[m[1]] = m[2];
-    const m2 = part.match(/"(\w+)" = (TRUE|FALSE|NULL)/);
-    if (m2) filter[m2[1]] = m2[2] === 'NULL' ? null : m2[2] === 'TRUE';
+  const filterObj = {};
+  for (const [k, v] of new URLSearchParams(path.split('?')[1] || '')) {
+    if (['select','limit','order','offset'].includes(k)) continue;
+    const d = v.indexOf('.'); if (d < 0) continue;
+    const oper = v.slice(0,d), val = v.slice(d+1);
+    if (oper === 'eq') filterObj[k] = val === 'null' ? null : val;
   }
-  const r = await sqlRpc('ayp_update', { p_table: q.table, p_data: body, p_filter: filter });
-  if (!r.ok) { console.error('[dbPatch]', r.error, q.table); return { ok: false, status: 500, data: { error: r.error } }; }
-  return { ok: true, status: 200, data: Array.isArray(r.rows) ? r.rows : [r.rows] };
+  const r = await efCall({ action: 'update', table: q.table, filter: filterObj, updates: body });
+  if (!r.ok) console.error('[dbPatch]', r.error, q.table);
+  return { ok: r.ok, status: 200, data: r.data, error: r.error };
 }
 
 async function dbDelete(path) {
-  const q   = parseQ(path);
-  const url = rpcBase() + '/' + q.table + (q.where ? '?' + new URLSearchParams({ [q.where.split('"')[1] + '.eq']: q.where.match(/'([^']+)'/)?.[1] || '' }).toString() : '');
-  try {
-    const res = await fetch(url, { method: 'DELETE', headers: dbHeaders() });
-    return { ok: res.ok, status: res.status, data: [] };
-  } catch(e) { return { ok: false, status: 500, data: { error: e.message } }; }
+  const q = parseQ(path);
+  const filterObj = {};
+  for (const [k, v] of new URLSearchParams(path.split('?')[1] || '')) {
+    if (['select','limit','order','offset'].includes(k)) continue;
+    const d = v.indexOf('.'); if (d < 0) continue;
+    if (v.slice(0,d) === 'eq') filterObj[k] = v.slice(d+1) === 'null' ? null : v.slice(d+1);
+  }
+  const r = await efCall({ action: 'delete', table: q.table, filter: filterObj });
+  if (!r.ok) console.error('[dbDelete]', r.error, q.table);
+  return { ok: r.ok, status: 200 };
 }
 
+// Legacy adapter used by older handlers
 async function db(path, opts) {
   if (!opts || !opts.method || opts.method === 'GET') return dbGet(path);
   if (opts.method === 'POST')   return dbPost(path, JSON.parse(opts.body || '{}'));
@@ -199,52 +206,22 @@ async function db(path, opts) {
   return dbGet(path);
 }
 
-
-// â”€â”€ Email helper (Resend) â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
-async function sendEmail({ to, subject, html, from }) {
-  if (!RESEND_KEY) {
-    console.error('[sendEmail] BLOCKED: No RESEND_API_KEY configured. Email NOT sent:', { to, subject });
-    return { ok: false, error: 'No RESEND_API_KEY configured' };
+// Stub: ayp_query still called in some handlers via sqlRpc — redirect to Edge Function
+async function sqlRpc(fn, params) {
+  if (fn === 'ayp_query') {
+    const r = await efCall({ action: 'select_raw', table: params.p_table, filter: params.p_filter || '', select: params.p_select || '*', order: params.p_order || 'created_at.desc', limit: params.p_limit || 100 });
+    if (!r.ok) return { ok: false, error: r.error };
+    return { ok: true, rows: r.data };
   }
-  try {
-    const res = await fetch('https://api.resend.com/emails', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${RESEND_KEY}` },
-      body: JSON.stringify({ from: from || 'Access Your Place <noreply@accessyourplace.com>', to: Array.isArray(to) ? to : [to], subject, html }),
-    });
-    if (!res.ok) {
-      const errText = await res.text().catch(() => '');
-      console.error('[sendEmail] FAILED:', { to, subject, status: res.status, body: errText });
-      return { ok: false, error: `Resend API error ${res.status}: ${errText.slice(0, 200)}` };
-    }
-    return { ok: true };
-  } catch (e) {
-    console.error('[sendEmail] EXCEPTION:', { to, subject, message: e.message });
-    return { ok: false, error: e.message || 'Network error sending email' };
+  if (fn === 'ayp_insert') {
+    const r = await efCall({ action: 'insert', table: params.p_table, data: params.p_data });
+    return { ok: r.ok, rows: r.data, error: r.error };
   }
-}
-
-// â”€â”€ SMS helper (Twilio) â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
-async function sendSMS(to, body) {
-  if (!TWILIO_SID || !TWILIO_TOKEN) return { ok: false };
-  const url = `https://api.twilio.com/2010-04-01/Accounts/${TWILIO_SID}/Messages.json`;
-  const params = new URLSearchParams({ To: to, From: TWILIO_FROM, Body: body });
-  const res = await fetch(url, {
-    method: 'POST',
-    headers: { 'Content-Type': 'application/x-www-form-urlencoded', 'Authorization': 'Basic ' + Buffer.from(`${TWILIO_SID}:${TWILIO_TOKEN}`).toString('base64') },
-    body: params.toString(),
-  });
-  return { ok: res.ok };
-}
-
-// â”€â”€ Anthropic helper â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
-async function callAnthropic({ model = 'claude-3-5-sonnet-20241022', max_tokens = 2048, messages, system }) {
-  const res = await fetch('https://api.anthropic.com/v1/messages', {
-    method: 'POST',
-    headers: { 'Content-Type': 'application/json', 'x-api-key': ANTHROPIC_KEY, 'anthropic-version': '2023-06-01' },
-    body: JSON.stringify({ model, max_tokens, messages, ...(system ? { system } : {}) }),
-  });
-  return res.json();
+  if (fn === 'ayp_update') {
+    const r = await efCall({ action: 'update', table: params.p_table, updates: params.p_data, filter: params.p_filter || {} });
+    return { ok: r.ok, rows: r.data, error: r.error };
+  }
+  return { ok: false, error: `Unknown fn: ${fn}` };
 }
 
 // â”€â”€ REAL password schemes, ported faithfully from the deployed famous.ai
@@ -370,8 +347,15 @@ function isBcryptHash(_str) { return false; } // bcrypt was never real; always f
 app.options('*', cors());
 
 // â”€â”€ Health check â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
-app.get('/health', (req, res) => res.json({ ok: true, ts: new Date().toISOString(), v: '1783799248' }));
+app.get('/health', (req, res) => res.json({ ok: true, ts: new Date().toISOString(), v: '1783810139', ef: !!EF_URL }));
 
+app.get('/conn-check', async (req, res) => {
+  const ping = await efCall({ action: 'ping' });
+  const s = await dbGet('/staff_users?limit=2&select=id,email');
+  const inv = await dbGet('/investors?limit=2&select=id,full_name');
+  const pr = await dbGet('/properties?is_published=eq.true&limit=2&select=id,listing_title');
+  res.json({ v: '1783810139', ef_url: EF_URL, ping: ping.ok, staff: {ok:s.ok,count:s.data?.length}, investors: {ok:inv.ok,count:inv.data?.length}, properties: {ok:pr.ok,count:pr.data?.length} });
+});
 app.get('/__diag', async (req, res) => {
   const out = { v: '1783799248', env: {} };
   out.env.SUPABASE_URL = (process.env.SUPABASE_URL || 'MISSING').slice(0, 45);
