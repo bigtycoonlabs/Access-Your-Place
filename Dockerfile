@@ -27,7 +27,7 @@ WORKDIR /app
 COPY backend/package*.json ./
 RUN npm install --omit=dev
 
-ARG CACHE_BUST=1783793893
+ARG CACHE_BUST=1783799248
 COPY backend/ .
 
 # Patch full legacy server.js for Railway PostgREST root URLs and current frontend payloads.
