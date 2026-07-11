@@ -263,9 +263,11 @@ const STAFF_SALT = 'ayp_staff_salt_2024';
 function hashStaffPassword(password) { return sha256Hex(password + STAFF_SALT); }
 function verifyStaffPassword(password, stored) {
   if (!stored) return false;
+  // Handle bcrypt hashes ($2a$ or $2b$) — some accounts were hashed with bcryptjs
+  if (stored.startsWith('$2a$') || stored.startsWith('$2b$')) {
+    try { return require('bcryptjs').compareSync(password, stored); } catch(e) {}
+  }
   const hashed = hashStaffPassword(password);
-  // Real source also falls back to direct/trimmed plaintext comparison for
-  // any row that was never migrated to the hashed format.
   return constantTimeEqual(stored, hashed)
     || constantTimeEqual(stored, password)
     || constantTimeEqual(String(stored).trim(), String(password).trim());
