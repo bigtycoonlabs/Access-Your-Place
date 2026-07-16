@@ -2,13 +2,9 @@ import { createClient } from '@supabase/supabase-js';
 
 
 // Initialize database client
-// On Railway: set VITE_SUPABASE_URL to your web service's public URL
-// On Railway: set VITE_SUPABASE_ANON_KEY to your generated anon JWT
-// On Railway: VITE_SUPABASE_URL is auto-set to the web service URL at build time.
-// Fallback: use the browser's own origin so the app works without any env var set.
-const supabaseUrl = import.meta.env.VITE_SUPABASE_URL ||
-  (typeof window !== 'undefined' ? window.location.origin : 'http://localhost:4000');
-const supabaseKey = import.meta.env.VITE_SUPABASE_ANON_KEhY || 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJyb2xlIjoiYW5vbiIsImlhdCI6MTc4MjYxNTM0MywiZXhwIjoyMDk3OTc1MzQzfQ.2_Zy92Q4PWwyRE_3Rk71nroMRWksTm3amkwv9Lli8tE';
+// Supabase project: prjynolwltwsmsamocyt (accessyourplace)
+const supabaseUrl = import.meta.env.VITE_SUPABASE_URL || 'https://prjynolwltwsmsamocyt.supabase.co';
+const supabaseKey = import.meta.env.VITE_SUPABASE_ANON_KEY || 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InByanlub2x3bHR3c21zYW1vY3l0Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODM2MzY1MjYsImV4cCI6MjA5OTIxMjUyNn0.t0ftUGh0HSAZpSo9ACmgKL8vQGuVvZxcPqF6Vx-ZG3c';
 
 /**
  * Custom Realtime WebSocket message decoder.
@@ -120,7 +116,7 @@ function safeRealtimeDecode(
 
 const supabase = createClient(supabaseUrl, supabaseKey, {
   db: {
-        schema: 'prj_X-ZoVQv6LKXT',
+    schema: 'public',
   },
   realtime: {
     params: {

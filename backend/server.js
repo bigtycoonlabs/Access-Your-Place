@@ -89,7 +89,7 @@ app.use(express.static(DIST_DIR));
 // ── DB helpers — Supabase /pg/query SQL endpoint, no PostgREST needed ────────
 var SUPA_URL  = (process.env.SUPABASE_URL || '').replace(/\/rest\/v1$/, '');
 var SUPA_KEY  = process.env.SUPABASE_SERVICE_ROLE_KEY || '';
-var DB_SCHEMA = 'prj_X-ZoVQv6LKXT';
+var DB_SCHEMA = 'public';
 
 async function sqlExec(sql) {
   // Use ayp_read/ayp_insert/ayp_update via the public schema RPC
@@ -102,10 +102,10 @@ async function sqlExec(sql) {
   // For complex SQL, use a passthrough approach
   var q = sql.trim();
   // Extract table name from simple SELECT
-  var selMatch = q.match(/^SELECT (.+?) FROM "prj_X-ZoVQv6LKXT"\."(\w+)"(.*?)(?:ORDER BY.*?)?(?:LIMIT (\d+))?$/is);
+  var selMatch = q.match(/^SELECT (.+?) FROM "public"\."(\w+)"(.*?)(?:ORDER BY.*?)?(?:LIMIT (\d+))?$/is);
   if (!selMatch) {
     // For INSERT/UPDATE/DELETE, call the Supabase REST API directly on public schema
-    // (tables are in prj_X-ZoVQv6LKXT but we'll handle writes separately)
+    // (tables are in public but we'll handle writes separately)
     return { ok: false, error: 'sqlExec: complex SQL not supported, use dbPost/dbPatch/dbDelete' };
   }
   var sel   = selMatch[1].trim();
@@ -474,7 +474,7 @@ app.post('/admin/run-migration', async (req, res) => {
       return res.status(500).json({ error: 'SUPABASE_URL or SERVICE_ROLE_KEY not configured' });
     }
 
-    // Extract project ref from URL: https://adcbrclppmnguzkzwiys.supabase.co
+    // Extract project ref from URL: https://prjynolwltwsmsamocyt.supabase.co
     const projectRef = supabaseUrl.replace('https://', '').replace('.supabase.co', '').split('.')[0];
 
     const queries = [
