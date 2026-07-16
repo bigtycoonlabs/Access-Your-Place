@@ -1,96 +1,61 @@
 import { createClient } from '@supabase/supabase-js';
 
-
-// Initialize database client
-// Supabase project: prjynolwltwsmsamocyt (accessyourplace)
+// Initialize Supabase client
+// Project: accessyourplace | Ref: prjynolwltwsmsamocyt
+// Dashboard: https://supabase.com/dashboard/project/prjynolwltwsmsamocyt
 const supabaseUrl = import.meta.env.VITE_SUPABASE_URL || 'https://prjynolwltwsmsamocyt.supabase.co';
 const supabaseKey = import.meta.env.VITE_SUPABASE_ANON_KEY || 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InByanlub2x3bHR3c21zYW1vY3l0Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODM2MzY1MjYsImV4cCI6MjA5OTIxMjUyNn0.t0ftUGh0HSAZpSo9ACmgKL8vQGuVvZxcPqF6Vx-ZG3c';
 
 /**
- * Custom Realtime WebSocket message decoder.
- *
- * The default Supabase Realtime decoder assumes every JSON string message is a
- * Phoenix-protocol array: [join_ref, ref, topic, event, payload].  When the
- * server sends a non-array JSON value (e.g. an empty heartbeat `{}`, an error
- * object, or a keep-alive), the destructuring `const [a,b,c,d,e] = parsed`
- * throws "TypeError: {} is not iterable" because plain objects don't implement
- * the iterable protocol.
- *
- * This replacement:
- *  1. Parses string messages and checks `Array.isArray` before destructuring.
- *  2. Falls back gracefully for object-shaped messages (extracts known Phoenix
- *     fields if present, otherwise wraps the whole thing as payload).
- *  3. Handles ArrayBuffer (binary) messages using the standard Phoenix binary
- *     wire format (kind + 4 length-prefix header + concatenated fields).
- *  4. Wraps everything in try/catch so a malformed message can never crash the
- *     application.
+ * Defensive Supabase Realtime decoder.
+ * Prevents malformed/non-Phoenix messages from crashing the app with
+ * "is not iterable" during realtime heartbeat or migration edge cases.
  */
 function safeRealtimeDecode(
   rawMessage: unknown,
   callback: (decoded: Record<string, unknown>) => void
 ): void {
   try {
-    // ── Binary (ArrayBuffer) messages ─────────────────────────────────
     if (rawMessage instanceof ArrayBuffer) {
-      try {
-        const view = new DataView(rawMessage);
-        const decoder = new TextDecoder();
-        // Phoenix binary header: kind(1) joinRefLen(1) refLen(1) topicLen(1) eventLen(1)
-        const HEADER_LENGTH = 5;
-        if (rawMessage.byteLength < HEADER_LENGTH) {
-          return callback({});
-        }
-        let offset = 0;
-        /* const kind = */ view.getUint8(offset++);
-        const joinRefLen = view.getUint8(offset++);
-        const refLen = view.getUint8(offset++);
-        const topicLen = view.getUint8(offset++);
-        const eventLen = view.getUint8(offset++);
+      const view = new DataView(rawMessage);
+      const decoder = new TextDecoder();
+      const HEADER_LENGTH = 5;
+      if (rawMessage.byteLength < HEADER_LENGTH) return callback({});
 
-        const joinRef = decoder.decode(new Uint8Array(rawMessage, offset, joinRefLen));
-        offset += joinRefLen;
-        const ref = decoder.decode(new Uint8Array(rawMessage, offset, refLen));
-        offset += refLen;
-        const topic = decoder.decode(new Uint8Array(rawMessage, offset, topicLen));
-        offset += topicLen;
-        const event = decoder.decode(new Uint8Array(rawMessage, offset, eventLen));
-        offset += eventLen;
+      let offset = 0;
+      view.getUint8(offset++); // kind
+      const joinRefLen = view.getUint8(offset++);
+      const refLen = view.getUint8(offset++);
+      const topicLen = view.getUint8(offset++);
+      const eventLen = view.getUint8(offset++);
 
-        let payload: unknown = {};
-        if (offset < rawMessage.byteLength) {
-          const payloadStr = decoder.decode(new Uint8Array(rawMessage, offset));
-          try {
-            payload = JSON.parse(payloadStr);
-          } catch {
-            payload = { raw: payloadStr };
-          }
-        }
+      const join_ref = decoder.decode(new Uint8Array(rawMessage, offset, joinRefLen));
+      offset += joinRefLen;
+      const ref = decoder.decode(new Uint8Array(rawMessage, offset, refLen));
+      offset += refLen;
+      const topic = decoder.decode(new Uint8Array(rawMessage, offset, topicLen));
+      offset += topicLen;
+      const event = decoder.decode(new Uint8Array(rawMessage, offset, eventLen));
+      offset += eventLen;
 
-        return callback({ join_ref: joinRef, ref, topic, event, payload });
-      } catch (binErr) {
-        console.warn('[Supabase Realtime] Binary decode error suppressed:', (binErr as Error)?.message);
-        return callback({});
+      let payload: unknown = {};
+      if (offset < rawMessage.byteLength) {
+        const payloadStr = decoder.decode(new Uint8Array(rawMessage, offset));
+        try { payload = JSON.parse(payloadStr); } catch { payload = { raw: payloadStr }; }
       }
+
+      return callback({ join_ref, ref, topic, event, payload });
     }
 
-    // ── String (JSON) messages ────────────────────────────────────────
     if (typeof rawMessage === 'string') {
       let parsed: unknown;
-      try {
-        parsed = JSON.parse(rawMessage);
-      } catch {
-        // Not valid JSON – nothing we can do
-        console.warn('[Supabase Realtime] Non-JSON message received');
-        return callback({});
-      }
+      try { parsed = JSON.parse(rawMessage); } catch { return callback({}); }
 
-      // Standard Phoenix array format: [join_ref, ref, topic, event, payload]
       if (Array.isArray(parsed)) {
         const [join_ref, ref, topic, event, payload] = parsed;
         return callback({ join_ref, ref, topic, event, payload });
       }
 
-      // Object-shaped message (heartbeat response, error, etc.)
       if (parsed !== null && typeof parsed === 'object') {
         const obj = parsed as Record<string, unknown>;
         return callback({
@@ -101,12 +66,8 @@ function safeRealtimeDecode(
           payload: obj.payload ?? obj,
         });
       }
-
-      // Primitive value (number, boolean, null) – shouldn't happen but be safe
-      return callback({});
     }
 
-    // ── Anything else (Blob, null, undefined) ─────────────────────────
     return callback({});
   } catch (err) {
     console.warn('[Supabase Realtime] Decode error suppressed:', (err as Error)?.message);
@@ -119,29 +80,20 @@ const supabase = createClient(supabaseUrl, supabaseKey, {
     schema: 'public',
   },
   realtime: {
-    params: {
-      eventsPerSecond: 2,
-    },
+    params: { eventsPerSecond: 2 },
     decode: safeRealtimeDecode,
   },
 });
 
-// ── Safety-net global error handlers ──────────────────────────────────────────
-// These catch any residual "is not iterable" errors that might slip through
-// (e.g. from a stale cached bundle still using the old default decoder).
 if (typeof window !== 'undefined') {
   const originalOnError = window.onerror;
   window.onerror = function (message, source, lineno, colno, error) {
     if (
       error instanceof TypeError &&
-      (error.message === '{} is not iterable' ||
-        error.message?.includes('is not iterable'))
+      (error.message === '{} is not iterable' || error.message?.includes('is not iterable'))
     ) {
-      console.warn(
-        '[Supabase Realtime] Global handler suppressed decode error:',
-        error.message
-      );
-      return true; // Prevent propagation
+      console.warn('[Supabase Realtime] Global handler suppressed decode error:', error.message);
+      return true;
     }
     if (typeof originalOnError === 'function') {
       return originalOnError.call(window, message, source, lineno, colno, error);
@@ -152,32 +104,16 @@ if (typeof window !== 'undefined') {
   window.addEventListener('unhandledrejection', (event) => {
     if (
       event.reason instanceof TypeError &&
-      (event.reason.message === '{} is not iterable' ||
-        event.reason.message?.includes('is not iterable'))
+      (event.reason.message === '{} is not iterable' || event.reason.message?.includes('is not iterable'))
     ) {
-      console.warn(
-        '[Supabase Realtime] Global handler suppressed unhandled rejection:',
-        event.reason.message
-      );
+      console.warn('[Supabase Realtime] Global handler suppressed unhandled rejection:', event.reason.message);
       event.preventDefault();
     }
   });
 }
 
-
 /**
- * Safe DELETE helper that avoids the Fastify "Body cannot be empty when
- * content-type is set to 'application/json'" error.
- *
- * The Supabase JS client sends `content-type: application/json` on DELETE
- * requests with an empty body.  Fastify (sitting in front of PostgREST)
- * rejects this combination.  This helper uses `fetch` directly and omits
- * the content-type header so the server doesn't try to parse a body.
- *
- * Usage:
- *   import { safeDeleteRows } from '@/lib/supabase';
- *   await safeDeleteRows('archived_properties', 'id', someUuid);
- *   await safeDeleteRows('properties', 'property_id', someUuid);
+ * Safe DELETE helper that avoids Fastify rejecting empty JSON DELETE bodies.
  */
 export async function safeDeleteRows(
   table: string,
@@ -189,9 +125,8 @@ export async function safeDeleteRows(
     const res = await fetch(url, {
       method: 'DELETE',
       headers: {
-        'apikey': supabaseKey,
-        'Authorization': `Bearer ${supabaseKey}`,
-        // Intentionally NO content-type header — this avoids the Fastify error
+        apikey: supabaseKey,
+        Authorization: `Bearer ${supabaseKey}`,
       },
     });
     if (!res.ok) {
@@ -207,8 +142,7 @@ export async function safeDeleteRows(
 }
 
 /**
- * Batch-safe DELETE: deletes multiple rows by an array of IDs.
- * Uses the PostgREST `in` filter syntax.
+ * Batch-safe DELETE using PostgREST in.(...) syntax.
  */
 export async function safeDeleteRowsBatch(
   table: string,
@@ -222,9 +156,9 @@ export async function safeDeleteRowsBatch(
     const res = await fetch(url, {
       method: 'DELETE',
       headers: {
-        'apikey': supabaseKey,
-        'Authorization': `Bearer ${supabaseKey}`,
-        'Prefer': 'return=representation',
+        apikey: supabaseKey,
+        Authorization: `Bearer ${supabaseKey}`,
+        Prefer: 'return=representation',
       },
     });
     if (!res.ok) {
@@ -241,4 +175,3 @@ export async function safeDeleteRowsBatch(
 }
 
 export { supabase };
-
