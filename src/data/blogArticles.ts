@@ -1,5 +1,5 @@
-import { propertyAcquisition, landlordRelationships, marketResearch, legalCompliance, portfolioScaling, financialModeling, difficultLandlords, leaseNegotiation } from './blog/acquisition-articles';
-import { furnishingStrategy, listingOptimization, pricingStrategy, guestCommunication, cleaningProtocols, maintenanceCoordination, automationTools, teamBuilding, remoteManagement, propertySelection, maintenanceNetwork } from './blog/operations-articles';
+import { propertyAcquisition, landlordRelationships, marketResearch, legalCompliance, portfolioScaling } from './blog/acquisition-articles';
+import { furnishingStrategy, listingOptimization, pricingStrategy, cleaningProtocols, maintenanceCoordination, automationTools, teamBuilding } from './blog/operations-articles';
 import { colivingSetup, colivingMarketing, colivingOperations } from './blog/coliving-setup';
 import { cleaningStandards, maintenanceSystems } from './blog/cleaning-maintenance';
 import { atlantaRegulations, nashvilleRegulations, austinRegulations, miamiRegulations, denverRegulations, phoenixRegulations, philadelphiaRegulations, sanDiegoRegulations, sanAntonioRegulations, charlotteRegulations, portlandRegulations, louisvilleRegulations } from './blog/additional-articles';
