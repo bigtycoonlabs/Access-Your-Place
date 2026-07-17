@@ -4,7 +4,7 @@ import {
   ChevronDown, LayoutDashboard, Home, Store, Search, Bell, Heart,
   MessageSquare, Mail, Briefcase, FolderOpen, FileSignature, Brain,
   BellRing, Wallet, CalendarDays, FileText, Gift, Scale, BookOpen,
-  MailOpen, Settings, X, AlertTriangle
+  MailOpen, Settings, X, AlertTriangle, Zap
 } from 'lucide-react';
 
 export interface InvestorNavItem {
@@ -207,6 +207,7 @@ export function getInvestorTabs(): InvestorNavItem[] {
     { value: 'saved', label: 'Saved Deals', icon: Heart, group: 'deals' },
     { value: 'deal-matching', label: 'Deal Matching', icon: Brain, group: 'deals' },
     { value: 'deal-alerts', label: 'Deal Alerts', icon: BellRing, group: 'deals' },
+    { value: 'leadforge', label: 'LeadForge', icon: Zap, group: 'deals' },
     { value: 'notifications-hub', label: 'Notifications & Alerts', icon: Bell, group: 'communications' },
     { value: 'inquiries', label: 'Inquiries', icon: MessageSquare, group: 'communications' },
     { value: 'messages', label: 'Messages', icon: Mail, group: 'communications' },

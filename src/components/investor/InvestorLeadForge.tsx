@@ -87,6 +87,7 @@ After all searches, output ONLY a JSON array — no markdown, no explanation:
   "headcount": company employee count or null,
   "note": "one specific detail from their Apollo profile"
 }]`);
+
   const leads = parseJSON(text);
   if (!Array.isArray(leads) || leads.length === 0)
     throw new Error("Apollo returned no matching contacts in that area. Try a larger radius or different zip.");
@@ -102,17 +103,17 @@ Enrich this person in Apollo using apollo_enrich_person:
   ${lead.apolloPersonId ? `Apollo person ID: ${lead.apolloPersonId}` : ""}
   ${lead.email ? `Known email: ${lead.email}` : ""}
 
-Return ONLY JSON (ro markdown):
-{"q1ail":"...","phone":"...","linkedin":"...","apolloPersonId":"...","city":"...","state":"...","headline":"...","enriched":true}`);
+Return ONLY JSON (no markdown):
+{"email":"...","phone":"...","linkedin":"...","apolloPersonId":"...","city":"...","state":"...","headline":"...","enriched":true}`);
 
   return parseJSON(text) || {};
 }
 
-anync function pushContactToApollo(lead) {
+async function pushContactToApollo(lead) {
   const text = await apolloCall(`
 Create this contact in Apollo using apollo_create_contacts:
   First name: ${lead.name.split(" ")[0]}
-  LasT name: ${(lead.name.split(" ").slice(1).join(" ")) || ""}
+  Last name: ${(lead.name.split(" ").slice(1).join(" ")) || ""}
   Title: ${lead.title}
   Company: ${lead.company || ""}
   Email: ${lead.email || ""}
@@ -162,7 +163,7 @@ const selStyle = { ...inpStyle, cursor: "pointer" };
 const btnStyle = (v = "primary") => ({
   padding: "8px 16px",
   background:
-    v === "primary" ? BLUE: v === "success" ? "rgba(74,222,128,0.12)" :
+    v === "primary" ? BLUE : v === "success" ? "rgba(74,222,128,0.12)" :
     v === "danger"  ? "rgba(248,113,113,0.12)" : SURF2,
   border:
     v === "success" ? "1px solid rgba(74,222,128,0.3)" :
@@ -172,7 +173,7 @@ const btnStyle = (v = "primary") => ({
 });
 
 function ScoreBar({ score }) {
-  const c = scorore >= 80 ? "#4ADE80" : score >= 60 ? "#FBBF24" : "#F87171";
+  const c = score >= 80 ? "#4ADE80" : score >= 60 ? "#FBBF24" : "#F87171";
   return (
     <div style={{ display:"flex", alignItems:"center", gap:8 }}>
       <div style={{ flex:1, height:3, background:"rgba(255,255,255,0.07)", borderRadius:2 }}>
@@ -800,7 +801,7 @@ export function InvestorLeadForge({ investorId, investorName }: InvestorLeadForg
                 </div>
               )}
 
-              {/* ── Sequence enrollment (only after pushed) ── */}
+              { /* ── Sequence enrollment (only after pushed) ── */}
               {selected.inApollo && (
                 <div style={{ background:SURF2, border:`1px solid ${BDR}`, borderRadius:8, padding:12, marginBottom:12 }}>
                   <div style={{ fontSize:9, color:MUTED, fontWeight:800, textTransform:"uppercase", letterSpacing:"0.07em", marginBottom:8 }}>Add to Sequence</div>

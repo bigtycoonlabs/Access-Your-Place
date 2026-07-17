@@ -51,6 +51,7 @@ import { SkipLinks, LiveRegion } from '@/hooks/useAccessibility';
 import { useSessionSync } from '@/services/SessionSyncService';
 import { AccountLinkSuggestionsBanner } from '@/components/admin/AccountLinkSuggestionsBanner';
 import { InvestorMobileNav, getInvestorTabs } from '@/components/investor/InvestorMobileNav';
+import { InvestorLeadForge } from '@/components/investor/InvestorLeadForge';
 
 
 // Lazy load heavy components for better performance
@@ -77,7 +78,7 @@ import {
   FileText, Gift, Scale, LayoutDashboard, Home, Store, Bell, 
   BellRing, MailOpen, ArrowRight, Sparkles, MapPin, AlertTriangle,
   Wallet, WifiOff, RefreshCw, Shield, Brain, BookOpen, CalendarDays,
-  Search, X, ChevronLeft, Wrench
+  Search, X, ChevronLeft, Wrench, Zap
 } from 'lucide-react';
 
 
@@ -503,7 +504,8 @@ export default function InvestorPortal() {
         'reports': 'Market Reports',
         'referrals': 'Referral Program',
         'disputes': 'Dispute Resolution',
-        'settings': 'Account Settings'
+        'settings': 'Account Settings',
+        'leadforge': 'LeadForge'
       };
       const name = tabNames[activeTab] || activeTab;
       setAnnouncement(`Navigated to ${name} tab`);
@@ -1005,6 +1007,10 @@ export default function InvestorPortal() {
                     <Settings className="w-4 h-4" aria-hidden="true" />
                     <span>Settings</span>
                   </TabsTrigger>
+                  <TabsTrigger value="leadforge" className="flex items-center gap-2">
+                    <Zap className="w-4 h-4" aria-hidden="true" />
+                    <span>LeadForge</span>
+                  </TabsTrigger>
                 </TabsList>
               </div>
             </>
@@ -1350,6 +1356,13 @@ export default function InvestorPortal() {
               />
             </InvestorTabErrorBoundary>
           </TabsContent>
+          {/* ===== LEADFORGE TAB ===== */}
+          <TabsContent value="leadforge" role="tabpanel" aria-label="Apollo LeadForge - investor lead search">
+            <InvestorTabErrorBoundary tabName="LeadForge">
+              <InvestorLeadForge investorId={investor.id} investorName={investor.full_name} />
+            </InvestorTabErrorBoundary>
+          </TabsContent>
+
         </Tabs>
 
 
