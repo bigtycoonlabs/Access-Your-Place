@@ -3179,6 +3179,43 @@ async function runStartupMigrations() {
   }
 }
 
+
+// ── LeadForge Apollo Proxy ────────────────────────────────────────────────────
+app.post('/api/leadforge-apollo', async (req, res) => {
+  try {
+    const { prompt, maxTokens = 4000 } = req.body || {};
+    if (!prompt) return res.status(400).json({ success: false, error: 'prompt is required' });
+    const ANTHROPIC_API_KEY = process.env.ANTHROPIC_API_KEY;
+    if (!ANTHROPIC_API_KEY) {
+      return res.status(500).json({ success: false, error: 'ANTHROPIC_API_KEY not configured on server' });
+    }
+    const APOLLO_MCP = { type: 'url', url: 'https://mcp.apollo.io/mcp', name: 'apollo' };
+    const anthropicRes = await fetch('https://api.anthropic.com/v1/messages', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'x-api-key': ANTHROPIC_API_KEY,
+        'anthropic-version': '2023-06-01',
+        'anthropic-beta': 'mcp-client-2025-04-04',
+      },
+      body: JSON.stringify({
+        model: 'claude-sonnet-4-6',
+        max_tokens: maxTokens,
+        mcp_servers: [APOLLO_MCP],
+        messages: [{ role: 'user', content: prompt }],
+      }),
+    });
+    const data = await anthropicRes.json();
+    if (!anthropicRes.ok) {
+      return res.status(502).json({ success: false, error: 'Anthropic API error: ' + JSON.stringify(data) });
+    }
+    const text = (data.content || []).filter((b) => b.type === 'text').map((b) => b.text).join('\n');
+    res.json({ success: true, text });
+  } catch (e) {
+    res.status(500).json({ success: false, error: e.message });
+  }
+});
+
 // ── Start ─────────────────────────────────────────────────────────────────────
 app.listen(PORT, () => {
   console.log(`✅ AYP Functions Server running on port ${PORT}`);
