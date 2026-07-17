@@ -77,19 +77,22 @@ async function directDatabaseLogin(email: string, password: string): Promise<{
 
     // Detect hashed passwords (64 hex chars = SHA-256)
     const isHashedPassword = storedPassword.length === 64 && /^[a-f0-9]+$/i.test(storedPassword);
-    
-    if (isHashedPassword) {
-      // We cannot verify hashed passwords without the edge function's hashPassword()
-      return { 
-        success: false, 
-        error: 'Authentication service temporarily unavailable. Please try again in a few minutes or contact support.' 
-      };
-    }
 
-    // Exact match only — no case-insensitive comparison (timing-attack resistant
-    // is less critical here since this is a client-side fallback, but we still
-    // avoid leaking info via case-insensitive shortcuts)
-    if (storedPassword !== password) {
+    if (isHashedPassword) {
+      // Verify using Web Crypto API: SHA-256(password + salt)
+      try {
+        const encoder = new TextEncoder();
+        const saltedPassword = password + 'ayp_staff_salt_2024';
+        const hashBuffer = await crypto.subtle.digest('SHA-256', encoder.encode(saltedPassword));
+        const hashHex = Array.from(new Uint8Array(hashBuffer)).map(b => b.toString(16).padStart(2, '0')).join('');
+        if (hashHex !== storedPassword) {
+          return { success: false, error: 'Invalid email or password' };
+        }
+        // Hash matched — fall through to successful login
+      } catch {
+        return { success: false, error: 'Authentication service temporarily unavailable. Please try again.' };
+      }
+    } else if (storedPassword !== password) {
       return { success: false, error: 'Invalid email or password' };
     }
 

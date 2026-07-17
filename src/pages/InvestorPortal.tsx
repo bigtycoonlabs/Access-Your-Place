@@ -46,6 +46,7 @@ import { DealMarketplace } from '@/components/investor/DealMarketplace';
 import IssueReportForm from '@/components/investor/IssueReportForm';
 import { DisputeResolutionCenter } from '@/components/investor/DisputeResolutionCenter';
 import { PennyChatButton } from '@/components/PennyChatButton';
+import PennyAI from '@/components/PennyAI';
 import { SkipLinks, LiveRegion } from '@/hooks/useAccessibility';
 import { useSessionSync } from '@/services/SessionSyncService';
 import { AccountLinkSuggestionsBanner } from '@/components/admin/AccountLinkSuggestionsBanner';
@@ -1441,6 +1442,105 @@ export default function InvestorPortal() {
           userType="investor"
         />
       )}
+
+      {/* Penny Staff Tool — bottom-left floating widget for staff to look up
+          properties and release addresses to clients during live calls.
+          Separate from the investor-facing PennyChatButton (bottom-right). */}
+      <PennyStaffTool />
     </div>
+  );
+}
+
+// ─── Penny Staff Tool Widget ──────────────────────────────────────────────────
+// Floats at bottom-left so staff can pop it open while speaking with a client.
+// Uses the GoDaddy-hosted Penny agent for property lookup & address release.
+function PennyStaffTool() {
+  const [open, setOpen] = useState(false);
+
+  return (
+    <>
+      {/* Trigger button */}
+      <button
+        onClick={() => setOpen(o => !o)}
+        aria-label={open ? 'Close Penny Staff Tool' : 'Open Penny Staff Tool — property lookup for client calls'}
+        style={{
+          position: 'fixed',
+          bottom: '24px',
+          left: '24px',
+          zIndex: 9999,
+          width: '56px',
+          height: '56px',
+          borderRadius: '50%',
+          background: 'linear-gradient(135deg, #1a365d, #2d4a7c)',
+          border: '2px solid #d4a574',
+          cursor: 'pointer',
+          boxShadow: '0 4px 16px rgba(26,54,93,0.45)',
+          display: 'flex',
+          alignItems: 'center',
+          justifyContent: 'center',
+          color: '#d4a574',
+          fontSize: '20px',
+          transition: 'transform 0.18s',
+        }}
+        onMouseEnter={e => (e.currentTarget.style.transform = 'scale(1.08)')}
+        onMouseLeave={e => (e.currentTarget.style.transform = 'scale(1)')}
+      >
+        {open ? '✕' : '🏠'}
+      </button>
+
+      {/* Tooltip label */}
+      {!open && (
+        <div style={{
+          position: 'fixed',
+          bottom: '84px',
+          left: '8px',
+          zIndex: 9999,
+          background: '#1a365d',
+          color: '#d4a574',
+          fontSize: '10px',
+          fontWeight: 600,
+          padding: '3px 7px',
+          borderRadius: '6px',
+          pointerEvents: 'none',
+          whiteSpace: 'nowrap',
+          letterSpacing: '0.04em',
+        }}>
+          Penny Staff
+        </div>
+      )}
+
+      {/* Penny iframe panel */}
+      {open && (
+        <div
+          style={{
+            position: 'fixed',
+            bottom: '88px',
+            left: '24px',
+            zIndex: 9998,
+            width: '370px',
+            height: '540px',
+            borderRadius: '18px',
+            overflow: 'hidden',
+            boxShadow: '0 8px 32px rgba(0,0,0,0.28)',
+            border: '2px solid #d4a574',
+            animation: 'penny-staff-up 0.2s ease',
+          }}
+        >
+          <iframe
+            src="https://godaddy-agent.aiassistant.co/web-agent?agent_id=4b1a2e49-ba72-4b7a-b034-0946c680376a"
+            style={{ width: '100%', height: '100%', border: 'none' }}
+            allow="microphone"
+            title="Penny – Staff Property Lookup Tool"
+          />
+        </div>
+      )}
+
+      <style>{`
+        @keyframes penny-staff-up {
+          from { opacity: 0; transform: translateY(14px); }
+          to   { opacity: 1; transform: translateY(0); }
+        }
+      `}</style>
+    </>
   );
 }

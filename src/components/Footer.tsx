@@ -102,50 +102,36 @@ export default function Footer() {
             <nav aria-labelledby="partnerships-heading">
               <ul className="space-y-2">
                 <li>
-                  <a 
-                    href="/landlord-partnership" 
+                  <a
+                    href="/landlord-partnership"
                     className="text-gray-400 hover:text-[#d4a574] transition-colors focus:outline-none focus:ring-2 focus:ring-[#d4a574] rounded"
                   >
                     Landlord Partnership
                   </a>
                 </li>
                 <li>
-                  <a 
-                    href="/landlord-partnership#landlord-inquiry" 
+                  <a
+                    href="/landlord-partnership#landlord-inquiry"
                     className="text-gray-400 hover:text-[#d4a574] transition-colors focus:outline-none focus:ring-2 focus:ring-[#d4a574] rounded"
                   >
                     Community Inquiry
                   </a>
                 </li>
                 <li>
-                  <a 
-                    href="/investor/login" 
+                  <a
+                    href="/investor/login"
                     className="text-gray-400 hover:text-[#d4a574] transition-colors focus:outline-none focus:ring-2 focus:ring-[#d4a574] rounded"
                   >
                     Investor Portal
                   </a>
                 </li>
                 <li>
-                  <a 
-                    href="https://calendly.com/investyourplaces" 
-                    target="_blank" 
-                    rel="noopener noreferrer" 
+                  <a
+                    href="mailto:success@accessyourplace.com?subject=Discovery%20Call%20Request"
                     className="text-gray-400 hover:text-[#d4a574] transition-colors focus:outline-none focus:ring-2 focus:ring-[#d4a574] rounded"
-                    aria-label="Book Discovery Call (opens in new tab)"
+                    aria-label="Book Discovery Call — email success team"
                   >
                     Book Discovery Call
-                  </a>
-                </li>
-                <li>
-                  <a 
-                    href="https://bigggtycoon.net" 
-                    target="_blank" 
-                    rel="noopener noreferrer" 
-                    className="text-gray-400 hover:text-[#d4a574] transition-colors focus:outline-none focus:ring-2 focus:ring-[#d4a574] rounded flex items-center gap-1"
-                    aria-label="TycoonLabs - Sister Company (opens in new tab)"
-                  >
-                    TycoonLabs
-                    <span className="text-xs bg-purple-500/30 text-purple-300 px-1.5 py-0.5 rounded">Sister Co.</span>
                   </a>
                 </li>
               </ul>
@@ -159,10 +145,10 @@ export default function Footer() {
                 <li className="flex items-start">
                   <Mail size={18} className="mr-2 mt-1 text-[#d4a574] flex-shrink-0" aria-hidden="true" />
                   <a 
-                    href="mailto:hello@accessyourplace.com" 
+                    href="mailto:success@accessyourplace.com"
                     className="text-gray-400 hover:text-[#d4a574] transition-colors focus:outline-none focus:ring-2 focus:ring-[#d4a574] rounded"
                   >
-                    hello@accessyourplace.com
+                    success@accessyourplace.com
                   </a>
                 </li>
                 <li className="flex items-start">
@@ -173,6 +159,55 @@ export default function Footer() {
                 </li>
               </ul>
             </address>
+          </div>
+        </div>
+
+        {/* Our Platforms */}
+        <div className="border-t border-gray-800 pt-10 mb-10">
+          <h4 className="text-center text-sm font-semibold text-gray-500 uppercase tracking-widest mb-6">Our Platforms</h4>
+          <div className="grid sm:grid-cols-3 gap-6 max-w-4xl mx-auto text-center">
+            <div className="bg-white/5 rounded-xl p-5 hover:bg-white/10 transition-colors">
+              <a
+                href="https://accessyourplace.com"
+                target="_blank"
+                rel="noopener noreferrer"
+                className="text-[#d4a574] font-semibold text-base hover:underline focus:outline-none focus:ring-2 focus:ring-[#d4a574] rounded"
+                aria-label="AccessYourPlace (opens in new tab)"
+              >
+                AccessYourPlace
+              </a>
+              <p className="text-gray-500 text-xs mt-2 leading-relaxed">
+                The main operator platform. Find landlord-approved STR and co-living deals, access Penny market research, and grow your rental arbitrage operation with compliance-first acquisition support.
+              </p>
+            </div>
+            <div className="bg-white/5 rounded-xl p-5 hover:bg-white/10 transition-colors">
+              <a
+                href="https://accessypflow.com"
+                target="_blank"
+                rel="noopener noreferrer"
+                className="text-[#d4a574] font-semibold text-base hover:underline focus:outline-none focus:ring-2 focus:ring-[#d4a574] rounded"
+                aria-label="AccessYPFlow (opens in new tab)"
+              >
+                AccessYPFlow
+              </a>
+              <p className="text-gray-500 text-xs mt-2 leading-relaxed">
+                The deal flow and workflow engine. Built for AYP operators and teams to manage acquisitions, track deal pipelines, and streamline every step from sourcing to close.
+              </p>
+            </div>
+            <div className="bg-white/5 rounded-xl p-5 hover:bg-white/10 transition-colors">
+              <a
+                href="https://accessyplabs.com"
+                target="_blank"
+                rel="noopener noreferrer"
+                className="text-[#d4a574] font-semibold text-base hover:underline focus:outline-none focus:ring-2 focus:ring-[#d4a574] rounded"
+                aria-label="AccessYPLabs (opens in new tab)"
+              >
+                AccessYPLabs
+              </a>
+              <p className="text-gray-500 text-xs mt-2 leading-relaxed">
+                The innovation and R&D hub. Where new AI tools, platform features, and operator experiments are built and tested before rolling into the broader AYP ecosystem.
+              </p>
+            </div>
           </div>
         </div>
 

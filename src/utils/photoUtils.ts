@@ -1,7 +1,7 @@
 import { supabase } from '@/lib/supabase';
 
 const BUCKET_NAME = 'property-photos';
-const SUPABASE_URL = 'https://zhobqrmkbtsqugtiahyn.databasepad.com';
+const SUPABASE_URL = 'https://adcbrclppmnguzkzwiys.supabase.co';
 const SIGNED_URL_EXPIRY = 3600; // 1 hour in seconds
 
 // In-memory cache for signed URLs to avoid redundant calls

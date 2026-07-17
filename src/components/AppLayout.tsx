@@ -1,6 +1,8 @@
 import React from 'react';
 import Header from './Header';
 import Hero2026 from './Hero2026';
+import HowWeWork from './HowWeWork';
+import EcosystemSection from './EcosystemSection';
 import TechShowcase from './TechShowcase';
 import FeaturedDeals from './FeaturedDeals';
 import TestimonialsSection from './TestimonialsSection';
@@ -13,24 +15,24 @@ import SEO, { getOrganizationSchema, getWebsiteSchema, getFAQSchema } from './SE
 const AppLayout: React.FC = () => {
   const faqData = [
     {
-      question: 'What does Access Your Place help operators do?',
-      answer: 'Access Your Place helps operator clients research markets, review qualified corporate lease opportunities, work with acquisition support, and manage flexible housing growth through one platform.'
+      question: 'What is rental arbitrage?',
+      answer: 'Rental arbitrage is a real estate investment strategy where you lease a property long-term and then sublease it as a short-term rental or co-living space, profiting from the difference between your lease payment and rental income.'
     },
     {
-      question: 'Are investors and operators separate account types?',
-      answer: 'No. Access Your Place uses one operator client account. Investor describes a pre-launch operator; once properties are live and hosting guests, that client is operating.'
+      question: 'Do I need to own property to start?',
+      answer: 'No. You lease properties from landlords who approve STR or co-living operations, eliminating the need for large down payments or mortgages.'
     },
     {
-      question: 'Can public users see property addresses?',
-      answer: 'Public marketplace cards protect exact addresses. Funded operator accounts can access full addresses through the internal marketplace and dashboard experience.'
+      question: 'How do I find landlords who allow short-term rentals?',
+      answer: 'Access Your Place provides pre-negotiated deals where landlord approval is already secured. We handle the outreach and negotiation so you can focus on running your business.'
     },
     {
-      question: 'How does Penny qualify properties?',
-      answer: 'Penny uses a 0-100 score across demand, supply, regulation, and economics. Properties under 50 do not qualify for public listing because they fail Access Your Place minimum slow-season economics.'
+      question: 'What returns can I expect?',
+      answer: 'Returns vary by market and property type. Each listing includes detailed revenue projections based on real micro-market data. We project — we never guarantee.'
     },
     {
-      question: 'Who can use the client access portal?',
-      answer: 'Operator clients, pre-launch investors, vendors, and landlords can use the public account flow. Staff login remains separate for internal teams.'
+      question: 'Is rental arbitrage legal?',
+      answer: 'Yes, when done properly with landlord permission and in compliance with local regulations. We verify that all properties on our platform meet legal requirements.'
     }
   ];
 
@@ -53,22 +55,27 @@ const AppLayout: React.FC = () => {
       </a>
 
       <SEO
-        title="Access Your Place - Flexible Housing Operator Platform"
-        description="Access Your Place helps operator clients move past traditional real estate barriers with Penny market research, qualified corporate lease opportunities, acquisition support, and flexible housing resources."
-        keywords="flexible housing, corporate lease opportunities, rental arbitrage, short-term rental operator, co-living operator, Penny market research, real estate access, operator dashboard, acquisition support"
+        title="Access Your Place — Corporate Lease Acquisition Platform"
+        description="Certified Acquisition Managers source and close furnished rental deals across 30+ markets. Landlord-approved deals, real market projections, no cold outreach."
+        keywords="rental arbitrage, corporate leasing, furnished rentals, acquisition manager, short-term rental investment"
         canonicalUrl="/"
         ogType="website"
         structuredData={homepageSchema}
       />
+
       <Header />
-      <main id="main-content" role="main">
+
+      <main id="main-content">
         <Hero2026 />
-        <TechShowcase />
+        <HowWeWork />
         <FeaturedDeals />
+        <EcosystemSection />
+        <TechShowcase />
         <TestimonialsSection />
         <FAQSection />
         <BookCallSection />
       </main>
+
       <Footer />
       <SubmitPropertyModal />
     </div>
