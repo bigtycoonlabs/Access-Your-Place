@@ -808,7 +808,7 @@ export function InvestorLeadForge({ investorId, investorName }: InvestorLeadForg
                   {seqs.length === 0 ? (
                     <button onClick={doLoadSeqs} disabled={seqLoading} style={{ ...btnStyle(), width:"100%", padding:"7px", fontSize:12 }}>
                       {seqLoading ? (
-                        <span style={{ display:"flex" alignItems:"center", justifyContent:"center", gap:6 }}>
+                        <span style={{ display:"flex", alignItems:"center", justifyContent:"center", gap:6 }}>
                           <Spinner size={12} /> Loading sequences…
                         </span>
                       ) : "Load My Apollo Sequences"}
@@ -834,7 +834,7 @@ export function InvestorLeadForge({ investorId, investorName }: InvestorLeadForg
               {/* ── Notes ── */}
               <div style={{ marginBottom:14 }}>
                 <div style={{ fontSize:9, color:MUTED, fontWeight:800, textTransform:"uppercase", letterSpacing:"0.07em", marginBottom:8 }}>Activity Notes</div>
-                y(selected.notes||[]).length === 0
+                {(selected.notes||[]).length === 0
                   ? <div style={{ fontSize:12, color:"#374151", marginBottom:8 }}>No notes yet.</div>
                   : (selected.notes||[]).map((n,i) => (
                     <div key={i} style={{ background:SURF2, border:`1px solid ${BDR}`, borderRadius:6, padding:"8px 10px", marginBottom:6 }}>
