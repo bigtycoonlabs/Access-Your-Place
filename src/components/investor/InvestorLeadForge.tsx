@@ -562,11 +562,6 @@ export function InvestorLeadForge({ investorId, investorName }: InvestorLeadForg
                         {lead.enriched && <Pill label="✓ Enriched" color="#4ADE80" bg="rgba(74,222,128,0.1)" />}
                       </div>
 
-                      {/* Action btns */}
-                      <div style={{ display:"flex", gap:6, wrap:"wrap" }}>
-                        <button onClick={() => added ? null : addToCrm(lead)}
-                          style={{ ...btnStyle(added ? "success" : "primary"), flex:1 }}>              </div>
-
                       {/* Contact line */}
                       <div style={{ fontSize:11, color:"#475569", marginBottom:10, display:"flex", flexWrap:"wrap", gap:10 }}>
                         {lead.email && <span>📧 {lead.email}</span>}
