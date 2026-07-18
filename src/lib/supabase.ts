@@ -1,10 +1,10 @@
 import { createClient } from '@supabase/supabase-js';
 
 // Initialize Supabase client
-// Project: accessyourplace | Ref: prjynolwltwsmsamocyt
-// Dashboard: https://supabase.com/dashboard/project/prjynolwltwsmsamocyt
-const supabaseUrl = import.meta.env.VITE_SUPABASE_URL || 'https://prjynolwltwsmsamocyt.supabase.co';
-const supabaseKey = import.meta.env.VITE_SUPABASE_ANON_KEY || 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InByanlub2x3bHR3c21zYW1vY3l0Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODM2MzY1MjYsImV4cCI6MjA5OTIxMjUyNn0.t0ftUGh0HSAZpSo9ACmgKL8vQGuVvZxcPqF6Vx-ZG3c';
+// Project: AccessYourPlace-Production | Ref: adcbrclppmnguzkzwiys
+// Dashboard: https://supabase.com/dashboard/project/adcbrclppmnguzkzwiys
+const supabaseUrl = import.meta.env.VITE_SUPABASE_URL || 'https://adcbrclppmnguzkzwiys.supabase.co';
+const supabaseKey = import.meta.env.VITE_SUPABASE_ANON_KEY || 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImFkY2JyY2xwcG1uZ3V6a3p3aXlzIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODE5MjgyOTAsImV4cCI6MjA5NzUwNDI5MH0.wBv4AZYvndsvnj8XrkT5VNGBuT3GE6j1w-LI5k1Jr-U';
 
 /**
  * Defensive Supabase Realtime decoder.
