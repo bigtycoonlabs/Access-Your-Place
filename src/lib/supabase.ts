@@ -3,7 +3,7 @@ import { createClient } from '@supabase/supabase-js';
 const PROD_PROJECT_REF = 'adcbrclppmnguzkzwiys';
 const PROD_SUPABASE_URL = `https://${PROD_PROJECT_REF}.supabase.co`;
 const PROD_SUPABASE_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImFkY2JyY2xwcG1uZ3V6a3p3aXlzIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODE5MjgyOTAsImV4cCI6MjA5NzUwNDI5MH0.wBv4AZYvndsvnj8XrkT5VNGBuT3GE6j1w-LI5k1Jr-U';
-export const DATA_SCHEMA = 'prj_X-ZoVQv6LKXT';
+export const DATA_SCHEMA = 'public';
 
 const configuredUrl = String(import.meta.env.VITE_SUPABASE_URL || '').trim();
 const configuredKey = String(import.meta.env.VITE_SUPABASE_ANON_KEY || '').trim();
@@ -64,8 +64,6 @@ function restHeaders(prefer?: string): Record<string, string> {
   const headers: Record<string, string> = {
     apikey: supabaseKey,
     Authorization: `Bearer ${supabaseKey}`,
-    'Accept-Profile': DATA_SCHEMA,
-    'Content-Profile': DATA_SCHEMA,
   };
   if (prefer) headers.Prefer = prefer;
   return headers;
