@@ -1,10 +1,27 @@
 import { createClient } from '@supabase/supabase-js';
 
-// Initialize Supabase client
-// Project: AccessYourPlace-Production | Ref: adcbrclppmnguzkzwiys
-// Dashboard: https://supabase.com/dashboard/project/adcbrclppmnguzkzwiys
-const supabaseUrl = import.meta.env.VITE_SUPABASE_URL || 'https://adcbrclppmnguzkzwiys.supabase.co';
-const supabaseKey = import.meta.env.VITE_SUPABASE_ANON_KEY || 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImFkY2JyY2xwcG1uZ3V6a3p3aXlzIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODE5MjgyOTAsImV4cCI6MjA5NzUwNDI5MH0.wBv4AZYvndsvnj8XrkT5VNGBuT3GE6j1w-LI5k1Jr-U';
+// AccessYourPlace production Supabase configuration.
+// Railway/Vite variables are accepted only when they target the verified
+// production project. This prevents stale build variables from silently
+// routing the live app to another project and causing cascading 401 errors.
+const PROD_PROJECT_REF = 'adcbrclppmnguzkzwiys';
+const PROD_SUPABASE_URL = `https://${PROD_PROJECT_REF}.supabase.co`;
+const PROD_SUPABASE_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImFkY2JyY2xwcG1uZ3V6a3p3aXlzIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODE5MjgyOTAsImV4cCI6MjA5NzUwNDI5MH0.wBv4AZYvndsvnj8XrkT5VNGBuT3GE6j1w-LI5k1Jr-U';
+
+const configuredUrl = String(import.meta.env.VITE_SUPABASE_URL || '').trim();
+const configuredKey = String(import.meta.env.VITE_SUPABASE_ANON_KEY || '').trim();
+const configuredProjectRef = configuredUrl.match(/^https:\/\/([a-z0-9]+)\.supabase\.co\/?$/i)?.[1];
+const useConfiguredCredentials =
+  configuredProjectRef === PROD_PROJECT_REF && configuredKey.length > 0;
+
+if (configuredUrl && !useConfiguredCredentials && typeof console !== 'undefined') {
+  console.error(
+    `[Supabase] Ignoring invalid or mismatched VITE_SUPABASE configuration. Expected project ${PROD_PROJECT_REF}.`
+  );
+}
+
+const supabaseUrl = useConfiguredCredentials ? configuredUrl.replace(/\/$/, '') : PROD_SUPABASE_URL;
+const supabaseKey = useConfiguredCredentials ? configuredKey : PROD_SUPABASE_KEY;
 
 /**
  * Defensive Supabase Realtime decoder.
