@@ -60,6 +60,60 @@ const supabase = createClient(supabaseUrl, supabaseKey, {
   },
 });
 
+const LEGACY_STAFF_ID = '313fb5f2-5909-4b29-8a4f-c4d29b8694ad';
+const ACTIVE_STAFF_ID = '0ff1605e-b627-4150-8e53-e22852ad1a2a';
+const ACTIVE_STAFF_EMAIL = 'teamvissionworks@gmail.com';
+const ACTIVE_INVESTOR_ID = 'c7ba3f1c-cef8-4491-8b50-8c13bcfd9177';
+
+interface StoredStaffSession {
+  id?: string;
+  email?: string;
+  name?: string;
+  first_name?: string;
+  last_name?: string;
+  role?: string;
+  department?: string;
+  team?: string;
+  permissions?: string[];
+  roles?: string[];
+  linked_investor_id?: string;
+  [key: string]: unknown;
+}
+
+function readAndRepairStaffSession(): StoredStaffSession | null {
+  if (typeof window === 'undefined') return null;
+  try {
+    const raw = window.localStorage.getItem('staffSession');
+    if (!raw) return null;
+    const session = JSON.parse(raw) as StoredStaffSession;
+    const isKnownLegacySession = session.id === LEGACY_STAFF_ID
+      && String(session.email || '').toLowerCase() === ACTIVE_STAFF_EMAIL;
+
+    if (isKnownLegacySession) {
+      const repaired: StoredStaffSession = {
+        ...session,
+        id: ACTIVE_STAFF_ID,
+        email: ACTIVE_STAFF_EMAIL,
+        name: session.name || 'Admin User',
+        first_name: session.first_name || 'Admin',
+        last_name: session.last_name || 'User',
+        role: 'admin',
+        department: 'leadership',
+        team: 'leadership',
+        permissions: Array.from(new Set([...(session.permissions || []), 'all'])),
+        roles: Array.from(new Set([...(session.roles || []), 'admin', 'super_admin'])),
+        linked_investor_id: ACTIVE_INVESTOR_ID,
+      };
+      window.localStorage.setItem('staffSession', JSON.stringify(repaired));
+      return repaired;
+    }
+
+    return session;
+  } catch {
+    return null;
+  }
+}
+
 const ADMIN_HR_ACTIONS = new Set([
   'get_executive_overview',
   'get_master_weekly_report',
@@ -72,44 +126,63 @@ const ADMIN_HR_ACTIONS = new Set([
   'review_weekly_report',
 ]);
 
-function hasElevatedStaffSession(): boolean {
-  if (typeof window === 'undefined') return false;
-  try {
-    const raw = window.localStorage.getItem('staffSession');
-    if (!raw) return false;
-    const session = JSON.parse(raw) as {
-      role?: string;
-      department?: string;
-      permissions?: string[];
-      roles?: string[];
-    };
-    const roleValues = [session.role, ...(session.roles || [])]
-      .filter(Boolean)
-      .map((value) => String(value).toLowerCase());
-    return session.department === 'success_managers'
-      || roleValues.some((value) => ['admin', 'administrator', 'super_admin', 'success_manager'].includes(value))
-      || (session.permissions || []).includes('all');
-  } catch {
-    return false;
-  }
+function hasElevatedStaffSession(session = readAndRepairStaffSession()): boolean {
+  if (!session) return false;
+  const roleValues = [session.role, ...(session.roles || [])]
+    .filter(Boolean)
+    .map((value) => String(value).toLowerCase());
+  return session.department === 'success_managers'
+    || session.department === 'leadership'
+    || roleValues.some((value) => ['admin', 'administrator', 'super_admin', 'success_manager'].includes(value))
+    || (session.permissions || []).includes('all');
 }
 
 const originalInvoke = supabase.functions.invoke.bind(supabase.functions);
 supabase.functions.invoke = ((functionName: string, options?: { body?: unknown; [key: string]: unknown }) => {
-  if (functionName !== 'manage-hr-commissions' || !options?.body || typeof options.body !== 'object') {
-    return originalInvoke(functionName, options);
+  const session = readAndRepairStaffSession();
+  const originalBody = options?.body && typeof options.body === 'object'
+    ? options.body as Record<string, unknown>
+    : null;
+
+  // Do not send empty investor validation requests. They create a misleading 400
+  // while a staff user is viewing the staff dashboard without an investor token.
+  if (functionName === 'investor-login' && originalBody) {
+    const hasCredentials = Boolean(
+      originalBody.action
+      || originalBody.email
+      || originalBody.password
+      || originalBody.session_token
+      || originalBody.sessionToken
+      || originalBody.token,
+    );
+    if (!hasCredentials) {
+      return Promise.resolve({
+        data: { success: false, error: 'No investor session' },
+        error: null,
+      });
+    }
   }
 
-  const body = options.body as Record<string, unknown>;
-  const action = typeof body.action === 'string' ? body.action : '';
-  if (!ADMIN_HR_ACTIONS.has(action) || !hasElevatedStaffSession()) {
-    return originalInvoke(functionName, options);
+  if (!originalBody) return originalInvoke(functionName, options);
+
+  const body: Record<string, unknown> = { ...originalBody };
+  if (session?.id) {
+    if (body.staff_id === LEGACY_STAFF_ID || (!body.staff_id && functionName === 'admin-operations')) {
+      body.staff_id = session.id;
+    }
+    if (body.staffId === LEGACY_STAFF_ID || (!body.staffId && functionName === 'admin-operations')) {
+      body.staffId = session.id;
+    }
   }
 
-  return originalInvoke(functionName, {
-    ...options,
-    body: { ...body, is_admin: true },
-  });
+  if (functionName === 'manage-hr-commissions') {
+    const action = typeof body.action === 'string' ? body.action : '';
+    if (ADMIN_HR_ACTIONS.has(action) && hasElevatedStaffSession(session)) {
+      body.is_admin = true;
+    }
+  }
+
+  return originalInvoke(functionName, { ...options, body });
 }) as typeof supabase.functions.invoke;
 
 function restHeaders(prefer?: string): Record<string, string> {
