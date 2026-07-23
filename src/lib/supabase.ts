@@ -77,6 +77,8 @@ interface StoredStaffSession {
   permissions?: string[];
   roles?: string[];
   linked_investor_id?: string;
+  session_token?: string;
+  session_expires?: string;
   [key: string]: unknown;
 }
 
@@ -144,8 +146,6 @@ supabase.functions.invoke = ((functionName: string, options?: { body?: unknown; 
     ? options.body as Record<string, unknown>
     : null;
 
-  // Do not send empty investor validation requests. They create a misleading 400
-  // while a staff user is viewing the staff dashboard without an investor token.
   if (functionName === 'investor-login' && originalBody) {
     const hasCredentials = Boolean(
       originalBody.action
@@ -167,12 +167,23 @@ supabase.functions.invoke = ((functionName: string, options?: { body?: unknown; 
 
   const body: Record<string, unknown> = { ...originalBody };
   if (session?.id) {
-    if (body.staff_id === LEGACY_STAFF_ID || (!body.staff_id && functionName === 'admin-operations')) {
+    if (
+      body.staff_id === LEGACY_STAFF_ID
+      || (!body.staff_id && ['admin-operations', 'manage-hr-commissions'].includes(functionName))
+    ) {
       body.staff_id = session.id;
     }
-    if (body.staffId === LEGACY_STAFF_ID || (!body.staffId && functionName === 'admin-operations')) {
+    if (
+      body.staffId === LEGACY_STAFF_ID
+      || (!body.staffId && ['admin-operations', 'manage-hr-commissions'].includes(functionName))
+    ) {
       body.staffId = session.id;
     }
+  }
+
+  if (session?.session_token && ['manage-hr-commissions', 'admin-operations'].includes(functionName)) {
+    body.staff_session_token = session.session_token;
+    body.session_token = session.session_token;
   }
 
   if (functionName === 'manage-hr-commissions') {
