@@ -60,6 +60,58 @@ const supabase = createClient(supabaseUrl, supabaseKey, {
   },
 });
 
+const ADMIN_HR_ACTIONS = new Set([
+  'get_executive_overview',
+  'get_master_weekly_report',
+  'get_staff_list',
+  'submit_deal_record',
+  'update_deal_record',
+  'delete_deal_record',
+  'send_friday_payout_summary',
+  'update_commission_status',
+  'review_weekly_report',
+]);
+
+function hasElevatedStaffSession(): boolean {
+  if (typeof window === 'undefined') return false;
+  try {
+    const raw = window.localStorage.getItem('staffSession');
+    if (!raw) return false;
+    const session = JSON.parse(raw) as {
+      role?: string;
+      department?: string;
+      permissions?: string[];
+      roles?: string[];
+    };
+    const roleValues = [session.role, ...(session.roles || [])]
+      .filter(Boolean)
+      .map((value) => String(value).toLowerCase());
+    return session.department === 'success_managers'
+      || roleValues.some((value) => ['admin', 'administrator', 'super_admin', 'success_manager'].includes(value))
+      || (session.permissions || []).includes('all');
+  } catch {
+    return false;
+  }
+}
+
+const originalInvoke = supabase.functions.invoke.bind(supabase.functions);
+supabase.functions.invoke = ((functionName: string, options?: { body?: unknown; [key: string]: unknown }) => {
+  if (functionName !== 'manage-hr-commissions' || !options?.body || typeof options.body !== 'object') {
+    return originalInvoke(functionName, options);
+  }
+
+  const body = options.body as Record<string, unknown>;
+  const action = typeof body.action === 'string' ? body.action : '';
+  if (!ADMIN_HR_ACTIONS.has(action) || !hasElevatedStaffSession()) {
+    return originalInvoke(functionName, options);
+  }
+
+  return originalInvoke(functionName, {
+    ...options,
+    body: { ...body, is_admin: true },
+  });
+}) as typeof supabase.functions.invoke;
+
 function restHeaders(prefer?: string): Record<string, string> {
   const headers: Record<string, string> = {
     apikey: supabaseKey,
