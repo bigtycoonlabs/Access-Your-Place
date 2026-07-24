@@ -60,6 +60,51 @@ const supabase = createClient(supabaseUrl, supabaseKey, {
   },
 });
 
+// Compatibility bridge for the investor LeadForge UI. Older builds call a
+// Railway route that does not exist. Route that exact request to the active
+// Supabase Edge Function and preserve the response shape expected by the UI.
+if (typeof window !== 'undefined' && !(window as any).__aypLeadForgeFetchPatched) {
+  const browserFetch = window.fetch.bind(window);
+  window.fetch = (async (input: RequestInfo | URL, init?: RequestInit) => {
+    const rawUrl = typeof input === 'string'
+      ? input
+      : input instanceof URL
+        ? input.toString()
+        : input.url;
+    const resolvedUrl = new URL(rawUrl, window.location.origin);
+
+    if (resolvedUrl.pathname === '/api/leadforge-apollo') {
+      const response = await browserFetch(`${supabaseUrl}/functions/v1/apollo-leadforge`, {
+        ...init,
+        method: 'POST',
+        headers: {
+          ...(init?.headers || {}),
+          'Content-Type': 'application/json',
+          apikey: supabaseKey,
+          Authorization: `Bearer ${supabaseKey}`,
+        },
+      });
+      const text = await response.text();
+      let payload: Record<string, unknown> = {};
+      try {
+        payload = text ? JSON.parse(text) as Record<string, unknown> : {};
+      } catch {
+        payload = { error: text || 'LeadForge returned an invalid response' };
+      }
+      const normalized = response.ok
+        ? { success: true, text: typeof payload.text === 'string' ? payload.text : '' }
+        : { success: false, error: payload.error || `LeadForge request failed (${response.status})` };
+      return new Response(JSON.stringify(normalized), {
+        status: response.status,
+        headers: { 'Content-Type': 'application/json' },
+      });
+    }
+
+    return browserFetch(input, init);
+  }) as typeof window.fetch;
+  (window as any).__aypLeadForgeFetchPatched = true;
+}
+
 const LEGACY_STAFF_ID = '313fb5f2-5909-4b29-8a4f-c4d29b8694ad';
 const ACTIVE_STAFF_ID = '0ff1605e-b627-4150-8e53-e22852ad1a2a';
 const ACTIVE_STAFF_EMAIL = 'teamvissionworks@gmail.com';
