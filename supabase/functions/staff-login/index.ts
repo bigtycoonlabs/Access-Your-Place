@@ -4,374 +4,167 @@ import * as bcrypt from 'https://deno.land/x/bcrypt@v0.4.1/mod.ts'
 const corsHeaders = {
   'Access-Control-Allow-Origin': '*',
   'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
+  'Access-Control-Allow-Methods': 'POST, OPTIONS',
 }
 
-// Helper to check if a string is a bcrypt hash
-function isBcryptHash(str: string): boolean {
-  return str && str.startsWith('$2') && str.length >= 50
+const json = (body: unknown, status = 200) => new Response(JSON.stringify(body), {
+  status,
+  headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+})
+
+const isBcryptHash = (value: string) => /^\$2[aby]\$/.test(value)
+const isSha256Hash = (value: string) => /^[a-f0-9]{64}$/i.test(value)
+
+async function sha256(value: string): Promise<string> {
+  const bytes = new TextEncoder().encode(value)
+  const digest = await crypto.subtle.digest('SHA-256', bytes)
+  return Array.from(new Uint8Array(digest)).map((byte) => byte.toString(16).padStart(2, '0')).join('')
 }
 
-// Helper to verify password (supports both hashed and plain text)
-async function verifyPassword(inputPassword: string, storedPassword: string): Promise<boolean> {
-  if (isBcryptHash(storedPassword)) {
-    return await bcrypt.compare(inputPassword, storedPassword)
-  } else {
-    return inputPassword === storedPassword
-  }
+async function verifyPassword(input: string, stored: string): Promise<boolean> {
+  if (isBcryptHash(stored)) return bcrypt.compare(input, stored)
+  if (isSha256Hash(stored)) return (await sha256(input)).toLowerCase() === stored.toLowerCase()
+  return input === stored
 }
 
 serve(async (req) => {
   if (req.method === 'OPTIONS') return new Response('ok', { headers: corsHeaders })
+  if (req.method !== 'POST') return json({ success: false, error: 'Method not allowed' }, 405)
 
   try {
-    const body = await req.json()
-    const { action, email, password, reset_token, new_password, staff_id, current_password, investor_email } = body
-    const supabaseUrl = Deno.env.get('SUPABASE_URL')!
-    const supabaseKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!
-    const resendKey = Deno.env.get('RESEND_API_KEY')
-    const headers = { 'apikey': supabaseKey, 'Authorization': `Bearer ${supabaseKey}`, 'Content-Type': 'application/json' }
+    const body = await req.json().catch(() => ({}))
+    const { action, email, password, staff_id, current_password, new_password, investor_email } = body
+    const supabaseUrl = Deno.env.get('SUPABASE_URL')
+    const serviceKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')
+    if (!supabaseUrl || !serviceKey) return json({ success: false, error: 'Server configuration error' }, 500)
 
-    // Forgot password - send reset email
-    if (action === 'forgot_password') {
-      const res = await fetch(`${supabaseUrl}/rest/v1/staff_users?email=eq.${encodeURIComponent(email)}&select=id,email,first_name,last_name`, { headers })
-      const users = await res.json()
-      
-      // Always return success to prevent email enumeration
-      if (users?.length) {
-        const token = crypto.randomUUID() + '-' + crypto.randomUUID()
-        const expires = new Date(Date.now() + 3600000) // 1 hour
-        
-        await fetch(`${supabaseUrl}/rest/v1/staff_users?id=eq.${users[0].id}`, {
-          method: 'PATCH',
-          headers,
-          body: JSON.stringify({
-            reset_token: token,
-            reset_token_expires: expires.toISOString()
-          })
-        })
-        
-        const resetUrl = `https://accessyourplace.com/staff/reset-password?token=${token}`
-        const userName = users[0].first_name || 'Staff Member'
-        
-        if (resendKey) {
-          await fetch('https://api.resend.com/emails', {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${resendKey}` },
-            body: JSON.stringify({
-              from: 'Access Your Place <noreply@accessyourplace.com>',
-              to: [email],
-              subject: 'Reset Your Staff Password',
-              html: `<div style="font-family:Arial;max-width:600px;margin:0 auto;">
-                <div style="background:#1e293b;padding:20px;text-align:center;">
-                  <h1 style="color:#f59e0b;margin:0;">Access Your Place</h1>
-                  <p style="color:#94a3b8;margin:5px 0 0;">Staff Portal</p>
-                </div>
-                <div style="padding:30px;background:#f8fafc;">
-                  <p>Hi ${userName},</p>
-                  <p>We received a request to reset your staff account password. Click the button below to create a new password:</p>
-                  <p style="text-align:center;margin:30px 0;">
-                    <a href="${resetUrl}" style="background:#f59e0b;color:#1e293b;padding:14px 32px;text-decoration:none;border-radius:8px;font-weight:bold;">Reset Password</a>
-                  </p>
-                  <p style="color:#64748b;font-size:12px;">This link expires in 1 hour. If you didn't request this, please contact your administrator.</p>
-                </div>
-              </div>`
-            })
-          })
-        }
-      }
-      
-      return new Response(JSON.stringify({ success: true }), { headers: { ...corsHeaders, 'Content-Type': 'application/json' } })
+    const headers = {
+      apikey: serviceKey,
+      Authorization: `Bearer ${serviceKey}`,
+      'Content-Type': 'application/json',
     }
 
-    // Validate reset token
-    if (action === 'validate_token') {
-      const res = await fetch(`${supabaseUrl}/rest/v1/staff_users?reset_token=eq.${reset_token}&select=id,email,first_name,last_name,reset_token_expires`, { headers })
-      const users = await res.json()
-      
-      if (!users?.length) {
-        return new Response(JSON.stringify({ valid: false }), { headers: { ...corsHeaders, 'Content-Type': 'application/json' } })
-      }
-      
-      if (new Date(users[0].reset_token_expires) < new Date()) {
-        return new Response(JSON.stringify({ valid: false, error: 'Token expired' }), { headers: { ...corsHeaders, 'Content-Type': 'application/json' } })
-      }
-      
-      return new Response(JSON.stringify({
-        valid: true,
-        email: users[0].email,
-        name: `${users[0].first_name || ''} ${users[0].last_name || ''}`.trim()
-      }), { headers: { ...corsHeaders, 'Content-Type': 'application/json' } })
+    const read = async (path: string) => {
+      const response = await fetch(`${supabaseUrl}/rest/v1/${path}`, { headers })
+      const data = await response.json().catch(() => [])
+      if (!response.ok) throw new Error(data?.message || data?.error || `Database read failed (${response.status})`)
+      return Array.isArray(data) ? data : []
     }
 
-    // Reset password with token
-    if (action === 'reset_password') {
-      const res = await fetch(`${supabaseUrl}/rest/v1/staff_users?reset_token=eq.${reset_token}&select=id,reset_token_expires`, { headers })
-      const users = await res.json()
-      
-      if (!users?.length) {
-        return new Response(JSON.stringify({ success: false, error: 'Invalid token' }), { headers: { ...corsHeaders, 'Content-Type': 'application/json' } })
-      }
-      
-      if (new Date(users[0].reset_token_expires) < new Date()) {
-        return new Response(JSON.stringify({ success: false, error: 'Token expired' }), { headers: { ...corsHeaders, 'Content-Type': 'application/json' } })
-      }
-      
-      const hash = await bcrypt.hash(new_password)
-      
-      await fetch(`${supabaseUrl}/rest/v1/staff_users?id=eq.${users[0].id}`, {
+    const patch = async (path: string, payload: Record<string, unknown>) => {
+      const response = await fetch(`${supabaseUrl}/rest/v1/${path}`, {
         method: 'PATCH',
-        headers,
-        body: JSON.stringify({
-          password_hash: hash,
-          reset_token: null,
-          reset_token_expires: null,
-          updated_at: new Date().toISOString()
-        })
+        headers: { ...headers, Prefer: 'return=representation' },
+        body: JSON.stringify(payload),
       })
-      
-      return new Response(JSON.stringify({ success: true }), { headers: { ...corsHeaders, 'Content-Type': 'application/json' } })
+      const data = await response.json().catch(() => [])
+      if (!response.ok) throw new Error(data?.message || data?.error || `Database update failed (${response.status})`)
+      return data
     }
 
-    // Change password (for authenticated users)
     if (action === 'change_password') {
-      const res = await fetch(`${supabaseUrl}/rest/v1/staff_users?id=eq.${staff_id}&select=id,password_hash`, { headers })
-      const users = await res.json()
-      
-      if (!users?.length) {
-        return new Response(JSON.stringify({ success: false, error: 'User not found' }), { headers: { ...corsHeaders, 'Content-Type': 'application/json' } })
+      if (!staff_id || !current_password || !new_password) return json({ success: false, error: 'Missing password fields' }, 400)
+      const users = await read(`staff_users?id=eq.${encodeURIComponent(staff_id)}&select=id,password_hash`)
+      if (!users[0]) return json({ success: false, error: 'User not found' }, 404)
+      if (!(await verifyPassword(String(current_password), String(users[0].password_hash || '')))) {
+        return json({ success: false, error: 'Current password is incorrect' }, 401)
       }
-      
-      const storedPassword = users[0].password_hash
-      const valid = await verifyPassword(current_password, storedPassword)
-      
-      if (!valid) {
-        return new Response(JSON.stringify({ success: false, error: 'Current password is incorrect' }), { headers: { ...corsHeaders, 'Content-Type': 'application/json' } })
-      }
-      
-      const hash = await bcrypt.hash(new_password)
-      
-      await fetch(`${supabaseUrl}/rest/v1/staff_users?id=eq.${staff_id}`, {
-        method: 'PATCH',
-        headers,
-        body: JSON.stringify({
-          password_hash: hash,
-          updated_at: new Date().toISOString()
-        })
+      await patch(`staff_users?id=eq.${encodeURIComponent(staff_id)}`, {
+        password_hash: await bcrypt.hash(String(new_password)),
+        updated_at: new Date().toISOString(),
       })
-      
-      return new Response(JSON.stringify({ success: true }), { headers: { ...corsHeaders, 'Content-Type': 'application/json' } })
+      return json({ success: true })
     }
 
-    // Link investor account
     if (action === 'link_investor_account') {
-      // Find investor by email
-      const invRes = await fetch(`${supabaseUrl}/rest/v1/investors?email=eq.${encodeURIComponent(investor_email)}&select=id,full_name,email,company_name,phone`, { headers })
-      const investors = await invRes.json()
-      
-      if (!investors?.length) {
-        return new Response(JSON.stringify({ success: false, error: 'No investor found with that email' }), { headers: { ...corsHeaders, 'Content-Type': 'application/json' } })
-      }
-      
-      const investor = investors[0]
-      
-      // Update staff user with linked investor
-      await fetch(`${supabaseUrl}/rest/v1/staff_users?id=eq.${staff_id}`, {
-        method: 'PATCH',
-        headers,
-        body: JSON.stringify({
-          linked_investor_id: investor.id,
-          updated_at: new Date().toISOString()
-        })
+      if (!staff_id || !investor_email) return json({ success: false, error: 'staff_id and investor_email are required' }, 400)
+      const investors = await read(`investors?email=eq.${encodeURIComponent(String(investor_email).toLowerCase())}&select=id,full_name,email,company_name,phone&limit=1`)
+      if (!investors[0]) return json({ success: false, error: 'No investor found with that email' }, 404)
+      await patch(`staff_users?id=eq.${encodeURIComponent(staff_id)}`, {
+        linked_investor_id: investors[0].id,
+        updated_at: new Date().toISOString(),
       })
-      
-      return new Response(JSON.stringify({
-        success: true,
-        investor_id: investor.id,
-        investor: {
-          id: investor.id,
-          full_name: investor.full_name,
-          email: investor.email,
-          company_name: investor.company_name,
-          phone: investor.phone
-        }
-      }), { headers: { ...corsHeaders, 'Content-Type': 'application/json' } })
+      return json({ success: true, investor_id: investors[0].id, investor: investors[0] })
     }
 
-    // Unlink investor account
     if (action === 'unlink_investor_account') {
-      await fetch(`${supabaseUrl}/rest/v1/staff_users?id=eq.${staff_id}`, {
-        method: 'PATCH',
-        headers,
-        body: JSON.stringify({
-          linked_investor_id: null,
-          updated_at: new Date().toISOString()
-        })
+      if (!staff_id) return json({ success: false, error: 'staff_id is required' }, 400)
+      await patch(`staff_users?id=eq.${encodeURIComponent(staff_id)}`, {
+        linked_investor_id: null,
+        updated_at: new Date().toISOString(),
       })
-      
-      return new Response(JSON.stringify({ success: true }), { headers: { ...corsHeaders, 'Content-Type': 'application/json' } })
+      return json({ success: true })
     }
 
-    // Get linked investor details (returns full investor data for portal switching)
     if (action === 'get_linked_investor') {
-      const staffRes = await fetch(`${supabaseUrl}/rest/v1/staff_users?id=eq.${staff_id}&select=linked_investor_id`, { headers })
-      const staffUsers = await staffRes.json()
-      
-      if (!staffUsers?.length || !staffUsers[0].linked_investor_id) {
-        return new Response(JSON.stringify({ success: true, investor: null }), { headers: { ...corsHeaders, 'Content-Type': 'application/json' } })
-      }
-      
-      // Fetch full investor data for portal switching
-      const invRes = await fetch(`${supabaseUrl}/rest/v1/investors?id=eq.${staffUsers[0].linked_investor_id}&select=*`, { headers })
-      const investors = await invRes.json()
-      
-      if (!investors?.length) {
-        return new Response(JSON.stringify({ success: true, investor: null }), { headers: { ...corsHeaders, 'Content-Type': 'application/json' } })
-      }
-      
-      const inv = investors[0]
-      return new Response(JSON.stringify({
-        success: true,
-        investor: {
-          id: inv.id,
-          email: inv.email,
-          full_name: inv.full_name,
-          phone: inv.phone,
-          company_name: inv.company_name,
-          portfolio_count: inv.portfolio_count,
-          investment_budget_min: inv.investment_budget_min,
-          investment_budget_max: inv.investment_budget_max,
-          preferred_markets: inv.preferred_markets,
-          preferred_operation_types: inv.preferred_operation_types,
-          referral_code: inv.referral_code,
-          onboarding_completed: inv.onboarding_completed,
-          sms_opt_in: inv.sms_opt_in,
-          email_opt_in: inv.email_opt_in
-        }
-      }), { headers: { ...corsHeaders, 'Content-Type': 'application/json' } })
+      if (!staff_id) return json({ success: false, error: 'staff_id is required' }, 400)
+      const users = await read(`staff_users?id=eq.${encodeURIComponent(staff_id)}&select=linked_investor_id&limit=1`)
+      const investorId = users[0]?.linked_investor_id
+      if (!investorId) return json({ success: true, investor: null })
+      const investors = await read(`investors?id=eq.${encodeURIComponent(investorId)}&select=*&limit=1`)
+      return json({ success: true, investor: investors[0] || null })
     }
 
+    if (!email || !password) return json({ success: false, error: 'Email and password required' }, 400)
 
-    // Validate invitation token
-    if (action === 'validate_invitation') {
-      const { invitation_token } = body
-      const res = await fetch(`${supabaseUrl}/rest/v1/staff_users?invitation_token=eq.${invitation_token}&select=id,email,first_name,last_name,department,invitation_expires`, { headers })
-      const users = await res.json()
-      
-      if (!users?.length) {
-        return new Response(JSON.stringify({ valid: false, error: 'Invalid invitation' }), { headers: { ...corsHeaders, 'Content-Type': 'application/json' } })
-      }
-      
-      if (users[0].invitation_expires && new Date(users[0].invitation_expires) < new Date()) {
-        return new Response(JSON.stringify({ valid: false, error: 'Invitation expired' }), { headers: { ...corsHeaders, 'Content-Type': 'application/json' } })
-      }
-      
-      return new Response(JSON.stringify({
-        valid: true,
-        email: users[0].email,
-        first_name: users[0].first_name,
-        last_name: users[0].last_name,
-        department: users[0].department
-      }), { headers: { ...corsHeaders, 'Content-Type': 'application/json' } })
-    }
-
-    // Complete invitation
-    if (action === 'complete_invitation') {
-      const { invitation_token, phone, whatsapp_number } = body
-      const res = await fetch(`${supabaseUrl}/rest/v1/staff_users?invitation_token=eq.${invitation_token}&select=id`, { headers })
-      const users = await res.json()
-      
-      if (!users?.length) {
-        return new Response(JSON.stringify({ success: false, error: 'Invalid invitation' }), { headers: { ...corsHeaders, 'Content-Type': 'application/json' } })
-      }
-      
-      const hash = await bcrypt.hash(new_password)
-      
-      await fetch(`${supabaseUrl}/rest/v1/staff_users?id=eq.${users[0].id}`, {
-        method: 'PATCH',
-        headers,
-        body: JSON.stringify({
-          password_hash: hash,
-          phone: phone || null,
-          whatsapp_number: whatsapp_number || null,
-          invitation_token: null,
-          invitation_expires: null,
-          account_completed: true,
-          is_active: true,
-          updated_at: new Date().toISOString()
-        })
-      })
-      
-      return new Response(JSON.stringify({ success: true }), { headers: { ...corsHeaders, 'Content-Type': 'application/json' } })
-    }
-
-    // Default: Login
-    if (!email || !password) {
-      return new Response(JSON.stringify({ success: false, error: 'Email and password required' }), { headers: { ...corsHeaders, 'Content-Type': 'application/json' } })
-    }
-    
-    const res = await fetch(`${supabaseUrl}/rest/v1/staff_users?email=eq.${encodeURIComponent(email)}&is_active=eq.true&select=*`, { headers })
-    const users = await res.json()
-    
-    if (!users?.length) {
-      return new Response(JSON.stringify({ success: false, error: 'Invalid email or password' }), { headers: { ...corsHeaders, 'Content-Type': 'application/json' } })
-    }
-    
+    const normalizedEmail = String(email).trim().toLowerCase()
+    const users = await read(`staff_users?email=eq.${encodeURIComponent(normalizedEmail)}&is_active=eq.true&select=*&limit=1`)
     const user = users[0]
-    const storedPassword = user.password_hash || user.password
-    
-    if (!storedPassword) {
-      return new Response(JSON.stringify({ success: false, error: 'Account not set up. Please check your invitation email or use forgot password.' }), { headers: { ...corsHeaders, 'Content-Type': 'application/json' } })
+    if (!user || !user.password_hash) return json({ success: false, error: 'Invalid email or password' }, 401)
+
+    if (user.locked_until && new Date(user.locked_until).getTime() > Date.now()) {
+      return json({ success: false, error: 'Account temporarily locked. Try again later.' }, 423)
     }
-    
-    const valid = await verifyPassword(password, storedPassword)
-    
+
+    const valid = await verifyPassword(String(password), String(user.password_hash))
     if (!valid) {
-      return new Response(JSON.stringify({ success: false, error: 'Invalid email or password' }), { headers: { ...corsHeaders, 'Content-Type': 'application/json' } })
+      const attempts = Number(user.failed_login_attempts || 0) + 1
+      const updates: Record<string, unknown> = {
+        failed_login_attempts: attempts,
+        last_failed_login: new Date().toISOString(),
+      }
+      if (attempts >= 10) updates.locked_until = new Date(Date.now() + 15 * 60 * 1000).toISOString()
+      await patch(`staff_users?id=eq.${encodeURIComponent(user.id)}`, updates).catch(() => undefined)
+      return json({ success: false, error: 'Invalid email or password' }, 401)
     }
-    
-    // Auto-upgrade plain text password to hashed
-    if (!isBcryptHash(storedPassword)) {
-      const newHash = await bcrypt.hash(password)
-      await fetch(`${supabaseUrl}/rest/v1/staff_users?id=eq.${user.id}`, {
-        method: 'PATCH',
-        headers,
-        body: JSON.stringify({ password_hash: newHash, updated_at: new Date().toISOString() })
-      })
+
+    const sessionToken = `${crypto.randomUUID()}-${crypto.randomUUID()}`
+    const sessionExpires = new Date(Date.now() + 12 * 60 * 60 * 1000).toISOString()
+    const updates: Record<string, unknown> = {
+      last_login: new Date().toISOString(),
+      failed_login_attempts: 0,
+      last_failed_login: null,
+      locked_until: null,
+      session_token: sessionToken,
+      session_expires: sessionExpires,
+      updated_at: new Date().toISOString(),
     }
-    
-    // Update last login
-    await fetch(`${supabaseUrl}/rest/v1/staff_users?id=eq.${user.id}`, {
-      method: 'PATCH',
-      headers,
-      body: JSON.stringify({ last_login: new Date().toISOString() })
-    })
-    
-    // Get permissions based on department
-    let permissions = user.permissions || []
-    if (user.department === 'success_managers') {
-      permissions = ['all']
-    } else if (user.department === 'acquisition_managers') {
-      permissions = ['deals', 'acquisitions', 'investors', 'crm', 'inquiries', 'marketplace']
-    } else if (user.department === 'setup_managers') {
-      permissions = ['deals', 'setups', 'investors', 'crm']
+    if (!isBcryptHash(String(user.password_hash))) updates.password_hash = await bcrypt.hash(String(password))
+    await patch(`staff_users?id=eq.${encodeURIComponent(user.id)}`, updates)
+
+    let permissions = Array.isArray(user.permissions) ? user.permissions : []
+    if (user.department === 'success_managers' || user.department === 'leadership' || ['admin', 'super_admin'].includes(String(user.role || '').toLowerCase())) {
+      permissions = Array.from(new Set([...permissions, 'all']))
     }
-    
-    return new Response(JSON.stringify({
+
+    return json({
       success: true,
       id: user.id,
       email: user.email,
-      name: `${user.first_name || ''} ${user.last_name || ''}`.trim() || user.name,
+      name: user.name || `${user.first_name || ''} ${user.last_name || ''}`.trim(),
       first_name: user.first_name,
       last_name: user.last_name,
       team: user.team || user.department,
       role: user.role,
       department: user.department,
       permissions,
-      linked_investor_id: user.linked_investor_id
-    }), { headers: { ...corsHeaders, 'Content-Type': 'application/json' } })
-    
+      roles: Array.isArray(user.roles) ? user.roles : [],
+      linked_investor_id: user.linked_investor_id,
+      session_token: sessionToken,
+      session_expires: sessionExpires,
+    })
   } catch (error) {
-    console.error('Error:', error)
-    return new Response(JSON.stringify({ success: false, error: error.message }), { status: 500, headers: { ...corsHeaders, 'Content-Type': 'application/json' } })
+    console.error('staff-login:', error)
+    return json({ success: false, error: error instanceof Error ? error.message : 'Login failed' }, 500)
   }
 })
