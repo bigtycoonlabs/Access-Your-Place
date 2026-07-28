@@ -40,128 +40,9 @@ function saveRateLimit(state: RateLimitState) {
 }
 
 // ─── Fallback direct-database login (security-hardened) ──────────────────────
-// NOTE: This fallback can only verify *plaintext* passwords stored in the DB.
-// If the password is hashed (SHA-256), we cannot verify without the edge function
-// and must tell the user to retry later. We do NOT do case-insensitive comparison.
-async function directDatabaseLogin(email: string, password: string): Promise<{
-  success: boolean;
-  error?: string;
-  data?: any;
-}> {
-  try {
-    const { data: users, error: queryError } = await supabase
-      .from('staff_users')
-      .select('*')
-      .eq('email', email.toLowerCase().trim())
-      .eq('is_active', true)
-      .limit(1);
-
-    if (queryError) {
-      console.error('Database query error:', queryError);
-      return { success: false, error: 'Database connection error. Please try again.' };
-    }
-
-    if (!users || users.length === 0) {
-      return { success: false, error: 'Invalid email or password' };
-    }
-
-    const user = users[0];
-    const storedPassword = user.password_hash || user.password;
-
-    if (!storedPassword) {
-      return { 
-        success: false, 
-        error: 'Account not set up. Please check your invitation email or contact an administrator.' 
-      };
-    }
-
-    // Detect hashed passwords (64 hex chars = SHA-256)
-    const isHashedPassword = storedPassword.length === 64 && /^[a-f0-9]+$/i.test(storedPassword);
-
-    if (isHashedPassword) {
-      // Verify using Web Crypto API: SHA-256(password + salt)
-      try {
-        const encoder = new TextEncoder();
-        const saltedPassword = password + 'ayp_staff_salt_2024';
-        const hashBuffer = await crypto.subtle.digest('SHA-256', encoder.encode(saltedPassword));
-        const hashHex = Array.from(new Uint8Array(hashBuffer)).map(b => b.toString(16).padStart(2, '0')).join('');
-        if (hashHex !== storedPassword) {
-          return { success: false, error: 'Invalid email or password' };
-        }
-        // Hash matched — fall through to successful login
-      } catch {
-        return { success: false, error: 'Authentication service temporarily unavailable. Please try again.' };
-      }
-    } else if (storedPassword !== password) {
-      return { success: false, error: 'Invalid email or password' };
-    }
-
-    // Update last login timestamp
-    await supabase
-      .from('staff_users')
-      .update({ last_login: new Date().toISOString() })
-      .eq('id', user.id);
-
-    // Get permissions based on department
-    let permissions = user.permissions || [];
-    if (user.department === 'success_managers') {
-      permissions = ['all'];
-    } else if (user.department === 'acquisition_managers') {
-      permissions = ['deals', 'acquisitions', 'investors', 'crm', 'inquiries', 'marketplace'];
-    } else if (user.department === 'setup_managers') {
-      permissions = ['deals', 'setups', 'investors', 'crm'];
-    }
-
-    // Check for unsigned AM agreement
-    let agreement_signed = true;
-    let agreement_id = null;
-    
-    if (user.department === 'acquisition_managers' || (user.roles || []).includes('acquisition_managers')) {
-      try {
-        const { data: agreements } = await supabase
-          .from('am_agreements')
-          .select('id, status')
-          .eq('staff_id', user.id)
-          .order('created_at', { ascending: false })
-          .limit(1);
-        
-        if (agreements && agreements.length > 0) {
-          const latestAgreement = agreements[0];
-          if (latestAgreement.status !== 'signed') {
-            agreement_signed = false;
-            agreement_id = latestAgreement.id;
-          }
-        }
-      } catch (err) {
-        console.warn('[directDatabaseLogin] Could not check AM agreement:', err);
-      }
-    }
-
-    return {
-      success: true,
-      data: {
-        id: user.id,
-        email: user.email,
-        name: `${user.first_name || ''} ${user.last_name || ''}`.trim() || user.name || email,
-        first_name: user.first_name,
-        last_name: user.last_name,
-        team: user.team || user.department,
-        role: user.role,
-        department: user.department,
-        permissions,
-        linked_investor_id: user.linked_investor_id,
-        roles: user.roles || [],
-        agreement_signed,
-        agreement_id
-      }
-    };
-  } catch (err: any) {
-    console.error('Direct login error:', err);
-    return { success: false, error: 'An unexpected error occurred. Please try again.' };
-  }
-}
-
-
+// [removed] directDatabaseLogin: insecure client-side auth that pulled password_hash
+// to the browser under the anon key. All staff login now goes through the
+// staff-login edge function (server-side bcrypt verification).
 
 export default function StaffLogin() {
   const [searchParams] = useSearchParams();
@@ -268,31 +149,8 @@ export default function StaffLogin() {
       });
       
       if (invokeError) {
-        // Fallback: Try direct database query
-        const { data: users } = await supabase
-          .from('staff_users')
-          .select('id, email, first_name, last_name, department, invitation_expires')
-          .eq('invitation_token', invitationToken)
-          .limit(1);
-
-        if (users && users.length > 0) {
-          const user = users[0];
-          if (user.invitation_expires && new Date(user.invitation_expires) < new Date()) {
-            toast({ title: 'Invitation Expired', description: 'This invitation link has expired. Please contact an administrator.', variant: 'destructive' });
-            setView('login');
-          } else {
-            setInvitationData({
-              email: user.email,
-              first_name: user.first_name,
-              last_name: user.last_name,
-              department: user.department
-            });
-            setView('invitation');
-          }
-        } else {
-          toast({ title: 'Invalid Invitation', description: 'This invitation link is invalid or has expired.', variant: 'destructive' });
-          setView('login');
-        }
+        toast({ title: 'Error', description: 'Could not validate your invitation right now. Please try again in a moment.', variant: 'destructive' });
+        setView('login');
       } else if (data?.valid) {
         setInvitationData({
           email: data.email,
@@ -465,33 +323,7 @@ export default function StaffLogin() {
       setError('The authentication service is temporarily unavailable. Please wait a few seconds and try again. If the problem persists, contact your administrator.');
     };
 
-    /**
-     * Attempt fallback login when the edge function is unavailable or
-     * returns a transient server error.
-     */
-    const tryFallback = async (): Promise<boolean> => {
-      setUsingFallback(true);
-      try {
-        const fallbackResult = await directDatabaseLogin(email, password);
-        if (fallbackResult.success && fallbackResult.data) {
-          handleSuccessfulLogin(fallbackResult.data, 'fallback');
-          return true;
-        }
-        // Fallback couldn't verify — decide whether it's a credential or server issue
-        if (fallbackResult.error && isServerError(fallbackResult.error)) {
-          handleServerError(fallbackResult.error);
-        } else if (fallbackResult.error) {
-          // Fallback definitively says "Invalid email or password" — this IS a credential failure
-          handleCredentialFailure(fallbackResult.error);
-        } else {
-          handleServerError('Unknown fallback error');
-        }
-      } catch (fallbackErr: any) {
-        console.error('[StaffLogin] Fallback threw:', fallbackErr);
-        handleServerError(fallbackErr?.message);
-      }
-      return false;
-    };
+    // [removed] tryFallback — no insecure client-side login fallback.
 
     try {
       const { data, error: invokeError } = await invokeWithRetry(3);
@@ -501,7 +333,7 @@ export default function StaffLogin() {
       if (invokeError) {
         // Edge function completely unavailable after retries — try fallback
         console.log('[StaffLogin] Edge function unavailable after retries, using fallback login...', invokeError);
-        await tryFallback();
+        handleServerError();
 
       } else if (data?.success) {
         handleSuccessfulLogin(data, 'edge');
@@ -518,7 +350,7 @@ export default function StaffLogin() {
         // Edge function returned a transient server error — try fallback automatically.
         // Do NOT count this as a failed login attempt.
         console.log('[StaffLogin] Edge function returned transient server error, trying fallback...', data.error);
-        await tryFallback();
+        handleServerError();
 
       } else if (data?.error) {
         // Genuine credential/account failure
@@ -533,10 +365,10 @@ export default function StaffLogin() {
       
       // Decide whether this is a server error or a credential error based on the message
       if (isServerError(err?.message)) {
-        await tryFallback();
+        handleServerError();
       } else {
         // Unknown error — try fallback as a last resort
-        await tryFallback();
+        handleServerError();
       }
     }
     
@@ -668,81 +500,8 @@ export default function StaffLogin() {
       });
       
       if (invokeError) {
-        // Fallback: Update directly in database (without password hashing)
-        console.warn('[StaffLogin] Edge function failed for complete_invitation, using fallback:', invokeError);
-        
-        // First, get the staff user data so we can build a session
-        const { data: staffUsers } = await supabase
-          .from('staff_users')
-          .select('id, email, first_name, last_name, department, role, roles, permissions, linked_investor_id')
-          .eq('invitation_token', invitationToken)
-          .limit(1);
-        
-        const staffUser = staffUsers?.[0];
-        
-        const { error: updateError } = await supabase
-          .from('staff_users')
-          .update({
-            password_hash: newPassword, // Will be plain text - should be upgraded later
-            phone: phone.replace(/\D/g, '') || null,
-            whatsapp_number: whatsappNumber.replace(/\D/g, '') || null,
-            invitation_token: null,
-            invitation_expires: null,
-            account_completed: true,
-            is_active: true,
-            updated_at: new Date().toISOString()
-          })
-          .eq('invitation_token', invitationToken);
-
-        if (updateError) {
-          toast({ title: 'Error', description: 'Failed to complete account setup. Please try again.', variant: 'destructive' });
-        } else if (staffUser) {
-          // Check for unsigned AM agreement in fallback path
-          let fallbackAgreementSigned = true;
-          let fallbackAgreementId = null;
-          
-          const isAM = staffUser.department === 'acquisition_managers' || (staffUser.roles || []).includes('acquisition_managers');
-          if (isAM) {
-            try {
-              const { data: agreements } = await supabase
-                .from('am_agreements')
-                .select('id, status')
-                .eq('staff_id', staffUser.id)
-                .order('created_at', { ascending: false })
-                .limit(1);
-              
-              if (agreements && agreements.length > 0 && agreements[0].status !== 'signed') {
-                fallbackAgreementSigned = false;
-                fallbackAgreementId = agreements[0].id;
-              }
-            } catch (err) {
-              console.warn('[StaffLogin] Could not check AM agreement in fallback:', err);
-            }
-          }
-          if (!fallbackAgreementSigned && fallbackAgreementId) {
-            storeSessionFromInvitation({
-              ...staffUser,
-              name: `${staffUser.first_name || ''} ${staffUser.last_name || ''}`.trim(),
-              agreement_signed: false,
-              agreement_id: fallbackAgreementId,
-            });
-            toast({ title: 'Account Created!', description: 'Please review and sign your service agreement.' });
-            navigate(`/am-agreement/${fallbackAgreementId}`);
-          } else {
-            const session = storeSessionFromInvitation({
-              ...staffUser,
-              name: `${staffUser.first_name || ''} ${staffUser.last_name || ''}`.trim(),
-              agreement_signed: true,
-              agreement_id: null,
-            });
-            toast({ title: 'Welcome!', description: `Your account is ready. Welcome to the team, ${staffUser.first_name || 'team member'}!` });
-            navigate('/staff');
-          }
-        } else {
-          toast({ title: 'Account Created!', description: 'You can now log in with your credentials.' });
-          setView('login');
-          setEmail(invitationData?.email || '');
-        }
+        console.error('[StaffLogin] complete_invitation edge function unavailable:', invokeError);
+        toast({ title: 'Service temporarily unavailable', description: 'We could not complete your account setup right now. Please wait a few seconds and try again. If it keeps failing, contact your administrator.', variant: 'destructive' });
       } else if (data?.success) {
         const session = storeSessionFromInvitation(data);
         
