@@ -23,7 +23,13 @@ async function sha256(value: string): Promise<string> {
 
 async function verifyPassword(input: string, stored: string): Promise<boolean> {
   if (isBcryptHash(stored)) return bcrypt.compare(input, stored)
-  if (isSha256Hash(stored)) return (await sha256(input)).toLowerCase() === stored.toLowerCase()
+  if (isSha256Hash(stored)) {
+    const target = stored.toLowerCase()
+    // Unsalted SHA-256, then the legacy salted variant used by the old client.
+    if ((await sha256(input)).toLowerCase() === target) return true
+    if ((await sha256(input + 'ayp_staff_salt_2024')).toLowerCase() === target) return true
+    return false
+  }
   return input === stored
 }
 
