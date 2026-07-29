@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import { useNavigate } from 'react-router-dom';
+import PennyPublicChat from './PennyPublicChat';
 import { Sparkles, ArrowRight, Send } from 'lucide-react';
 
 // Rotating example prompts — makes the hero feel alive without any backend call.
@@ -24,19 +24,24 @@ const CAPABILITIES = [
  * Self-contained; touches no auth or routing logic beyond a link into the portal.
  */
 export default function PennyHero() {
-  const navigate = useNavigate();
   const [query, setQuery] = useState('');
   const [promptIdx, setPromptIdx] = useState(0);
+  const [chatOpen, setChatOpen] = useState(false);
+  const [seed, setSeed] = useState('');
 
   useEffect(() => {
     const t = setInterval(() => setPromptIdx((i) => (i + 1) % EXAMPLE_PROMPTS.length), 3200);
     return () => clearInterval(t);
   }, []);
 
-  // The full Penny lives inside the platform — send visitors in to meet her.
-  const start = () => navigate('/investor/login');
+  // The visitor meets the real Penny right here — open the public chat.
+  const openChat = () => {
+    setSeed(query.trim());
+    setChatOpen(true);
+  };
 
   return (
+    <>
     <section
       aria-labelledby="penny-hero-heading"
       className="relative overflow-hidden border-b border-[#d4a574]/20 bg-gradient-to-b from-[#0b1220] via-[#0a0f1a] to-[#0a0f1a] px-6 py-16 sm:py-20"
@@ -82,14 +87,14 @@ export default function PennyHero() {
               value={query}
               onChange={(e) => setQuery(e.target.value)}
               onKeyDown={(e) => {
-                if (e.key === 'Enter') start();
+                if (e.key === 'Enter') openChat();
               }}
               placeholder={EXAMPLE_PROMPTS[promptIdx]}
               className="min-h-[44px] flex-1 bg-transparent px-4 text-base text-white placeholder:text-slate-400 focus:outline-none"
             />
             <button
               type="button"
-              onClick={start}
+              onClick={openChat}
               className="inline-flex min-h-[44px] items-center gap-2 rounded-xl bg-[#d4a574] px-5 font-semibold text-[#1a365d] transition hover:bg-[#e7c9a0] focus:outline-none focus:ring-2 focus:ring-[#d4a574] focus:ring-offset-2 focus:ring-offset-[#0a0f1a]"
             >
               Ask Penny
@@ -100,7 +105,7 @@ export default function PennyHero() {
             She is inside the platform, working every deal.{' '}
             <button
               type="button"
-              onClick={start}
+              onClick={openChat}
               className="font-semibold text-[#d4a574] underline-offset-4 hover:underline"
             >
               Start with Penny <ArrowRight className="inline h-3.5 w-3.5" aria-hidden="true" />
@@ -123,5 +128,7 @@ export default function PennyHero() {
         </ul>
       </div>
     </section>
+    <PennyPublicChat open={chatOpen} initialQuery={seed} onClose={() => setChatOpen(false)} />
+    </>
   );
 }
