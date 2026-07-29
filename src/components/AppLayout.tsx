@@ -5,7 +5,6 @@ import Hero2026 from './Hero2026';
 import MissionSection from './MissionSection';
 import HowWeWork from './HowWeWork';
 import EcosystemSection from './EcosystemSection';
-import TechShowcase from './TechShowcase';
 import FeaturedDeals from './FeaturedDeals';
 import TestimonialsSection from './TestimonialsSection';
 import FAQSection from './FAQSection';
@@ -71,11 +70,10 @@ const AppLayout: React.FC = () => {
       <main id="main-content">
         <PennyHero />
         <Hero2026 />
-        <MissionSection />
         <HowWeWork />
         <FeaturedDeals />
+        <MissionSection />
         <EcosystemSection />
-        <TechShowcase />
         <TestimonialsSection />
         <LeadCapture />
         <FAQSection />

@@ -2,6 +2,9 @@ import { useEffect, useState } from 'react';
 import { ArrowRight, CheckCircle, Phone } from 'lucide-react';
 import { Link } from 'react-router-dom';
 
+// Slimmed from a second full hero into a compact proof band: real numbers, the
+// three things that make an AYP deal different, and the primary CTAs. The old
+// "You shouldn't need permission..." headline is gone.
 export default function Hero2026() {
   const [counts, setCounts] = useState({ rentals: 0, cities: 0, years: 0, clients: 0 });
 
@@ -24,96 +27,67 @@ export default function Hero2026() {
     return () => clearInterval(timer);
   }, []);
 
+  const stats = [
+    { value: counts.rentals, label: 'Properties launched', suffix: '+' },
+    { value: counts.clients, label: 'Operators', suffix: '+' },
+    { value: counts.cities, label: 'Markets', suffix: '+' },
+    { value: counts.years, label: 'Years', suffix: '' },
+  ];
+
   return (
-    <section className="bg-gradient-to-br from-[#0a0f1a] via-[#111827] to-[#0a0f1a] text-white py-20 relative overflow-hidden">
-      <div className="absolute inset-0 opacity-20" style={{backgroundImage:'radial-gradient(circle at 1px 1px, rgba(255,255,255,0.05) 1px, transparent 0)', backgroundSize:'40px 40px'}}></div>
-      <div className="absolute top-20 left-10 w-72 h-72 bg-[#d4a574]/10 rounded-full blur-3xl"></div>
-      <div className="absolute bottom-20 right-10 w-96 h-96 bg-[#d4a574]/5 rounded-full blur-3xl"></div>
-
-      <div className="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8 relative">
-        <div className="text-center mb-10">
-          {/* Eyebrow */}
-          <div className="inline-flex items-center gap-2 mb-6 px-4 py-2 rounded-full bg-white/5 border border-white/10 text-xs font-mono tracking-widest text-[#5EEAD4] uppercase">
-            <span className="w-1.5 h-1.5 rounded-full bg-[#5EEAD4] animate-pulse"></span>
-            Penny · Market Intelligence AI · (813) 822-0610
-          </div>
-
-          {/* Main Headline */}
-          <h1 className="text-4xl md:text-5xl lg:text-6xl font-bold mb-6 leading-tight">
-            <span className="bg-gradient-to-r from-white via-gray-100 to-gray-300 bg-clip-text text-transparent">
-              You Shouldn't Need Permission
+    <section aria-labelledby="proof-heading" className="border-y border-white/10 bg-[#0a0f1a] px-6 py-14">
+      <div className="mx-auto max-w-5xl">
+        <div className="text-center">
+          <h2 id="proof-heading" className="text-2xl font-bold leading-tight text-white sm:text-3xl">
+            Five years in. Real operators, real deals,{' '}
+            <span className="text-[#d4a574]">landlord already approved.</span>
+          </h2>
+          <div className="mt-6 flex flex-wrap justify-center gap-x-6 gap-y-3 text-sm text-gray-400">
+            <span className="inline-flex items-center gap-2">
+              <CheckCircle className="h-4 w-4 text-green-500" aria-hidden="true" />Landlord-approved deals
             </span>
-            <br />
-            <span className="bg-gradient-to-r from-white via-gray-100 to-gray-300 bg-clip-text text-transparent">
-              to Build
+            <span className="inline-flex items-center gap-2">
+              <CheckCircle className="h-4 w-4 text-[#d4a574]" aria-hidden="true" />Certified Acquisition Managers
             </span>
-            <br />
-            <span className="bg-gradient-to-r from-[#d4a574] via-[#e5c9a8] to-[#d4a574] bg-clip-text text-transparent">
-              Something of Your Own.
+            <span className="inline-flex items-center gap-2">
+              <CheckCircle className="h-4 w-4 text-blue-400" aria-hidden="true" />Real market data
             </span>
-          </h1>
-
-          <p className="text-xl md:text-2xl text-gray-300 max-w-3xl mx-auto mb-4 leading-relaxed">
-            Every year, it gets harder for an individual to break into housing — tighter credit requirements, closed-door landlord relationships, institutions with the inside track.
-          </p>
-          <p className="text-lg text-gray-400 max-w-2xl mx-auto mb-8">
-            Access Your Place gives that access back. We give you the engine, the network, and the certified team to build a flexible housing portfolio that's actually yours.
-          </p>
-
-          {/* Trust Indicators */}
-          <div className="flex flex-wrap justify-center gap-6 mb-10 text-sm text-gray-400">
-            <div className="flex items-center gap-2">
-              <CheckCircle className="w-4 h-4 text-green-500" />
-              <span>Landlord-Approved Deals</span>
-            </div>
-            <div className="flex items-center gap-2">
-              <CheckCircle className="w-4 h-4 text-[#d4a574]" />
-              <span>Certified Acquisition Managers</span>
-            </div>
-            <div className="flex items-center gap-2">
-              <CheckCircle className="w-4 h-4 text-blue-400" />
-              <span>Real Market Data</span>
-            </div>
           </div>
         </div>
 
-        {/* Stats */}
-        <div className="grid grid-cols-4 gap-3 max-w-2xl mx-auto mb-10">
-          {[
-            { value: counts.rentals, label: 'Properties', suffix: '+' },
-            { value: counts.clients, label: 'Investors', suffix: '+' },
-            { value: counts.cities, label: 'Markets', suffix: '+' },
-            { value: counts.years, label: 'Years', suffix: '' },
-          ].map((stat, i) => (
-            <div key={i} className="text-center p-3 bg-white/5 rounded-lg backdrop-blur-sm border border-white/10">
-              <div className="text-xl md:text-2xl font-bold text-[#d4a574]">{stat.value}{stat.suffix}</div>
-              <div className="text-xs text-gray-400">{stat.label}</div>
+        <div className="mx-auto mt-8 grid max-w-2xl grid-cols-4 gap-3">
+          {stats.map((s, i) => (
+            <div key={i} className="rounded-lg border border-white/10 bg-white/5 p-3 text-center backdrop-blur-sm">
+              <div className="text-xl font-bold text-[#d4a574] md:text-2xl">
+                {s.value}
+                {s.suffix}
+              </div>
+              <div className="text-xs text-gray-400">{s.label}</div>
             </div>
           ))}
         </div>
 
-        {/* CTAs */}
-        <div className="flex flex-col sm:flex-row gap-4 justify-center mb-6">
+        <div className="mt-8 flex flex-col justify-center gap-4 sm:flex-row">
           <Link
             to="/deals"
-            className="group bg-gradient-to-r from-[#d4a574] to-[#c49464] text-[#0a0f1a] px-8 py-4 rounded-xl font-bold hover:shadow-lg hover:shadow-[#d4a574]/20 transition-all flex items-center justify-center gap-3"
+            className="group flex items-center justify-center gap-3 rounded-xl bg-gradient-to-r from-[#d4a574] to-[#c49464] px-8 py-4 font-bold text-[#0a0f1a] transition-all hover:shadow-lg hover:shadow-[#d4a574]/20"
           >
             View Available Deals
-            <ArrowRight className="w-4 h-4 group-hover:translate-x-1 transition-transform" />
+            <ArrowRight className="h-4 w-4 transition-transform group-hover:translate-x-1" />
           </Link>
           <Link
             to="/landlord-partnership"
-            className="border-2 border-[#d4a574] text-[#d4a574] px-8 py-4 rounded-xl font-bold hover:bg-[#d4a574]/10 transition-all text-center"
+            className="rounded-xl border-2 border-[#d4a574] px-8 py-4 text-center font-bold text-[#d4a574] transition-all hover:bg-[#d4a574]/10"
           >
             Landlord Partners: Fill Vacancies
           </Link>
         </div>
 
-        <p className="text-center text-sm text-gray-500">
+        <p className="mt-6 text-center text-sm text-gray-500">
           Prefer to talk?{' '}
-          <a href="tel:8138220610" className="text-[#5EEAD4] hover:underline inline-flex items-center gap-1">
-            <Phone className="w-3 h-3" />
-            Call Penny: (813) 822-0610
+          <a href="tel:8138220610" className="inline-flex items-center gap-1 text-[#5EEAD4] hover:underline">
+            <Phone className="h-3 w-3" aria-hidden="true" />
+            Call the team: (813) 822-0610
           </a>
         </p>
       </div>
