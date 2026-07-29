@@ -70,3 +70,13 @@ test('the coaching arc appears for deciders (visitor/client) but not staff', () 
 test('composition is deterministic', () => {
   assert.equal(composeSystemPrompt(funded), composeSystemPrompt(funded));
 });
+
+test('public grounding mode omits the tool list and swaps in the grounding note', () => {
+  const p = composeSystemPrompt(visitor, { includeTools: false });
+  assert.ok(!p.includes('YOUR TOOLS ON THIS SURFACE'), 'no tool list in public grounding mode');
+  assert.ok(!p.includes('- search_knowledge:'), 'no tool entries');
+  assert.match(p, /HOW YOU WORK ON THIS PAGE/);
+  assert.match(p, /never invent an article/);
+  assert.match(p, /Penny 10\.3/); // identity still present
+  assert.match(p, /THE FAMILY/); // doctrine still present
+});

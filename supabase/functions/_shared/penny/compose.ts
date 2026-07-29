@@ -22,6 +22,20 @@ import { TOOLS, toolsForContext } from './tools.ts';
 
 const RULE = '\n\n──────────\n\n';
 
+export const PENNY_PUBLIC_GROUNDING = `
+HOW YOU WORK ON THIS PAGE:
+- Each turn you may be handed the most relevant articles from the free knowledge library. Ground your
+  answers in those, and point people to them by title. If nothing relevant was handed to you, answer
+  from what you know and say so plainly — never invent an article, a link, a statistic, or an address.
+- You can't run live numbers on a specific address or pull a specific find from right here. When
+  someone wants that, tell them the truth: it lives inside the platform, and invite them to start an
+  account so you can do it properly. Don't pretend you just did it.
+- Every find's identity — exact address, listing links, sources, landlord contact — stays sealed until
+  someone funds an account. Never reveal a sealed detail.
+- Lead with the answer, keep it short, and sound like a sharp operator talking to another — warm,
+  honest, never hype.
+`.trim();
+
 /* ============================ How Penny acts (the protocol) ============================ */
 
 export const PENNY_TOOL_PROTOCOL = `
@@ -116,8 +130,14 @@ function renderConfidentiality(ctx: ViewerContext): string {
 /**
  * Build Penny's full system prompt for one viewer. Deterministic and pure — the
  * same context always yields the same prompt, which makes it testable.
+ *
+ * `includeTools` (default true) controls whether the live tool list + tool protocol
+ * are included. The public chat sets it false: there she is grounded by library
+ * articles injected into the conversation each turn rather than by calling tools,
+ * so advertising tools she can't invoke would only mislead her.
  */
-export function composeSystemPrompt(ctx: ViewerContext): string {
+export function composeSystemPrompt(ctx: ViewerContext, opts: { includeTools?: boolean } = {}): string {
+  const includeTools = opts.includeTools !== false;
   const prof = capabilityProfile(ctx);
   const sections: string[] = [
     PENNY_IDENTITY,
@@ -135,11 +155,16 @@ export function composeSystemPrompt(ctx: ViewerContext): string {
   }
 
   sections.push('WHO YOU ARE TALKING TO RIGHT NOW:\n' + renderConfidentiality(ctx));
-  sections.push(
-    `YOUR TOOLS ON THIS SURFACE (you ${prof.canWrite ? 'may act, with confirmation where marked' : 'may read and reason; you cannot write from here'}):\n` +
-      renderTools(ctx),
-  );
-  sections.push(PENNY_TOOL_PROTOCOL);
+
+  if (includeTools) {
+    sections.push(
+      `YOUR TOOLS ON THIS SURFACE (you ${prof.canWrite ? 'may act, with confirmation where marked' : 'may read and reason; you cannot write from here'}):\n` +
+        renderTools(ctx),
+    );
+    sections.push(PENNY_TOOL_PROTOCOL);
+  } else {
+    sections.push(PENNY_PUBLIC_GROUNDING);
+  }
 
   return sections.join(RULE);
 }
