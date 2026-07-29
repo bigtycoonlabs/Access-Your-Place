@@ -4,18 +4,18 @@ import { Sparkles, ArrowRight, Send } from 'lucide-react';
 
 // Rotating example prompts — makes the hero feel alive without any backend call.
 const EXAMPLE_PROMPTS = [
-  'Find me a furnished-rental deal in Atlanta under $2,200/mo…',
-  'Run the numbers on a 2-bed in Dallas for corporate housing…',
-  'Is this lease actually profitable — or is the course lying to me?…',
-  'Negotiate this landlord for me. I do not want to make the call…',
-  'What is my real risk on this one, honestly?…',
+  'Penny, run the numbers on 1423 Oak Ave for a mid-term corporate setup…',
+  'Help me build a co-living operation — then find the units that fit it…',
+  'Which of my listings should I diversify off Airbnb?…',
+  'Pull MTR demand for this ZIP before I commit…',
+  'Draft the acquisition agreement for the Dallas deal…',
 ];
 
 const CAPABILITIES = [
-  'Finds your deals',
-  'Runs the real numbers',
-  'Negotiates through the team',
-  'Coaches you into an operator',
+  'Runs the numbers on any address',
+  'Shapes your operation, then finds the fit',
+  'Sources & negotiates through the team',
+  'Coaches you past the one-OTA trap',
 ];
 
 /**
@@ -65,9 +65,10 @@ export default function PennyHero() {
         </h1>
 
         <p className="mx-auto mt-4 max-w-2xl text-lg leading-relaxed text-slate-300">
-          Our most intelligent model. She finds real furnished-rental deals, runs the honest
-          numbers, and hands them to a human team that negotiates for you — so you never cold-call a
-          landlord. She will even tell you when a deal is not worth it.
+          Our most intelligent model — coach, acquisition specialist, and research desk in one.
+          Hand her an address and she runs the real numbers. Tell her your idea and she builds the
+          operation, then finds the units that fit it. A human team negotiates and closes, so you
+          never cold-call a landlord — and she will tell you the truth when a deal does not pencil.
         </p>
 
         <div className="mx-auto mt-8 max-w-xl">

@@ -1,6 +1,7 @@
 import { useState, useRef, useEffect } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { Menu, X, User, Shield } from 'lucide-react';
+import AypLogo from './AypLogo';
 
 export default function Header() {
   const [isOpen, setIsOpen] = useState(false);
@@ -92,8 +93,7 @@ export default function Header() {
             className="flex items-center gap-2 focus:outline-none focus:ring-2 focus:ring-[#d4a574] focus:ring-offset-2 focus:ring-offset-[#0a0f1a] rounded-lg px-2 py-1"
             aria-label="Access Your Place - Go to homepage"
           >
-            <Shield className="w-6 h-6 text-[#d4a574]" />
-            <span className="text-xl font-bold text-[#d4a574]">Access Your Place</span>
+            <AypLogo />
           </Link>
           
           {/* Desktop Navigation */}
