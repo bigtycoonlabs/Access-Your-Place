@@ -176,7 +176,7 @@ serve(async (req) => {
 
     // Action: Chat with Penny
     if (action === 'chat') {
-      if (!anthropicKey) {
+      if (!anthropicKey && !Deno.env.get('OPENAI_API_KEY')) {
         return new Response(JSON.stringify({ 
           success: false,
           error: 'AI service not configured. Please contact support.',
