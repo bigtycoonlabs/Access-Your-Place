@@ -33,7 +33,7 @@ IV. Financial SOPs
 
 Document everything in Google Docs or Notion for team access.
 
-Ready to systematize? Our sister company TycoonLabs (bigggtycoon.net) specializes in custom SOP development for rental arbitrage operations. The AYP Success Team can coordinate introductions: https://calendly.com/investyourplaces`;
+Ready to systematize? Penny can help you build custom SOPs for your operation, and the AYP Success Team can coordinate setup support: https://calendly.com/investyourplaces`;
 
 
 export const remoteManagement = `Managing Properties Remotely
@@ -67,7 +67,7 @@ IV. When to Visit
 • After major maintenance
 • Guest complaints requiring in-person assessment
 
-For staffing and virtual assistance needs, our sister company TycoonLabs (bigggtycoon.net) provides trained VAs and team hiring services for rental arbitrage operators.
+For staffing and virtual-assistance needs, your AYP setup manager can help you source and vet cleaners, maintenance, and trained VAs from the operator network.
 
 Book a call: https://calendly.com/investyourplaces`;
 
