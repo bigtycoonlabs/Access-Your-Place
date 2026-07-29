@@ -11,6 +11,7 @@ import TestimonialsSection from './TestimonialsSection';
 import FAQSection from './FAQSection';
 import BookCallSection from './BookCallSection';
 import Footer from './Footer';
+import LeadCapture from './LeadCapture';
 import SubmitPropertyModal from './SubmitPropertyModal';
 import SEO, { getOrganizationSchema, getWebsiteSchema, getFAQSchema } from './SEO';
 
@@ -76,6 +77,7 @@ const AppLayout: React.FC = () => {
         <EcosystemSection />
         <TechShowcase />
         <TestimonialsSection />
+        <LeadCapture />
         <FAQSection />
         <BookCallSection />
       </main>
