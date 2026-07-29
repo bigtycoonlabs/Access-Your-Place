@@ -64,6 +64,50 @@ As a staff member, you can also help with:
 
 When staff ask you to search or generate content, provide detailed, professional responses suitable for client-facing materials.`
 
+type PennyMsg = { role: string; content: string }
+
+async function callAnthropic(key: string, system: string, messages: PennyMsg[]): Promise<string> {
+  const res = await fetch('https://api.anthropic.com/v1/messages', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json', 'x-api-key': key, 'anthropic-version': '2023-06-01' },
+    body: JSON.stringify({ model: 'claude-3-5-sonnet-20241022', max_tokens: 1500, system, messages }),
+  })
+  const data = await res.json()
+  if (!res.ok || data?.error) throw new Error(data?.error?.message || `anthropic http ${res.status}`)
+  const text = data?.content?.[0]?.text
+  if (!text) throw new Error('anthropic returned no text')
+  return text
+}
+
+async function callOpenAI(key: string, system: string, messages: PennyMsg[]): Promise<string> {
+  const res = await fetch('https://api.openai.com/v1/chat/completions', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${key}` },
+    body: JSON.stringify({ model: 'gpt-4o', max_tokens: 1500, messages: [{ role: 'system', content: system }, ...messages] }),
+  })
+  const data = await res.json()
+  if (!res.ok || data?.error) throw new Error(data?.error?.message || `openai http ${res.status}`)
+  const text = data?.choices?.[0]?.message?.content
+  if (!text) throw new Error('openai returned no text')
+  return text
+}
+
+// Claude (Anthropic) first; OpenAI as an automatic fallback if Claude's key is missing or the call fails.
+async function askPennyDual(system: string, messages: PennyMsg[]): Promise<string> {
+  const anthropicKey = Deno.env.get('ANTHROPIC_API_KEY')
+  const openaiKey = Deno.env.get('OPENAI_API_KEY')
+  const errors: string[] = []
+  if (anthropicKey) {
+    try { return await callAnthropic(anthropicKey, system, messages) }
+    catch (e) { errors.push(`anthropic: ${e instanceof Error ? e.message : 'failed'}`) }
+  }
+  if (openaiKey) {
+    try { return await callOpenAI(openaiKey, system, messages) }
+    catch (e) { errors.push(`openai: ${e instanceof Error ? e.message : 'failed'}`) }
+  }
+  throw new Error(errors.length ? errors.join(' | ') : 'no reasoning provider configured')
+}
+
 serve(async (req) => {
   if (req.method === 'OPTIONS') {
     return new Response('ok', { headers: corsHeaders })
@@ -182,23 +226,16 @@ serve(async (req) => {
         })
       }
 
-      // Call Anthropic API
-      const aiResponse = await fetch('https://api.anthropic.com/v1/messages', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          'x-api-key': anthropicKey,
-          'anthropic-version': '2023-06-01'
-        },
-        body: JSON.stringify({
-          model: 'claude-3-5-sonnet-20241022',
-          max_tokens: 1500,
-          system: systemPrompt,
-          messages: messages
-        })
-      })
-
-      const aiData = await aiResponse.json()
+      // Reason with Claude first; fall back to OpenAI if Claude's key is missing or fails.
+      let dualText = ''
+      let dualError: unknown = null
+      try {
+        dualText = await askPennyDual(systemPrompt, messages)
+      } catch (err) {
+        dualError = err
+        console.error('AI providers failed:', err)
+      }
+      const aiData: any = dualError ? { error: dualError } : { content: [{ text: dualText }] }
       
       if (aiData.error) {
         console.error('Anthropic API error:', aiData.error)
