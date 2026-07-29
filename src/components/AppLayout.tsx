@@ -1,5 +1,6 @@
 import React from 'react';
 import Header from './Header';
+import PennyHero from './PennyHero';
 import Hero2026 from './Hero2026';
 import HowWeWork from './HowWeWork';
 import EcosystemSection from './EcosystemSection';
@@ -66,6 +67,7 @@ const AppLayout: React.FC = () => {
       <Header />
 
       <main id="main-content">
+        <PennyHero />
         <Hero2026 />
         <HowWeWork />
         <FeaturedDeals />
