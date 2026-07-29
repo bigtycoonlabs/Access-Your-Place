@@ -164,7 +164,8 @@ export default function Footer() {
 
         {/* Our Platforms */}
         <div className="border-t border-gray-800 pt-10 mb-10">
-          <h4 className="text-center text-sm font-semibold text-gray-500 uppercase tracking-widest mb-6">Our Platforms</h4>
+          <h4 className="text-center text-sm font-semibold text-[#d4a574] uppercase tracking-widest mb-2">The Set Up Your Place LLC family</h4>
+          <p className="text-center text-gray-400 text-sm max-w-2xl mx-auto mb-6">Access Your Place taught its founders that arbitrage isn't bound to one industry — it's a way of life. These are its sisters, each working that idea in its own field. The whole family is yours to use.</p>
           <div className="grid sm:grid-cols-3 gap-6 max-w-4xl mx-auto text-center">
             <div className="bg-white/5 rounded-xl p-5 hover:bg-white/10 transition-colors">
               <a
@@ -191,7 +192,7 @@ export default function Footer() {
                 AccessYPFlow
               </a>
               <p className="text-gray-500 text-xs mt-2 leading-relaxed">
-                The deal flow and workflow engine. Built for AYP operators and teams to manage acquisitions, track deal pipelines, and streamline every step from sourcing to close.
+                Arbitrage applied to the markets. An automated crypto trading platform that puts a business's idle cash to honest work, guided by an AI named Arbo — the same idea as Your Place, pointed at exchanges instead of real estate.
               </p>
             </div>
             <div className="bg-white/5 rounded-xl p-5 hover:bg-white/10 transition-colors">
@@ -205,7 +206,7 @@ export default function Footer() {
                 AccessYPLabs
               </a>
               <p className="text-gray-500 text-xs mt-2 leading-relaxed">
-                The innovation and R&D hub. Where new AI tools, platform features, and operator experiments are built and tested before rolling into the broader AYP ecosystem.
+                Where ideas become ownable businesses. An AI named Clay shapes any idea into a complete, pre-proven concept — plan, research, demo, and build path — and the Dreamhold is its marketplace of unlaunched businesses to claim and grow.
               </p>
             </div>
           </div>
