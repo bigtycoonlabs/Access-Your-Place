@@ -10,9 +10,9 @@ const ALONE = [
 
 const WITH_AYP = [
   'A living knowledge library from Penny — free',
-  'A real team finds, negotiates, and closes the landlord',
+  'Find deals yourself with Penny + LeadForge — or let the team source and close',
   'Built to diversify: short-term, mid-term, corporate, co-living',
-  'Coached and supported the whole way',
+  'Coached and supported the whole way — as much or as little as you want',
 ];
 
 /**
@@ -35,9 +35,9 @@ export default function MissionSection() {
         </h2>
         <p className="mx-auto mt-5 max-w-2xl text-center text-lg leading-relaxed text-slate-300">
           The mechanics of furnished-rental arbitrage were never a secret. The hard part is getting a
-          landlord to say yes. Penny gives you the knowledge for free, and a real team does the
-          acquisition — sourcing, negotiating, and closing the lease. You become an operator who owns
-          the business.
+          landlord to say yes. Penny gives you the knowledge for free and the tools to find and vet
+          deals yourself — and a real team is right there to source, negotiate, and close whenever you
+          want them. Either way, you become an operator who owns the business.
         </p>
 
         <div className="mt-12 grid gap-6 sm:grid-cols-2">
