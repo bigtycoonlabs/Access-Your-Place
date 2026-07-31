@@ -4,7 +4,7 @@ import { Badge } from '@/components/ui/badge';
 import { 
   ChevronDown, BarChart3, Target, Building, UserCog, Users, PenTool, 
   Mail, FileText, UsersRound, Wrench, Scale, HeadphonesIcon, BookOpen, 
-  Settings, UserCheck, ClipboardCheck, X, Landmark, Briefcase, Inbox
+  Settings, UserCheck, ClipboardCheck, X, Landmark, Briefcase, Inbox, Sparkles
 } from 'lucide-react';
 
 
@@ -205,6 +205,7 @@ export function StaffMobileNav({ items, activeTab, onTabChange, accentColor = 'a
 export function getSuccessTeamTabs(unassignedCount: number, landlordOpsCount?: number): NavItem[] {
   return [
     { value: 'analytics', label: 'Analytics Dashboard', icon: BarChart3, group: 'core' },
+    { value: 'list-a-deal', label: 'List a Deal', icon: Sparkles, group: 'core' },
     { value: 'request-center', label: 'Request Center', icon: Inbox, group: 'core' },
     { value: 'acq-dashboard', label: 'Acquisitions', icon: Target, group: 'core' },
     { value: 'dealflow', label: 'Deal Flow & Marketplace', icon: Building, group: 'deals' },
@@ -255,6 +256,7 @@ export function getAcquisitionTabs(landlordOpsCount?: number): NavItem[] {
 
   const tabs: NavItem[] = [
     { value: 'acq-dashboard', label: 'Dashboard', icon: Target, group: 'core' },
+    { value: 'list-a-deal', label: 'List a Deal', icon: Sparkles, group: 'core' },
     { value: 'my-investors', label: 'My Investors', icon: UserCheck, group: 'core' },
     { value: 'dealflow', label: 'Deal Flow', icon: Building, group: 'deals' },
     { value: 'landlord-ops', label: 'Landlord Ops', icon: Landmark, badge: landlordOpsCount, group: 'deals' },

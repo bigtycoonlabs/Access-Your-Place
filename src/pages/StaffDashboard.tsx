@@ -19,6 +19,7 @@ import { TabErrorBoundary } from '@/components/admin/TabErrorBoundary';
 import { useLogoutSync, sessionSyncService } from '@/services/SessionSyncService';
 import { DashboardSelector, DashboardType } from '@/components/admin/DashboardSelector';
 import { StaffMobileNav, getSuccessTeamTabs, getAcquisitionTabs, getSetupTabs } from '@/components/admin/StaffMobileNav';
+import { PennyDealIntake } from '@/components/staff/PennyDealIntake';
 import { PennyChatButton } from '@/components/PennyChatButton';
 import { AMNotificationBell } from '@/components/admin/AMNotificationBell';
 
@@ -442,6 +443,7 @@ export default function StaffDashboard() {
     setActiveTab(value);
     const tabLabels: Record<string, string> = {
       'analytics': 'Analytics Dashboard',
+      'list-a-deal': 'List a Deal with Penny',
       'request-center': 'Success Team Request Center',
       'acq-dashboard': 'Acquisition Manager Dashboard',
 
@@ -1090,6 +1092,7 @@ export default function StaffDashboard() {
               away from the default tab because the TabsTriggers are removed from the DOM. */}
           <TabsList className="sr-only" aria-hidden="true">
             <TabsTrigger value="analytics">Analytics</TabsTrigger>
+            <TabsTrigger value="list-a-deal">List a Deal</TabsTrigger>
             <TabsTrigger value="request-center">Request Center</TabsTrigger>
             <TabsTrigger value="acq-dashboard">Acquisitions</TabsTrigger>
             <TabsTrigger value="dealflow">Deal Flow</TabsTrigger>
@@ -1287,6 +1290,10 @@ export default function StaffDashboard() {
 
 
           {/* Analytics Tab */}
+
+          <TabsContent value="list-a-deal" role="tabpanel" aria-label="List a deal with Penny">
+            <PennyDealIntake staffSession={staffSession} />
+          </TabsContent>
 
           <TabsContent value="analytics" role="tabpanel" aria-label="Analytics dashboard">
             <TabErrorBoundary tabName="Analytics Dashboard">
