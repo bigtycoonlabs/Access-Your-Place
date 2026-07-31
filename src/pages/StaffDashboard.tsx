@@ -20,6 +20,7 @@ import { useLogoutSync, sessionSyncService } from '@/services/SessionSyncService
 import { DashboardSelector, DashboardType } from '@/components/admin/DashboardSelector';
 import { StaffMobileNav, getSuccessTeamTabs, getAcquisitionTabs, getSetupTabs } from '@/components/admin/StaffMobileNav';
 import { PennyDealIntake } from '@/components/staff/PennyDealIntake';
+import { PennyConsole } from '@/components/staff/PennyConsole';
 import { PennyChatButton } from '@/components/PennyChatButton';
 import { AMNotificationBell } from '@/components/admin/AMNotificationBell';
 
@@ -261,7 +262,7 @@ export default function StaffDashboard() {
   const [staffSession, setStaffSession] = useState<StaffSession | null>(null);
   const [unreadMessages, setUnreadMessages] = useState(0);
   const [hasInvestorBackup, setHasInvestorBackup] = useState(false);
-  const [activeTab, setActiveTab] = useState('analytics');
+  const [activeTab, setActiveTab] = useState('penny-home');
   const [activeDashboard, setActiveDashboard] = useState<DashboardType>('success');
   const [announcement, setAnnouncement] = useState('');
   const [unassignedInvestorCount, setUnassignedInvestorCount] = useState(0);
@@ -413,13 +414,13 @@ export default function StaffDashboard() {
     
     if (parsedIsSuccessManager) {
       setActiveDashboard('success');
-      setActiveTab('analytics');
+      setActiveTab('penny-home');
     } else if (parsed.department === 'acquisition_managers' || parsedRoles.includes('acquisition_managers')) {
       setActiveDashboard('acquisitions');
-      setActiveTab('acq-dashboard');
+      setActiveTab('penny-home');
     } else if (parsed.department === 'setup_managers' || parsedRoles.includes('setup_managers')) {
       setActiveDashboard('setups');
-      setActiveTab('setups');
+      setActiveTab('penny-home');
     }
 
   }, [navigate]);
@@ -442,6 +443,7 @@ export default function StaffDashboard() {
   const handleTabChange = useCallback((value: string) => {
     setActiveTab(value);
     const tabLabels: Record<string, string> = {
+      'penny-home': 'Penny',
       'analytics': 'Analytics Dashboard',
       'list-a-deal': 'List a Deal with Penny',
       'request-center': 'Success Team Request Center',
@@ -1024,7 +1026,7 @@ export default function StaffDashboard() {
 
 
 
-        if (isOnDefaultTab) return null;
+        if (isOnDefaultTab || activeTab === 'penny-home') return null;
 
         return (
           <div className="sticky top-[57px] z-30 bg-[#1a365d] text-white shadow-lg" role="navigation" aria-label="Tab navigation bar">
@@ -1091,6 +1093,7 @@ export default function StaffDashboard() {
               Without this, mobile browsers may fail to render TabsContent when navigating 
               away from the default tab because the TabsTriggers are removed from the DOM. */}
           <TabsList className="sr-only" aria-hidden="true">
+            <TabsTrigger value="penny-home">Penny</TabsTrigger>
             <TabsTrigger value="analytics">Analytics</TabsTrigger>
             <TabsTrigger value="list-a-deal">List a Deal</TabsTrigger>
             <TabsTrigger value="request-center">Request Center</TabsTrigger>
@@ -1290,6 +1293,13 @@ export default function StaffDashboard() {
 
 
           {/* Analytics Tab */}
+
+          <TabsContent value="penny-home" role="tabpanel" aria-label="Penny home">
+            <PennyConsole
+              staffSession={staffSession}
+              onOpenDashboard={() => setActiveTab(activeDashboard === 'acquisitions' ? 'acq-dashboard' : activeDashboard === 'setups' ? 'setups' : 'analytics')}
+            />
+          </TabsContent>
 
           <TabsContent value="list-a-deal" role="tabpanel" aria-label="List a deal with Penny">
             <PennyDealIntake staffSession={staffSession} />

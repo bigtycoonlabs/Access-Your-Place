@@ -21,11 +21,11 @@ const GREETING =
  * Built accessible-first (VoiceOver): labelled controls, live regions,
  * 48px targets, focus returned to the input after each reply.
  */
-export function PennyDealIntake({ staffSession }: { staffSession: StaffLite | null }) {
+export function PennyDealIntake({ staffSession, hideHeader = false, greeting }: { staffSession: StaffLite | null; hideHeader?: boolean; greeting?: string }) {
   const staffId = staffSession?.id || '';
   const staffName = staffSession?.name || staffSession?.first_name || staffSession?.email || 'Staff';
 
-  const [messages, setMessages] = useState<Msg[]>([{ who: 'penny', text: GREETING }]);
+  const [messages, setMessages] = useState<Msg[]>([{ who: 'penny', text: greeting || GREETING }]);
   const [history, setHistory] = useState<Turn[]>([]);
   const [photos, setPhotos] = useState<string[]>([]);
   const [input, setInput] = useState('');
@@ -136,12 +136,14 @@ export function PennyDealIntake({ staffSession }: { staffSession: StaffLite | nu
 
   return (
     <section aria-labelledby="penny-heading" className="max-w-3xl mx-auto">
-      <h2 id="penny-heading" className="text-xl font-bold text-slate-800">List a deal with Penny</h2>
-      <p className="text-sm text-slate-600 mt-1">
-        Tell Penny about the property and attach at least one photo. She structures it, checks the numbers, and
-        saves a draft that is not public. After it saves, she offers to send the seller or landlord their
-        onboarding email — and only sends when you say yes.
-      </p>
+      <h2 id="penny-heading" className={hideHeader ? 'sr-only' : 'text-xl font-bold text-slate-800'}>List a deal with Penny</h2>
+      {!hideHeader && (
+        <p className="text-sm text-slate-600 mt-1">
+          Tell Penny about the property and attach at least one photo. She structures it, checks the numbers, and
+          saves a draft that is not public. After it saves, she offers to send the seller or landlord their
+          onboarding email — and only sends when you say yes.
+        </p>
+      )}
 
       <div className="mt-4 rounded-xl border border-slate-200 bg-white p-4">
         <div role="log" aria-live="polite" aria-label="Conversation with Penny" className="flex flex-col gap-2">

@@ -204,6 +204,7 @@ export function StaffMobileNav({ items, activeTab, onTabChange, accentColor = 'a
 // Pre-built tab configurations for each dashboard type
 export function getSuccessTeamTabs(unassignedCount: number, landlordOpsCount?: number): NavItem[] {
   return [
+    { value: 'penny-home', label: 'Penny', icon: Sparkles, group: 'core' },
     { value: 'analytics', label: 'Analytics Dashboard', icon: BarChart3, group: 'core' },
     { value: 'list-a-deal', label: 'List a Deal', icon: Sparkles, group: 'core' },
     { value: 'request-center', label: 'Request Center', icon: Inbox, group: 'core' },
@@ -255,6 +256,7 @@ export function getAcquisitionTabs(landlordOpsCount?: number): NavItem[] {
   ]);
 
   const tabs: NavItem[] = [
+    { value: 'penny-home', label: 'Penny', icon: Sparkles, group: 'core' },
     { value: 'acq-dashboard', label: 'Dashboard', icon: Target, group: 'core' },
     { value: 'list-a-deal', label: 'List a Deal', icon: Sparkles, group: 'core' },
     { value: 'my-investors', label: 'My Investors', icon: UserCheck, group: 'core' },
@@ -272,6 +274,7 @@ export function getAcquisitionTabs(landlordOpsCount?: number): NavItem[] {
 
 export function getSetupTabs(): NavItem[] {
   return [
+    { value: 'penny-home', label: 'Penny', icon: Sparkles, group: 'core' },
     { value: 'setups', label: 'Setup Dashboard', icon: Wrench, group: 'core' },
     { value: 'my-setups', label: 'My Projects', icon: ClipboardCheck, group: 'core' },
     { value: 'hr-commissions', label: 'HR & Pay', icon: Briefcase, group: 'operations' },
