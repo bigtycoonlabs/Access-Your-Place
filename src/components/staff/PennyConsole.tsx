@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react';
 import { supabase } from '@/lib/supabase';
-import { PennyDealIntake } from '@/components/staff/PennyDealIntake';
+import { PennyStaffChat } from '@/components/staff/PennyStaffChat';
 
 interface StaffLite {
   id?: string;
@@ -132,11 +132,7 @@ export function PennyConsole({ staffSession, onOpenDashboard }: { staffSession: 
       )}
 
       <div className="mt-6">
-        <PennyDealIntake
-          staffSession={staffSession}
-          hideHeader
-          greeting={`What do you want to work on, ${first}? I can list a deal right now — tell me the address, the numbers, and who the seller or landlord is, and attach a photo or two.`}
-        />
+        <PennyStaffChat staffSession={staffSession} />
       </div>
 
       {onOpenDashboard && (
