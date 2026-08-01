@@ -6,11 +6,14 @@ import { Badge } from '@/components/ui/badge';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { useToast } from '@/hooks/use-toast';
 import { VoiceInputButton } from '@/components/VoiceInputButton';
+import { PennyMark } from '@/components/investor/PennyMark';
+import { playPennyChime } from '@/lib/pennyChime';
 import { 
-  Bot, Send, Loader2, Plus, Building2, TrendingUp, 
+  Send, Loader2, Plus, Building2, TrendingUp, 
   HelpCircle, Sparkles, RefreshCw, AlertTriangle, 
   CheckCircle2, BarChart3, Calendar, Shield, Target,
-  Zap, Database, FileText, Search as SearchIcon
+  Zap, Database, FileText, Search as SearchIcon,
+  Volume2, VolumeX
 } from 'lucide-react';
 
 
@@ -598,6 +601,18 @@ export function AIChat({ investorId, investorName }: AIChatProps) {
   const inputRef = useRef<HTMLInputElement>(null);
   const { toast } = useToast();
 
+  // Penny's chime preference (persisted). Her penny-drop signature plays when she
+  // finishes a reply — a sound-first cue that's especially useful for screen-reader
+  // users. Muteable, and remembered across sessions.
+  const [chimeMuted, setChimeMuted] = useState<boolean>(() => {
+    try { return localStorage.getItem('penny_chime_muted') === '1'; } catch { return false; }
+  });
+  const toggleChime = () => setChimeMuted((m) => {
+    const next = !m;
+    try { localStorage.setItem('penny_chime_muted', next ? '1' : '0'); } catch { /* ignore */ }
+    return next;
+  });
+
   useEffect(() => {
     fetchSuggestedQuestions();
     fetchMarketAlerts();
@@ -606,6 +621,13 @@ export function AIChat({ investorId, investorName }: AIChatProps) {
   useEffect(() => {
     scrollToBottom();
   }, [messages]);
+
+  // Penny announces herself with her chime whenever she finishes a reply.
+  useEffect(() => {
+    const last = messages[messages.length - 1];
+    if (last?.role === 'assistant' && !chimeMuted) playPennyChime();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [messages.length]);
 
   const scrollToBottom = () => {
     messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
@@ -768,9 +790,7 @@ export function AIChat({ investorId, investorName }: AIChatProps) {
       {/* Header */}
       <header className="flex items-center justify-between">
         <div className="flex items-center gap-3">
-          <div className="p-3 bg-gradient-to-br from-[#1a365d] to-[#2d4a7c] rounded-xl">
-            <Bot className="w-6 h-6 text-white" />
-          </div>
+          <PennyMark size={48} speaking={loading} />
           <div>
             <h1 className="text-xl font-bold text-gray-900 flex items-center gap-2">
               Penny AI
@@ -783,6 +803,17 @@ export function AIChat({ investorId, investorName }: AIChatProps) {
           </div>
         </div>
         <div className="flex items-center gap-2">
+          <Button
+            size="sm"
+            variant="ghost"
+            onClick={toggleChime}
+            aria-label={chimeMuted ? "Turn Penny's chime on" : "Turn Penny's chime off"}
+            aria-pressed={!chimeMuted}
+            title={chimeMuted ? "Penny's chime is off" : "Penny's chime is on"}
+            className="text-gray-500 hover:text-gray-700"
+          >
+            {chimeMuted ? <VolumeX className="w-4 h-4" aria-hidden="true" /> : <Volume2 className="w-4 h-4" aria-hidden="true" />}
+          </Button>
           {highPriorityAlerts.length > 0 && (
             <Button size="sm" variant="outline" className="border-amber-300 text-amber-700 hover:bg-amber-50"
               onClick={() => setShowAlerts(!showAlerts)}>
@@ -846,9 +877,7 @@ export function AIChat({ investorId, investorName }: AIChatProps) {
           <ScrollArea className="flex-1 p-4" role="log" aria-label="Chat messages">
             {messages.length === 0 ? (
               <div className="h-full flex flex-col items-center justify-center text-center p-6">
-                <div className="w-16 h-16 rounded-full bg-gradient-to-br from-[#1a365d] to-[#2d4a7c] flex items-center justify-center mb-4">
-                  <Bot className="w-8 h-8 text-white" />
-                </div>
+                <PennyMark size={64} className="mb-4" />
                 <h2 className="text-lg font-semibold text-gray-900 mb-2">Hi {firstName}! I'm Penny</h2>
                 <p className="text-sm text-gray-500 mb-2 max-w-md">
                   I can analyze deals, calculate revenue, manage your portfolio, write listings, and provide market intelligence — all in real-time.
@@ -879,15 +908,13 @@ export function AIChat({ investorId, investorName }: AIChatProps) {
                 {messages.map((msg, idx) => (
                   <article key={idx} className={`flex ${msg.role === 'user' ? 'justify-end' : 'justify-start'}`}>
                     <div className={`flex items-start gap-3 max-w-[85%] ${msg.role === 'user' ? 'flex-row-reverse' : ''}`}>
-                      <div className={`w-8 h-8 rounded-full flex items-center justify-center flex-shrink-0 ${
-                        msg.role === 'user' ? 'bg-[#d4a574]' : 'bg-gradient-to-br from-[#1a365d] to-[#2d4a7c]'
-                      }`}>
-                        {msg.role === 'user' ? (
+                      {msg.role === 'user' ? (
+                        <div className="w-8 h-8 rounded-full flex items-center justify-center flex-shrink-0 bg-[#d4a574]">
                           <span className="text-white text-sm font-medium">{firstName.charAt(0).toUpperCase()}</span>
-                        ) : (
-                          <Bot className="w-4 h-4 text-white" />
-                        )}
-                      </div>
+                        </div>
+                      ) : (
+                        <span className="flex-shrink-0"><PennyMark size={32} still /></span>
+                      )}
                       <div>
                         <div className={`rounded-2xl px-4 py-3 ${
                           msg.role === 'user' 
@@ -915,9 +942,7 @@ export function AIChat({ investorId, investorName }: AIChatProps) {
                 {loading && (
                   <div className="flex justify-start">
                     <div className="flex items-start gap-3">
-                      <div className="w-8 h-8 rounded-full bg-gradient-to-br from-[#1a365d] to-[#2d4a7c] flex items-center justify-center">
-                        <Bot className="w-4 h-4 text-white" />
-                      </div>
+                      <span className="flex-shrink-0"><PennyMark size={32} speaking /></span>
                       <div className="bg-gray-100 rounded-2xl rounded-tl-sm px-4 py-3">
                         <div className="flex items-center gap-2">
                           {executingActions ? (
