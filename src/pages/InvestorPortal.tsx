@@ -1,6 +1,7 @@
 import { useState, useEffect, useCallback, lazy, Suspense } from 'react';
 import { useNavigate, Link, useLocation } from 'react-router-dom';
 import { PortalHeader } from '@/components/investor/PortalHeader';
+import { OperatorHQ } from '@/components/investor/OperatorHQ';
 import { SavedDeals } from '@/components/investor/SavedDeals';
 import { InquiryTracker } from '@/components/investor/InquiryTracker';
 import { GuidedOnboarding } from '@/components/investor/GuidedOnboarding';
@@ -411,7 +412,7 @@ export default function InvestorPortal() {
   const [bookingData, setBookingData] = useState<any>(null);
   const [bookingForm, setBookingForm] = useState({ preferred_date: '', preferred_time: '', notes: '' });
   const [submitting, setSubmitting] = useState(false);
-  const [activeTab, setActiveTab] = useState('dashboard');
+  const [activeTab, setActiveTab] = useState('penny-home');
   const [announcement, setAnnouncement] = useState('');
   const [showGuidedTour, setShowGuidedTour] = useState(false);
   const navigate = useNavigate();
@@ -770,11 +771,22 @@ export default function InvestorPortal() {
         onMessagesClick={() => setActiveTab('messages')}
       />
       
-      {/* Full-screen tab close bar - shown when a non-dashboard tab is active */}
-      {activeTab !== 'dashboard' && (
+      {/* Full-screen tab close bar - shown when a non-dashboard, non-Penny tab is active */}
+      {activeTab !== 'dashboard' && activeTab !== 'penny-home' && (
         <div className="sticky top-0 z-40 bg-[#1a365d] text-white shadow-lg" role="navigation" aria-label="Tab navigation bar">
           <div className="max-w-7xl mx-auto px-4 py-3 flex items-center justify-between">
             <div className="flex items-center gap-3">
+              <Button
+                variant="ghost"
+                size="sm"
+                onClick={() => setActiveTab('penny-home')}
+                className="text-white hover:bg-white/20 gap-2"
+                aria-label="Back to Penny, your home"
+              >
+                <Sparkles className="w-5 h-5" aria-hidden="true" />
+                <span className="hidden sm:inline">Penny</span>
+              </Button>
+              <div className="h-5 w-px bg-white/30" aria-hidden="true" />
               <Button
                 variant="ghost"
                 size="sm"
@@ -829,11 +841,30 @@ export default function InvestorPortal() {
       <main id="main-content" className={`mx-auto px-4 py-8 ${activeTab === 'dashboard' ? 'max-w-7xl' : 'max-w-7xl'}`} role="main" aria-label="Investor Portal Dashboard">
         {/* Email Verification Banner */}
         <EmailVerificationBanner />
+
+        {/* Operator HQ — the Penny-first client home (default landing) */}
+        {activeTab === 'penny-home' && (
+          <OperatorHQ
+            investor={investor}
+            onNavigate={setActiveTab}
+            onOpenDashboard={() => setActiveTab('dashboard')}
+            onBookCall={() => handleBookCall({ type: 'general' })}
+          />
+        )}
         
         {/* Dashboard header, quick actions, and tab list - only shown on dashboard */}
         {activeTab === 'dashboard' && (
           <>
             <header className="mb-8">
+              <button
+                type="button"
+                onClick={() => setActiveTab('penny-home')}
+                className="mb-3 inline-flex items-center gap-2 text-sm text-[#1a365d] underline underline-offset-2 hover:text-[#d4a574] min-h-[44px]"
+                aria-label="Back to Penny, your home"
+              >
+                <Sparkles className="w-4 h-4 text-[#d4a574]" aria-hidden="true" />
+                Back to Penny
+              </button>
               <h1 className="text-2xl font-bold text-gray-900">
                 Welcome back, {firstName}!
               </h1>
