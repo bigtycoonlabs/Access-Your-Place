@@ -65,7 +65,7 @@ serve(async (req: Request) => {
           // bcrypt hash - use dynamic import
           try {
             const bcrypt = await import('https://deno.land/x/bcrypt@v0.4.1/mod.ts')
-            validPassword = await bcrypt.compare(password, storedPassword)
+            validPassword = bcrypt.compareSync(password, storedPassword)
           } catch {
             validPassword = false
           }

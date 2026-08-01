@@ -141,7 +141,7 @@ serve(async (req: Request) => {
         if (storedPwd.startsWith('$2')) {
           try {
             const bcrypt = await import('https://deno.land/x/bcrypt@v0.4.1/mod.ts')
-            valid = await bcrypt.compare(password, storedPwd)
+            valid = bcrypt.compareSync(password, storedPwd)
           } catch { valid = false }
         } else {
           valid = password === storedPwd
