@@ -22,7 +22,7 @@ async function sha256(value: string): Promise<string> {
 }
 
 async function verifyPassword(input: string, stored: string): Promise<boolean> {
-  if (isBcryptHash(stored)) return bcrypt.compare(input, stored)
+  if (isBcryptHash(stored)) return bcrypt.compareSync(input, stored)
   if (isSha256Hash(stored)) {
     const target = stored.toLowerCase()
     // Unsalted SHA-256, then the legacy salted variant used by the old client.
@@ -76,7 +76,7 @@ serve(async (req) => {
         return json({ success: false, error: 'Current password is incorrect' }, 401)
       }
       await patch(`staff_users?id=eq.${encodeURIComponent(staff_id)}`, {
-        password_hash: await bcrypt.hash(String(new_password)),
+        password_hash: await bcrypt.hashSync(String(new_password)),
         updated_at: new Date().toISOString(),
       })
       return json({ success: true })
@@ -144,7 +144,7 @@ serve(async (req) => {
       const sessionToken = `${crypto.randomUUID()}-${crypto.randomUUID()}`
       const sessionExpires = new Date(Date.now() + 12 * 60 * 60 * 1000).toISOString()
       await patch(`staff_users?id=eq.${encodeURIComponent(invite.id)}`, {
-        password_hash: await bcrypt.hash(String(newPass)),
+        password_hash: await bcrypt.hashSync(String(newPass)),
         phone: body.phone ? String(body.phone) : invite.phone,
         whatsapp_number: body.whatsapp_number ? String(body.whatsapp_number) : invite.whatsapp_number,
         invitation_token: null,
@@ -206,7 +206,6 @@ serve(async (req) => {
       const attempts = Number(user.failed_login_attempts || 0) + 1
       const updates: Record<string, unknown> = {
         failed_login_attempts: attempts,
-        last_failed_login: new Date().toISOString(),
       }
       if (attempts >= 10) updates.locked_until = new Date(Date.now() + 15 * 60 * 1000).toISOString()
       await patch(`staff_users?id=eq.${encodeURIComponent(user.id)}`, updates).catch(() => undefined)
@@ -218,13 +217,12 @@ serve(async (req) => {
     const updates: Record<string, unknown> = {
       last_login: new Date().toISOString(),
       failed_login_attempts: 0,
-      last_failed_login: null,
       locked_until: null,
       session_token: sessionToken,
       session_expires: sessionExpires,
       updated_at: new Date().toISOString(),
     }
-    if (!isBcryptHash(String(user.password_hash))) updates.password_hash = await bcrypt.hash(String(password))
+    if (!isBcryptHash(String(user.password_hash))) updates.password_hash = await bcrypt.hashSync(String(password))
     await patch(`staff_users?id=eq.${encodeURIComponent(user.id)}`, updates)
 
     let permissions = Array.isArray(user.permissions) ? user.permissions : []
