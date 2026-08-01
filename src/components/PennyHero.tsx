@@ -1,6 +1,7 @@
 import { useState, useEffect } from 'react';
 import PennyPublicChat from './PennyPublicChat';
 import { Sparkles, ArrowRight, Send } from 'lucide-react';
+import { PennyMark } from '@/components/investor/PennyMark';
 
 // Rotating example prompts — makes the hero feel alive without any backend call.
 const EXAMPLE_PROMPTS = [
@@ -52,6 +53,7 @@ export default function PennyHero() {
       />
 
       <div className="relative mx-auto max-w-3xl text-center">
+        <PennyMark size={72} className="mx-auto mb-6" speaking={false} />
         <span
           role="status"
           className="inline-flex items-center gap-2 rounded-full border border-[#d4a574]/40 bg-[#d4a574]/10 px-4 py-1.5 text-sm font-semibold tracking-wide text-[#e7c9a0]"

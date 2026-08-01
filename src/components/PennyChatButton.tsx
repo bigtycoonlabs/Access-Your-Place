@@ -6,6 +6,8 @@ import { ScrollArea } from '@/components/ui/scroll-area';
 import { Badge } from '@/components/ui/badge';
 import { useToast } from '@/hooks/use-toast';
 import { VoiceInputButton } from '@/components/VoiceInputButton';
+import { PennyMark } from '@/components/investor/PennyMark';
+import { playPennyChime } from '@/lib/pennyChime';
 import { 
   Bot, Send, Loader2, X, Minimize2, Maximize2, 
   Sparkles, Plus, History, ChevronDown, Building2,
@@ -99,6 +101,8 @@ export function PennyChatButton({ userId, userName, userType }: PennyChatButtonP
     if (messages.length > 0) {
       const lastMessage = messages[messages.length - 1];
       if (lastMessage.role === 'assistant') {
+        // Penny's coin-chime the moment her reply drops in.
+        playPennyChime();
         // Announce the full message for screen readers
         announceToScreenReader(`Penny says: ${lastMessage.content}`);
       }
@@ -343,16 +347,13 @@ export function PennyChatButton({ userId, userName, userType }: PennyChatButtonP
         <button
           ref={floatingButtonRef}
           onClick={handleOpenChat}
-          className="fixed bottom-6 right-6 z-50 w-16 h-16 bg-gradient-to-br from-[#1a365d] to-[#2d4a7c] rounded-full shadow-lg hover:shadow-xl transition-all duration-300 flex items-center justify-center group focus:outline-none focus:ring-4 focus:ring-[#d4a574] focus:ring-offset-2"
+          className="fixed bottom-6 right-6 z-50 w-16 h-16 rounded-full shadow-lg hover:shadow-xl transition-all duration-300 flex items-center justify-center group focus:outline-none focus:ring-4 focus:ring-[#d4a574] focus:ring-offset-2"
           aria-label="Open Penny AI Chat Assistant. Penny is your AI-powered success manager who can help with property searches, investment questions, and acquisition support."
           aria-haspopup="dialog"
           aria-expanded={isOpen}
           type="button"
         >
-          <div className="relative">
-            <Bot className="w-8 h-8 text-white" aria-hidden="true" />
-            <Sparkles className="w-4 h-4 text-[#d4a574] absolute -top-1 -right-1 animate-pulse" aria-hidden="true" />
-          </div>
+          <PennyMark size={58} label="Chat with Penny" />
           {/* Tooltip - hidden from screen readers since aria-label provides this info */}
           <span 
             className="absolute -top-10 right-0 bg-gray-900 text-white text-sm px-3 py-1 rounded-lg opacity-0 group-hover:opacity-100 group-focus:opacity-100 transition-opacity whitespace-nowrap pointer-events-none"

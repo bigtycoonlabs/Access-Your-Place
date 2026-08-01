@@ -1,6 +1,7 @@
 import { useState, useEffect } from 'react';
 import { supabase } from '@/lib/supabase';
 import { PennyStaffChat } from '@/components/staff/PennyStaffChat';
+import { PennyMark } from '@/components/investor/PennyMark';
 
 interface StaffLite {
   id?: string;
@@ -100,7 +101,10 @@ export function PennyConsole({ staffSession, onOpenDashboard }: { staffSession: 
   return (
     <div className="max-w-3xl mx-auto">
       <section aria-label="Penny's briefing">
-        <h2 className="text-xl font-bold text-slate-800">Penny</h2>
+        <h2 className="flex items-center gap-2 text-xl font-bold text-slate-800">
+          <PennyMark size={30} speaking={loading} />
+          Penny
+        </h2>
         <p className="mt-1 text-slate-700 whitespace-pre-wrap" role="status" aria-live="polite">
           {loading ? `Getting your briefing, ${first}…` : message}
         </p>

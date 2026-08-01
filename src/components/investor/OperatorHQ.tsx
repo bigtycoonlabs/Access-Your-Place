@@ -2,6 +2,7 @@ import type { ReactNode } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Building2, Store, MessagesSquare, Target, Calendar, LayoutDashboard, Sparkles } from 'lucide-react';
 import { AIChat } from '@/components/investor/AIChat';
+import { PennyPresence } from '@/components/investor/PennyPresence';
 
 interface InvestorLite {
   id: string;
@@ -55,7 +56,9 @@ export function OperatorHQ({ investor, onNavigate, onOpenDashboard, onBookCall }
   const firstName = (investor.full_name || '').split(' ')[0] || 'there';
 
   return (
-    <div className="max-w-4xl mx-auto">
+    <div className="relative max-w-4xl mx-auto">
+      <PennyPresence className="left-1/2 top-0 -translate-x-1/2 -translate-y-1/3 opacity-80" size={620} intensity={0.13} />
+      <div className="relative z-10">
       <section aria-label="Penny greeting" className="text-center sm:text-left">
         <div className="inline-flex items-center gap-2 rounded-full bg-[#1a365d]/5 px-3 py-1 text-sm font-medium text-[#1a365d]">
           <Sparkles className="w-4 h-4 text-[#d4a574]" aria-hidden="true" />
@@ -129,6 +132,7 @@ export function OperatorHQ({ investor, onNavigate, onOpenDashboard, onBookCall }
           <LayoutDashboard className="h-4 w-4" aria-hidden="true" />
           Open the full dashboard
         </button>
+      </div>
       </div>
     </div>
   );

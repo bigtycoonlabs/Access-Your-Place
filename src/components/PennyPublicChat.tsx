@@ -2,6 +2,8 @@ import { useEffect, useRef, useState, useCallback } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Sparkles, Send, X, ArrowRight } from 'lucide-react';
 import { supabase } from '@/lib/supabase';
+import { PennyMark } from '@/components/investor/PennyMark';
+import { playPennyChime } from '@/lib/pennyChime';
 
 type Msg = { role: 'user' | 'assistant'; content: string };
 
@@ -86,6 +88,12 @@ export default function PennyPublicChat({ open, initialQuery, onClose }: Props) 
     logRef.current?.scrollTo({ top: logRef.current.scrollHeight, behavior: 'smooth' });
   }, [messages, loading]);
 
+  // Penny's coin-chime the instant her message drops in.
+  useEffect(() => {
+    if (messages[messages.length - 1]?.role === 'assistant') playPennyChime();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [messages.length]);
+
   // Escape closes.
   useEffect(() => {
     if (!open) return;
@@ -113,7 +121,7 @@ export default function PennyPublicChat({ open, initialQuery, onClose }: Props) 
         {/* Header */}
         <div className="flex items-center justify-between border-b border-white/10 px-5 py-4">
           <h2 id="penny-chat-title" className="flex items-center gap-2 text-lg font-bold text-white">
-            <Sparkles className="h-5 w-5 text-[#d4a574]" aria-hidden="true" />
+            <PennyMark size={28} />
             Penny
             <span className="text-sm font-normal text-slate-400">— your acquisition guide</span>
           </h2>

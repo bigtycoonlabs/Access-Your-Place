@@ -1,5 +1,6 @@
 import React, { useState, useRef, useEffect } from 'react';
 import { supabase } from '@/lib/supabase';
+import { playPennyChime } from '@/lib/pennyChime';
 
 interface StaffLite {
   id?: string;
@@ -33,6 +34,12 @@ export function PennyStaffChat({ staffSession }: { staffSession: StaffLite | nul
   useEffect(() => {
     logRef.current?.scrollTo({ top: logRef.current.scrollHeight });
   }, [messages, busy]);
+
+  // Penny's coin-chime the instant her reply drops in.
+  useEffect(() => {
+    if (messages[messages.length - 1]?.role === 'assistant') playPennyChime();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [messages.length]);
 
   async function send() {
     const text = input.trim();

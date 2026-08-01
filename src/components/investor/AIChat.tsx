@@ -12,8 +12,7 @@ import {
   Send, Loader2, Plus, Building2, TrendingUp, 
   HelpCircle, Sparkles, RefreshCw, AlertTriangle, 
   CheckCircle2, BarChart3, Calendar, Shield, Target,
-  Zap, Database, FileText, Search as SearchIcon,
-  Volume2, VolumeX
+  Zap, Database, FileText, Search as SearchIcon
 } from 'lucide-react';
 
 
@@ -601,18 +600,6 @@ export function AIChat({ investorId, investorName }: AIChatProps) {
   const inputRef = useRef<HTMLInputElement>(null);
   const { toast } = useToast();
 
-  // Penny's chime preference (persisted). Her penny-drop signature plays when she
-  // finishes a reply — a sound-first cue that's especially useful for screen-reader
-  // users. Muteable, and remembered across sessions.
-  const [chimeMuted, setChimeMuted] = useState<boolean>(() => {
-    try { return localStorage.getItem('penny_chime_muted') === '1'; } catch { return false; }
-  });
-  const toggleChime = () => setChimeMuted((m) => {
-    const next = !m;
-    try { localStorage.setItem('penny_chime_muted', next ? '1' : '0'); } catch { /* ignore */ }
-    return next;
-  });
-
   useEffect(() => {
     fetchSuggestedQuestions();
     fetchMarketAlerts();
@@ -622,10 +609,10 @@ export function AIChat({ investorId, investorName }: AIChatProps) {
     scrollToBottom();
   }, [messages]);
 
-  // Penny announces herself with her chime whenever she finishes a reply.
+  // Penny announces herself with her coin-chime the instant her reply drops in.
   useEffect(() => {
     const last = messages[messages.length - 1];
-    if (last?.role === 'assistant' && !chimeMuted) playPennyChime();
+    if (last?.role === 'assistant') playPennyChime();
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [messages.length]);
 
@@ -803,17 +790,6 @@ export function AIChat({ investorId, investorName }: AIChatProps) {
           </div>
         </div>
         <div className="flex items-center gap-2">
-          <Button
-            size="sm"
-            variant="ghost"
-            onClick={toggleChime}
-            aria-label={chimeMuted ? "Turn Penny's chime on" : "Turn Penny's chime off"}
-            aria-pressed={!chimeMuted}
-            title={chimeMuted ? "Penny's chime is off" : "Penny's chime is on"}
-            className="text-gray-500 hover:text-gray-700"
-          >
-            {chimeMuted ? <VolumeX className="w-4 h-4" aria-hidden="true" /> : <Volume2 className="w-4 h-4" aria-hidden="true" />}
-          </Button>
           {highPriorityAlerts.length > 0 && (
             <Button size="sm" variant="outline" className="border-amber-300 text-amber-700 hover:bg-amber-50"
               onClick={() => setShowAlerts(!showAlerts)}>
