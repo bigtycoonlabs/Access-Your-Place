@@ -11,9 +11,26 @@
 // TRUTH SPINE (v11 Phase 0): the shared honesty guard. Her final reply is checked against
 // the tools that actually COMPLETED this turn, so a real action she took stands and any
 // unbacked completion claim gets an honest correction — the blind operator hears the truth.
-import { guardReply } from "./penny_truth.ts";
+import { guardReply, buildCorrection } from "./penny_truth.ts";
 
 const APP_SCHEMA = 'prj_X-ZoVQv6LKXT';
+
+// Persona sign-up / login links, verified against the live app routes. Penny uses the CREATE
+// link when onboarding someone new and the LOGIN link for someone who already has an account.
+// Kept here in code (not in the model) so a link is always correct and never guessed.
+const ACCOUNT_LINKS = {
+  investor: {
+    label: 'client / investor / third-party seller',
+    create: 'https://accessyourplace.com/investor/login?tab=register',
+    login: 'https://accessyourplace.com/investor/login',
+  },
+  landlord: {
+    label: 'landlord / apartment community',
+    create: 'https://accessyourplace.com/landlord-partnership#landlord-inquiry',
+    login: 'https://accessyourplace.com/landlord/login',
+  },
+} as const;
+
 
 const corsHeaders = {
   'Access-Control-Allow-Origin': '*',
@@ -35,6 +52,21 @@ async function rpc(
       'Content-Type': 'application/json',
     },
     body: JSON.stringify(args),
+  });
+  const text = await res.text();
+  let data: any = null;
+  try { data = text ? JSON.parse(text) : null; } catch { data = text; }
+  return { ok: res.ok, status: res.status, data };
+}
+
+// ---- call another edge function (service role) -----------------------------
+async function callFn(
+  url: string, key: string, name: string, payload: Record<string, unknown>,
+): Promise<{ ok: boolean; status: number; data: any }> {
+  const res = await fetch(`${url}/functions/v1/${name}`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json', apikey: key, Authorization: `Bearer ${key}` },
+    body: JSON.stringify(payload),
   });
   const text = await res.text();
   let data: any = null;
@@ -212,6 +244,56 @@ async function clientActivity(url: string, key: string, query: string | null, in
   return data;
 }
 
+// Is this person already in the system, and of which kind? Read-only. Returns the real
+// matches (investors and landlords) plus the correct create/login links per persona, so
+// Penny can tell staff plainly whether they're new or already here — and never guess a URL.
+async function checkAccount(url: string, key: string, query: string) {
+  const { ok, status, data } = await rpc(url, key, 'penny_check_account', { p_query: query });
+  if (!ok) {
+    console.error('penny-staff-chat rpc_check_account', status, JSON.stringify(data).slice(0, 200));
+    return { error: 'check_failed', http: status };
+  }
+  const r: any = data || {};
+  return {
+    found: !!r.found,
+    invited_pending: !!r.invited_pending,
+    investor_matches: Array.isArray(r.investor_matches) ? r.investor_matches : [],
+    landlord_matches: Array.isArray(r.landlord_matches) ? r.landlord_matches : [],
+    links: ACCOUNT_LINKS, // correct create/login links, straight from code — use verbatim.
+  };
+}
+
+// Send the official platform onboarding to someone NEW so they can create their account.
+// Client / third-party seller -> a tracked investor invitation (secure signup link + invite
+// code, staff-attributed). Landlord / apartment community -> their landlord record + a welcome.
+// Idempotent and truthful: won't re-email someone already onboarded, and reports what really
+// happened. Wraps the deployed, proven penny-onboard-contact function.
+async function onboardPerson(
+  url: string, key: string,
+  persona: string, name: string, email: string,
+  phone: string | null, company: string | null,
+  staffId: string, staffName: string,
+) {
+  const isLandlord = persona === 'landlord' || persona === 'community';
+  const payload = isLandlord
+    ? { action: 'onboard_landlord', landlord_name: name || null, landlord_email: email, landlord_phone: phone || null, company_name: company || null, staff_id: staffId || null }
+    : { action: 'onboard_seller', seller_name: name || null, seller_email: email, staff_id: staffId || null, staff_name: staffName || null };
+  const { ok, status, data } = await callFn(url, key, 'penny-onboard-contact', payload);
+  if (!ok) {
+    console.error('penny-staff-chat onboard_person', status, JSON.stringify(data).slice(0, 200));
+    return { error: 'onboard_failed', http: status, detail: data };
+  }
+  const d: any = data || {};
+  return {
+    ok: true,
+    persona: isLandlord ? 'landlord' : 'investor',
+    email,
+    email_sent: !!d.email_sent,
+    already_onboarded: !!d.already_onboarded,
+    message: d.message || null,
+  };
+}
+
 type Ctx = { url: string; key: string; staffId: string; staffName: string };
 
 async function execTool(name: string, args: any, ctx: Ctx): Promise<unknown> {
@@ -226,6 +308,24 @@ async function execTool(name: string, args: any, ctx: Ctx): Promise<unknown> {
       const iid = args?.investor_id ? String(args.investor_id) : null;
       if (!q && !iid) return { error: 'client name, email, or investor_id required' };
       return await clientActivity(url, key, q, iid);
+    }
+    if (name === 'check_account') {
+      const q = args?.person ? String(args.person) : (args?.email ? String(args.email) : (args?.query ? String(args.query) : ''));
+      if (!q) return { error: 'a name or email is required' };
+      return await checkAccount(url, key, q);
+    }
+    if (name === 'send_account_invite') {
+      const persona = String(args?.persona || '').toLowerCase();
+      const email = args?.email ? String(args.email).trim() : '';
+      if (!persona || !email) return { error: 'persona and email are required' };
+      if (!['client', 'investor', 'seller', 'landlord', 'community'].includes(persona)) {
+        return { error: `unknown persona "${persona}"`, valid: ['client', 'seller', 'landlord', 'community'] };
+      }
+      if (args.confirmed !== true) {
+        const isLL = persona === 'landlord' || persona === 'community';
+        return { needs_confirmation: true, action: `send the official ${isLL ? 'landlord' : 'client/seller'} onboarding invite to ${email}`, instruction: 'Tell the staff member plainly who this will email and that it invites them to create their account, and get a clear yes. Then call again with confirmed:true.' };
+      }
+      return await onboardPerson(url, key, persona, String(args?.name || ''), email, args?.phone ? String(args.phone) : null, args?.company ? String(args.company) : null, staffId, staffName);
     }
     if (name === 'list_pending_emails') return await listPendingEmails(url, key);
     if (name === 'get_client_email') {
@@ -300,6 +400,39 @@ const TOOLS = [
         type: 'object',
         properties: { query: { type: 'string', description: 'A name, email, or company to search for.' } },
         required: ['query'],
+        additionalProperties: false,
+      },
+    },
+  },
+  {
+    type: 'function',
+    function: {
+      name: 'check_account',
+      description: "Check whether a person already has an account, and of which kind. Searches clients/investors AND landlords/apartment communities, and notes a pending invitation. Use this FIRST whenever staff want to reach out to, onboard, or bring someone onto the platform: it tells you if they're new or already in the system, and returns the correct create-account and login links for each persona so you never guess a URL. Pass a name or email in `person`.",
+      parameters: {
+        type: 'object',
+        properties: { person: { type: 'string', description: "The person's name or email address." } },
+        required: ['person'],
+        additionalProperties: false,
+      },
+    },
+  },
+  {
+    type: 'function',
+    function: {
+      name: 'send_account_invite',
+      description: "Send the platform's OFFICIAL onboarding to someone NEW so they can create their account. Client or third-party seller -> a tracked invitation with a secure signup link and invite code. Landlord or apartment community -> sets up their landlord record and sends a welcome. Idempotent (won't re-email someone already onboarded). This is a WRITE that sends a real email — only call with confirmed:true after telling the staff member who it will email and getting a clear yes. For a personal, situation-specific message instead, co-write one with compose_client_email / send_client_email.",
+      parameters: {
+        type: 'object',
+        properties: {
+          persona: { type: 'string', enum: ['client', 'seller', 'landlord', 'community'], description: 'client or seller = investor account; landlord or community = landlord account.' },
+          name: { type: 'string', description: "The person's name." },
+          email: { type: 'string', description: "The person's email address." },
+          phone: { type: 'string', description: 'Optional phone (landlord / community).' },
+          company: { type: 'string', description: 'Optional company or community name (landlord / community).' },
+          confirmed: { type: 'boolean', description: 'Set true ONLY after telling staff who it emails and getting a clear yes.' },
+        },
+        required: ['persona', 'email'],
         additionalProperties: false,
       },
     },
@@ -438,11 +571,18 @@ REASON, DON'T RECITE: when you list opportunities, don't just read rows back. Gr
 
 TAKING ACTION (writes): changing a status or saving a note changes live records. Before any write, say plainly what you're about to do and wait for a clear yes. Only then call the tool with confirmed:true. If a tool tells you it needs confirmation, ask — do not assume.
 
-CLIENT EMAILS: you can write emails to clients together with the staff member, and — with their permission — send them yourself. If they ask what's pending or waiting to go out, use list_pending_emails; open a specific one with get_client_email. To write a new one, draft it right here in your own warm voice, refine it with them, and ALWAYS include a line inviting the client to respond in their Access Your Place dashboard (log in at https://accessyourplace.com/investor/login) — replies to our emails route to the success team, so the dashboard is the fastest way to reach you directly. Save it with compose_client_email (confirmed:true) after you've read the full draft back and they've approved it. Then you can send it yourself: once they give you the go-ahead, call send_client_email (confirmed:true) and it goes out from Penny right away — you do NOT need the dashboard to send. If they'd rather hold it and review later, that's fine — it stays a draft in the list. Sending is immediate and can't be undone, so always read the email back and get a clear yes first. Never invent a client's details — if you don't know an address or the facts of their situation, ask.
+CLIENT EMAILS: you can write emails to clients together with the staff member, and — with their permission — send them yourself. If they ask what's pending or waiting to go out, use list_pending_emails; open a specific one with get_client_email. To write a new one, draft it right here in your own warm voice, refine it with them, and include the right link for the situation: for an existing client, invite them to respond in their Access Your Place dashboard (log in at https://accessyourplace.com/investor/login); for someone NEW you're bringing onto the platform, include the correct create-account link from check_account instead — never tell someone who has no account yet to log in. Replies to our emails route to the success team either way. Save it with compose_client_email (confirmed:true) after you've read the full draft back and they've approved it. Then you can send it yourself: once they give you the go-ahead, call send_client_email (confirmed:true) and it goes out from Penny right away — you do NOT need the dashboard to send. If they'd rather hold it and review later, that's fine — it stays a draft in the list. Sending is immediate and can't be undone, so always read the email back and get a clear yes first. Never invent a client's details — if you don't know an address or the facts of their situation, ask.
 
 REPORTING: you can tell them how the platform is doing with get_activity_report — website traffic (visits, sessions, top pages) and the new clients who have joined, by name, over the last stretch of days. Lead with the headline (how many visits, how many new clients), then the useful detail. Be honest about the edges: this covers traffic and new signups. If they ask what you and they have discussed in this staff console, be honest that this staff conversation itself isn't logged yet — but you CAN see what a client has been doing on the platform (below).
 
 CLIENT VISIBILITY: the MOMENT a staff member asks what a client is up to — by ANY name, even just a first name ("What is Elizabeth up to?", "how's Dave doing?") — immediately call get_client_activity with exactly the name or email they said. NEVER ask for a last name or email first; the tool finds the person for you, and only if that name genuinely matches several different people does it hand you back the list to choose from — that is the ONLY time you ask which one. So "What is Elizabeth up to?" means: call get_client_activity with client "Elizabeth" right now, then relay what comes back. It returns the real record: when they signed up, their logins and last login, whether they have a live session right now, messages they've sent us, their conversations with Penny, the pages and deals they've been browsing, their activity feed, and any deal inquiries. Lead with the human headline — e.g. "Elizabeth signed up in May, logged in once, and has mostly been browsing the deals page" — then the useful specifics. Only state what the tool actually returned: if a section is empty, say that part plainly ("she hasn't sent any messages yet", "no inquiries so far") instead of implying more. Don't ask for extra identifying details up front — just call get_client_activity with whatever name or email they gave you; it resolves the person for you. ONLY if it reports several matches for a shared name do you then ask which one they mean. Use find_client for a quick "who is this?" lookup.
+
+ONBOARDING & OUTREACH: staff will often describe someone and their situation and ask you to bring them onto the platform — a prospective client or investor, a third-party seller (an operator who wants to sell their active furnished operation), or a landlord or apartment community. Handle it like a real teammate:
+1. FIRST find out if they're already here: call check_account with their name or email. It tells you whether they already have an account (and which kind), whether there's a pending invite, and it hands you the correct create-account and login links for each persona — use those links verbatim, never invent one.
+2. If they ALREADY have an account, say so plainly, give their status, and offer the login link. You can also co-write an email to update them on where things stand.
+3. If they're NEW, there are two good ways to bring them in — offer the choice unless staff already said which: (a) co-write a warm, personal email with the staff member that reflects exactly where things stand with this person and invites them to create their account using the correct create-account link, via compose_client_email then send_client_email (both confirmed) — best when the situation is specific and personal; or (b) send our standard platform invitation with send_account_invite — for a client or seller a tracked invite with a secure signup link and code, for a landlord or community their record plus a welcome — best for a quick official invite. Either way it is a real send, so confirm first.
+4. Personas and their create-account links (check_account returns these): client / investor / third-party seller uses the investor account at https://accessyourplace.com/investor/login?tab=register ; landlord / apartment community at https://accessyourplace.com/landlord-partnership#landlord-inquiry .
+5. Ground every message in what the staff member actually told you — reflect that you are aware of where things stand, but never invent facts about the person. Confirm before anything sends, every time.
 
 SCOPE: you handle the reactive desk (opportunities, follow-ups, notes, status) and composing client emails. Listing a brand-new deal needs photos and lives in the "List a Deal" tab — if they want to add a property, point them there warmly rather than trying to do it here.`;
 }
@@ -464,6 +604,42 @@ async function plainReply(key: string, system: string, messages: Array<{ role: s
     console.error('penny-staff-chat plain_fallback_threw', e instanceof Error ? e.message : String(e));
     return '';
   }
+}
+
+// finalize — the honesty gate on Penny's final words. If her reply claims a completed
+// action no tool actually backed this turn, we do NOT just bolt on a contradiction; we ask
+// her to rewrite the reply truthfully, once, so a blind operator hears ONE coherent message.
+// The deterministic append-fallback still applies to the rewrite, so the truth is guaranteed
+// even if the model won't comply.
+async function finalize(key: string, convo: any[], rawText: string, toolsRun: string[]): Promise<string> {
+  const first = guardReply(rawText, toolsRun);
+  if (first.ok) return first.text;
+  const correction = buildCorrection(first.issues);
+  try {
+    const res = await fetch('https://api.openai.com/v1/chat/completions', {
+      method: 'POST',
+      headers: { Authorization: `Bearer ${key}`, 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        model: 'gpt-4o',
+        messages: [...convo, { role: 'assistant', content: rawText }, { role: 'user', content: correction }],
+        temperature: 0.3,
+        max_tokens: 600,
+      }),
+    });
+    if (res.ok) {
+      const data = await res.json();
+      const rewritten = data?.choices?.[0]?.message?.content || '';
+      // Re-guard the rewrite: if it is now clean it stands; if it STILL over-claims, the
+      // deterministic honest fallback is appended so the operator always gets the truth.
+      if (rewritten) return guardReply(rewritten, toolsRun).text;
+    } else {
+      console.error('penny-staff-chat rewrite_http', res.status);
+    }
+  } catch (e) {
+    console.error('penny-staff-chat rewrite_threw', e instanceof Error ? e.message : String(e));
+  }
+  // Rewrite unavailable — fall back to the guaranteed honest append.
+  return first.text;
 }
 
 async function runAgent(messages: Array<{ role: string; content: string }>, first: string, ctx: Ctx) {
@@ -506,6 +682,7 @@ async function runAgent(messages: Array<{ role: string; content: string }>, firs
         const r: any = result;
         const completed =
           toolName === 'send_client_email' ? (r?.sent === true || r?.already_sent === true)
+          : toolName === 'send_account_invite' ? (r?.email_sent === true)
           : (toolName === 'update_opportunity_status' || toolName === 'add_opportunity_note') ? (r?.ok === true)
           : false;
         if (toolName && completed) toolsRun.push(toolName);
@@ -513,7 +690,7 @@ async function runAgent(messages: Array<{ role: string; content: string }>, firs
       }
       continue;
     }
-    return { message: guardReply(msg.content || '', toolsRun).text };
+    return { message: await finalize(key, convo, msg.content || '', toolsRun) };
   }
   return { message: "That took more steps than I expected — can you rephrase what you'd like me to do?" };
 }
@@ -559,7 +736,7 @@ Deno.serve(async (req) => {
       .map((m: any) => ({ role: m.role, content: m.content }));
 
     if (!messages.length) {
-      return json({ success: true, message: `Hi ${first} — what do you want to work on? I can pull up your open opportunities and help you act on them.` });
+      return json({ success: true, message: `Hi ${first} — what do you want to work on? I can pull up your open opportunities, tell you what a client has been up to, or help you reach out to and onboard someone new — a client, a landlord or community, or a third-party seller.` });
     }
 
     const out = await runAgent(messages, first, { url, key, staffId, staffName });

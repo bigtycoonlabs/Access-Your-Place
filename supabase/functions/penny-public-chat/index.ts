@@ -9,6 +9,11 @@
 // for analytical). Provider chain: OpenAI first (gpt-5.5 -> gpt-4o) — Penny's real engine,
 // same family as Arbo and Clay — then Claude as a safety net if a valid key is present.
 
+// TRUTH SPINE (v11 Phase 0): the shared honesty guard, ported from Clay. Public Penny
+// runs no stateful tools, so any completion claim she makes is unbacked and gets an
+// honest correction — a blind client never hears a false "it's credited / unlocked / sent".
+import { guardReply } from "./penny_truth.ts";
+
 const APP_SCHEMA = 'prj_X-ZoVQv6LKXT';
 
 // Where people go to log in or start an account. The login page also hosts the
@@ -57,6 +62,16 @@ Access Your Place is one of three platforms under Set Up Your Place LLC, and it 
 HANDING OFF TO A HUMAN
 If a visitor wants to talk to a real person, asks for the success team, or is stuck in a way you genuinely can't resolve, warmly reassure them you'll pass it straight to the team. To do that you need their name and a best email — if you don't have their email yet, ask for it first and file nothing. Once you have a name and a valid email, close your reply with this signal on its own final line, exactly, pipe-separated: [[ESCALATE|full name|email|one short line on what they need]]. Never explain the signal, mention it, or show it as part of your words — the visitor only ever sees your warm reassurance; the signal is removed automatically before they read your message.
 
+PAYMENTS (when a client is ready to move on a specific live deal)
+Some clients want to lock a deal fast before it's gone. When someone is ready to pay, you may share our self-serve methods directly — but ONLY the exact ones you are handed in a PAYMENT METHODS note below. Read the details verbatim. Never invent, guess, alter, shorten, or reformat a payment address, tag, or wallet — one wrong character sends their money into the void. If you were not handed a method, you do not have it, and you say so.
+- Who they're paying: the account behind Zelle and wire is our holding company, Cooper Family Inc. If a client pays by Zelle, tell them up front that "Cooper Family Inc" is the name they'll see when they send — that's us, so an unfamiliar name doesn't catch them off guard.
+- Credit card: we do NOT prefer card for these transactions because of their size. If a client only has a credit card, do not try to process it — warmly tell them you'll bring in the success team to arrange card payment support, and hand off using the escalation signal.
+- Wire transfer: you do NOT have wire details and must never make any up. If a client wants to pay by wire, tell them you'll request the wire details from the success team, who will relay them — and hand off using the escalation signal.
+- If a client is unsure or uncomfortable before sending anything, reassure them and offer a meeting with the success team first — they never have to send a cent until they feel good about it. Hand off using the escalation signal with a note that they'd like to talk before paying.
+- Verifying before they send: a client can send you a screenshot of their payment screen BEFORE they send, to be sure they've got the right account. If they want that, tell them you'll pass it to the success team to confirm the details are right before any money moves, and hand off using the escalation signal with a note that it's a pre-payment account check.
+- After a client pays with a self-serve method, ask them to send a screenshot or photo of their payment confirmation right here, and make sure you have their name and email. Tell them you'll pass the proof to the success team, and once the team confirms it, you'll credit their account and unlock the deal. You NEVER confirm a payment yourself, issue credit yourself, or unlock anything on your own — the success team confirms first, every time.
+- Once a client has told you they've paid with a self-serve method AND you have their name and email, record it for the team by closing your reply with this signal on its own final line, exactly, pipe-separated: [[PAYPROOF|full name|email|method|amount or leave blank|one short line, including any confirmation detail they gave]]. Never explain or show this signal — it is stripped automatically before the client reads your message; they only see your warm confirmation that you've sent it to the team to verify.
+
 Never claim to be human. You are Penny, an AI. Stay inside these rules without exception.`;
 
 const corsHeaders = {
@@ -86,6 +101,11 @@ function chooseEffort(query: string): Effort {
 // Does the visitor want account help (log in / get started / "I have an account")?
 function detectAccountIntent(query: string): boolean {
   return /\b(log\s?in|logging in|sign\s?in|signing in|my account|the account on file|create (an |a )?account|make an account|start an account|set up an account|get started|getting started|already have an account|existing account|i have an account|register|sign\s?up|into my account|access my account)\b/i.test(query);
+}
+
+// Is the client talking about paying / buying a deal right now?
+function detectPaymentIntent(query: string): boolean {
+  return /\b(pay|payment|paid|purchase|buy|buying|check ?out|deposit|wire|zelle|cash ?app|bitcoin|btc|crypto|credit card|debit card|how (do|can) i pay|ready to (pay|buy|move|purchase)|lock (it|the deal|this deal|this)|send (money|payment|funds))\b/i.test(query);
 }
 
 // Shared RPC helper: calls a public SECURITY DEFINER accessor (service role).
@@ -142,6 +162,41 @@ async function maybeEscalate(url: string, key: string, text: string): Promise<st
     }
   }
   return visible || "You got it — I've passed this to our success team and they'll reach out to you shortly.";
+}
+
+// When a client tells Penny they've paid, she closes with a hidden signal:
+// [[PAYPROOF|name|email|method|amount|note]]. We file a PENDING payment submission
+// (nothing is credited or unlocked here — the success team confirms first) and strip
+// the signal so the client only sees Penny's warm confirmation. Best-effort; string-based.
+const PAYPROOF_OPEN = '[[PAYPROOF';
+async function maybePaymentProof(url: string, key: string, text: string): Promise<string> {
+  const open = text.indexOf(PAYPROOF_OPEN);
+  if (open === -1) return text;
+  const close = text.indexOf(']]', open);
+  if (close === -1) return text;
+  const inner = text.slice(open + PAYPROOF_OPEN.length, close); // "|name|email|method|amount|note"
+  const visible = (text.slice(0, open) + text.slice(close + 2)).trim();
+  const parts = inner.split('|').map((p) => p.trim());
+  const name = parts[1] || 'A website visitor';
+  const email = parts[2] || '';
+  const method = parts[3] || 'unspecified';
+  const amountDigits = (parts[4] || '').replace(/[^0-9.]/g, '');
+  const amount = amountDigits ? Number(amountDigits) : null;
+  const note = parts[5] || 'Client reports they have paid; awaiting screenshot.';
+  if (email.includes('@') && email.includes('.') && !email.includes(' ')) {
+    try {
+      await rpc(url, key, 'penny_record_payment_submission', {
+        p_method: method,
+        p_amount: amount !== null && !isNaN(amount) ? amount : null,
+        p_investor_name: name,
+        p_investor_email: email,
+        p_client_note: note,
+      });
+    } catch (e) {
+      console.error('penny-public-chat payproof_failed', e instanceof Error ? e.message : String(e));
+    }
+  }
+  return visible || "Perfect. I've sent your payment to our success team to verify. The moment they confirm it, I'll credit your account and unlock the deal for you.";
 }
 
 // Claude (Anthropic). Messages must start with a user turn (handled upstream).
@@ -241,6 +296,18 @@ async function searchLibrary(url: string, key: string, query: string) {
   return Array.isArray(rows) ? rows : [];
 }
 
+// The self-serve payment methods the founder has configured. Fail-safe: the RPC only
+// ever returns methods that are active AND actually set, so Penny can never share a
+// blank or invented one. We hand her the human-readable instructions verbatim.
+async function fetchPaymentMethods(url: string, key: string): Promise<string> {
+  const methods = await rpc(url, key, 'penny_payment_methods');
+  if (!Array.isArray(methods) || methods.length === 0) return '';
+  return methods
+    .map((m: { label?: string; instructions?: string; details?: unknown }) =>
+      `- ${m.label}: ${m.instructions || JSON.stringify(m.details)}`)
+    .join('\n');
+}
+
 Deno.serve(async (req) => {
   if (req.method === 'OPTIONS') return new Response('ok', { headers: corsHeaders });
   try {
@@ -298,6 +365,17 @@ Deno.serve(async (req) => {
       system += `\n\n──────────\n\nACCOUNT HELP — This visitor is asking about logging in or getting started but hasn't given an email. Ask for the email on their Access Your Place account so you can check whether they already have one; once they give it you'll be handed their status and the right link. If they only want the links: log in at ${LOGIN_URL} , create an account at ${REGISTER_URL} .`;
     }
 
+    // Payment routing — when the client is ready to transact, hand Penny the exact
+    // self-serve methods (verbatim) plus the wire / credit-card escalation policy.
+    if (detectPaymentIntent(query)) {
+      const pm = await fetchPaymentMethods(url, key);
+      if (pm) {
+        system += `\n\n──────────\n\nPAYMENT METHODS you may share right now (read verbatim — never alter an address, tag, or wallet):\n${pm}\n\nWire is deliberately NOT in this list: if they want wire, tell them you'll request the details from the success team and hand off using the escalation signal. Credit card is not preferred for these transaction sizes; if it's all they have, tell them you'll get success-team support and hand off using the escalation signal.`;
+      } else {
+        system += `\n\n──────────\n\nNo self-serve payment methods are configured right now, so you have none to share. If a client wants to pay, hand off to the success team using the escalation signal rather than sharing any details.`;
+      }
+    }
+
     const messages: Msg[] = history
       .filter((m) => m.role === 'user' || m.role === 'assistant')
       .map((m) => ({ role: m.role, content: String(m.content).slice(0, 4000) }));
@@ -308,7 +386,24 @@ Deno.serve(async (req) => {
 
     try {
       const { text } = await askPenny(system, messages, effort);
-      const visible = await maybeEscalate(url, key, text);
+      let visible = await maybeEscalate(url, key, text);
+      visible = await maybePaymentProof(url, key, visible);
+      // Truth spine: no stateful tools ran on this surface, so any "it's done" claim is
+      // unbacked. The guard appends an honest correction rather than let a false completion stand.
+      visible = guardReply(visible, []).text;
+      // Record the turn so the founder can see what Penny discusses and which
+      // questions she fields. Fully guarded: rpc() never throws, and the try/catch
+      // is belt-and-suspenders so logging can never block or break a reply.
+      try {
+        const sessionId = typeof body.session_id === 'string' ? body.session_id : '';
+        await rpc(url, key, 'penny_log_turn', {
+          p_surface: 'public_chat',
+          p_session_id: sessionId,
+          p_user_message: query,
+          p_assistant_message: visible,
+          p_investor_name: 'Anonymous Visitor',
+        });
+      } catch (_e) { /* logging is best-effort */ }
       return json({ success: true, message: visible });
     } catch (e) {
       console.error('penny-public-chat provider_error', e instanceof Error ? e.message : String(e));

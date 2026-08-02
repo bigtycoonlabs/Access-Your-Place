@@ -1,4 +1,5 @@
 import { serve } from 'https://deno.land/std@0.168.0/http/server.ts'
+import { guardReply } from './penny_truth.ts'
 
 const corsHeaders = {
   'Access-Control-Allow-Origin': '*',
@@ -248,7 +249,9 @@ serve(async (req) => {
         })
       }
 
-      const assistantMessage = aiData.content?.[0]?.text || "I'm sorry, I couldn't generate a response. Please try again."
+      const rawMessage = aiData.content?.[0]?.text || "I'm sorry, I couldn't generate a response. Please try again."
+      // Truth spine: this surface runs no stateful tools, so any completion claim is unbacked and gets an honest correction.
+      const assistantMessage = guardReply(rawMessage, []).text
 
       // Save the conversation to the database
       if (user_id) {
