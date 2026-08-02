@@ -129,7 +129,7 @@ export function ExecutiveOverview({ staffId, staffName, isAdmin = false }: Execu
     const [overviewRes, masterRes, staffRes] = await Promise.all([
       supabase.functions.invoke('manage-hr-commissions', { body: { action: 'get_executive_overview' } }),
       supabase.functions.invoke('manage-hr-commissions', { body: { action: 'get_master_weekly_report' } }),
-      supabase.functions.invoke('manage-hr-commissions', { body: { action: 'get_staff_list' } })
+      supabase.functions.invoke('manage-hr-commissions', { body: { action: 'get_staff_list', staff_id: staffId, is_admin: isAdmin } })
     ]);
     if (overviewRes.data?.overview) setOverview(overviewRes.data.overview);
     if (overviewRes.data?.deals) setDeals(overviewRes.data.deals);

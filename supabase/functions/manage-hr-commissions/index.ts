@@ -15,6 +15,7 @@ const H: Record<string, string> = {
 }
 const ENTRY_COLS = 'id,staff_id,start_time,end_time,duration_minutes,notes'
 const COMM_COLS = 'id,staff_id,staff_name,client_name,property_address,deal_type,claimed_amount,approved_amount,status,payout_date,notes,admin_comment,reviewed_by,reviewed_at,paid_at,created_at'
+const COMP_COLS = 'id,staff_id,doc_type,title,file_url,file_name,year,uploaded_by,uploaded_by_name,notes,created_at'
 
 async function restGet(path: string): Promise<any[]> {
   const r = await fetch(`${REST}/${path}`, { headers: H })
@@ -41,6 +42,10 @@ async function restPatch(table: string, filter: string, patch: Record<string, un
   const rows = await r.json()
   return Array.isArray(rows) ? rows[0] : rows
 }
+async function restDelete(table: string, filter: string): Promise<void> {
+  const r = await fetch(`${REST}/${table}?${filter}`, { method: 'DELETE', headers: H })
+  if (!r.ok) throw new Error(`DELETE ${table} -> ${r.status} ${await r.text()}`)
+}
 
 // Monday 00:00 UTC of the current week
 function weekStartISO(): string {
@@ -56,7 +61,7 @@ function monthStartISO(): string {
 
 const ADMIN_ROLES = ['owner', 'admin', 'administrator', 'administrators', 'super_admin']
 function staffIsAdmin(s: any): boolean {
-  if (s?.is_admin === true) return true
+  if (s?.is_admin === true || s?.is_platform_owner === true) return true
   if (ADMIN_ROLES.includes(String(s?.role || '').toLowerCase())) return true
   let arr: any = s?.roles
   if (typeof arr === 'string') { try { arr = JSON.parse(arr) } catch { arr = [] } }
@@ -86,12 +91,15 @@ serve(async (req) => {
   try {
     const body = await req.json().catch(() => ({}))
     const action = String(body.action || '')
-    const staffId = String(body.staff_id || body.staffId || '')
+
+    // The acting user's id. For document uploads the front-end puts the *target* staff in
+    // staff_id and the actual uploader in uploaded_by, so prefer uploaded_by when present.
+    const staffId = String(body.uploaded_by || body.staff_id || body.staffId || '')
 
     // ---- auth: caller must be an active staff user (admin derived server-side) ----
     if (!staffId) return json({ success: false, error: 'Staff identity required' }, 401)
     const staff = await restGet(
-      `staff_users?id=eq.${encodeURIComponent(staffId)}&is_active=eq.true&select=id,role,roles&limit=1`,
+      `staff_users?id=eq.${encodeURIComponent(staffId)}&is_active=eq.true&select=id,role,roles,is_platform_owner&limit=1`,
     )
     if (!staff[0]) return json({ success: false, error: 'Staff access required' }, 403)
     const isAdmin = staffIsAdmin(staff[0])
@@ -238,8 +246,84 @@ serve(async (req) => {
       return json({ success: true, commission: updated })
     }
 
-    // ---- not yet rebuilt: compliance, payment profiles, weekly reports,
-    //      deal records, staff list, executive overview, payouts ----
+    // ========================= COMPLIANCE DOCUMENTS =========================
+    if (action === 'get_compliance_docs') {
+      const scope = isAdmin ? '' : `&staff_id=eq.${sid}`
+      const rows = await restGet(`staff_compliance_docs?select=${COMP_COLS}${scope}&order=created_at.desc&limit=1000`)
+      return json({ documents: rows })
+    }
+
+    if (action === 'upload_compliance_doc') {
+      // caller == uploaded_by (that is what `staffId` resolved to). staff_id in the body is the
+      // *target* owner of the document. Uploading for someone else requires admin.
+      const targetStaffId = String(body.staff_id || staffId)
+      if (targetStaffId !== staffId && !isAdmin) {
+        return json({ success: false, error: 'Admin access required to upload documents for another staff member' }, 403)
+      }
+      const doc_type = String(body.doc_type || 'other')
+      const title = String(body.title || body.file_name || 'Document').trim() || 'Document'
+      let year: number | null = null
+      if (body.year != null && body.year !== '') { const y = Number(body.year); if (Number.isFinite(y)) year = y }
+      const created = await restInsert('staff_compliance_docs', {
+        id: crypto.randomUUID(),
+        staff_id: targetStaffId,
+        doc_type,
+        title,
+        file_url: body.file_url != null ? String(body.file_url) : null,
+        file_name: body.file_name != null ? String(body.file_name) : null,
+        year,
+        uploaded_by: staffId,
+        uploaded_by_name: body.uploaded_by_name != null ? String(body.uploaded_by_name) : null,
+        notes: body.notes != null ? String(body.notes) : null,
+      })
+      return json({ success: true, document: created })
+    }
+
+    if (action === 'delete_compliance_doc') {
+      const docId = String(body.doc_id || '')
+      if (!docId) return json({ success: false, error: 'doc_id required' }, 400)
+      const docs = await restGet(`staff_compliance_docs?id=eq.${encodeURIComponent(docId)}&select=id,staff_id&limit=1`)
+      if (!docs[0]) return json({ success: false, error: 'Document not found' }, 404)
+      // owner or admin only
+      if (docs[0].staff_id !== staffId && !isAdmin) {
+        return json({ success: false, error: 'You can only delete your own documents' }, 403)
+      }
+      await restDelete('staff_compliance_docs', `id=eq.${encodeURIComponent(docId)}`)
+      return json({ success: true })
+    }
+
+    // ========================= STAFF ROSTER =========================
+    if (action === 'get_staff_list') {
+      // roster includes staff emails -> admin only
+      if (!isAdmin) return json({ success: false, error: 'Admin access required' }, 403)
+      const dept = String(body.department || '').toLowerCase()
+      const rows = await restGet(
+        `staff_users?is_active=eq.true&select=id,first_name,last_name,name,email,department,role,roles&order=first_name.asc&limit=1000`,
+      )
+      let list = rows
+      if (dept) {
+        list = rows.filter((s: any) => {
+          if (String(s.department || '').toLowerCase() === dept) return true
+          if (String(s.role || '').toLowerCase() === dept) return true
+          let arr: any = s.roles
+          if (typeof arr === 'string') { try { arr = JSON.parse(arr) } catch { arr = [] } }
+          return Array.isArray(arr) && arr.some((r: any) => String(r).toLowerCase() === dept)
+        })
+      }
+      const staffOut = list.map((s: any) => ({
+        id: s.id,
+        first_name: s.first_name ?? null,
+        last_name: s.last_name ?? null,
+        name: s.name ?? ([s.first_name, s.last_name].filter(Boolean).join(' ') || null),
+        email: s.email ?? null,
+        department: s.department ?? null,
+        role: s.role ?? null,
+      }))
+      return json({ staff: staffOut })
+    }
+
+    // ---- not yet rebuilt: payment profiles, weekly reports,
+    //      deal records, executive overview, payouts ----
     return json({ success: false, error: `Action "${action || '(none)'}" is not implemented yet` }, 400)
   } catch (error) {
     return json({ success: false, error: error instanceof Error ? error.message : 'error' }, 500)

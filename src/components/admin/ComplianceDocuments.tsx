@@ -72,7 +72,7 @@ export function ComplianceDocuments({ staffId, staffName, isAdmin }: ComplianceD
       supabase.functions.invoke('manage-hr-commissions', {
         body: { action: 'get_compliance_docs', staff_id: staffId, is_admin: isAdmin }
       }),
-      isAdmin ? supabase.functions.invoke('manage-hr-commissions', { body: { action: 'get_staff_list' } }) : Promise.resolve({ data: null })
+      isAdmin ? supabase.functions.invoke('manage-hr-commissions', { body: { action: 'get_staff_list', staff_id: staffId, is_admin: isAdmin } }) : Promise.resolve({ data: null })
     ]);
     if (docsRes.data?.documents) {
       // Client-side safety filter: when not admin (e.g. AM), only show own documents
@@ -131,7 +131,7 @@ export function ComplianceDocuments({ staffId, staffName, isAdmin }: ComplianceD
 
   const handleDelete = async (docId: string) => {
     const { error } = await supabase.functions.invoke('manage-hr-commissions', {
-      body: { action: 'delete_compliance_doc', doc_id: docId }
+      body: { action: 'delete_compliance_doc', staff_id: staffId, is_admin: isAdmin, doc_id: docId }
     });
     if (error) {
       toast({ title: 'Error', description: error.message, variant: 'destructive' });
