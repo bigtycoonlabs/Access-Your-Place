@@ -60,6 +60,41 @@ function monthStartISO(): string {
   const now = new Date()
   return new Date(Date.UTC(now.getUTCFullYear(), now.getUTCMonth(), 1, 0, 0, 0)).toISOString()
 }
+// 1st of the current year 00:00 UTC
+function yearStartISO(): string {
+  const now = new Date()
+  return new Date(Date.UTC(now.getUTCFullYear(), 0, 1, 0, 0, 0)).toISOString()
+}
+
+// Company profit & loss over a set of flattened deal rows, optionally since an ISO timestamp.
+// Revenue = acquisition fees + funded payments; net profit = revenue - commissions paid.
+// (Tentative definition; sourced from the closings we input into deal records.)
+function computePnl(deals: any[], sinceISO: string | null) {
+  let acquisition_fees = 0, funded_payments = 0, commissions_paid = 0
+  let deal_count = 0, closed_count = 0, pending_count = 0
+  for (const d of deals) {
+    if (sinceISO && !(String(d.created_at || '') >= sinceISO)) continue
+    deal_count++
+    acquisition_fees += Number(d.acquisition_fee_total) || 0
+    funded_payments += Number(d.funded_payment) || 0
+    commissions_paid += Number(d.commission_paid) || 0
+    const st = String(d.deal_status || '').toLowerCase()
+    if (st === 'closed' || st === 'completed') closed_count++
+    if (st.includes('pending') || st.includes('application')) pending_count++
+  }
+  const r2 = (x: number) => Math.round(x * 100) / 100
+  const revenue = r2(acquisition_fees + funded_payments)
+  return {
+    revenue,
+    acquisition_fees: r2(acquisition_fees),
+    funded_payments: r2(funded_payments),
+    commissions_paid: r2(commissions_paid),
+    net_profit: r2(revenue - commissions_paid),
+    deal_count, closed_count, pending_count,
+  }
+}
+
+const money = (n: unknown) => '$' + (Number(n) || 0).toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })
 
 const ADMIN_ROLES = ['owner', 'admin', 'administrator', 'administrators', 'super_admin']
 function staffIsAdmin(s: any): boolean {
@@ -562,7 +597,137 @@ serve(async (req) => {
       return json({ overview, deals })
     }
 
-    // ---- not yet rebuilt: payouts (Friday summary) ----
+    // ========================= PROFIT & LOSS =========================
+    // Company P&L sourced from the deal-records ledger (the closings we input). Auto-updates as
+    // deals are added. Returns week / month / year / all-time together, or one via `period`.
+    if (action === 'get_profit_statement') {
+      if (!isAdmin) return json({ success: false, error: 'Admin access required' }, 403)
+      const rows = await restGet('staff_deal_records?select=id,staff_id,deal_data,created_at&limit=5000')
+      const deals = rows.map(dealFromRow)
+      const wk = weekStartISO(), mo = monthStartISO(), yr = yearStartISO()
+      const period = String(body.period || '').toLowerCase()
+      const bounds: Record<string, string | null> = { week: wk, month: mo, year: yr, all: null, all_time: null }
+      if (period && period in bounds) {
+        return json({ statement: { period, period_start: bounds[period], ...computePnl(deals, bounds[period]) } })
+      }
+      return json({
+        statements: {
+          week: { period: 'week', period_start: wk, ...computePnl(deals, wk) },
+          month: { period: 'month', period_start: mo, ...computePnl(deals, mo) },
+          year: { period: 'year', period_start: yr, ...computePnl(deals, yr) },
+          all_time: { period: 'all_time', period_start: null, ...computePnl(deals, null) },
+        },
+      })
+    }
+
+    // ========================= FRIDAY PAYOUT SUMMARY =========================
+    // Each active staff member gets their OWN commission brief; the platform owner gets the full
+    // company overview. All mail is sent as Penny. Pass preview:true to compose without sending.
+    if (action === 'send_friday_payout_summary') {
+      if (!isAdmin) return json({ success: false, error: 'Admin access required' }, 403)
+      const preview = body.preview === true
+
+      const staffRows = await restGet('staff_users?is_active=eq.true&select=id,first_name,last_name,name,email,is_platform_owner&limit=1000')
+      const comms = await restGet('staff_commissions?select=staff_id,claimed_amount,approved_amount,amount,status,created_at,reviewed_at,paid_at&limit=10000')
+      const wk = weekStartISO(), mo = monthStartISO(), yr = yearStartISO()
+
+      const byStaff: Record<string, any> = {}
+      for (const c of comms) {
+        const k = String(c.staff_id || '')
+        if (!byStaff[k]) byStaff[k] = { pending: 0, approved: 0, paid: 0, this_week: 0, this_month: 0, pending_count: 0, approved_count: 0, paid_count: 0 }
+        const st = String(c.status || '').toLowerCase()
+        const claimed = Number(c.claimed_amount || 0) || 0
+        if (st === 'pending') { byStaff[k].pending += claimed; byStaff[k].pending_count++ }
+        else if (st === 'approved') { byStaff[k].approved += commEarned(c); byStaff[k].approved_count++ }
+        else if (st === 'paid') { byStaff[k].paid += commEarned(c); byStaff[k].paid_count++ }
+        if (st === 'approved' || st === 'paid') {
+          const d = commEarnDate(c)
+          if (d && d >= wk) byStaff[k].this_week += commEarned(c)
+          if (d && d >= mo) byStaff[k].this_month += commEarned(c)
+        }
+      }
+
+      const dealRows = await restGet('staff_deal_records?select=id,staff_id,deal_data,created_at&limit=5000')
+      const deals = dealRows.map(dealFromRow)
+
+      const shell = (title: string, inner: string) =>
+        `<div style="font-family:Arial,Helvetica,sans-serif;max-width:600px;margin:0 auto;color:#1a365d">` +
+        `<h2 style="color:#1a365d">${title}</h2>${inner}` +
+        `<p style="color:#64748b;font-size:12px;margin-top:24px">Sent by Penny at Access Your Place. This is an automated summary.</p></div>`
+
+      const staffHtml = (name: string, b: any) => shell(
+        'Your Commission Brief',
+        `<p>Hi ${name}, here is your commission brief for the week.</p>` +
+        `<ul style="line-height:1.8">` +
+        `<li>Earned this week: <strong>${money(b.this_week)}</strong></li>` +
+        `<li>Earned this month: <strong>${money(b.this_month)}</strong></li>` +
+        `<li>Paid to date: <strong>${money(b.paid)}</strong> (${b.paid_count})</li>` +
+        `<li>Approved, awaiting payout: <strong>${money(b.approved)}</strong> (${b.approved_count})</li>` +
+        `<li>Pending review: <strong>${money(b.pending)}</strong> (${b.pending_count})</li>` +
+        `</ul>`,
+      )
+
+      const pnlRow = (label: string, p: any) =>
+        `<tr><td style="padding:6px 12px">${label}</td>` +
+        `<td style="padding:6px 12px;text-align:right">${money(p.revenue)}</td>` +
+        `<td style="padding:6px 12px;text-align:right">${money(p.commissions_paid)}</td>` +
+        `<td style="padding:6px 12px;text-align:right"><strong>${money(p.net_profit)}</strong></td>` +
+        `<td style="padding:6px 12px;text-align:right">${p.deal_count}</td></tr>`
+
+      const ownerHtml = (name: string) => shell(
+        'Company Overview',
+        `<p>Hi ${name}, here is the company overview.</p>` +
+        `<table style="border-collapse:collapse;width:100%;font-size:14px">` +
+        `<thead><tr style="border-bottom:1px solid #cbd5e1">` +
+        `<th style="text-align:left;padding:6px 12px">Period</th>` +
+        `<th style="text-align:right;padding:6px 12px">Revenue</th>` +
+        `<th style="text-align:right;padding:6px 12px">Commissions</th>` +
+        `<th style="text-align:right;padding:6px 12px">Net profit</th>` +
+        `<th style="text-align:right;padding:6px 12px">Deals</th></tr></thead><tbody>` +
+        pnlRow('This week', computePnl(deals, wk)) +
+        pnlRow('This month', computePnl(deals, mo)) +
+        pnlRow('This year', computePnl(deals, yr)) +
+        pnlRow('All time', computePnl(deals, null)) +
+        `</tbody></table>`,
+      )
+
+      const recipients: any[] = []
+      for (const st of staffRows) {
+        if (!st.email) continue
+        const name = st.name || [st.first_name, st.last_name].filter(Boolean).join(' ') || 'there'
+        if (st.is_platform_owner) {
+          recipients.push({ to: st.email, name, kind: 'owner', subject: 'Company Overview - Access Your Place', html: ownerHtml(name) })
+        } else {
+          const b = byStaff[st.id] || { pending: 0, approved: 0, paid: 0, this_week: 0, this_month: 0, pending_count: 0, approved_count: 0, paid_count: 0 }
+          recipients.push({ to: st.email, name, kind: 'staff', subject: 'Your Commission Brief - Access Your Place', html: staffHtml(name, b) })
+        }
+      }
+
+      if (preview) {
+        return json({
+          sent: false, preview: true, count: recipients.length,
+          recipients: recipients.map((r) => ({ to: r.to, name: r.name, kind: r.kind, subject: r.subject, html_length: r.html.length })),
+        })
+      }
+
+      const resendKey = Deno.env.get('RESEND_API_KEY')
+      if (!resendKey) return json({ success: false, error: 'Email is not configured' }, 500)
+      const sent_to: string[] = []
+      const failures: any[] = []
+      for (const r of recipients) {
+        try {
+          const er = await fetch('https://api.resend.com/emails', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${resendKey}` },
+            body: JSON.stringify({ from: 'Penny <penny@accessyourplace.com>', to: [r.to], subject: r.subject, html: r.html }),
+          })
+          if (er.ok) sent_to.push(r.to)
+          else failures.push({ to: r.to, error: (await er.text()).slice(0, 200) })
+        } catch (e) { failures.push({ to: r.to, error: String(e).slice(0, 200) }) }
+      }
+      return json({ sent: true, sent_to, failures, count: sent_to.length })
+    }
+
     return json({ success: false, error: `Action "${action || '(none)'}" is not implemented yet` }, 400)
   } catch (error) {
     return json({ success: false, error: error instanceof Error ? error.message : 'error' }, 500)

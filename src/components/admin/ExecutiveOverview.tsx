@@ -176,7 +176,7 @@ export function ExecutiveOverview({ staffId, staffName, isAdmin = false }: Execu
   const handleSendFridaySummary = async () => {
     setSendingSummary(true);
     const { data, error } = await supabase.functions.invoke('manage-hr-commissions', {
-      body: { action: 'send_friday_payout_summary' }
+      body: { action: 'send_friday_payout_summary', staff_id: staffId, is_admin: isAdmin }
     });
     if (error) {
       toast({ title: 'Error', description: error.message, variant: 'destructive' });
