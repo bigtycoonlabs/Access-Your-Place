@@ -16,6 +16,8 @@ const H: Record<string, string> = {
 const ENTRY_COLS = 'id,staff_id,start_time,end_time,duration_minutes,notes'
 const COMM_COLS = 'id,staff_id,staff_name,client_name,property_address,deal_type,claimed_amount,approved_amount,status,payout_date,notes,admin_comment,reviewed_by,reviewed_at,paid_at,created_at'
 const COMP_COLS = 'id,staff_id,doc_type,title,file_url,file_name,year,uploaded_by,uploaded_by_name,notes,created_at'
+// NOTE: staff_weekly_reports.status is GENERATED ALWAYS (reviewed_at IS NOT NULL -> 'reviewed' else 'pending'); never write it.
+const WR_COLS = 'id,staff_id,staff_name,week_start,week_end,client_volume,closings,new_inventory,notes,reviewed_by,reviewed_at,admin_feedback,status,created_at,updated_at'
 
 async function restGet(path: string): Promise<any[]> {
   const r = await fetch(`${REST}/${path}`, { headers: H })
@@ -380,8 +382,90 @@ serve(async (req) => {
       return json({ success: true })
     }
 
-    // ---- not yet rebuilt: weekly reports, deal records,
-    //      executive overview, payouts ----
+    // ========================= WEEKLY REPORTS =========================
+    // One report per staff per (UTC) week. Staff see their own; admins see everyone.
+    // NB: status is a generated column (from reviewed_at) -> never write it.
+    if (action === 'get_weekly_reports') {
+      const scope = isAdmin ? '' : `&staff_id=eq.${sid}`
+      const rows = await restGet(`staff_weekly_reports?select=${WR_COLS}${scope}&order=week_start.desc,created_at.desc&limit=1000`)
+      return json({ reports: rows })
+    }
+
+    if (action === 'submit_weekly_report') {
+      // The front-end sends only the metrics; the server owns the week boundary so every
+      // record for a given week keys the same way (upsert on staff_id + week_start).
+      const wkStart = new Date(weekStartISO())
+      const ws = wkStart.toISOString().split('T')[0]
+      const wkEnd = new Date(Date.UTC(wkStart.getUTCFullYear(), wkStart.getUTCMonth(), wkStart.getUTCDate() + 6))
+      const we = wkEnd.toISOString().split('T')[0]
+      const toInt = (v: unknown) => { const n = parseInt(String(v ?? ''), 10); return Number.isFinite(n) ? n : 0 }
+      const client_volume = toInt(body.client_volume)
+      const closings = toInt(body.closings)
+      const new_inventory = toInt(body.new_inventory)
+      const notes = body.notes != null && String(body.notes) !== '' ? String(body.notes) : null
+      const staff_name = String(body.staff_name || '').trim() || 'Staff'
+      const existing = await restGet(`staff_weekly_reports?staff_id=eq.${sid}&week_start=eq.${ws}&select=id&limit=1`)
+      let report: any
+      if (existing[0]) {
+        report = await restPatch('staff_weekly_reports', `id=eq.${existing[0].id}`, {
+          staff_name, client_volume, closings, new_inventory, notes, updated_at: new Date().toISOString(),
+        })
+      } else {
+        report = await restInsert('staff_weekly_reports', {
+          id: crypto.randomUUID(),
+          staff_id: staffId, staff_name, week_start: ws, week_end: we,
+          client_volume, closings, new_inventory, notes,
+          created_at: new Date().toISOString(),
+        })
+      }
+      return json({ success: true, report })
+    }
+
+    if (action === 'review_weekly_report') {
+      // admin-only: attaches feedback + marks a staff member's report reviewed
+      if (!isAdmin) return json({ success: false, error: 'Admin access required to review reports' }, 403)
+      const reportId = String(body.report_id || '')
+      if (!reportId) return json({ success: false, error: 'report_id required' }, 400)
+      const report = await restPatch('staff_weekly_reports', `id=eq.${encodeURIComponent(reportId)}`, {
+        reviewed_by: body.reviewed_by != null ? String(body.reviewed_by) : null,
+        reviewed_at: new Date().toISOString(),
+        admin_feedback: body.admin_feedback != null ? String(body.admin_feedback) : null,
+        updated_at: new Date().toISOString(),
+      })
+      if (!report) return json({ success: false, error: 'Report not found' }, 404)
+      return json({ success: true, report })
+    }
+
+    if (action === 'get_master_weekly_report') {
+      // admin-only rollup of the current week across all staff
+      if (!isAdmin) return json({ success: false, error: 'Admin access required' }, 403)
+      const wkISO = weekStartISO()
+      const ws = new Date(wkISO).toISOString().split('T')[0]
+      const reports = await restGet(`staff_weekly_reports?week_start=eq.${ws}&select=${WR_COLS}&order=staff_name.asc&limit=1000`)
+      let total_clients = 0, total_closings = 0, total_new_inventory = 0
+      for (const r of reports) {
+        total_clients += Number(r.client_volume) || 0
+        total_closings += Number(r.closings) || 0
+        total_new_inventory += Number(r.new_inventory) || 0
+      }
+      let total_commissions_this_week = 0
+      try {
+        const comm = await restGet(`staff_commissions?status=in.(approved,paid)&select=claimed_amount,approved_amount,amount,status,created_at,reviewed_at,paid_at&limit=5000`)
+        for (const c of comm) { const d = commEarnDate(c); if (d && d >= wkISO) total_commissions_this_week += commEarned(c) }
+      } catch (_e) { /* commissions rollup is best-effort */ }
+      return json({
+        master_report: {
+          week_start: ws,
+          staff_reports: reports,
+          total_clients, total_closings, total_new_inventory,
+          total_commissions_this_week,
+          week_deals: [],
+          reports_submitted: reports.length,
+        },
+      })
+    }
+
+    // ---- not yet rebuilt: deal records, executive overview, payouts ----
     return json({ success: false, error: `Action "${action || '(none)'}" is not implemented yet` }, 400)
   } catch (error) {
     return json({ success: false, error: error instanceof Error ? error.message : 'error' }, 500)

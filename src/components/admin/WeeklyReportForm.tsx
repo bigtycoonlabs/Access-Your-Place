@@ -118,6 +118,7 @@ export function WeeklyReportForm({ staffId, staffName, isAdmin }: WeeklyReportFo
     const { error } = await supabase.functions.invoke('manage-hr-commissions', {
       body: {
         action: 'review_weekly_report',
+        staff_id: staffId,
         report_id: selectedReport.id,
         reviewed_by: staffName,
         admin_feedback: reviewFeedback
