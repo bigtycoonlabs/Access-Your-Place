@@ -60,10 +60,23 @@ serve(async (req: Request) => {
     // Generate referral code
     const myRefCode = 'AYP' + Math.random().toString(36).substring(2, 8).toUpperCase()
 
-    // Create investor record (store password as plain text temporarily - will be hashed on first login)
+    // Hash the password with bcrypt so it is never stored in plain text. Fail closed:
+    // if hashing errors, refuse to create the account rather than store a plain-text password.
+    let hashedPassword: string
+    try {
+      const bcrypt = await import('https://deno.land/x/bcrypt@v0.4.1/mod.ts')
+      hashedPassword = bcrypt.hashSync(password)
+    } catch (_e) {
+      return new Response(
+        JSON.stringify({ success: false, error: 'Could not secure your password. Please try again.' }),
+        { status: 500, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+      )
+    }
+
+    // Create investor record with the bcrypt-hashed password.
     const investorData = {
       email: email.toLowerCase().trim(),
-      password_hash: password, // Will be upgraded to bcrypt on first login
+      password_hash: hashedPassword,
       full_name: full_name.trim(),
       phone: phone || null,
       sms_opt_in: sms_opt_in || false,
