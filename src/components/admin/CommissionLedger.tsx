@@ -132,6 +132,8 @@ export function CommissionLedger({ staffId, staffName, isAdmin }: CommissionLedg
     const { error } = await supabase.functions.invoke('manage-hr-commissions', {
       body: {
         action: 'update_commission_status',
+        staff_id: staffId,
+        is_admin: isAdmin,
         commission_id: selectedCommission.id,
         status: reviewData.status,
         admin_comment: reviewData.admin_comment,
@@ -356,7 +358,7 @@ export function CommissionLedger({ staffId, staffName, isAdmin }: CommissionLedg
                                 className="text-emerald-600 border-emerald-200"
                                 onClick={async () => {
                                   await supabase.functions.invoke('manage-hr-commissions', {
-                                    body: { action: 'update_commission_status', commission_id: c.id, status: 'paid', reviewed_by: staffName }
+                                    body: { action: 'update_commission_status', staff_id: staffId, is_admin: isAdmin, commission_id: c.id, status: 'paid', reviewed_by: staffName }
                                   });
                                   toast({ title: 'Marked as Paid' });
                                   loadData();

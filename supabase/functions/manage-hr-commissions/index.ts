@@ -14,6 +14,7 @@ const H: Record<string, string> = {
   'Content-Type': 'application/json',
 }
 const ENTRY_COLS = 'id,staff_id,start_time,end_time,duration_minutes,notes'
+const COMM_COLS = 'id,staff_id,staff_name,client_name,property_address,deal_type,claimed_amount,approved_amount,status,payout_date,notes,admin_comment,reviewed_by,reviewed_at,paid_at,created_at'
 
 async function restGet(path: string): Promise<any[]> {
   const r = await fetch(`${REST}/${path}`, { headers: H })
@@ -44,11 +45,29 @@ async function restPatch(table: string, filter: string, patch: Record<string, un
 // Monday 00:00 UTC of the current week
 function weekStartISO(): string {
   const now = new Date()
-  const day = now.getUTCDay() // 0 Sun .. 6 Sat
-  const back = day === 0 ? 6 : day - 1
-  const monday = new Date(Date.UTC(now.getUTCFullYear(), now.getUTCMonth(), now.getUTCDate() - back, 0, 0, 0))
-  return monday.toISOString()
+  const back = now.getUTCDay() === 0 ? 6 : now.getUTCDay() - 1
+  return new Date(Date.UTC(now.getUTCFullYear(), now.getUTCMonth(), now.getUTCDate() - back, 0, 0, 0)).toISOString()
 }
+// 1st of the current month 00:00 UTC
+function monthStartISO(): string {
+  const now = new Date()
+  return new Date(Date.UTC(now.getUTCFullYear(), now.getUTCMonth(), 1, 0, 0, 0)).toISOString()
+}
+
+const ADMIN_ROLES = ['owner', 'admin', 'administrator', 'administrators', 'super_admin']
+function staffIsAdmin(s: any): boolean {
+  if (s?.is_admin === true) return true
+  if (ADMIN_ROLES.includes(String(s?.role || '').toLowerCase())) return true
+  let arr: any = s?.roles
+  if (typeof arr === 'string') { try { arr = JSON.parse(arr) } catch { arr = [] } }
+  if (Array.isArray(arr)) return arr.some((r: any) => ADMIN_ROLES.includes(String(r).toLowerCase()))
+  return false
+}
+
+// Shared earnings definition (kept consistent between timer week_earnings and commission stats):
+// a commission "earns" its approved_amount (fallback amount, then claimed_amount) once approved/paid.
+const commEarned = (c: any) => Number(c.approved_amount ?? c.amount ?? c.claimed_amount ?? 0) || 0
+const commEarnDate = (c: any) => c.paid_at || c.reviewed_at || c.created_at
 
 const asEntry = (e: any) => ({
   id: e.id,
@@ -69,18 +88,13 @@ serve(async (req) => {
     const action = String(body.action || '')
     const staffId = String(body.staff_id || body.staffId || '')
 
-    // ---- auth: caller must be an active staff user ----
+    // ---- auth: caller must be an active staff user (admin derived server-side) ----
     if (!staffId) return json({ success: false, error: 'Staff identity required' }, 401)
-    let staff: any[] = []
-    try {
-      staff = await restGet(
-        `staff_users?id=eq.${encodeURIComponent(staffId)}&is_active=eq.true&select=id&limit=1`,
-      )
-    } catch (_e) {
-      // malformed id (e.g. non-uuid) or lookup failure -> deny, never leak internals
-      return json({ success: false, error: 'Staff access required' }, 403)
-    }
+    const staff = await restGet(
+      `staff_users?id=eq.${encodeURIComponent(staffId)}&is_active=eq.true&select=id,role,roles&limit=1`,
+    )
     if (!staff[0]) return json({ success: false, error: 'Staff access required' }, 403)
+    const isAdmin = staffIsAdmin(staff[0])
 
     const sid = encodeURIComponent(staffId)
 
@@ -107,16 +121,12 @@ serve(async (req) => {
       let total_minutes = 0
       for (const r of rows) total_minutes += Number(r.duration_minutes) || 0
       const session_count = rows.length
-      // week_earnings = approved/paid commissions this week (staff_commissions may be empty -> 0)
       let week_earnings = 0
       try {
         const comm = await restGet(
-          `staff_commissions?staff_id=eq.${sid}&created_at=gte.${wk}&select=amount,approved_amount,status`,
+          `staff_commissions?staff_id=eq.${sid}&status=in.(approved,paid)&select=claimed_amount,approved_amount,amount,status,created_at,reviewed_at,paid_at&limit=2000`,
         )
-        for (const c of comm) {
-          const st = String(c.status || '').toLowerCase()
-          if (st === 'approved' || st === 'paid') week_earnings += Number(c.amount ?? c.approved_amount ?? 0) || 0
-        }
+        for (const c of comm) { const d = commEarnDate(c); if (d && d >= wk) week_earnings += commEarned(c) }
       } catch (_e) { /* earnings are best-effort; time stats stand alone */ }
       const total_hours = Math.round((total_minutes / 60) * 10) / 10
       const effective_hourly_rate = total_hours > 0 ? Math.round((week_earnings / total_hours) * 100) / 100 : 0
@@ -129,11 +139,7 @@ serve(async (req) => {
       )
       if (existing[0]) return json({ entry: asEntry(existing[0]) }) // already running; idempotent
       const now = new Date().toISOString()
-      const created = await restInsert('staff_time_entries', {
-        id: crypto.randomUUID(),
-        staff_id: staffId,
-        start_time: now,
-      })
+      const created = await restInsert('staff_time_entries', { id: crypto.randomUUID(), staff_id: staffId, start_time: now })
       return json({ entry: asEntry(created) })
     }
 
@@ -153,7 +159,86 @@ serve(async (req) => {
       return json({ entry: asEntry(updated) })
     }
 
-    // ---- not yet rebuilt: commissions, compliance, payment profiles, weekly reports,
+    // ========================= COMMISSIONS =========================
+    if (action === 'get_commissions') {
+      const scope = isAdmin ? '' : `&staff_id=eq.${sid}`
+      const st = String(body.status || '').toLowerCase()
+      const stFilter = st && st !== 'all' ? `&status=eq.${encodeURIComponent(st)}` : ''
+      const rows = await restGet(`staff_commissions?select=${COMM_COLS}${scope}${stFilter}&order=created_at.desc&limit=500`)
+      return json({ commissions: rows })
+    }
+
+    if (action === 'get_commission_stats') {
+      const scope = isAdmin ? '' : `&staff_id=eq.${sid}`
+      const rows = await restGet(
+        `staff_commissions?select=claimed_amount,approved_amount,amount,status,created_at,reviewed_at,paid_at${scope}&limit=5000`,
+      )
+      const wk = weekStartISO(), mo = monthStartISO()
+      let total_pending = 0, total_approved = 0, total_paid = 0, total_disputed = 0
+      let pending_count = 0, approved_count = 0, paid_count = 0
+      let this_week_earned = 0, this_month_earned = 0
+      for (const c of rows) {
+        const stt = String(c.status || '').toLowerCase()
+        const claimed = Number(c.claimed_amount ?? 0) || 0
+        if (stt === 'pending') { total_pending += claimed; pending_count++ }
+        else if (stt === 'approved') { total_approved += commEarned(c); approved_count++ }
+        else if (stt === 'paid') { total_paid += commEarned(c); paid_count++ }
+        else if (stt === 'disputed') { total_disputed += claimed }
+        if (stt === 'approved' || stt === 'paid') {
+          const d = commEarnDate(c)
+          if (d && d >= wk) this_week_earned += commEarned(c)
+          if (d && d >= mo) this_month_earned += commEarned(c)
+        }
+      }
+      return json({ stats: { total_pending, total_approved, total_paid, total_disputed, this_week_earned, this_month_earned, pending_count, approved_count, paid_count } })
+    }
+
+    if (action === 'submit_commission') {
+      const client_name = String(body.client_name || '').trim()
+      const property_address = String(body.property_address || '').trim()
+      const claimed = Number(body.claimed_amount)
+      if (!client_name || !property_address || !Number.isFinite(claimed) || claimed <= 0) {
+        return json({ success: false, error: 'client_name, property_address and a positive claimed_amount are required' }, 400)
+      }
+      const created = await restInsert('staff_commissions', {
+        id: crypto.randomUUID(),
+        staff_id: staffId,
+        staff_name: String(body.staff_name || '').trim() || 'Staff',
+        client_name,
+        property_address,
+        deal_type: String(body.deal_type || 'finder'),
+        claimed_amount: claimed,
+        status: 'pending',
+        notes: body.notes != null ? String(body.notes) : null,
+      })
+      return json({ success: true, commission: created })
+    }
+
+    if (action === 'update_commission_status') {
+      // money/status mutation -> admins only, verified server-side (never trust client is_admin)
+      if (!isAdmin) return json({ success: false, error: 'Admin access required to review commissions' }, 403)
+      const commissionId = String(body.commission_id || '')
+      const newStatus = String(body.status || '').toLowerCase()
+      const allowed = ['pending', 'approved', 'paid', 'disputed', 'rejected']
+      if (!commissionId) return json({ success: false, error: 'commission_id required' }, 400)
+      if (!allowed.includes(newStatus)) return json({ success: false, error: `status must be one of: ${allowed.join(', ')}` }, 400)
+      const patch: Record<string, unknown> = {
+        status: newStatus,
+        reviewed_by: body.reviewed_by != null ? String(body.reviewed_by) : null,
+        reviewed_at: new Date().toISOString(),
+        updated_at: new Date().toISOString(),
+      }
+      if (body.admin_comment != null) patch.admin_comment = String(body.admin_comment)
+      if (body.approved_amount != null && body.approved_amount !== '') {
+        const amt = Number(body.approved_amount)
+        if (Number.isFinite(amt)) { patch.approved_amount = amt }
+      }
+      if (newStatus === 'paid') patch.paid_at = new Date().toISOString()
+      const updated = await restPatch('staff_commissions', `id=eq.${encodeURIComponent(commissionId)}`, patch)
+      return json({ success: true, commission: updated })
+    }
+
+    // ---- not yet rebuilt: compliance, payment profiles, weekly reports,
     //      deal records, staff list, executive overview, payouts ----
     return json({ success: false, error: `Action "${action || '(none)'}" is not implemented yet` }, 400)
   } catch (error) {
