@@ -133,7 +133,7 @@ export function PaymentProfileManager({ staffId }: PaymentProfileManagerProps) {
   const handleDelete = async () => {
     if (!deleteTarget) return;
     const { error } = await supabase.functions.invoke('manage-hr-commissions', {
-      body: { action: 'delete_payment_profile', profile_id: deleteTarget.id }
+      body: { action: 'delete_payment_profile', profile_id: deleteTarget.id, staff_id: staffId }
     });
     if (error) {
       toast({ title: 'Error', description: error.message, variant: 'destructive' });

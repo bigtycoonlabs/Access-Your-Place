@@ -322,8 +322,66 @@ serve(async (req) => {
       return json({ staff: staffOut })
     }
 
-    // ---- not yet rebuilt: payment profiles, weekly reports,
-    //      deal records, executive overview, payouts ----
+    // ========================= PAYMENT PROFILES =========================
+    // Self-service payout methods. account_details is a jsonb blob of method-specific
+    // fields (routing/account numbers, Zelle/Venmo handles, etc.). Scoped strictly to the
+    // caller: a staff member only ever sees or edits their own methods.
+    if (action === 'get_payment_profiles') {
+      const rows = await restGet(
+        `staff_payment_profiles?staff_id=eq.${sid}&select=id,staff_id,method_type,is_primary,account_details,label,created_at&order=is_primary.desc,created_at.desc&limit=100`,
+      )
+      return json({ profiles: rows })
+    }
+
+    if (action === 'save_payment_profile') {
+      const method_type = String(body.method_type || '').trim()
+      if (!method_type) return json({ success: false, error: 'method_type is required' }, 400)
+      const account_details = (body.account_details && typeof body.account_details === 'object' && !Array.isArray(body.account_details))
+        ? body.account_details : {}
+      const label = body.label != null ? String(body.label) : null
+      const is_primary = body.is_primary === true
+      const profileId = String(body.profile_id || '')
+      let saved: any
+      if (profileId) {
+        const existing = await restGet(`staff_payment_profiles?id=eq.${encodeURIComponent(profileId)}&select=id,staff_id&limit=1`)
+        if (!existing[0]) return json({ success: false, error: 'Payment profile not found' }, 404)
+        if (existing[0].staff_id !== staffId && !isAdmin) {
+          return json({ success: false, error: 'You can only edit your own payment methods' }, 403)
+        }
+        saved = await restPatch('staff_payment_profiles', `id=eq.${encodeURIComponent(profileId)}`, {
+          method_type, account_details, label, is_primary, updated_at: new Date().toISOString(),
+        })
+      } else {
+        saved = await restInsert('staff_payment_profiles', {
+          id: crypto.randomUUID(),
+          staff_id: staffId,
+          method_type, account_details, label, is_primary,
+          created_at: new Date().toISOString(),
+        })
+      }
+      // enforce a single primary per staff (best-effort; never fail a saved profile on dedup)
+      if (is_primary && saved?.id) {
+        try {
+          await restPatch('staff_payment_profiles', `staff_id=eq.${sid}&id=neq.${encodeURIComponent(saved.id)}`, { is_primary: false })
+        } catch (_e) { /* dedup is best-effort */ }
+      }
+      return json({ success: true, profile: saved })
+    }
+
+    if (action === 'delete_payment_profile') {
+      const profileId = String(body.profile_id || '')
+      if (!profileId) return json({ success: false, error: 'profile_id required' }, 400)
+      const existing = await restGet(`staff_payment_profiles?id=eq.${encodeURIComponent(profileId)}&select=id,staff_id&limit=1`)
+      if (!existing[0]) return json({ success: false, error: 'Payment profile not found' }, 404)
+      if (existing[0].staff_id !== staffId && !isAdmin) {
+        return json({ success: false, error: 'You can only delete your own payment methods' }, 403)
+      }
+      await restDelete('staff_payment_profiles', `id=eq.${encodeURIComponent(profileId)}`)
+      return json({ success: true })
+    }
+
+    // ---- not yet rebuilt: weekly reports, deal records,
+    //      executive overview, payouts ----
     return json({ success: false, error: `Action "${action || '(none)'}" is not implemented yet` }, 400)
   } catch (error) {
     return json({ success: false, error: error instanceof Error ? error.message : 'error' }, 500)
