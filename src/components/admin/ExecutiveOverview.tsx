@@ -127,7 +127,7 @@ export function ExecutiveOverview({ staffId, staffName, isAdmin = false }: Execu
     }
     setLoading(true);
     const [overviewRes, masterRes, staffRes] = await Promise.all([
-      supabase.functions.invoke('manage-hr-commissions', { body: { action: 'get_executive_overview' } }),
+      supabase.functions.invoke('manage-hr-commissions', { body: { action: 'get_executive_overview', staff_id: staffId, is_admin: isAdmin } }),
       supabase.functions.invoke('manage-hr-commissions', { body: { action: 'get_master_weekly_report', staff_id: staffId, is_admin: isAdmin } }),
       supabase.functions.invoke('manage-hr-commissions', { body: { action: 'get_staff_list', staff_id: staffId, is_admin: isAdmin } })
     ]);
@@ -147,7 +147,7 @@ export function ExecutiveOverview({ staffId, staffName, isAdmin = false }: Execu
     }
     setSubmitting(true);
     const { error } = await supabase.functions.invoke('manage-hr-commissions', {
-      body: { action: 'submit_deal_record', ...formData, submitted_by: staffName }
+      body: { action: 'submit_deal_record', ...formData, submitted_by: staffName, staff_id: staffId, is_admin: isAdmin }
     });
     if (error) {
       toast({ title: 'Error', description: error.message, variant: 'destructive' });
@@ -167,7 +167,7 @@ export function ExecutiveOverview({ staffId, staffName, isAdmin = false }: Execu
   const handleDeleteDeal = async (dealId: string) => {
     if (!confirm('Delete this deal record?')) return;
     const { error } = await supabase.functions.invoke('manage-hr-commissions', {
-      body: { action: 'delete_deal_record', deal_id: dealId }
+      body: { action: 'delete_deal_record', deal_id: dealId, staff_id: staffId, is_admin: isAdmin }
     });
     if (error) toast({ title: 'Error', description: error.message, variant: 'destructive' });
     else { toast({ title: 'Deal Record Deleted' }); loadData(); }

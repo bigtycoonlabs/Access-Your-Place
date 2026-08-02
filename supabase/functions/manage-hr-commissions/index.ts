@@ -85,6 +85,15 @@ const asEntry = (e: any) => ({
   notes: e.notes ?? null,
 })
 
+// staff_deal_records stores each deal as a jsonb blob in deal_data; flatten it back to the
+// top-level shape the front-end expects (id + created_at from the row, everything else from deal_data).
+const dealFromRow = (r: any) => ({
+  id: r.id,
+  ...(r.deal_data && typeof r.deal_data === 'object' ? r.deal_data : {}),
+  assigned_staff_id: (r.deal_data && r.deal_data.assigned_staff_id) || r.staff_id || null,
+  created_at: r.created_at,
+})
+
 serve(async (req) => {
   if (req.method === 'OPTIONS') return new Response('ok', { headers: corsHeaders })
   const json = (b: unknown, s = 200) =>
@@ -453,19 +462,107 @@ serve(async (req) => {
         const comm = await restGet(`staff_commissions?status=in.(approved,paid)&select=claimed_amount,approved_amount,amount,status,created_at,reviewed_at,paid_at&limit=5000`)
         for (const c of comm) { const d = commEarnDate(c); if (d && d >= wkISO) total_commissions_this_week += commEarned(c) }
       } catch (_e) { /* commissions rollup is best-effort */ }
+      let week_deals: any[] = []
+      try {
+        const dealRows = await restGet(`staff_deal_records?created_at=gte.${wkISO}&select=id,staff_id,deal_data,created_at&order=created_at.desc&limit=1000`)
+        week_deals = dealRows.map(dealFromRow)
+      } catch (_e) { /* deals rollup is best-effort */ }
       return json({
         master_report: {
           week_start: ws,
           staff_reports: reports,
           total_clients, total_closings, total_new_inventory,
           total_commissions_this_week,
-          week_deals: [],
+          week_deals,
           reports_submitted: reports.length,
         },
       })
     }
 
-    // ---- not yet rebuilt: deal records, executive overview, payouts ----
+    // ========================= DEAL RECORDS =========================
+    // Admin-entered ledger of completed/pending deals. Each deal's fields live inside the
+    // deal_data jsonb blob; reads flatten it, writes pack it.
+    if (action === 'submit_deal_record') {
+      if (!isAdmin) return json({ success: false, error: 'Admin access required to record deals' }, 403)
+      const client_name = String(body.client_name || '').trim()
+      if (!client_name) return json({ success: false, error: 'client_name is required' }, 400)
+      const toNum = (v: unknown) => { const n = parseFloat(String(v ?? '')); return Number.isFinite(n) ? n : 0 }
+      const acquisition_fee_total = toNum(body.acquisition_fee_total)
+      const funded_payment = toNum(body.funded_payment)
+      const commission_paid = toNum(body.commission_paid)
+      const net_after_commission = Math.round((acquisition_fee_total - commission_paid) * 100) / 100
+      const assignedId = String(body.assigned_staff_id || '')
+      const deal_data = {
+        client_name,
+        property_address: String(body.property_address || ''),
+        deal_status: String(body.deal_status || 'closed'),
+        payment_type: String(body.payment_type || 'cash'),
+        acquisition_fee_total, funded_payment, commission_paid, net_after_commission,
+        assigned_staff_id: assignedId || null,
+        assigned_staff_name: String(body.assigned_staff_name || ''),
+        staff_role: String(body.staff_role || ''),
+        notes: String(body.notes || ''),
+        submitted_by: String(body.submitted_by || ''),
+      }
+      const created = await restInsert('staff_deal_records', {
+        id: crypto.randomUUID(),
+        staff_id: assignedId || staffId,
+        deal_data,
+        created_at: new Date().toISOString(),
+      })
+      return json({ success: true, deal: dealFromRow(created) })
+    }
+
+    if (action === 'delete_deal_record') {
+      if (!isAdmin) return json({ success: false, error: 'Admin access required to delete deal records' }, 403)
+      const dealId = String(body.deal_id || '')
+      if (!dealId) return json({ success: false, error: 'deal_id required' }, 400)
+      const existing = await restGet(`staff_deal_records?id=eq.${encodeURIComponent(dealId)}&select=id&limit=1`)
+      if (!existing[0]) return json({ success: false, error: 'Deal record not found' }, 404)
+      await restDelete('staff_deal_records', `id=eq.${encodeURIComponent(dealId)}`)
+      return json({ success: true })
+    }
+
+    // ========================= EXECUTIVE OVERVIEW =========================
+    if (action === 'get_executive_overview') {
+      if (!isAdmin) return json({ success: false, error: 'Admin access required' }, 403)
+      const rows = await restGet('staff_deal_records?select=id,staff_id,deal_data,created_at&order=created_at.desc&limit=2000')
+      const deals = rows.map(dealFromRow)
+      let total_acquisition_fees = 0, total_funded_payments = 0, total_commissions_paid = 0
+      let closed_deals = 0, completed_deals = 0, credit_deals = 0, cash_deals = 0, pending_application = 0
+      const byStaff: Record<string, any> = {}
+      for (const d of deals) {
+        const fee = Number(d.acquisition_fee_total) || 0
+        const funded = Number(d.funded_payment) || 0
+        const comm = Number(d.commission_paid) || 0
+        total_acquisition_fees += fee
+        total_funded_payments += funded
+        total_commissions_paid += comm
+        const st = String(d.deal_status || '').toLowerCase()
+        const pt = String(d.payment_type || '').toLowerCase()
+        if (st === 'closed') closed_deals++
+        if (st === 'completed') completed_deals++
+        if (st.includes('pending') || st.includes('application')) pending_application++
+        if (pt === 'credit') credit_deals++
+        if (pt === 'cash') cash_deals++
+        const key = String(d.assigned_staff_name || d.assigned_staff_id || 'Unassigned')
+        if (!byStaff[key]) byStaff[key] = { name: key, deals: [], totalFees: 0, totalCommissions: 0 }
+        byStaff[key].deals.push(d)
+        byStaff[key].totalFees += fee
+        byStaff[key].totalCommissions += comm
+      }
+      const net_earnings = Math.round((total_acquisition_fees + total_funded_payments - total_commissions_paid) * 100) / 100
+      const overview = {
+        total_deals: deals.length,
+        closed_deals, completed_deals, credit_deals, cash_deals, pending_application,
+        total_acquisition_fees, total_funded_payments, total_commissions_paid,
+        net_earnings,
+        by_staff: Object.values(byStaff),
+      }
+      return json({ overview, deals })
+    }
+
+    // ---- not yet rebuilt: payouts (Friday summary) ----
     return json({ success: false, error: `Action "${action || '(none)'}" is not implemented yet` }, 400)
   } catch (error) {
     return json({ success: false, error: error instanceof Error ? error.message : 'error' }, 500)
