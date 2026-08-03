@@ -1273,7 +1273,7 @@ Deno.serve(async (req) => {
     }
 
     // Try AI Gateway first
-    const gatewayApiKey = Deno.env.get('GATEWAY_API_KEY');
+    const gatewayApiKey = Deno.env.get('OPENAI_API_KEY');
     let reportData: any = null;
     let aiSuccess = false;
 
@@ -1319,14 +1319,14 @@ Provide your analysis in JSON format with the following structure:
         const controller = new AbortController();
         const timeoutId = setTimeout(() => controller.abort(), 30000); // 30 second timeout
 
-        const aiResponse = await fetch('https://ai.gateway.fastrouter.io/api/v1/chat/completions', {
+        const aiResponse = await fetch('https://api.openai.com/v1/chat/completions', {
           method: 'POST',
           headers: {
             'Content-Type': 'application/json',
-            'X-API-Key': gatewayApiKey
+            'Authorization': 'Bearer ' + gatewayApiKey
           },
           body: JSON.stringify({
-            model: 'google/gemini-2.5-flash',
+            model: 'gpt-4o',
             messages: [{ role: 'user', content: prompt }],
             temperature: 0.7,
             max_tokens: 8000

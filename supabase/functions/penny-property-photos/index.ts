@@ -20,7 +20,7 @@ export const corsHeaders = {
 };
 
 const APIFY_API_KEY = Deno.env.get('APIFY_API_KEY');
-const GATEWAY_API_KEY = Deno.env.get('GATEWAY_API_KEY');
+const GATEWAY_API_KEY = Deno.env.get('OPENAI_API_KEY');
 
 // Keywords to filter out community amenity photos
 const COMMUNITY_AMENITY_KEYWORDS = [
@@ -72,14 +72,14 @@ async function describePhotoForAccessibility(photoUrl: string, index: number): P
   }
 
   try {
-    const response = await fetch('https://ai.gateway.fastrouter.io/api/v1/chat/completions', {
+    const response = await fetch('https://api.openai.com/v1/chat/completions', {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
-        'X-API-Key': GATEWAY_API_KEY
+        'Authorization': 'Bearer ' + GATEWAY_API_KEY
       },
       body: JSON.stringify({
-        model: 'google/gemini-2.5-flash',
+        model: 'gpt-4o',
         messages: [{
           role: 'user',
           content: `Analyze this property photo and provide a detailed accessibility description for a blind user. Focus on:
@@ -384,14 +384,14 @@ Write a professional, enticing description that highlights:
 
 Keep it under 300 words and make it compelling for investors.`;
 
-    const response = await fetch('https://ai.gateway.fastrouter.io/api/v1/chat/completions', {
+    const response = await fetch('https://api.openai.com/v1/chat/completions', {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
-        'X-API-Key': GATEWAY_API_KEY
+        'Authorization': 'Bearer ' + GATEWAY_API_KEY
       },
       body: JSON.stringify({
-        model: 'google/gemini-2.5-flash',
+        model: 'gpt-4o',
         messages: [{ role: 'user', content: prompt }],
         temperature: 0.7,
         max_tokens: 500

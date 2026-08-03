@@ -40,7 +40,7 @@ Deno.serve(async (req) => {
 
     console.log('Research ZIP properties:', { zip_code, city, state });
 
-    const gatewayApiKey = Deno.env.get('GATEWAY_API_KEY');
+    const gatewayApiKey = Deno.env.get('OPENAI_API_KEY');
     const googleKey = Deno.env.get('GOOGLE_API_KEY');
     const googleCx = Deno.env.get('GOOGLE_CX');
 
@@ -51,11 +51,11 @@ Deno.serve(async (req) => {
     if (gatewayApiKey) {
       try {
         console.log('Fetching AI market analysis...');
-        const aiRes = await fetchWithTimeout('https://ai.gateway.fastrouter.io/api/v1/chat/completions', {
+        const aiRes = await fetchWithTimeout('https://api.openai.com/v1/chat/completions', {
           method: 'POST',
-          headers: { 'Content-Type': 'application/json', 'X-API-Key': gatewayApiKey },
+          headers: { 'Content-Type': 'application/json', 'Authorization': 'Bearer ' + gatewayApiKey },
           body: JSON.stringify({
-            model: 'google/gemini-2.5-flash',
+            model: 'gpt-4o',
             messages: [{
               role: 'user',
               content: `Analyze ZIP code ${zip_code}${city ? ` (${city}, ${state})` : ''} for short-term rental and co-living investment. Return ONLY valid JSON (no markdown): { "str_score": number 1-10, "coliving_score": number 1-10, "avg_rent_2br": number, "avg_rent_3br": number, "str_avg_adr": number, "str_avg_occupancy": number 0-1, "coliving_room_rate": number, "regulations": "friendly|moderate|strict", "competition_level": "low|medium|high", "recommended_strategy": "str|coliving|hybrid", "risk_factors": ["string"], "opportunity_notes": "string", "demand_drivers": ["string"], "peak_months": [number], "slow_months": [number] }`

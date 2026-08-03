@@ -88,7 +88,7 @@ function getSeasonalAlerts(marketKeys: string[]): any[] {
 }
 
 async function generateAIInsights(params: any): Promise<string> {
-  const gk = Deno.env.get('GATEWAY_API_KEY');
+  const gk = Deno.env.get('OPENAI_API_KEY');
   if (!gk) return generateFallbackInsights(params);
   const level = params.portfolioSize <= 0 ? 'pre-investor' : params.portfolioSize <= 1 ? 'beginner' : params.portfolioSize <= 3 ? 'growing' : params.portfolioSize <= 7 ? 'experienced' : 'seasoned';
   
@@ -122,10 +122,10 @@ Each tip: actionable, data-driven, 2 sentences max. HTML with inline styles for 
   try {
     const controller = new AbortController();
     const tid = setTimeout(() => controller.abort(), 20000);
-    const res = await fetch('https://ai.gateway.fastrouter.io/api/v1/chat/completions', {
+    const res = await fetch('https://api.openai.com/v1/chat/completions', {
       method: 'POST',
-      headers: { 'Content-Type': 'application/json', 'X-API-Key': gk },
-      body: JSON.stringify({ model: 'google/gemini-2.5-flash', messages: [{ role: 'user', content: prompt }], temperature: 0.7, max_tokens: 1000 }),
+      headers: { 'Content-Type': 'application/json', 'Authorization': 'Bearer ' + gk },
+      body: JSON.stringify({ model: 'gpt-4o', messages: [{ role: 'user', content: prompt }], temperature: 0.7, max_tokens: 1000 }),
       signal: controller.signal
     });
     clearTimeout(tid);

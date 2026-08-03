@@ -32,7 +32,7 @@ Deno.serve(async (req) => {
       throw new Error('Topic is required');
     }
 
-    const gatewayApiKey = Deno.env.get('GATEWAY_API_KEY');
+    const gatewayApiKey = Deno.env.get('OPENAI_API_KEY');
     if (!gatewayApiKey) {
       throw new Error('API Gateway key not configured');
     }
@@ -75,14 +75,14 @@ Return your response in this exact JSON format:
   "seo_description": "Meta description under 160 chars"
 }`;
 
-    const response = await fetch('https://ai.gateway.fastrouter.io/api/v1/chat/completions', {
+    const response = await fetch('https://api.openai.com/v1/chat/completions', {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
-        'X-API-Key': gatewayApiKey
+        'Authorization': 'Bearer ' + gatewayApiKey
       },
       body: JSON.stringify({
-        model: 'google/gemini-2.5-flash',
+        model: 'gpt-4o',
         messages: [
           {
             role: 'system',

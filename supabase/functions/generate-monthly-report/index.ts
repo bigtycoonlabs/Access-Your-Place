@@ -27,7 +27,7 @@ const supabaseKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!;
 const supabase = createClient(supabaseUrl, supabaseKey);
 
 const RESEND_API_KEY = Deno.env.get('RESEND_API_KEY');
-const GATEWAY_API_KEY = Deno.env.get('GATEWAY_API_KEY');
+const GATEWAY_API_KEY = Deno.env.get('OPENAI_API_KEY');
 
 Deno.serve(async (req) => {
   if (req.method === 'OPTIONS') {
@@ -316,14 +316,14 @@ Market Comparison:
 
 Provide recommendations in a professional, concise format. Focus on actionable insights.`;
 
-    const response = await fetch('https://ai.gateway.fastrouter.io/api/v1/chat/completions', {
+    const response = await fetch('https://api.openai.com/v1/chat/completions', {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
-        'X-API-Key': GATEWAY_API_KEY!
+        'Authorization': 'Bearer ' + GATEWAY_API_KEY
       },
       body: JSON.stringify({
-        model: 'google/gemini-2.5-flash',
+        model: 'gpt-4o',
         messages: [{ role: 'user', content: prompt }],
         temperature: 0.7,
         max_tokens: 1000

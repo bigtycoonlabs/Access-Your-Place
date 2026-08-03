@@ -136,7 +136,7 @@ async function generateForecast(params: { investor_id: string; property_id?: str
   }
 
   // Generate AI-powered forecasts
-  const gatewayApiKey = Deno.env.get('GATEWAY_API_KEY');
+  const gatewayApiKey = Deno.env.get('OPENAI_API_KEY');
   const forecasts: any[] = [];
   const today = new Date();
 
@@ -229,14 +229,14 @@ Consider:
 
 Respond with JSON array of adjustment factors (1.0 = no change, 1.1 = 10% increase, etc.) for each forecast.`;
 
-      const aiResponse = await fetch('https://ai.gateway.fastrouter.io/api/v1/chat/completions', {
+      const aiResponse = await fetch('https://api.openai.com/v1/chat/completions', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
-          'X-API-Key': gatewayApiKey
+          'Authorization': 'Bearer ' + gatewayApiKey
         },
         body: JSON.stringify({
-          model: 'google/gemini-2.5-flash',
+          model: 'gpt-4o',
           messages: [{ role: 'user', content: aiPrompt }],
           temperature: 0.3,
           max_tokens: 1000

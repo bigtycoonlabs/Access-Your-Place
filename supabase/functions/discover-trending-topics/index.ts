@@ -30,7 +30,7 @@ Deno.serve(async (req) => {
   try {
     const supabaseUrl = Deno.env.get('SUPABASE_URL')!;
     const supabaseKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!;
-    const gatewayApiKey = Deno.env.get('GATEWAY_API_KEY');
+    const gatewayApiKey = Deno.env.get('OPENAI_API_KEY');
 
     if (!gatewayApiKey) {
       throw new Error('API Gateway key not configured');
@@ -44,14 +44,14 @@ Deno.serve(async (req) => {
       year: 'numeric' 
     });
 
-    const aiResponse = await fetch('https://ai.gateway.fastrouter.io/api/v1/chat/completions', {
+    const aiResponse = await fetch('https://api.openai.com/v1/chat/completions', {
       method: 'POST',
       headers: { 
         'Content-Type': 'application/json', 
-        'X-API-Key': gatewayApiKey 
+        'Authorization': 'Bearer ' + gatewayApiKey 
       },
       body: JSON.stringify({
-        model: 'google/gemini-2.5-flash',
+        model: 'gpt-4o',
         messages: [{ 
           role: 'user', 
           content: `You are a content strategist for a rental arbitrage and short-term rental investment platform. Generate 8 trending, timely blog topics for ${currentDate} that would interest real estate investors.

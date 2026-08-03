@@ -40,7 +40,7 @@ Deno.serve(async (req) => {
   try {
     const supabaseUrl = Deno.env.get('SUPABASE_URL')!;
     const supabaseKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!;
-    const gatewayKey = Deno.env.get('GATEWAY_API_KEY');
+    const gatewayKey = Deno.env.get('OPENAI_API_KEY');
     const supabase = createClient(supabaseUrl, supabaseKey);
 
     const { action, property_id, photo_id, photo_ids, photo_url, blur_address } = await req.json();
@@ -412,14 +412,14 @@ async function reprocessFailedPhotos(
 
 async function detectAddressInImage(imageUrl: string, apiKey: string): Promise<{ hasAddress: boolean; details?: string }> {
   try {
-    const response = await fetch('https://ai.gateway.fastrouter.io/api/v1/chat/completions', {
+    const response = await fetch('https://api.openai.com/v1/chat/completions', {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
-        'X-API-Key': apiKey
+        'Authorization': 'Bearer ' + apiKey
       },
       body: JSON.stringify({
-        model: 'google/gemini-2.5-flash',
+        model: 'gpt-4o',
         messages: [{
           role: 'user',
           content: [

@@ -47,7 +47,7 @@ Deno.serve(async (req) => {
       .order('created_at', { ascending: false })
       .limit(20);
 
-    const gatewayApiKey = Deno.env.get('GATEWAY_API_KEY');
+    const gatewayApiKey = Deno.env.get('OPENAI_API_KEY');
     
     const prompt = `Compare this new topic with existing content. Return ONLY a JSON object.
 
@@ -62,14 +62,14 @@ Return JSON:
 
 Duplicate if score > 80.`;
 
-    const response = await fetch('https://ai.gateway.fastrouter.io/api/v1/chat/completions', {
+    const response = await fetch('https://api.openai.com/v1/chat/completions', {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
-        'X-API-Key': gatewayApiKey
+        'Authorization': 'Bearer ' + gatewayApiKey
       },
       body: JSON.stringify({
-        model: 'google/gemini-2.5-flash',
+        model: 'gpt-4o',
         messages: [{ role: 'user', content: prompt }],
         temperature: 0.3
       })

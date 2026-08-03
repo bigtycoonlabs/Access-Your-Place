@@ -148,7 +148,7 @@ async function generateAIInsights(params: {
   marketData: any;
   projections: any;
 }): Promise<string> {
-  const gatewayApiKey = Deno.env.get('GATEWAY_API_KEY');
+  const gatewayApiKey = Deno.env.get('OPENAI_API_KEY');
   if (!gatewayApiKey) {
     console.warn('[penny-portfolio-analysis] No GATEWAY_API_KEY, using template insights');
     return generateTemplateInsights(params);
@@ -200,14 +200,14 @@ Write the analysis in these sections (use HTML formatting with inline styles for
 Keep the tone professional but warm. Use data-driven insights. Be specific with numbers. Keep each section concise (2-3 sentences max). Format as clean HTML with inline styles suitable for email.`;
 
   try {
-    const response = await fetch('https://ai.gateway.fastrouter.io/api/v1/chat/completions', {
+    const response = await fetch('https://api.openai.com/v1/chat/completions', {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
-        'X-API-Key': gatewayApiKey
+        'Authorization': 'Bearer ' + gatewayApiKey
       },
       body: JSON.stringify({
-        model: 'google/gemini-2.5-flash',
+        model: 'gpt-4o',
         messages: [{ role: 'user', content: prompt }],
         temperature: 0.7,
         max_tokens: 2000
