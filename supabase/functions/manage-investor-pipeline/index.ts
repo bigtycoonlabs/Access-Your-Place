@@ -66,7 +66,8 @@ async function sendAutomatedEmail(investor: any, sequence: any) {
       method: 'POST',
       headers: { 'Authorization': `Bearer ${resendKey}`, 'Content-Type': 'application/json' },
       body: JSON.stringify({
-        from: 'STR Arbitrage <deals@strarbitrage.com>',
+        from: 'Penny <penny@accessyourplace.com>',
+        reply_to: 'success@accessyourplace.com',
         to: investor.email,
         subject,
         html: body
