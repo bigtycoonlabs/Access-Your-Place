@@ -86,7 +86,7 @@ export type ActionClass =
   | "status_changed";
 
 export const CLASSES: ActionClass[] = [
-  "credited", "unlocked", "payment_confirmed", "emailed", "deal_listed", "status_changed",
+  "credited", "unlocked", "payment_confirmed", "emailed", "deal_listed", "status_changed", "closing_recorded",
 ];
 
 // If any of these frame the sentence as an offer or a future intention, a nearby verb is
@@ -100,9 +100,11 @@ function has(t: string, re: RegExp): boolean {
 
 // Detect which COMPLETED action classes a reply claims. Order-independent; a reply can
 // claim several. Offer/future framing anywhere in the text suppresses all detections.
-export function claimedCompletedActions(text: string): ActionClass[] {
-  const t = (text || "").toLowerCase();
-  if (!t) return [];
+// Run the six completion detectors on ONE lowercased clause. The offer/future veto is NOT
+// applied here; the caller applies it per-sentence so a polite sign-off or a fresh offer in
+// a later sentence cannot cancel a genuine completion ("I've sent the invitation") stated
+// earlier. Only offer/future framing in the SAME sentence as the claim suppresses it.
+function detectClaimsInClause(t: string): ActionClass[] {
   const out: ActionClass[] = [];
 
   // CREDITED - an account credit was issued.
@@ -126,10 +128,15 @@ export function claimedCompletedActions(text: string): ActionClass[] {
     has(t, /\bpayment\b[^.!?]{0,10}\b(is )?(confirmed|verified|approved)\b[^.!?]{0,20}\b(you'?re all set|your account|the deal)\b/)
   ) out.push("payment_confirmed");
 
-  // EMAILED - sent an email or told them to check their inbox.
+  // EMAILED - sent an email, sent an invite/welcome/account link, or told them to check their inbox.
+  // Covers client-facing ("sent it to you" / "check your inbox") AND staff-facing onboarding
+  // claims ("I've sent the invitation to Maria", "the invite is on its way") - the latter would
+  // otherwise slip past because the recipient is a third party, not "you".
   if (
     has(t, /\b(i'?ve|i have|i just|we'?ve|we have)\b[^.!?]{0,45}\b(emailed|sent)\b[^.!?]{0,32}\b(to (you|your inbox|your email)|it to you|your way|over to you|to your inbox|to your email)\b/) ||
-    has(t, /\b(check|it'?s in|it is in|you'?ll find it in|i'?ve put it in|i'?ve dropped it in) your (inbox|email)\b/)
+    has(t, /\b(check|it'?s in|it is in|you'?ll find it in|i'?ve put it in|i'?ve dropped it in) your (inbox|email)\b/) ||
+    has(t, /\b(i'?ve|i have|i just|we'?ve|we have)\b[^.!?]{0,40}\b(sent|emailed|dispatched|fired off|shot off)\b[^.!?]{0,40}\b(invit\w*|welcome(?:\s+(?:email|message))?|onboarding(?:\s+(?:email|invite|link))?|account[- ]?(?:creation|setup|invite|link|email)|sign[- ]?up(?:\s+(?:email|link|invite))?)\b/) ||
+    has(t, /\bthe (invit\w*|welcome email|onboarding email|account (?:email|link)|sign[- ]?up (?:email|link))\b[^.!?]{0,24}\b(is|has been|was|have been|'?s)\b[^.!?]{0,16}\b(sent|on its way|on the way|out the door|delivered)\b/)
   ) out.push("emailed");
 
   // DEAL LISTED - a property was published to the marketplace (Penny never does this in chat).
@@ -143,9 +150,35 @@ export function claimedCompletedActions(text: string): ActionClass[] {
     has(t, /\b(i'?ve|i have|i just|we'?ve|we have)\b[^.!?]{0,45}\b(updated|changed|marked|set|saved|added)\b[^.!?]{0,25}\b(status|the note|a note|as (contacted|closed|won|lost|new)|to (contacted|closed|won|lost))\b/)
   ) out.push("status_changed");
 
-  // An offer/future framing anywhere means nothing was claimed as done.
-  if (out.length && has(t, OFFER_OR_FUTURE)) return [];
+  // CLOSING RECORDED - a completed deal was entered into the company ledger / P&L (staff desk).
+  // Distinct from deal_listed (publishing to the marketplace): this is booking a finished closing.
+  if (
+    has(t, /\b(i'?ve|i have|i just|we'?ve|we have)\b[^.!?]{0,45}\b(recorded|logged|entered|booked|saved|added|put)\b[^.!?]{0,30}\b(closing|deal record|the deal|the closing|it)\b[^.!?]{0,24}\b(in|into|to|on)\b[^.!?]{0,14}\b(the )?(ledger|books|p&l|p and l|profit and loss|record|system)\b/) ||
+    has(t, /\b(i'?ve|i have|i just|we'?ve|we have)\b[^.!?]{0,45}\b(recorded|logged|entered|booked)\b[^.!?]{0,22}\b(the )?(closing|deal)\b/) ||
+    has(t, /\b(the )?(closing|deal record)\b[^.!?]{0,20}\b(is|has been|was|have been)\b[^.!?]{0,14}\b(recorded|logged|entered|booked|on the books|in the books|in the ledger)\b/)
+  ) out.push("closing_recorded");
+
   return out;
+}
+
+// Public entry: which COMPLETED action classes a reply claims. Evaluated sentence by
+// sentence, so a real completion is not cancelled by an offer or a polite sign-off
+// elsewhere in the message ("I've sent the invitation. Just let me know if you need
+// anything else.").
+export function claimedCompletedActions(text: string): ActionClass[] {
+  const raw = text || "";
+  if (!raw.trim()) return [];
+  const out = new Set<ActionClass>();
+  for (const sentence of raw.split(/[.!?]+\s+/)) {
+    const t = sentence.toLowerCase();
+    if (!t.trim()) continue;
+    const found = detectClaimsInClause(t);
+    if (!found.length) continue;
+    // Offer/future framing in THIS sentence means its claim is not a completion.
+    if (has(t, OFFER_OR_FUTURE)) continue;
+    for (const cls of found) out.add(cls);
+  }
+  return [...out];
 }
 
 // Which action classes a successfully-run tool actually backs. A tool not listed here
@@ -155,8 +188,10 @@ const TOOL_BACKS: Record<string, ActionClass[]> = {
   // Staff desk tools.
   penny_confirm_payment: ["payment_confirmed", "credited", "unlocked"],
   send_client_email: ["emailed"],
+  send_account_invite: ["emailed"],
   update_opportunity_status: ["status_changed"],
   add_opportunity_note: ["status_changed"],
+  record_closing: ["closing_recorded"],
 };
 
 export function backedActionsFromTools(toolsRun: string[]): Set<ActionClass> {
@@ -205,6 +240,12 @@ const META: Record<ActionClass, { correction: string; fallback: string }> = {
       "you told the staff member a status or note was saved, but no write ran this turn - say plainly what you'd change and do it only after a clear yes",
     fallback:
       "To be accurate: I haven't saved that change yet. Tell me to go ahead and I'll make it.",
+  },
+  closing_recorded: {
+    correction:
+      "you told the staff member the closing was recorded, but no tool recorded a deal this turn - recording a closing writes to the live company P&L and only counts when record_closing actually runs and returns success",
+    fallback:
+      "To be accurate: I haven't recorded that closing yet. Confirm the numbers and tell me to go ahead, and I'll record it.",
   },
 };
 
