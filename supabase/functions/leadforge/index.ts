@@ -2,16 +2,16 @@
 // Search is FREE and returns opportunities with specifics HIDDEN (no address, photos, or source
 // link). Releasing one real property costs one $62.50 LeadForge credit (staff unlimited), and
 // only then reveals its address, photos, and direct source link. Truth-guard: only REAL
-// Google-sourced listings are ever cached or released — never a fabricated one. Market analysis
-// is an AI estimate and is labeled as such; a failed analysis is reported as unavailable, never
-// replaced with invented numbers.
+// sourced listings are ever cached or released - never a fabricated one. Market analysis is an
+// AI ESTIMATE (via OpenAI) and is labeled as such; a failed analysis is reported as unavailable,
+// never replaced with invented numbers.
 
 const DATA_SCHEMA = 'prj_X-ZoVQv6LKXT';
 const SUPABASE_URL = Deno.env.get('SUPABASE_URL')!;
 const SERVICE_KEY = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!;
+const OPENAI_KEY = Deno.env.get('OPENAI_API_KEY');
 const GOOGLE_KEY = Deno.env.get('GOOGLE_API_KEY');
 const GOOGLE_CX = Deno.env.get('GOOGLE_CX');
-const GATEWAY_KEY = Deno.env.get('GATEWAY_API_KEY');
 
 const corsHeaders = {
   'Access-Control-Allow-Origin': '*',
@@ -25,7 +25,7 @@ function json(body: unknown, status = 200) {
   });
 }
 
-async function fetchTimeout(url: string, options: RequestInit, ms = 15000): Promise<Response> {
+async function fetchTimeout(url: string, options: RequestInit, ms = 20000): Promise<Response> {
   const t = new Promise<never>((_, rej) => setTimeout(() => rej(new Error('timeout')), ms));
   return Promise.race([fetch(url, options), t]);
 }
@@ -71,64 +71,71 @@ async function isStaff(staffId: string | null): Promise<boolean> {
   return false;
 }
 
-// --- SEARCH: real listings (Google CSE) + market analysis (gateway). Specifics HIDDEN. ---
+// Market analysis via OpenAI - an AI ESTIMATE, labeled as such. Never fabricated on failure.
+async function marketAnalysis(zip_code: string, city: string, state: string) {
+  if (!OPENAI_KEY) return { analysis: null, source: 'unavailable' };
+  try {
+    const prompt = `Analyze ZIP ${zip_code}${city ? ` (${city}, ${state})` : ''} for short-term rental and co-living investment. These are ESTIMATES for planning, not verified market data. Return ONLY valid JSON, no markdown, with these keys: str_score (number 1-10), coliving_score (number 1-10), avg_rent_2br (number), avg_rent_3br (number), str_avg_adr (number), str_avg_occupancy (number 0-1), coliving_room_rate (number), regulations (friendly|moderate|strict), competition_level (low|medium|high), recommended_strategy (str|coliving|hybrid), risk_factors (array of strings), opportunity_notes (string), demand_drivers (array of strings), peak_months (array of numbers), slow_months (array of numbers).`;
+    const aiRes = await fetchTimeout('https://api.openai.com/v1/chat/completions', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${OPENAI_KEY}` },
+      body: JSON.stringify({
+        model: 'gpt-4o',
+        messages: [{ role: 'user', content: prompt }],
+        temperature: 0.3, max_tokens: 800,
+      }),
+    }, 20000);
+    if (aiRes.ok) {
+      const d = await aiRes.json();
+      const content = d.choices?.[0]?.message?.content || '';
+      const start = content.indexOf('{');
+      const end = content.lastIndexOf('}');
+      if (start >= 0 && end > start) {
+        return { analysis: JSON.parse(content.slice(start, end + 1)), source: 'ai_estimate' };
+      }
+    }
+  } catch (_e) { /* leave null; never invent numbers */ }
+  return { analysis: null, source: 'unavailable' };
+}
+
+// Real listings via Google Custom Search (when the key is authorized). Real source links, unverified.
+async function googleListings(zip_code: string, city: string, state: string, min_beds: number) {
+  if (!GOOGLE_KEY || !GOOGLE_CX) return [];
+  try {
+    const q = `rental property ${zip_code} ${city} ${state} for rent ${min_beds}+ bedrooms`;
+    const sr = await fetchTimeout(
+      `https://www.googleapis.com/customsearch/v1?key=${GOOGLE_KEY}&cx=${GOOGLE_CX}&q=${encodeURIComponent(q)}&num=10`,
+      { method: 'GET' }, 10000);
+    if (!sr.ok) return [];
+    const sd = await sr.json();
+    if (!Array.isArray(sd.items)) return [];
+    return sd.items.map((item: any) => {
+      const text = `${item.title || ''} ${item.snippet || ''}`;
+      const bed = text.match(/(\d+)\s*(bed|br|bedroom)/i);
+      const bath = text.match(/(\d+\.?\d*)\s*(bath|ba|bathroom)/i);
+      const price = text.match(/\$(\d{1,3}(?:,\d{3})*|\d+)/);
+      return {
+        title: item.title || 'Rental property',
+        source_url: item.link,
+        snippet: item.snippet || '',
+        bedrooms: bed ? parseInt(bed[1]) : null,
+        bathrooms: bath ? parseFloat(bath[1]) : null,
+        monthly_rent: price ? parseInt(price[1].replace(/,/g, '')) : null,
+        city, state, zip_code, is_verified: false, requires_verification: true, source: 'google_cse',
+      };
+    }).filter((l: any) => l.source_url && (!l.bedrooms || l.bedrooms >= min_beds));
+  } catch (_e) { return []; }
+}
+
+// --- SEARCH: real listings + market analysis. Specifics HIDDEN until release. ---
 async function doSearch(body: any) {
   const { zip_code, city = '', state = '', min_beds = 2, operation_type = 'all', investor_id = null } = body;
   if (!zip_code) return json({ success: false, error: 'zip_code is required' }, 400);
 
-  // Market analysis — an AI ESTIMATE, labeled as such. Never fabricated on failure.
-  let analysis: any = null;
-  let analysisSource = 'unavailable';
-  if (GATEWAY_KEY) {
-    try {
-      const aiRes = await fetchTimeout('https://ai.gateway.fastrouter.io/api/v1/chat/completions', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json', 'X-API-Key': GATEWAY_KEY },
-        body: JSON.stringify({
-          model: 'google/gemini-2.5-flash',
-          messages: [{ role: 'user', content: `Analyze ZIP ${zip_code}${city ? ` (${city}, ${state})` : ''} for short-term rental and co-living investment. Return ONLY valid JSON (no markdown): { "str_score": number 1-10, "coliving_score": number 1-10, "avg_rent_2br": number, "avg_rent_3br": number, "str_avg_adr": number, "str_avg_occupancy": number 0-1, "coliving_room_rate": number, "regulations": "friendly|moderate|strict", "competition_level": "low|medium|high", "recommended_strategy": "str|coliving|hybrid", "risk_factors": ["string"], "opportunity_notes": "string", "demand_drivers": ["string"], "peak_months": [number], "slow_months": [number] }` }],
-          temperature: 0.3, max_tokens: 800,
-        }),
-      }, 15000);
-      if (aiRes.ok) {
-        const d = await aiRes.json();
-        const content = d.choices?.[0]?.message?.content || '';
-        const m = content.match(/\{[\s\S]*\}/);
-        if (m) { analysis = JSON.parse(m[0]); analysisSource = 'ai_estimate'; }
-      }
-    } catch (_e) { /* leave analysis null; never invent numbers */ }
-  }
-
-  // Real listings via Google Custom Search — real source links, honestly unverified.
-  let found: any[] = [];
-  if (GOOGLE_KEY && GOOGLE_CX) {
-    try {
-      const q = `rental property ${zip_code} ${city} ${state} for rent ${min_beds}+ bedrooms`;
-      const sr = await fetchTimeout(
-        `https://www.googleapis.com/customsearch/v1?key=${GOOGLE_KEY}&cx=${GOOGLE_CX}&q=${encodeURIComponent(q)}&num=10`,
-        { method: 'GET' }, 10000);
-      if (sr.ok) {
-        const sd = await sr.json();
-        if (Array.isArray(sd.items)) {
-          found = sd.items.map((item: any) => {
-            const text = `${item.title} ${item.snippet}`;
-            const bed = text.match(/(\d+)\s*(bed|br|bedroom)/i);
-            const bath = text.match(/(\d+\.?\d*)\s*(bath|ba|bathroom)/i);
-            const price = text.match(/\$(\d{1,3}(?:,\d{3})*|\d+)/);
-            return {
-              title: item.title || 'Rental property',
-              source_url: item.link,
-              snippet: item.snippet || '',
-              bedrooms: bed ? parseInt(bed[1]) : null,
-              bathrooms: bath ? parseFloat(bath[1]) : null,
-              monthly_rent: price ? parseInt(price[1].replace(/,/g, '')) : null,
-              city, state, zip_code, is_verified: false, requires_verification: true,
-            };
-          }).filter((l: any) => l.source_url && (!l.bedrooms || l.bedrooms >= min_beds));
-        }
-      }
-    } catch (_e) { /* no listings found */ }
-  }
+  const [{ analysis, source: analysisSource }, found] = await Promise.all([
+    marketAnalysis(zip_code, city, state),
+    googleListings(zip_code, city, state, min_beds),
+  ]);
 
   // Truth-guard: only cache + offer REAL sourced listings. Teasers hide address/source/photos.
   const opportunities: any[] = [];
@@ -158,11 +165,12 @@ async function doSearch(body: any) {
   return json({
     success: true, zip_code,
     market_analysis: analysis,
-    analysis_source: analysisSource, // 'ai_estimate' or 'unavailable' — never a fabricated default
+    analysis_source: analysisSource,          // 'ai_estimate' (OpenAI) or 'unavailable' - never a fabricated default
+    analysis_disclaimer: analysis ? 'AI estimate for planning only - not verified market data.' : null,
     opportunities, opportunities_found: opportunities.length,
     balance,
     note: opportunities.length === 0
-      ? 'No real listings were found for this search right now. Nothing was charged. Try a different ZIP or filters.'
+      ? 'No real listings were found for this search right now. Nothing was charged.'
       : 'Search is free. Releasing a property spends one $62.50 credit and reveals its address, photos, and direct source link.',
   });
 }
@@ -172,7 +180,6 @@ async function doRelease(body: any) {
   const { investor_id, token, staff_id = null } = body;
   if (!investor_id || !token) return json({ success: false, error: 'investor_id and token are required' }, 400);
 
-  // Look up the cached real listing server-side (never exposed before release).
   let listing: any = null;
   try {
     const res = await dataRest(`leadforge_search_cache?token=eq.${token}&select=listing,expires_at&limit=1`, { method: 'GET' });
