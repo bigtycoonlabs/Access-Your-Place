@@ -93,6 +93,18 @@ const PAYMENT_TYPES = [
   { value: 'funded', label: 'Funded' },
 ];
 
+const DEAL_TYPES = [
+  { value: 'acquisition', label: 'First-Party Acquisition' },
+  { value: 'third_party', label: 'Third-Party Seller (20% of acquisition cost)' },
+  { value: 'setup', label: 'Setup Service' },
+];
+
+const DEAL_TYPE_HINT: Record<string, string> = {
+  acquisition: 'First-party: acquisition fee plus funded payment, minus commission.',
+  third_party: 'Third-party seller: the company takes 20% of the acquisition cost only (deposits, application, and other community fees are excluded), minus commission.',
+  setup: 'Setup service: profit is the setup fee minus the logistics reserve, minus any commission.',
+};
+
 const STATUS_COLORS: Record<string, string> = {
   closed: 'bg-blue-100 text-blue-800',
   completed: 'bg-emerald-100 text-emerald-800',
@@ -112,8 +124,9 @@ export function ExecutiveOverview({ staffId, staffName, isAdmin = false }: Execu
   const [activeView, setActiveView] = useState<'overview' | 'deals' | 'weekly'>('overview');
   const [sendingSummary, setSendingSummary] = useState(false);
   const [formData, setFormData] = useState({
-    client_name: '', property_address: '', deal_status: 'closed', payment_type: 'cash',
+    client_name: '', property_address: '', deal_type: 'acquisition', deal_status: 'closed', payment_type: 'cash',
     acquisition_fee_total: '', funded_payment: '', commission_paid: '',
+    acquisition_cost: '', setup_fee: '', logistics_reserve: '',
     assigned_staff_id: '', assigned_staff_name: '', staff_role: 'acquisition_manager', notes: ''
   });
   const { toast } = useToast();
@@ -155,8 +168,9 @@ export function ExecutiveOverview({ staffId, staffName, isAdmin = false }: Execu
       toast({ title: 'Deal Record Added' });
       setShowAddDeal(false);
       setFormData({
-        client_name: '', property_address: '', deal_status: 'closed', payment_type: 'cash',
+        client_name: '', property_address: '', deal_type: 'acquisition', deal_status: 'closed', payment_type: 'cash',
         acquisition_fee_total: '', funded_payment: '', commission_paid: '',
+        acquisition_cost: '', setup_fee: '', logistics_reserve: '',
         assigned_staff_id: '', assigned_staff_name: '', staff_role: 'acquisition_manager', notes: ''
       });
       loadData();
@@ -196,11 +210,31 @@ export function ExecutiveOverview({ staffId, staffName, isAdmin = false }: Execu
     });
   };
 
-  // Auto-calculate net
-  const calcNet = () => {
-    const fee = parseFloat(formData.acquisition_fee_total) || 0;
-    const comm = parseFloat(formData.commission_paid) || 0;
-    return (fee - comm).toFixed(2);
+  // Auto-calculate net - mirrors the server's dealNet() EXACTLY so this preview can never
+  // disagree with what actually gets recorded. deal_type drives the acquisition side; setup
+  // profit (fee - reserve) rides on any deal type; commission comes out of the acquisition side.
+  const num = (v: string) => parseFloat(v) || 0;
+  const calcNetParts = () => {
+    const commission = num(formData.commission_paid);
+    const setupFee = num(formData.setup_fee);
+    const logistics = num(formData.logistics_reserve);
+    const setupProfit = setupFee ? setupFee - logistics : 0;
+    let grossAcq = 0;
+    if (formData.deal_type === 'third_party') grossAcq = 0.20 * num(formData.acquisition_cost);
+    else if (formData.deal_type === 'setup') grossAcq = 0;
+    else grossAcq = num(formData.acquisition_fee_total) + num(formData.funded_payment);
+    return { grossAcq, commission, setupProfit, net: grossAcq - commission + setupProfit };
+  };
+  const calcNet = () => calcNetParts().net.toFixed(2);
+  const money2 = (n: number) => '$' + n.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+  const netBreakdown = () => {
+    const p = calcNetParts();
+    const acqLabel = formData.deal_type === 'third_party'
+      ? '20% of acquisition cost'
+      : formData.deal_type === 'setup' ? 'no acquisition side' : 'acquisition fee + funded payment';
+    const parts = [`${acqLabel}: ${money2(p.grossAcq)}`, `commission: -${money2(p.commission)}`];
+    if (p.setupProfit) parts.push(`setup profit: ${money2(p.setupProfit)}`);
+    return parts.join('  |  ');
   };
 
   // Access gate: non-admins see restricted message and no edge function calls are made
@@ -551,7 +585,7 @@ export function ExecutiveOverview({ staffId, staffName, isAdmin = false }: Execu
           <DialogHeader>
             <DialogTitle>Add Deal Record</DialogTitle>
             <DialogDescription id="add-deal-desc">
-              Enter deal details. Net earnings will auto-calculate from acquisition fee minus commission.
+              Choose the deal type, then enter the amounts. Net earnings auto-calculate using the same P&amp;L rules the server records with.
             </DialogDescription>
           </DialogHeader>
           <div className="space-y-4">
@@ -562,6 +596,16 @@ export function ExecutiveOverview({ staffId, staffName, isAdmin = false }: Execu
             <div>
               <Label>Property Address</Label>
               <Input value={formData.property_address} onChange={(e) => setFormData({ ...formData, property_address: e.target.value })} placeholder="Property address" />
+            </div>
+            <div>
+              <Label>Deal Type</Label>
+              <Select value={formData.deal_type} onValueChange={(v) => setFormData({ ...formData, deal_type: v })}>
+                <SelectTrigger><SelectValue /></SelectTrigger>
+                <SelectContent>
+                  {DEAL_TYPES.map(t => <SelectItem key={t.value} value={t.value}>{t.label}</SelectItem>)}
+                </SelectContent>
+              </Select>
+              <p className="text-xs text-gray-500 mt-1">{DEAL_TYPE_HINT[formData.deal_type]}</p>
             </div>
             <div className="grid grid-cols-2 gap-4">
               <div>
@@ -583,21 +627,52 @@ export function ExecutiveOverview({ staffId, staffName, isAdmin = false }: Execu
                 </Select>
               </div>
             </div>
-            <div className="grid grid-cols-3 gap-4">
-              <div>
-                <Label>Acquisition Fee</Label>
-                <div className="relative">
-                  <DollarSign className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400" />
-                  <Input type="number" step="0.01" className="pl-8" value={formData.acquisition_fee_total} onChange={(e) => setFormData({ ...formData, acquisition_fee_total: e.target.value })} placeholder="0.00" />
+            {/* Financial inputs - shown based on the selected deal type */}
+            {formData.deal_type === 'acquisition' && (
+              <div className="grid grid-cols-3 gap-4">
+                <div>
+                  <Label>Acquisition Fee</Label>
+                  <div className="relative">
+                    <DollarSign className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400" />
+                    <Input type="number" step="0.01" className="pl-8" value={formData.acquisition_fee_total} onChange={(e) => setFormData({ ...formData, acquisition_fee_total: e.target.value })} placeholder="0.00" />
+                  </div>
+                </div>
+                <div>
+                  <Label>Funded Payment</Label>
+                  <div className="relative">
+                    <DollarSign className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400" />
+                    <Input type="number" step="0.01" className="pl-8" value={formData.funded_payment} onChange={(e) => setFormData({ ...formData, funded_payment: e.target.value })} placeholder="0.00" />
+                  </div>
+                </div>
+                <div>
+                  <Label>Commission Paid</Label>
+                  <div className="relative">
+                    <DollarSign className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400" />
+                    <Input type="number" step="0.01" className="pl-8" value={formData.commission_paid} onChange={(e) => setFormData({ ...formData, commission_paid: e.target.value })} placeholder="0.00" />
+                  </div>
                 </div>
               </div>
-              <div>
-                <Label>Funded Payment</Label>
-                <div className="relative">
-                  <DollarSign className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400" />
-                  <Input type="number" step="0.01" className="pl-8" value={formData.funded_payment} onChange={(e) => setFormData({ ...formData, funded_payment: e.target.value })} placeholder="0.00" />
+            )}
+            {formData.deal_type === 'third_party' && (
+              <div className="grid grid-cols-2 gap-4">
+                <div>
+                  <Label>Acquisition Cost</Label>
+                  <div className="relative">
+                    <DollarSign className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400" />
+                    <Input type="number" step="0.01" className="pl-8" value={formData.acquisition_cost} onChange={(e) => setFormData({ ...formData, acquisition_cost: e.target.value })} placeholder="0.00" />
+                  </div>
+                  <p className="text-xs text-gray-500 mt-1">Company takes 20% of this amount.</p>
+                </div>
+                <div>
+                  <Label>Commission Paid</Label>
+                  <div className="relative">
+                    <DollarSign className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400" />
+                    <Input type="number" step="0.01" className="pl-8" value={formData.commission_paid} onChange={(e) => setFormData({ ...formData, commission_paid: e.target.value })} placeholder="0.00" />
+                  </div>
                 </div>
               </div>
+            )}
+            {formData.deal_type === 'setup' && (
               <div>
                 <Label>Commission Paid</Label>
                 <div className="relative">
@@ -605,13 +680,37 @@ export function ExecutiveOverview({ staffId, staffName, isAdmin = false }: Execu
                   <Input type="number" step="0.01" className="pl-8" value={formData.commission_paid} onChange={(e) => setFormData({ ...formData, commission_paid: e.target.value })} placeholder="0.00" />
                 </div>
               </div>
+            )}
+            {/* Setup - primary for a setup deal, an optional add-on for any other deal type */}
+            <div className="p-3 bg-slate-50 rounded-lg border border-slate-200 space-y-3">
+              <p className="text-sm font-medium text-slate-700">
+                {formData.deal_type === 'setup' ? 'Setup Service' : 'Setup Add-On (optional)'}
+              </p>
+              <div className="grid grid-cols-2 gap-4">
+                <div>
+                  <Label>Setup Fee</Label>
+                  <div className="relative">
+                    <DollarSign className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400" />
+                    <Input type="number" step="0.01" className="pl-8" value={formData.setup_fee} onChange={(e) => setFormData({ ...formData, setup_fee: e.target.value })} placeholder="0.00" />
+                  </div>
+                </div>
+                <div>
+                  <Label>Logistics Reserve</Label>
+                  <div className="relative">
+                    <DollarSign className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400" />
+                    <Input type="number" step="0.01" className="pl-8" value={formData.logistics_reserve} onChange={(e) => setFormData({ ...formData, logistics_reserve: e.target.value })} placeholder="0.00" />
+                  </div>
+                </div>
+              </div>
+              <p className="text-xs text-gray-500">Setup profit = setup fee - logistics reserve. Leave blank if there is no setup component.</p>
             </div>
-            {/* Auto-calculated net */}
+            {/* Auto-calculated net (mirrors the server P&L exactly) */}
             <div className="p-3 bg-emerald-50 rounded-lg border border-emerald-200">
               <div className="flex justify-between items-center">
                 <span className="text-sm font-medium text-emerald-700">Net After Commission (Auto-calculated)</span>
                 <span className="text-lg font-bold text-emerald-800">${calcNet()}</span>
               </div>
+              <p className="text-xs text-emerald-700 mt-1">{netBreakdown()}</p>
             </div>
             <div>
               <Label>Assigned AM/SM</Label>
