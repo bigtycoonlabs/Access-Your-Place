@@ -70,8 +70,20 @@ serve(async (req: Request) => {
             validPassword = false
           }
         } else {
-          // Plain text comparison
+          // Legacy plain-text password: verify it, then upgrade to bcrypt in place so it is
+          // never stored in plain text again (self-healing; best-effort, never blocks login).
           validPassword = password === storedPassword
+          if (validPassword) {
+            try {
+              const bcrypt = await import('https://deno.land/x/bcrypt@v0.4.1/mod.ts')
+              const upgraded = bcrypt.hashSync(password)
+              await fetch(`${supabaseUrl}/rest/v1/investors?id=eq.${investor.id}`, {
+                method: 'PATCH',
+                headers: { ...headers, 'Content-Type': 'application/json', Prefer: 'return=minimal' },
+                body: JSON.stringify({ password_hash: upgraded })
+              })
+            } catch { /* upgrade is best-effort; login still succeeds */ }
+          }
         }
       }
 
