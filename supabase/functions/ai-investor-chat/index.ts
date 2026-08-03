@@ -1,76 +1,122 @@
+// ai-investor-chat — Penny, the in-account guide for logged-in investors (and staff fallback).
+//
+// REBUILT to the honest architecture the public + staff Pennys already use:
+//   1. TRUTH SPINE (penny_truth.ts): every reply is audited before it is shown or saved, so
+//      Penny can never tell a logged-in investor "I've found you 5 deals / searched your market /
+//      credited you / unlocked it" unless a tool truly did it this turn. Right now this surface
+//      runs no stateful tools, so ANY completion claim is corrected. A blind founder's rule:
+//      a confident wrong answer is worse than an honest "let me check."
+//   2. REAL GROUNDING: on every real question she is handed the ACTUAL live deals on the platform
+//      (penny_live_deals) and the ACTUAL published library articles (penny_library_articles) — so
+//      she references real current inventory, never invented example numbers.
+//   3. HONEST CAPABILITY POSTURE: deep off-market LeadForge search runs inside the platform's
+//      tooling, not from this chat. She says so plainly and routes them, instead of pretending.
+//   4. OpenAI-first provider (gpt-5.5 -> gpt-4o), matching the rest of the family; Anthropic only
+//      as a last-resort safety net if a key is present (it is not, in this project).
+//
+// The request/response CONTRACT is unchanged (actions: get_suggested_questions, get_history, chat;
+// chat returns { success, message, session_id }) so the live investor UI keeps working exactly.
+
 import { serve } from 'https://deno.land/std@0.168.0/http/server.ts'
+import { guardReply } from './penny_truth.ts'
 
 const corsHeaders = {
   'Access-Control-Allow-Origin': '*',
   'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
 }
 
-// Penny AI System Prompt - This defines Penny's personality and knowledge
-const PENNY_SYSTEM_PROMPT = `You are Penny, the AI Success Manager at Access Your Place (AYP), powered by Set Up Your Place LLC. You are a warm, knowledgeable, and professional AI assistant specializing in rental arbitrage, short-term rentals (STR), and co-living investments.
+// Penny's honest, grounded system prompt for a LOGGED-IN investor.
+const PENNY_SYSTEM_PROMPT = `You are Penny, the in-account guide at Access Your Place (AYP), by Set Up Your Place LLC. You help people build a furnished, flexible-rental business — short-term (STR), mid-term, corporate, and shared/co-living arbitrage. You are warm, direct, and honest: a sharp operator talking to another operator.
 
-## Your Personality:
-- Friendly, approachable, and encouraging
-- Professional but not stuffy - you use conversational language
-- Enthusiastic about helping investors succeed
-- Patient with beginners, detailed with experienced investors
-- Always honest about risks and realistic expectations
+## Your voice
+- Lead with the answer. Keep it short; go deeper when asked.
+- Encourage, never coddle, never hype. Data over dreams. Never promise guaranteed returns.
+- If a deal doesn't pencil, say so plainly — a hard truth beats a comfortable lie.
 
-## Your Expertise:
-1. **Rental Arbitrage**: Master lease agreements, landlord negotiations, legal considerations, market analysis
-2. **Short-Term Rentals (STR)**: Airbnb/VRBO optimization, pricing strategies, guest management, regulations
-3. **Co-Living Spaces**: Room-by-room rentals, tenant screening, house rules, community building
-4. **Market Analysis**: ADR (Average Daily Rate), occupancy rates, seasonality, competition analysis
-5. **Property Evaluation**: ROI calculations, cash flow projections, deal analysis
-6. **Operations**: Setup costs, furnishing, cleaning, maintenance, automation tools
-7. **Regulations**: Local STR laws, licensing requirements, tax implications
+## What you actually know and can do here
+- When there are live deals on the platform you are handed them below (real market, type, economics, and score). Treat that list as your source of truth about what is available right now. Discuss those openly.
+- When you are handed relevant library articles below, point to them by title. Never invent an article, a link, a statistic, an address, or a deal that is not in what you were handed.
+- You can talk through any market, strategy, or set of numbers the investor brings you, and reason about their own figures with them.
 
-## Access Your Place Services:
-- Deal Flow: Vetted rental arbitrage opportunities
-- Setup Services: Full property setup including furnishing, photography, listing optimization
-- Acquisition Support: Help negotiating with landlords and securing properties
-- Portfolio Management: Tools to track and optimize investments
-- Education: Resources and guidance for new and experienced investors
+## Be honest about the edges (this matters most)
+- If the investor's target market or deal type is NOT in the live-deal list you were handed, say so plainly. Do not invent a deal or make up "example" inventory as if it were real.
+- Deeper off-market deal-finding (LeadForge) and full property search run inside the platform's tooling, not from this chat window. If they want that, tell them honestly that you'll line it up with the acquisition team / that it runs inside the platform — do not claim you already ran a search or found specific off-market properties from here.
+- You do NOT confirm payments, credit accounts, unlock deals, or send emails from this chat. Those are done by the success team and the platform. Never tell someone one of those things happened unless it truly did. If they need one, say plainly what the next step is and who does it.
 
-## Response Guidelines:
-1. Always introduce yourself briefly if it's the start of a conversation
-2. Provide specific, actionable advice when possible
-3. Use real numbers and examples (e.g., "A typical 3BR in Austin might generate $4,000-6,000/month")
-4. Acknowledge when you don't have specific data and suggest how to find it
-5. Encourage users to book a call with the AYP team for personalized advice
-6. Keep responses focused and scannable - use bullet points for lists
-7. If asked about specific deals, remind them to check the Deals page or contact the team
-8. Never make guarantees about returns - always mention that results vary
+## When you genuinely can't resolve something
+Point them to the acquisition/success team, or suggest they book a call. It is always fine to say "I don't have that in front of me — here's how we get it."
 
-## Important Notes:
-- You work for Access Your Place, not as an independent advisor
-- Always recommend consulting with the AYP acquisition team for major decisions
-- Be transparent about the risks of rental arbitrage
-- Encourage users to do their own due diligence
-- If asked about topics outside real estate investing, politely redirect to your expertise
+Never claim to be human. You are Penny, an AI. Be helpful, be honest, be encouraging.`
 
-Remember: You're here to help investors succeed with rental arbitrage. Be helpful, be honest, and be encouraging!`
-
-// Staff-specific additions to the system prompt
+// Staff who land here (the full staff desk lives in penny-staff-chat). Kept honest: no implication
+// that this surface can run searches or generate live inventory it cannot actually produce.
 const STAFF_ADDITIONS = `
 
-## Additional Staff Capabilities:
-As a staff member, you can also help with:
-- Property searches and market research
-- Generating listing descriptions and marketing content
-- Analyzing deals in the pipeline
-- Pulling property photos and information
-- Creating reports and summaries
-- Answering operational questions
-
-When staff ask you to search or generate content, provide detailed, professional responses suitable for client-facing materials.`
+## Note for staff
+You are on the lightweight in-account chat. For real tools — confirming payments, sending client emails, updating pipeline, running searches — use the staff desk (Penny staff chat), which is wired to those tools. Here, help think through strategy, drafting, and analysis, and be explicit that any action (search, send, update) has to be run from the staff desk, not claimed from here.`
 
 type PennyMsg = { role: string; content: string }
+type Effort = 'low' | 'medium'
 
-async function callAnthropic(key: string, system: string, messages: PennyMsg[]): Promise<string> {
+// Shared RPC helper: calls a public SECURITY DEFINER accessor with the service role key.
+async function rpc(url: string, key: string, fn: string, args: Record<string, unknown> = {}): Promise<any> {
+  try {
+    const res = await fetch(`${url}/rest/v1/rpc/${fn}`, {
+      method: 'POST',
+      headers: { apikey: key, Authorization: `Bearer ${key}`, 'Content-Type': 'application/json' },
+      body: JSON.stringify(args),
+    })
+    if (!res.ok) return null
+    return await res.json()
+  } catch {
+    return null
+  }
+}
+
+// The live deals on the platform = published properties. Sealing-safe fields only
+// (general market + type + economics + score) — same source of truth the public Penny uses.
+async function fetchLiveDeals(url: string, key: string): Promise<string> {
+  const props = await rpc(url, key, 'penny_live_deals')
+  if (!Array.isArray(props) || props.length === 0) return ''
+  const lines = props.map((p: any) => {
+    const loc = [p.city, p.state].filter(Boolean).join(', ') + (p.zip_code ? ` ${p.zip_code}` : '')
+    const bits = [
+      loc || 'market on file',
+      p.operation_type ? String(p.operation_type) : '',
+      p.is_furnished ? 'furnished' : 'unfurnished',
+      p.monthly_rent ? `rent $${Math.round(Number(p.monthly_rent))}/mo` : '',
+      p.str_viability_score ? `STR score ${p.str_viability_score}` : '',
+      p.coliving_viability_score ? `shared-living score ${p.coliving_viability_score}` : '',
+      p.is_verified ? 'verified' : '',
+    ].filter(Boolean)
+    return `- ${bits.join(' · ')}`
+  })
+  return lines.join('\n')
+}
+
+// Pull the most relevant PUBLISHED library articles for the investor's question.
+async function searchLibrary(url: string, key: string, query: string) {
+  const term = query.replace(/[(),*]/g, ' ').trim().slice(0, 120)
+  if (!term) return []
+  const rows = await rpc(url, key, 'penny_library_articles', { p_term: term })
+  return Array.isArray(rows) ? rows : []
+}
+
+// Cheap router: analytical questions get a little more room to reason.
+function chooseEffort(query: string): Effort {
+  const q = (query || '').toLowerCase()
+  if (/\b(analyz|compare|versus|\bvs\b|should i|worth it|which (market|city|deal|strateg)|cash ?flow|cap rate|\broi\b|profit|margin|break ?even|how much|estimate|run the numbers|projec|scenario|risk|financ)\b/.test(q)) {
+    return 'medium'
+  }
+  return 'low'
+}
+const EFFORT_TOKENS: Record<Effort, number> = { low: 1500, medium: 2200 }
+
+async function callAnthropic(key: string, system: string, messages: PennyMsg[], effort: Effort): Promise<string> {
   const res = await fetch('https://api.anthropic.com/v1/messages', {
     method: 'POST',
     headers: { 'Content-Type': 'application/json', 'x-api-key': key, 'anthropic-version': '2023-06-01' },
-    body: JSON.stringify({ model: 'claude-3-5-sonnet-20241022', max_tokens: 1500, system, messages }),
+    body: JSON.stringify({ model: 'claude-3-5-sonnet-20241022', max_tokens: EFFORT_TOKENS[effort], system, messages }),
   })
   const data = await res.json()
   if (!res.ok || data?.error) throw new Error(data?.error?.message || `anthropic http ${res.status}`)
@@ -79,11 +125,22 @@ async function callAnthropic(key: string, system: string, messages: PennyMsg[]):
   return text
 }
 
-async function callOpenAI(key: string, system: string, messages: PennyMsg[]): Promise<string> {
+// One Chat Completions call. Reasoning models (gpt-5.x) take reasoning_effort +
+// max_completion_tokens; classic models (gpt-4o) take max_tokens and reject those.
+async function callOpenAIModel(
+  key: string, model: string, reasoning: boolean, system: string, messages: PennyMsg[], effort: Effort,
+): Promise<string> {
+  const bodyObj: Record<string, unknown> = { model, messages: [{ role: 'system', content: system }, ...messages] }
+  if (reasoning) {
+    bodyObj.reasoning_effort = effort
+    bodyObj.max_completion_tokens = EFFORT_TOKENS[effort]
+  } else {
+    bodyObj.max_tokens = EFFORT_TOKENS[effort]
+  }
   const res = await fetch('https://api.openai.com/v1/chat/completions', {
     method: 'POST',
     headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${key}` },
-    body: JSON.stringify({ model: 'gpt-4o', max_tokens: 1500, messages: [{ role: 'system', content: system }, ...messages] }),
+    body: JSON.stringify(bodyObj),
   })
   const data = await res.json()
   if (!res.ok || data?.error) throw new Error(data?.error?.message || `openai http ${res.status}`)
@@ -92,18 +149,25 @@ async function callOpenAI(key: string, system: string, messages: PennyMsg[]): Pr
   return text
 }
 
-// Claude (Anthropic) first; OpenAI as an automatic fallback if Claude's key is missing or the call fails.
-async function askPennyDual(system: string, messages: PennyMsg[]): Promise<string> {
-  const anthropicKey = Deno.env.get('ANTHROPIC_API_KEY')
+const OPENAI_MODELS: Array<{ id: string; reasoning: boolean }> = [
+  { id: 'gpt-5.5', reasoning: true },
+  { id: 'gpt-4o', reasoning: false },
+]
+
+// OpenAI first (Penny's real engine in this project), Anthropic only as a last-resort net.
+async function askPenny(system: string, messages: PennyMsg[], effort: Effort): Promise<string> {
   const openaiKey = Deno.env.get('OPENAI_API_KEY')
+  const anthropicKey = Deno.env.get('ANTHROPIC_API_KEY')
   const errors: string[] = []
-  if (anthropicKey) {
-    try { return await callAnthropic(anthropicKey, system, messages) }
-    catch (e) { errors.push(`anthropic: ${e instanceof Error ? e.message : 'failed'}`) }
-  }
   if (openaiKey) {
-    try { return await callOpenAI(openaiKey, system, messages) }
-    catch (e) { errors.push(`openai: ${e instanceof Error ? e.message : 'failed'}`) }
+    for (const m of OPENAI_MODELS) {
+      try { return await callOpenAIModel(openaiKey, m.id, m.reasoning, system, messages, effort) }
+      catch (e) { errors.push(`${m.id}: ${e instanceof Error ? e.message : 'failed'}`) }
+    }
+  }
+  if (anthropicKey) {
+    try { return await callAnthropic(anthropicKey, system, messages, effort) }
+    catch (e) { errors.push(`anthropic: ${e instanceof Error ? e.message : 'failed'}`) }
   }
   throw new Error(errors.length ? errors.join(' | ') : 'no reasoning provider configured')
 }
@@ -116,29 +180,27 @@ serve(async (req) => {
   try {
     const body = await req.json()
     const { action, user_id, user_type, user_name, message, session_id, conversation_history } = body
-    
+
     const supabaseUrl = Deno.env.get('SUPABASE_URL')!
     const supabaseKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!
-    const anthropicKey = Deno.env.get('ANTHROPIC_API_KEY')
 
-    // Action: Get suggested questions
+    // Action: Get suggested questions (unchanged contract)
     if (action === 'get_suggested_questions') {
       const userTypeFilter = user_type || 'investor'
-      
+
       const response = await fetch(
         `${supabaseUrl}/rest/v1/ai_suggested_questions?user_type=eq.${userTypeFilter}&is_active=eq.true&order=priority.desc&limit=8`,
         { headers: { 'apikey': supabaseKey, 'Authorization': `Bearer ${supabaseKey}` } }
       )
-      
+
       const questions = await response.json()
-      
-      // If no questions in database, return defaults
+
       if (!questions || questions.length === 0) {
         const defaults = userTypeFilter === 'staff' ? [
-          "Search for properties in Austin, TX",
-          "Generate a listing description for a 3BR property",
+          "Help me think through a co-living setup in Denver",
+          "Draft a landlord pitch for a mid-term rental",
           "What are the STR regulations in Nashville?",
-          "Analyze the co-living market in Denver"
+          "Walk me through analyzing a deal in the pipeline"
         ] : [
           "What markets are best for STR investing right now?",
           "How does rental arbitrage work?",
@@ -147,28 +209,28 @@ serve(async (req) => {
           "Can you explain co-living vs short-term rentals?",
           "What are the risks of rental arbitrage?"
         ]
-        
+
         return new Response(JSON.stringify({ suggestions: defaults }), {
           headers: { ...corsHeaders, 'Content-Type': 'application/json' }
         })
       }
-      
-      return new Response(JSON.stringify({ 
-        suggestions: questions.map((q: any) => q.question) 
+
+      return new Response(JSON.stringify({
+        suggestions: questions.map((q: any) => q.question)
       }), {
         headers: { ...corsHeaders, 'Content-Type': 'application/json' }
       })
     }
 
-    // Action: Get chat history
+    // Action: Get chat history (unchanged contract)
     if (action === 'get_history') {
       const response = await fetch(
         `${supabaseUrl}/rest/v1/ai_chat_sessions?user_id=eq.${user_id}&user_type=eq.${user_type || 'investor'}&order=updated_at.desc&limit=10`,
         { headers: { 'apikey': supabaseKey, 'Authorization': `Bearer ${supabaseKey}` } }
       )
-      
+
       const history = await response.json()
-      
+
       return new Response(JSON.stringify({ history: history || [] }), {
         headers: { ...corsHeaders, 'Content-Type': 'application/json' }
       })
@@ -176,8 +238,8 @@ serve(async (req) => {
 
     // Action: Chat with Penny
     if (action === 'chat') {
-      if (!anthropicKey && !Deno.env.get('OPENAI_API_KEY')) {
-        return new Response(JSON.stringify({ 
+      if (!Deno.env.get('OPENAI_API_KEY') && !Deno.env.get('ANTHROPIC_API_KEY')) {
+        return new Response(JSON.stringify({
           success: false,
           error: 'AI service not configured. Please contact support.',
           message: "I'm sorry, but I'm having trouble connecting to my brain right now! Please try again in a moment, or reach out to our team directly at support@accessyourplace.com."
@@ -187,7 +249,7 @@ serve(async (req) => {
       }
 
       if (!message) {
-        return new Response(JSON.stringify({ 
+        return new Response(JSON.stringify({
           success: false,
           error: 'Message is required'
         }), {
@@ -201,45 +263,47 @@ serve(async (req) => {
       if (user_type === 'staff') {
         systemPrompt += STAFF_ADDITIONS
       }
-
-      // Add user context to the system prompt
       if (user_name) {
         systemPrompt += `\n\nYou are currently chatting with ${user_name}. Address them by their first name when appropriate.`
       }
 
-      // Build conversation messages for the AI
-      const messages: any[] = []
-      
-      // Add conversation history if provided
-      if (conversation_history && Array.isArray(conversation_history)) {
-        for (const msg of conversation_history.slice(-10)) { // Keep last 10 messages for context
-          messages.push({
-            role: msg.role,
-            content: msg.content
-          })
-        }
+      // REAL GROUNDING: hand Penny the actual live deals + relevant library articles, so she
+      // speaks from real current inventory instead of invented examples.
+      const [deals, arts] = await Promise.all([
+        fetchLiveDeals(supabaseUrl, supabaseKey),
+        searchLibrary(supabaseUrl, supabaseKey, message),
+      ])
+      if (deals) {
+        systemPrompt += `\n\n──────────\n\nLIVE DEALS ON THE PLATFORM RIGHT NOW (real market, type, economics, and score — this is your source of truth about current inventory). If the investor's market or deal type is not here, say so plainly and offer to line up an off-market search with the team; do not invent inventory:\n${deals}`
       } else {
-        // Just add the current message
-        messages.push({
-          role: 'user',
-          content: message
-        })
+        systemPrompt += `\n\n──────────\n\nThere are no live deals on the platform to show right now. Do not invent any. If the investor wants a specific market or deal type, be honest that off-market deal-finding runs inside the platform's tooling / with the acquisition team, and offer to line that up.`
+      }
+      if (Array.isArray(arts) && arts.length) {
+        const list = arts
+          .map((a: { title?: string; slug?: string; excerpt?: string }) => `- "${a.title}" (/blog/${a.slug}): ${a.excerpt ?? ''}`)
+          .join('\n')
+        systemPrompt += `\n\n──────────\n\nRELEVANT LIBRARY ARTICLES (point to these by title; do not invent others):\n${list}`
       }
 
-      // Reason with Claude first; fall back to OpenAI if Claude's key is missing or fails.
-      let dualText = ''
-      let dualError: unknown = null
-      try {
-        dualText = await askPennyDual(systemPrompt, messages)
-      } catch (err) {
-        dualError = err
-        console.error('AI providers failed:', err)
+      // Build conversation messages for the AI
+      const messages: PennyMsg[] = []
+      if (conversation_history && Array.isArray(conversation_history)) {
+        for (const msg of conversation_history.slice(-10)) {
+          messages.push({ role: msg.role, content: String(msg.content) })
+        }
+      } else {
+        messages.push({ role: 'user', content: message })
       }
-      const aiData: any = dualError ? { error: dualError } : { content: [{ text: dualText }] }
-      
-      if (aiData.error) {
-        console.error('Anthropic API error:', aiData.error)
-        return new Response(JSON.stringify({ 
+      // The model requires the first message to be from the user.
+      while (messages.length && messages[0].role !== 'user') messages.shift()
+      if (messages.length === 0) messages.push({ role: 'user', content: message })
+
+      let assistantMessage = ''
+      try {
+        assistantMessage = await askPenny(systemPrompt, messages, chooseEffort(message))
+      } catch (err) {
+        console.error('AI providers failed:', err)
+        return new Response(JSON.stringify({
           success: false,
           error: 'AI service error',
           message: "I apologize, but I'm experiencing some technical difficulties. Please try again in a moment, or feel free to reach out to our team directly!"
@@ -248,9 +312,12 @@ serve(async (req) => {
         })
       }
 
-      const assistantMessage = aiData.content?.[0]?.text || "I'm sorry, I couldn't generate a response. Please try again."
+      // TRUTH SPINE: no stateful tools ran on this surface, so any "it's done" claim is unbacked.
+      // The guard appends an honest correction rather than let a false completion stand.
+      assistantMessage = guardReply(assistantMessage, []).text
+      if (!assistantMessage) assistantMessage = "I'm sorry, I couldn't generate a response. Please try again."
 
-      // Save the conversation to the database
+      // Save the conversation to the database (unchanged behavior)
       if (user_id) {
         const newSessionId = session_id || `session_${Date.now()}`
         const updatedMessages = [
@@ -259,7 +326,6 @@ serve(async (req) => {
           { role: 'assistant', content: assistantMessage, timestamp: new Date().toISOString() }
         ]
 
-        // Check if session exists
         const existingSession = await fetch(
           `${supabaseUrl}/rest/v1/ai_chat_sessions?session_id=eq.${newSessionId}&user_id=eq.${user_id}`,
           { headers: { 'apikey': supabaseKey, 'Authorization': `Bearer ${supabaseKey}` } }
@@ -267,7 +333,6 @@ serve(async (req) => {
         const sessions = await existingSession.json()
 
         if (sessions && sessions.length > 0) {
-          // Update existing session
           await fetch(
             `${supabaseUrl}/rest/v1/ai_chat_sessions?id=eq.${sessions[0].id}`,
             {
@@ -284,7 +349,6 @@ serve(async (req) => {
             }
           )
         } else {
-          // Create new session
           await fetch(
             `${supabaseUrl}/rest/v1/ai_chat_sessions`,
             {
@@ -305,7 +369,7 @@ serve(async (req) => {
         }
       }
 
-      return new Response(JSON.stringify({ 
+      return new Response(JSON.stringify({
         success: true,
         message: assistantMessage,
         session_id: session_id || `session_${Date.now()}`
@@ -315,7 +379,7 @@ serve(async (req) => {
     }
 
     // Unknown action
-    return new Response(JSON.stringify({ 
+    return new Response(JSON.stringify({
       error: 'Unknown action',
       valid_actions: ['get_suggested_questions', 'get_history', 'chat']
     }), {
@@ -325,7 +389,7 @@ serve(async (req) => {
 
   } catch (error: any) {
     console.error('Edge function error:', error)
-    return new Response(JSON.stringify({ 
+    return new Response(JSON.stringify({
       success: false,
       error: error.message,
       message: "Oops! Something went wrong on my end. Please try again, or contact our team if the issue persists."
