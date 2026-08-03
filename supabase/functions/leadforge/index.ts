@@ -169,6 +169,10 @@ async function doSearch(body: any) {
     analysis_disclaimer: analysis ? 'AI estimate for planning only - not verified market data.' : null,
     opportunities, opportunities_found: opportunities.length,
     balance,
+    acquisition_call: {
+      available: true, free: true, no_obligation: true,
+      message: 'These figures are AI estimates based on our research methodology, not verified market data. If you would rather see research validated by a human, you can schedule a free, no-obligation call with an acquisition manager on our success team - to review any property you find here, or any property listed in the marketplace.',
+    },
     note: opportunities.length === 0
       ? 'No real listings were found for this search right now. Nothing was charged.'
       : 'Search is free. Releasing a property spends one $62.50 credit and reveals its address, photos, and direct source link.',
