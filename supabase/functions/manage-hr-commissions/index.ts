@@ -66,30 +66,72 @@ function yearStartISO(): string {
   return new Date(Date.UTC(now.getUTCFullYear(), 0, 1, 0, 0, 0)).toISOString()
 }
 
+const r2 = (x: number) => Math.round((Number(x) || 0) * 100) / 100
+
+// Per-deal company economics. deal_type drives the acquisition side:
+//   'acquisition' (first-party): acquisition_fee_total + funded_payment
+//   'third_party'             : 20% of acquisition_cost ONLY (deposits / application / other
+//                               community fees are excluded from the 20% base)
+//   'setup'                   : no acquisition side; setup handled below
+// Setup is an independent add-on that can ride on any deal: the client is billed setup_fee,
+// logistics_reserve is the pass-through (logistics, on-the-ground pro, travel, and the setup
+// manager's pay), and setup profit = setup_fee - logistics_reserve.
+// Team commission always comes out of the acquisition side (including the third-party 20%).
+function dealNet(d: any) {
+  const dtype = String(d.deal_type || 'acquisition').toLowerCase()
+  const commission = Number(d.commission_paid) || 0
+  const setup_fee = Number(d.setup_fee) || 0
+  const logistics_reserved = Number(d.logistics_reserve) || 0
+  const setup_profit = setup_fee ? r2(setup_fee - logistics_reserved) : 0
+  let gross_acquisition = 0
+  if (dtype === 'third_party' || dtype === 'third-party' || dtype === 'thirdparty') {
+    gross_acquisition = 0.20 * (Number(d.acquisition_cost) || 0)
+  } else if (dtype === 'setup') {
+    gross_acquisition = 0
+  } else {
+    gross_acquisition = (Number(d.acquisition_fee_total) || 0) + (Number(d.funded_payment) || 0)
+  }
+  gross_acquisition = r2(gross_acquisition)
+  return {
+    deal_type: dtype,
+    gross_acquisition,
+    gross_setup: r2(setup_fee),
+    logistics_reserved: r2(logistics_reserved),
+    setup_profit,
+    commission: r2(commission),
+    revenue: r2(gross_acquisition + setup_fee),
+    net: r2(gross_acquisition - commission + setup_profit),
+  }
+}
+
 // Company profit & loss over a set of flattened deal rows, optionally since an ISO timestamp.
-// Revenue = acquisition fees + funded payments; net profit = revenue - commissions paid.
-// (Tentative definition; sourced from the closings we input into deal records.)
+// Revenue = company-side money billed (acquisition income + setup fees). Net profit = revenue
+// - logistics reserve - commissions. Auto-updates as closings are entered.
 function computePnl(deals: any[], sinceISO: string | null) {
-  let acquisition_fees = 0, funded_payments = 0, commissions_paid = 0
+  let gross_acquisition = 0, gross_setup = 0, logistics_reserved = 0, setup_profit = 0, commissions_paid = 0, net_profit = 0
   let deal_count = 0, closed_count = 0, pending_count = 0
   for (const d of deals) {
     if (sinceISO && !(String(d.created_at || '') >= sinceISO)) continue
     deal_count++
-    acquisition_fees += Number(d.acquisition_fee_total) || 0
-    funded_payments += Number(d.funded_payment) || 0
-    commissions_paid += Number(d.commission_paid) || 0
+    const n = dealNet(d)
+    gross_acquisition += n.gross_acquisition
+    gross_setup += n.gross_setup
+    logistics_reserved += n.logistics_reserved
+    setup_profit += n.setup_profit
+    commissions_paid += n.commission
+    net_profit += n.net
     const st = String(d.deal_status || '').toLowerCase()
     if (st === 'closed' || st === 'completed') closed_count++
     if (st.includes('pending') || st.includes('application')) pending_count++
   }
-  const r2 = (x: number) => Math.round(x * 100) / 100
-  const revenue = r2(acquisition_fees + funded_payments)
   return {
-    revenue,
-    acquisition_fees: r2(acquisition_fees),
-    funded_payments: r2(funded_payments),
+    revenue: r2(gross_acquisition + gross_setup),
+    gross_acquisition: r2(gross_acquisition),
+    gross_setup: r2(gross_setup),
+    logistics_reserved: r2(logistics_reserved),
+    setup_profit: r2(setup_profit),
     commissions_paid: r2(commissions_paid),
-    net_profit: r2(revenue - commissions_paid),
+    net_profit: r2(net_profit),
     deal_count, closed_count, pending_count,
   }
 }
@@ -522,17 +564,25 @@ serve(async (req) => {
       const client_name = String(body.client_name || '').trim()
       if (!client_name) return json({ success: false, error: 'client_name is required' }, 400)
       const toNum = (v: unknown) => { const n = parseFloat(String(v ?? '')); return Number.isFinite(n) ? n : 0 }
+      const deal_type = String(body.deal_type || 'acquisition').toLowerCase()
       const acquisition_fee_total = toNum(body.acquisition_fee_total)
       const funded_payment = toNum(body.funded_payment)
       const commission_paid = toNum(body.commission_paid)
-      const net_after_commission = Math.round((acquisition_fee_total - commission_paid) * 100) / 100
+      const acquisition_cost = toNum(body.acquisition_cost)
+      const setup_fee = toNum(body.setup_fee)
+      const logistics_reserve = toNum(body.logistics_reserve)
+      const econ = dealNet({ deal_type, acquisition_fee_total, funded_payment, commission_paid, acquisition_cost, setup_fee, logistics_reserve })
+      const net_after_commission = econ.net
       const assignedId = String(body.assigned_staff_id || '')
       const deal_data = {
         client_name,
         property_address: String(body.property_address || ''),
         deal_status: String(body.deal_status || 'closed'),
         payment_type: String(body.payment_type || 'cash'),
-        acquisition_fee_total, funded_payment, commission_paid, net_after_commission,
+        deal_type,
+        acquisition_fee_total, funded_payment, commission_paid,
+        acquisition_cost, setup_fee, logistics_reserve,
+        net_after_commission,
         assigned_staff_id: assignedId || null,
         assigned_staff_name: String(body.assigned_staff_name || ''),
         staff_role: String(body.staff_role || ''),
@@ -586,7 +636,7 @@ serve(async (req) => {
         byStaff[key].totalFees += fee
         byStaff[key].totalCommissions += comm
       }
-      const net_earnings = Math.round((total_acquisition_fees + total_funded_payments - total_commissions_paid) * 100) / 100
+      const net_earnings = Math.round(deals.reduce((a: number, d: any) => a + dealNet(d).net, 0) * 100) / 100
       const overview = {
         total_deals: deals.length,
         closed_deals, completed_deals, credit_deals, cash_deals, pending_application,
