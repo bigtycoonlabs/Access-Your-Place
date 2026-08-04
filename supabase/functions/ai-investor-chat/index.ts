@@ -61,6 +61,11 @@ You are as strong as the other tools on the analysis side and broader on coverag
 - This is for account holders only. If someone does NOT have an account and wants projections, warmly tell them to create an account to see the results — that's where the numbers live.
 - Always tell them market numbers change regularly, and a projection can come back slightly different the next time they run it — because the market shifts and you read it live, not from a frozen table.
 
+## Running the numbers on a specific deal (Deal Analyzer)
+- When an account holder is weighing a SPECIFIC property, you can run a full Deal Analysis: it needs the property's monthly lease rent (what they'd pay the landlord) and its ZIP, and ideally the bedroom count and their furnishing budget. It returns whether the deal pencils across short-term, mid-term, and co-living — monthly profit for each, the cash needed to launch, payback time, and cash-on-cash — with the same honest caveats (an estimate, not a live feed).
+- If someone is clearly weighing a specific unit but hasn't given you the lease rent, the bedroom count, or a setup budget, ask for those so you can run REAL numbers instead of guessing. Guessing the inputs would defeat the point.
+- When a Deal Analyzer result is handed to you below, present those exact figures — never invent, round away, or alter them — and keep the caveats. If it says the deal loses money, tell them plainly; a hard truth beats a comfortable lie.
+
 ## The free human check
 Any client who wants research validated by a person — on a property they found OR one listed on the platform — can schedule a FREE, no-obligation call with an acquisition manager on the success team. Offer this naturally whenever someone is weighing numbers or unsure whether to trust them. The AI research already follows AYP's methodology; the call is a human second set of eyes.
 
@@ -146,6 +151,58 @@ async function fetchProjection(url: string, key: string, zip: string, message: s
     const d = await res.json()
     if (!d || !d.market_analysis) return ''
     return `PROPERTY FORGE PROJECTION for ZIP ${zip} — a real projection from AYP's Property Forge analysis engine (an AI estimate following our research methodology, not a live data feed). Present these as the client's projection, tell them the numbers shift between runs as the market moves, and offer the free acquisition-manager call if they want a human check. Do not invent numbers beyond these:\n${JSON.stringify(d.market_analysis)}`
+  } catch { return '' }
+}
+
+// Parse a monthly lease rent from free text (e.g. "$1,800/mo", "leasing at 1800", "rent is $2,100").
+function parseRent(msg: string): number | null {
+  const s = String(msg || '')
+  let m = s.match(/\$?\s*([\d,]{3,7})\s*(?:\/\s*mo|\/\s*month|per\s*month|a\s*month|monthly)\b/i)
+  if (m) return Number(m[1].replace(/,/g, ''))
+  m = s.match(/(?:rent|lease|leasing|master ?lease|pay(?:ing)?)\b[^$\d]{0,18}\$\s*([\d,]{3,7})/i)
+  if (m) return Number(m[1].replace(/,/g, ''))
+  m = s.match(/\$\s*(\d{1,2}(?:\.\d)?)\s*k\b[^.]{0,15}(?:rent|lease|\/\s*mo|month)/i)
+  if (m) return Math.round(Number(m[1]) * 1000)
+  return null
+}
+
+// Parse a furnishing / setup budget (e.g. "$8k to furnish", "setup budget of 9,000").
+function parseSetup(msg: string): number | null {
+  const s = String(msg || '')
+  let m = s.match(/\$?\s*(\d{1,3})\s*k\b[^.]{0,20}(?:furnish|set ?up)/i) || s.match(/(?:furnish\w*|set ?up)[^$\d]{0,20}\$?\s*(\d{1,3})\s*k\b/i)
+  if (m) return Number(m[1]) * 1000
+  m = s.match(/\$\s*([\d,]{3,6})\s*(?:to furnish|for furnishing|for setup|in setup)/i) || s.match(/(?:furnish\w*|set ?up)[^$\d]{0,20}\$\s*([\d,]{3,6})/i)
+  if (m) return Number(m[1].replace(/,/g, ''))
+  return null
+}
+
+// Real Deal Analysis for a client-supplied deal: if the message carries a monthly lease rent (plus a
+// ZIP), call the deal-analyzer engine and hand Penny the tool-computed underwriting across STR / MTR /
+// co-living. Returns '' when there is no confident rent, so the caller falls back to a plain market
+// projection. Deterministic math on the projection engine; honestly an estimate, never fabricated.
+async function fetchDealAnalysis(url: string, key: string, zip: string, message: string): Promise<string> {
+  const rent = parseRent(message)
+  if (!rent) return ''
+  try {
+    const cityM = message.match(/\bin ([A-Za-z][A-Za-z .'-]+?),?\s*([A-Z]{2})\b/)
+    const bedsM = message.match(/(\d+)\s*(?:bed|bedroom|br|bd)\b/i)
+    const setup = parseSetup(message)
+    const reqBody: Record<string, unknown> = { zip_code: zip, monthly_rent: rent }
+    if (bedsM) reqBody.beds = Number(bedsM[1])
+    if (setup) reqBody.setup_budget = setup
+    if (cityM) { reqBody.city = cityM[1].trim(); reqBody.state = cityM[2] }
+    const res = await fetch(`${url}/functions/v1/deal-analyzer`, {
+      method: 'POST',
+      headers: { apikey: key, Authorization: `Bearer ${key}`, 'Content-Type': 'application/json' },
+      body: JSON.stringify(reqBody),
+    })
+    if (!res.ok) return ''
+    const d = await res.json()
+    if (d && d.success && d.text_summary) {
+      return `DEAL ANALYZER RESULT (a real, tool-computed underwriting of the client's specific deal — deterministic math on AYP's projection engine, honestly an estimate). Present these figures as the analysis; do NOT invent, alter, or round them away, and keep the honest caveats:\n${d.text_summary}`
+    }
+    if (d && d.message) return `DEAL ANALYZER NOTE (relay this honestly; do not invent numbers): ${d.message}`
+    return ''
   } catch { return '' }
 }
 
@@ -337,7 +394,13 @@ serve(async (req) => {
       // callers get no projection here; the prompt tells Penny to have them create an account.
       const zipMatch = (message || '').match(/\b(\d{5})\b/)
       if (zipMatch && user_id) {
-        const proj = await fetchProjection(supabaseUrl, supabaseKey, zipMatch[1], message)
+        const deal = await fetchDealAnalysis(supabaseUrl, supabaseKey, zipMatch[1], message)
+        if (deal) systemPrompt += `
+
+──────────
+
+${deal}`
+        const proj = deal ? '' : await fetchProjection(supabaseUrl, supabaseKey, zipMatch[1], message)
         if (proj) systemPrompt += `\n\n──────────\n\n${proj}`
       }
 
