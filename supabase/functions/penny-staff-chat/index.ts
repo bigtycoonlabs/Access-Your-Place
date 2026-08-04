@@ -336,6 +336,44 @@ async function recordClosing(url: string, key: string, a: any, staffId: string, 
   };
 }
 
+// ---- community / property status (staff keep Penny current; client-facing Penny reads it) ----
+async function listCommunities(url: string, key: string) {
+  const { ok, status, data } = await rpc(url, key, 'penny_list_communities');
+  if (!ok) {
+    console.error('penny-staff-chat rpc_list_communities', status, JSON.stringify(data).slice(0, 200));
+    return { error: 'read_failed', http: status };
+  }
+  return data;
+}
+
+async function getCommunity(url: string, key: string, query: string) {
+  const { ok, status, data } = await rpc(url, key, 'penny_get_community', { p_query: query });
+  if (!ok) {
+    console.error('penny-staff-chat rpc_get_community', status, JSON.stringify(data).slice(0, 200));
+    return { error: 'read_failed', http: status };
+  }
+  return data;
+}
+
+async function upsertCommunity(url: string, key: string, a: any, staffId: string, staffName: string) {
+  const { ok, status, data } = await rpc(url, key, 'penny_upsert_community_update', {
+    p_community: String(a.community_name),
+    p_location: a.location != null ? String(a.location) : null,
+    p_is_listed: typeof a.is_listed === 'boolean' ? a.is_listed : null,
+    p_status: a.status_summary != null ? String(a.status_summary) : null,
+    p_update: a.update_text != null ? String(a.update_text) : null,
+    p_client_notes: a.client_facing_notes != null ? String(a.client_facing_notes) : null,
+    p_by: staffId || null,
+    p_by_name: staffName || null,
+  });
+  if (!ok) {
+    console.error('penny-staff-chat rpc_upsert_community', status, JSON.stringify(data).slice(0, 200));
+    return { error: 'save_failed', http: status };
+  }
+  if (data && data.ok === false) return { error: data.error || 'save_failed' };
+  return data; // { ok:true, community_name, status_summary, client_facing_notes, created, ... }
+}
+
 type Ctx = { url: string; key: string; staffId: string; staffName: string; docText?: string; docName?: string };
 
 async function execTool(name: string, args: any, ctx: Ctx): Promise<unknown> {
@@ -422,6 +460,18 @@ async function execTool(name: string, args: any, ctx: Ctx): Promise<unknown> {
         return { needs_confirmation: true, action: 'save this note', instruction: 'Read the note back to the staff member, get a yes, then call again with confirmed:true.' };
       }
       return await addNote(url, key, String(args.inquiry_id), String(args.note), staffId);
+    }
+    if (name === 'list_communities') return await listCommunities(url, key);
+    if (name === 'get_community') {
+      if (!args?.query) return { error: 'a community or property name is required' };
+      return await getCommunity(url, key, String(args.query));
+    }
+    if (name === 'update_community') {
+      if (!args?.community_name) return { error: 'community_name is required' };
+      if (args.confirmed !== true) {
+        return { needs_confirmation: true, action: `save this status update for ${args.community_name}`, instruction: 'Read back to the staff member exactly what you will save for this community — the status, the internal detail, and any client-facing note — and get a clear yes. Then call again with confirmed:true.' };
+      }
+      return await upsertCommunity(url, key, args, staffId, staffName);
     }
     return { error: `unknown_tool_${name}` };
   } catch (e) {
@@ -637,6 +687,46 @@ const TOOLS = [
       },
     },
   },
+  {
+    type: 'function',
+    function: {
+      name: 'list_communities',
+      description: "List every community or property you currently hold status on — the places staff have briefed you about, listed on the platform or not. Use this when the staff member asks which communities you know about, or wants an overview of what's happening across properties.",
+      parameters: { type: 'object', properties: {}, additionalProperties: false },
+    },
+  },
+  {
+    type: 'function',
+    function: {
+      name: 'get_community',
+      description: "Get the current status you hold for one community or property by name — its location, whether it's listed on the platform, the latest internal update, and the client-facing notes. Use this whenever the staff member asks what's happening at a specific place (e.g. \"what's the status on Manchester House?\"). ALWAYS call this first before you save an update to a community, so you can merge the new information with what's already there instead of overwriting it.",
+      parameters: {
+        type: 'object',
+        properties: { query: { type: 'string', description: 'The community or property name (a partial name is fine).' } },
+        required: ['query'], additionalProperties: false,
+      },
+    },
+  },
+  {
+    type: 'function',
+    function: {
+      name: 'update_community',
+      description: "Save the current status for a community or property, so the client-facing Penny reflects reality when she talks with clients about it. Works for ANY place — one listed on the platform OR an unlisted one we no longer sell but still work (like Manchester House in Denton, TX). This is a WRITE: only call with confirmed:true after you've read back what you'll save and the staff member has clearly approved. IMPORTANT: call get_community first and merge, so you keep the existing detail rather than replacing it. Put internal working detail in update_text; put in client_facing_notes ONLY what is safe and appropriate to share with a client — that field is the ONLY part the client-facing Penny may repeat to a client.",
+      parameters: {
+        type: 'object',
+        properties: {
+          community_name: { type: 'string', description: 'The community or property name, e.g. "Manchester House".' },
+          location: { type: 'string', description: 'City/state or area, e.g. "Denton, TX".' },
+          is_listed: { type: 'boolean', description: 'True if listed / for sale on the platform; false if we still work it but no longer sell it.' },
+          status_summary: { type: 'string', description: 'A short one-line current status.' },
+          update_text: { type: 'string', description: "The full internal update — everything happening here. Merge with what get_community already shows; don't drop existing detail." },
+          client_facing_notes: { type: 'string', description: 'ONLY what is safe to share with a client. The client-facing Penny repeats only this.' },
+          confirmed: { type: 'boolean', description: 'Set true ONLY after reading the update back and getting explicit staff approval.' },
+        },
+        required: ['community_name'], additionalProperties: false,
+      },
+    },
+  },
 ];
 
 function systemPrompt(first: string, docText?: string, docName?: string): string {
@@ -668,7 +758,9 @@ ONBOARDING & OUTREACH: staff will often describe someone and their situation and
 
 RECORDING CLOSINGS: staff will give you a completed deal - either by describing it, or by sharing an acquisition agreement or document (its contents appear at the end of these instructions when they attach one). Read it and pull out the client, the property, and the money. For a first-party acquisition that is the acquisition fee, any funded payment, and the team commission. For a third-party seller it is the acquisition cost - the company takes 20% of THAT alone; deposits, application fees, and other community fees are NOT part of the 20% - plus the commission, which still comes out of that 20%. For a setup service it is the package fee and the logistics reserve (which covers logistics, the on-the-ground pro, travel, and the setup manager's pay); setup profit is the fee minus the reserve. A deal can be an acquisition that also includes setup. Before you record anything, read every number back in plain words, name the deal type and the net profit it implies, and ask about anything the document does not make clear - never guess a figure. Only after a clear yes, call record_closing with confirmed:true. Recording writes to the live company P&L, so it must be exactly right.
 
-SCOPE: you handle the reactive desk (opportunities, follow-ups, notes, status) and composing client emails. Listing a brand-new deal needs photos and lives in the "List a Deal" tab — if they want to add a property, point them there warmly rather than trying to do it here.${docText ? `
+COMMUNITY & PROPERTY STATUS: you keep the living memory of what's happening at every community or property we talk to clients about — the ones listed on the platform AND the ones we no longer sell but still work (for example Manchester House in Denton, TX, where a client's belongings are). When a staff member tells you what's going on somewhere, save it so the client-facing Penny reflects reality. Always call get_community first to see what you already hold there, then MERGE the new detail into a complete picture — never blow away existing context. Keep the full internal working detail in the update, and put in the client-facing note ONLY what is genuinely appropriate to say to a client (that note is the only part the client-facing Penny may repeat). Saving is a write: read back exactly what you'll save, get a clear yes, then call update_community with confirmed:true. If they ask which communities you know about, use list_communities; for one place, get_community. If a place isn't there yet, you can create it by saving its first update.
+
+SCOPE: you handle the reactive desk (opportunities, follow-ups, notes, status), keeping community/property status current, and composing client emails. Listing a brand-new deal needs photos and lives in the "List a Deal" tab — if they want to add a property, point them there warmly rather than trying to do it here.${docText ? `
 
 DOCUMENT SHARED THIS SESSION${docName ? ` ("${docName}")` : ''} - the staff member attached this. Read it and use it as the source when they ask you to record a closing; extract the client, property, and money, and confirm every number with them before recording. Never invent a figure the document does not state:
 -----
@@ -773,6 +865,7 @@ async function runAgent(messages: Array<{ role: string; content: string }>, firs
           toolName === 'send_client_email' ? (r?.sent === true || r?.already_sent === true)
           : toolName === 'send_account_invite' ? (r?.email_sent === true)
           : toolName === 'record_closing' ? (r?.success === true)
+          : toolName === 'update_community' ? (r?.ok === true)
           : (toolName === 'update_opportunity_status' || toolName === 'add_opportunity_note') ? (r?.ok === true)
           : false;
         if (toolName && completed) toolsRun.push(toolName);

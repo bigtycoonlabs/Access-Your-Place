@@ -110,6 +110,7 @@ AYP transactions run on Zelle, Cash App, wire transfer, and Bitcoin — not card
 - You remember returning operators across conversations. When you know an operator's markets, strategy, portfolio, budget, or goals, it appears below — use it to tailor advice and avoid re-asking. Never claim to remember something that isn't actually there.
 - When there are live deals on the platform, you are handed them below — that is your source of truth about current inventory. Discuss them openly. If the client's market or deal type is NOT in that list, say so plainly and offer the live tooling / acquisition team — never invent inventory, an address, a link, or an "example" deal as if it were real.
 - When you are handed library articles below, point to them by title; never invent others.
+- When a client asks about a specific community or property by name — a place where they have belongings, a pending or stalled setup, or an ongoing move — you may be handed its CURRENT client-safe status below. If it's there, share that note warmly and accurately as the latest word from the team, and don't speculate past it. If it isn't there, don't guess the status — tell them you'll check with the team and make sure someone follows up. You only ever see the client-safe note here, never internal operational detail.
 - You do NOT confirm payments, credit accounts, unlock deals, or send emails from this chat — the success team and the platform do that. Never say one of those happened unless it truly did; say what the next step is and who does it.
 
 Never claim to be human. You are Penny, an AI. Be helpful, be honest, be encouraging, and genuinely useful.`
@@ -166,6 +167,39 @@ async function searchLibrary(url: string, key: string, query: string) {
   if (!term) return []
   const rows = await rpc(url, key, 'penny_library_articles', { p_term: term })
   return Array.isArray(rows) ? rows : []
+}
+
+// Community / property status the team keeps current from the staff desk. This is the CLIENT-SAFE
+// read of it: penny_communities_for_client returns ONLY the client-facing note (never the internal
+// update_text). When a logged-in client asks about a specific place by name or its city, hand Penny
+// that place's client-facing note so she can speak to it accurately; on no match she gets nothing and
+// the prompt tells her to check with the team rather than guess. Best-effort, never fabricated.
+async function fetchCommunityStatus(url: string, key: string, message: string): Promise<string> {
+  const raw = String(message || '').toLowerCase()
+  if (!raw.trim()) return ''
+  const res = await rpc(url, key, 'penny_communities_for_client')
+  const rows = res && Array.isArray(res.communities) ? res.communities : []
+  if (!rows.length) return ''
+  // Whole-word token set from the message; only distinctive words (>=6 chars) can match a name/city
+  // word, so a generic word like "house" never wrongly pulls a community in. A full-name substring
+  // match still wins at any length.
+  const tokens = new Set(raw.split(/[^a-z0-9]+/).filter(Boolean))
+  const wordHit = (w: string) => w.length >= 6 && tokens.has(w)
+  const hits = rows.filter((c: any) => {
+    const name = String(c.community_name || '').toLowerCase().trim()
+    if (name && raw.includes(name)) return true
+    const nameHit = name.split(/\s+/).some(wordHit)
+    const city = String(c.location || '').split(',')[0].toLowerCase().trim()
+    const cityHit = city ? city.split(/\s+/).some(wordHit) : false
+    return nameHit || cityHit
+  })
+  if (!hits.length) return ''
+  const lines = hits.slice(0, 6).map((c: any) => {
+    const loc = c.location ? ` (${c.location})` : ''
+    const listed = c.is_listed ? 'listed on the platform' : 'not currently listed for sale on the platform, but the team still works with it'
+    return `- ${c.community_name}${loc} — ${listed}. ${c.client_facing_notes}`
+  })
+  return `CURRENT STATUS ON A COMMUNITY / PROPERTY THE CLIENT ASKED ABOUT (kept current by the team; this client-safe note is the ONLY community information you have — share it warmly and accurately, do not speculate beyond it, and never imply you can see internal operational detail):\n${lines.join('\n')}`
 }
 
 // Real projection for a client-supplied ZIP: calls Property Forge's analysis engine (the leadforge
@@ -523,10 +557,11 @@ serve(async (req) => {
 
       // REAL GROUNDING: hand Penny the actual live deals + relevant library articles, so she
       // speaks from real current inventory instead of invented examples.
-      const [deals, arts, opMem] = await Promise.all([
+      const [deals, arts, opMem, community] = await Promise.all([
         fetchLiveDeals(supabaseUrl, supabaseKey),
         searchLibrary(supabaseUrl, supabaseKey, message),
         user_id ? fetchOperatorMemory(supabaseUrl, supabaseKey, user_id) : Promise.resolve(''),
+        user_id ? fetchCommunityStatus(supabaseUrl, supabaseKey, message) : Promise.resolve(''),
       ])
       if (deals) {
         systemPrompt += `\n\n──────────\n\nLIVE DEALS ON THE PLATFORM RIGHT NOW (real market, type, economics, and score — this is your source of truth about current inventory). If the investor's market or deal type is not here, say so plainly and offer to line up an off-market search with the team; do not invent inventory:\n${deals}`
@@ -541,6 +576,8 @@ serve(async (req) => {
       }
 
       if (opMem) systemPrompt += `\n\n──────────\n\n${opMem}`
+
+      if (community) systemPrompt += `\n\n──────────\n\n${community}`
 
       // PROJECTION: if a logged-in operator names a ZIP, hand Penny the real Property Forge
       // projection for it so she speaks from a tool-backed estimate, not invented numbers. Non-account

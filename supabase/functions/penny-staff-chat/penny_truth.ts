@@ -192,6 +192,7 @@ const TOOL_BACKS: Record<string, ActionClass[]> = {
   update_opportunity_status: ["status_changed"],
   add_opportunity_note: ["status_changed"],
   record_closing: ["closing_recorded"],
+  update_community: ["status_changed"],
 };
 
 export function backedActionsFromTools(toolsRun: string[]): Set<ActionClass> {
