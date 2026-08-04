@@ -71,6 +71,11 @@ You are as strong as the other tools on the analysis side and broader on coverag
 - Meet the landlord's real fears head-on: parties and noise, property damage, whether subletting is even allowed, unknown guests, and an unreliable tenant. Offer the levers that actually win a yes: guaranteed monthly rent paid on time regardless of occupancy (only if they're offering it), professional upkeep and a single accountable point of contact, longer 30+ day stays to cut turnover and party risk, insurance, and full transparency with everything in writing.
 - HARD rules, never break them: never reveal or hint at the operator's own profit or margin — the pitch is about what the LANDLORD gains, not what the operator makes. Never claim the arrangement is legal or that the city allows it — instead have them confirm local rules and put written short-term-rental / sublet permission into the lease; being upfront is what actually gets a yes. Only promise what the operator has actually offered. It is a draft for them to review and send themselves — you never send it and never say it was sent.
 
+## Furnishing cost and co-living room-by-room math
+- If an operator asks what it costs to furnish a unit, you can give a real itemized estimate — gather the unit size (bedrooms, or studio), the finish tier (budget, mid, or premium), and the modality (short-term, mid-term, or co-living), and the tool returns the breakdown and the payback. It's a typical-cost model, not a quote; keep that caveat.
+- If an operator is weighing co-living on a specific house, you can run a room-by-room model — gather the bedrooms, the location, and ideally the monthly lease rent — and it returns the per-room rate, gross by the room, net against the lease, the uplift versus renting it as one whole unit, payback, and how it holds if a room sits empty. The per-room rate is an AYP estimate that shifts between runs.
+- When either tool's result is handed to you below, present those exact figures and keep the caveats — never invent furnishing or per-room numbers yourself.
+
 ## The free human check
 Any client who wants research validated by a person — on a property they found OR one listed on the platform — can schedule a FREE, no-obligation call with an acquisition manager on the success team. Offer this naturally whenever someone is weighing numbers or unsure whether to trust them. The AI research already follows AYP's methodology; the call is a human second set of eyes.
 
@@ -208,6 +213,69 @@ async function fetchDealAnalysis(url: string, key: string, zip: string, message:
       return `DEAL ANALYZER RESULT (a real, tool-computed underwriting of the client's specific deal — deterministic math on AYP's projection engine, honestly an estimate). Present these figures as the analysis; do NOT invent, alter, or round them away, and keep the honest caveats:\n${d.text_summary}`
     }
     if (d && d.message) return `DEAL ANALYZER NOTE (relay this honestly; do not invent numbers): ${d.message}`
+    return ''
+  } catch { return '' }
+}
+
+// --- Furnishing estimate + co-living room-by-room model (tool-backed operator math) ----------
+// Parse a finish tier, modality, and unit size from free text so Penny calls the right tool with real
+// inputs. When a tool result is injected below, Penny presents those exact figures rather than
+// inventing furnishing or per-room numbers herself.
+function parseTier(msg: string): string {
+  const q = (msg || '').toLowerCase()
+  if (/\b(premium|high[- ]?end|luxury|upscale)\b/.test(q)) return 'premium'
+  if (/\b(budget|cheap|economy|bare[- ]?bones|low[- ]?cost|lean)\b/.test(q)) return 'budget'
+  return 'mid'
+}
+function parseModality(msg: string): string {
+  const q = (msg || '').toLowerCase()
+  if (/\b(co[- ]?living|shared living|by the room|per[- ]?room|room by room)\b/.test(q)) return 'coliving'
+  if (/\b(short[- ]?term|str|airbnb|nightly|vacation rental)\b/.test(q)) return 'str'
+  if (/\b(mid[- ]?term|mtr|30[- ]?day|monthly furnished|travel nurse)\b/.test(q)) return 'mtr'
+  return 'general'
+}
+function parseBedrooms(msg: string): number | null {
+  if (/\bstudio\b/i.test(msg || '')) return 0
+  const m = (msg || '').match(/(\d+)\s*(?:bed|bedroom|br|bd)\b/i)
+  return m ? Number(m[1]) : null
+}
+
+// Furnishing estimate: fires when the operator asks about furnishing/setup cost and gives a unit size.
+async function fetchFurnishing(url: string, key: string, message: string): Promise<string> {
+  if (!/\b(furnish|furnishing|furniture|set ?up cost|cost to set ?up|cost to furnish|budget to furnish)\b/i.test(message || '')) return ''
+  const beds = parseBedrooms(message)
+  if (beds == null) return ''
+  try {
+    const reqBody: Record<string, unknown> = { bedrooms: beds, tier: parseTier(message), modality: parseModality(message) }
+    const setup = parseSetup(message); if (setup) reqBody.setup_budget = setup
+    const res = await fetch(`${url}/functions/v1/furnishing-estimator`, {
+      method: 'POST', headers: { apikey: key, Authorization: `Bearer ${key}`, 'Content-Type': 'application/json' },
+      body: JSON.stringify(reqBody),
+    })
+    if (!res.ok) return ''
+    const d = await res.json()
+    if (d && d.success && d.text_summary) return `FURNISHING ESTIMATE (real, tool-computed itemized estimate — a typical-cost model, not a quote. Present these figures and keep the honest caveats; do not invent or alter them):\n${d.text_summary}`
+    return ''
+  } catch { return '' }
+}
+
+// Co-living room-by-room model: fires when the operator is weighing co-living on a property.
+async function fetchColiving(url: string, key: string, zip: string, message: string): Promise<string> {
+  const beds = parseBedrooms(message)
+  if (beds == null || beds < 1) return ''
+  try {
+    const cityM = (message || '').match(/\bin ([A-Za-z][A-Za-z .'-]+?),?\s*([A-Z]{2})\b/)
+    const location = cityM ? `${cityM[1].trim()}, ${cityM[2]}` : zip
+    const reqBody: Record<string, unknown> = { bedrooms: beds, location }
+    const lease = parseRent(message); if (lease) reqBody.lease_rent = lease
+    const convM = (message || '').match(/(\d+)\s*(?:convert|extra room|bonus room|den|office)\b/i); if (convM) reqBody.convertible_rooms = Number(convM[1])
+    const res = await fetch(`${url}/functions/v1/coliving-modeler`, {
+      method: 'POST', headers: { apikey: key, Authorization: `Bearer ${key}`, 'Content-Type': 'application/json' },
+      body: JSON.stringify(reqBody),
+    })
+    if (!res.ok) return ''
+    const d = await res.json()
+    if (d && d.success && d.text_summary) return `CO-LIVING ROOM-BY-ROOM MODEL (real, tool-computed for the client's property — the per-room rate is an AYP estimate that shifts between runs. Present these figures and keep the honest caveats; do not invent or alter them):\n${d.text_summary}`
     return ''
   } catch { return '' }
 }
@@ -463,6 +531,18 @@ serve(async (req) => {
 ${deal}`
         const proj = deal ? '' : await fetchProjection(supabaseUrl, supabaseKey, zipMatch[1], message)
         if (proj) systemPrompt += `\n\n──────────\n\n${proj}`
+      }
+
+      // Additional operator tools: furnishing estimate and the co-living room-by-room model, when the
+      // question calls for them. Tool-backed, so the numbers are real rather than invented in chat.
+      if (user_id) {
+        const wantsColiving = /\bco[- ]?living|shared living|by the room|per[- ]?room|room by room\b/i.test(message)
+        const [furnish, coliving] = await Promise.all([
+          fetchFurnishing(supabaseUrl, supabaseKey, message),
+          wantsColiving ? fetchColiving(supabaseUrl, supabaseKey, zipMatch ? zipMatch[1] : '', message) : Promise.resolve(''),
+        ])
+        if (furnish) systemPrompt += `\n\n──────────\n\n${furnish}`
+        if (coliving) systemPrompt += `\n\n──────────\n\n${coliving}`
       }
 
       // Build conversation messages for the AI
