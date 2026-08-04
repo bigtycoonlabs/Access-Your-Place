@@ -35,8 +35,12 @@ and never claims an action was completed unless a tool truly did it this turn. S
 **By audience:**
 - **Staff:** Functional. Real 14-tool agent (`penny-staff-chat` v16), proven end-to-end on the
   money path (closing intake → P&L record).
-- **Investors/operators:** Partial. A live investor chat exists (`ai-investor-chat` v31) but its
-  toolset has NOT been re-audited recently, and it is NOT yet the operational partner described here.
+- **Investors/operators:** Advancing. `ai-investor-chat` now carries the full furnished-rental
+  knowledge library, the Property Forge rebrand (users never see the internal name), the honesty
+  spine, and the FIRST wired tool — a real Property Forge ZIP/market projection (calls the `leadforge`
+  engine; tool-backed AI estimate, account-gated, honestly labeled). Still missing the other
+  operational-partner tools below (portfolio/numbers, expenses, market-trends WIRE items; plus
+  calendar, operator memory, a genuine live-data feed). Not yet the full v11 partner — but on the path.
 - **Landlords:** None. No Penny assistant for landlords. They have a portal + login only; staff-Penny
   can onboard/look them up, but landlords have no Penny to talk to.
 
@@ -78,8 +82,10 @@ Grouped by effort. "WIRE" = the backend function already exists; it just needs t
 Penny as a tool. "NEW" = build from scratch.
 
 ### Wire existing backends into Penny (fastest wins)
-- **Property + market search by ZIP/city** — WIRE `research-zip-properties` + `apollo-leadforge`
-  (the "lead force"). Lets Penny pull properties and leads for a ZIP or city on request.
+- **Property + market search by ZIP/city** — ✅ DONE (2026-08-03) for investor Penny. Wired to the
+  NEW `leadforge` engine (not the dead `apollo-leadforge`): when a logged-in operator names a ZIP,
+  Penny is handed the real Property Forge projection. Becomes truly "live" once Google CSE + a
+  furnished-rental data feed are authorized.
 - **Portfolio + run-the-numbers** — WIRE `manage-portfolio-performance` + `revenue-forecasting`.
   Pull a portfolio, run projections.
 - **Budget + expense tracking** — WIRE `manage-property-expenses` (+ a budget helper). Help an
