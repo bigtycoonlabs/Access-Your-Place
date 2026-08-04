@@ -45,7 +45,10 @@ Record only durable, useful facts the operator actually stated or clearly implie
 - notes: array of other durable facts worth remembering long-term (max 20).
 
 HARD RULES:
-- NEVER invent, assume, or guess a fact. If it was not actually stated or clearly implied, do not add it. An invented fact is worse than an empty field.
+- Extract facts ONLY from what the OPERATOR said (the turns labeled "OPERATOR"). The turns labeled "PENNY" are the assistant's own analysis, recommendations, and advice \u2014 they are NOT the operator's facts. NEVER record a number, budget, strategy, market, or conclusion that appears in a PENNY turn as if the operator stated it.
+- Concretely: a figure Penny computed (for example a Deal Analyzer "estimated cash to launch") is NOT the operator's budget. A strategy Penny recommends (for example "mid-term is the best fit here") is NOT the operator's strategy unless the operator said they use or want it. Advice Penny gave (for example "negotiate the lease") is NOT an operator fact. Do not record any of these.
+- Only record a budget if the OPERATOR stated their own budget; only record a strategy if the OPERATOR said they use or want it; only record a market if the OPERATOR said they operate in or are targeting it.
+- NEVER invent, assume, or guess a fact. If it was not actually stated or clearly implied by the operator, do not add it. An invented fact is worse than an empty field.
 - PRESERVE existing facts unless the operator corrected them; carry them forward in your output.
 - Do NOT record transient one-off questions, the specifics of a single deal they're just asking about, or anything not durably about the operator.
 - Keep every value concise.
@@ -56,7 +59,10 @@ function formatConversation(conversation: unknown): string {
   if (Array.isArray(conversation)) {
     return conversation
       .slice(-12)
-      .map((m: any) => `${(m?.role || 'user')}: ${String(m?.content ?? '')}`)
+      .map((m: any) => {
+        const who = (m?.role || 'user') === 'user' ? 'OPERATOR' : 'PENNY (assistant \u2014 NOT operator-stated facts)'
+        return `${who}: ${String(m?.content ?? '')}`
+      })
       .join('\n')
       .slice(0, 6000)
   }
