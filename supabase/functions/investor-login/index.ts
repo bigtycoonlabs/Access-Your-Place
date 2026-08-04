@@ -1,4 +1,11 @@
 // Ultra-minimal investor login - avoids all cloning issues
+// Adds a REAL password reset flow:
+//   - forgot_password: generates a one-hour token, stores it on the investor row, and emails a
+//     working reset link (https://accessyourplace.com/investor/reset-password?token=...). Always
+//     returns a generic success to prevent email enumeration.
+//   - reset_password: validates the token + expiry and sets a new bcrypt password_hash, clearing
+//     the token so it can't be reused.
+// Login / logout / validate_session are unchanged.
 import { serve } from 'https://deno.land/std@0.168.0/http/server.ts'
 
 const corsHeaders = {
@@ -160,9 +167,129 @@ serve(async (req: Request) => {
 
     // ==================== FORGOT PASSWORD ====================
     if (action === 'forgot_password') {
-      // Always return success to prevent email enumeration
+      // Generic response used for every outcome so we never reveal whether an email exists.
+      const genericOk = () => new Response(
+        JSON.stringify({ success: true, message: 'If an account exists for that email, a password reset link is on its way.' }),
+        { status: 200, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+      )
+
+      try {
+        if (!email) return genericOk()
+
+        const findUrl = `${supabaseUrl}/rest/v1/investors?email=eq.${encodeURIComponent(String(email).toLowerCase())}&select=id,email,full_name`
+        const findRes = await fetch(findUrl, { method: 'GET', headers })
+        const investors = await findRes.json()
+        if (!Array.isArray(investors) || investors.length === 0) return genericOk()
+        const investor = investors[0]
+
+        // One-hour reset token, stored on the investor row.
+        const token = crypto.randomUUID() + '-' + crypto.randomUUID()
+        const expires = new Date(Date.now() + 60 * 60 * 1000).toISOString()
+        await fetch(`${supabaseUrl}/rest/v1/investors?id=eq.${investor.id}`, {
+          method: 'PATCH',
+          headers: { ...headers, Prefer: 'return=minimal' },
+          body: JSON.stringify({ reset_token: token, reset_token_expires: expires, updated_at: new Date().toISOString() })
+        })
+
+        const base = (typeof base_url === 'string' && base_url.startsWith('https://'))
+          ? base_url.replace(/\/+$/, '')
+          : 'https://accessyourplace.com'
+        const resetLink = `${base}/investor/reset-password?token=${token}`
+        const name = investor.full_name || 'there'
+
+        const resendKey = Deno.env.get('RESEND_API_KEY')
+        if (resendKey) {
+          const html = `<div style="font-family:-apple-system,Segoe UI,Helvetica,Arial,sans-serif;font-size:16px;line-height:1.6;color:#1a1a1a;max-width:560px;">` +
+            `<p>Hi ${name},</p>` +
+            `<p>We received a request to reset the password for your Access Your Place account.</p>` +
+            `<p>Click the button below to choose a new password. This link is valid for one hour.</p>` +
+            `<p><a href="${resetLink}" style="display:inline-block;background:#b07d4b;color:#ffffff;padding:12px 20px;border-radius:6px;text-decoration:none;">Reset my password</a></p>` +
+            `<p>Or paste this link into your browser:<br><a href="${resetLink}">${resetLink}</a></p>` +
+            `<p>If you didn't request this, you can safely ignore this email &mdash; your password won't change.</p>` +
+            `<p>Warmly,<br>Access Your Place</p></div>`
+          const text = `Hi ${name},\n\nWe received a request to reset the password for your Access Your Place account.\n\nOpen this link to choose a new password (valid for one hour):\n${resetLink}\n\nIf you didn't request this, you can safely ignore this email - your password won't change.\n\nWarmly,\nAccess Your Place`
+          try {
+            const sendRes = await fetch('https://api.resend.com/emails', {
+              method: 'POST',
+              headers: { 'Authorization': `Bearer ${resendKey}`, 'Content-Type': 'application/json' },
+              body: JSON.stringify({
+                from: 'Access Your Place <noreply@accessyourplace.com>',
+                to: [investor.email],
+                reply_to: 'success@accessyourplace.com',
+                subject: 'Reset your Access Your Place password',
+                html,
+                text
+              })
+            })
+            if (!sendRes.ok) {
+              console.error('forgot_password: reset email send failed', sendRes.status, await sendRes.text())
+            }
+          } catch (sendErr) {
+            console.error('forgot_password: reset email send threw', sendErr)
+          }
+        } else {
+          console.error('forgot_password: RESEND_API_KEY not configured; token stored but no email sent')
+        }
+
+        return genericOk()
+      } catch (e) {
+        console.error('forgot_password error:', e)
+        return genericOk()
+      }
+    }
+
+    // ==================== RESET PASSWORD ====================
+    if (action === 'reset_password') {
+      if (!reset_token || !new_password) {
+        return new Response(
+          JSON.stringify({ success: false, error: 'Reset token and new password are required' }),
+          { status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+        )
+      }
+      if (String(new_password).length < 8) {
+        return new Response(
+          JSON.stringify({ success: false, error: 'Password must be at least 8 characters' }),
+          { status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+        )
+      }
+
+      const findUrl = `${supabaseUrl}/rest/v1/investors?reset_token=eq.${encodeURIComponent(String(reset_token))}&select=id,reset_token_expires`
+      const findRes = await fetch(findUrl, { method: 'GET', headers })
+      const rows = await findRes.json()
+      if (!Array.isArray(rows) || rows.length === 0) {
+        return new Response(
+          JSON.stringify({ success: false, error: 'This reset link is invalid or has already been used. Please request a new one.' }),
+          { status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+        )
+      }
+      const inv = rows[0]
+      if (!inv.reset_token_expires || new Date(inv.reset_token_expires).getTime() < Date.now()) {
+        return new Response(
+          JSON.stringify({ success: false, error: 'This reset link has expired. Please request a new one.' }),
+          { status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+        )
+      }
+
+      let newHash: string
+      try {
+        const bcrypt = await import('https://deno.land/x/bcrypt@v0.4.1/mod.ts')
+        newHash = bcrypt.hashSync(String(new_password))
+      } catch (e) {
+        console.error('reset_password hashing error:', e)
+        return new Response(
+          JSON.stringify({ success: false, error: 'Could not process the new password. Please try again.' }),
+          { status: 500, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+        )
+      }
+
+      await fetch(`${supabaseUrl}/rest/v1/investors?id=eq.${inv.id}`, {
+        method: 'PATCH',
+        headers: { ...headers, Prefer: 'return=minimal' },
+        body: JSON.stringify({ password_hash: newHash, reset_token: null, reset_token_expires: null, updated_at: new Date().toISOString() })
+      })
+
       return new Response(
-        JSON.stringify({ success: true, message: 'If an account exists, you will receive a reset link.' }),
+        JSON.stringify({ success: true, message: 'Your password has been reset. You can now log in.' }),
         { status: 200, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
       )
     }
