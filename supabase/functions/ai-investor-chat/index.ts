@@ -128,6 +128,27 @@ async function searchLibrary(url: string, key: string, query: string) {
   return Array.isArray(rows) ? rows : []
 }
 
+// Real projection for a client-supplied ZIP: calls Property Forge's analysis engine (the leadforge
+// function) and hands Penny the ACTUAL computed estimate, so her numbers are tool-backed rather than
+// invented in chat. Caller account-gates it (logged-in operators only). Honestly labeled as an AI
+// estimate following AYP methodology — never dressed up as a live data feed we are not reading yet.
+async function fetchProjection(url: string, key: string, zip: string, message: string): Promise<string> {
+  try {
+    const cityM = message.match(/\bin ([A-Za-z][A-Za-z .'-]+?),?\s*([A-Z]{2})\b/)
+    const body: Record<string, unknown> = { action: 'search', zip_code: zip }
+    if (cityM) { body.city = cityM[1].trim(); body.state = cityM[2] }
+    const res = await fetch(`${url}/functions/v1/leadforge`, {
+      method: 'POST',
+      headers: { apikey: key, Authorization: `Bearer ${key}`, 'Content-Type': 'application/json' },
+      body: JSON.stringify(body),
+    })
+    if (!res.ok) return ''
+    const d = await res.json()
+    if (!d || !d.market_analysis) return ''
+    return `PROPERTY FORGE PROJECTION for ZIP ${zip} — a real projection from AYP's Property Forge analysis engine (an AI estimate following our research methodology, not a live data feed). Present these as the client's projection, tell them the numbers shift between runs as the market moves, and offer the free acquisition-manager call if they want a human check. Do not invent numbers beyond these:\n${JSON.stringify(d.market_analysis)}`
+  } catch { return '' }
+}
+
 // Cheap router: analytical questions get a little more room to reason.
 function chooseEffort(query: string): Effort {
   const q = (query || '').toLowerCase()
@@ -309,6 +330,15 @@ serve(async (req) => {
           .map((a: { title?: string; slug?: string; excerpt?: string }) => `- "${a.title}" (/blog/${a.slug}): ${a.excerpt ?? ''}`)
           .join('\n')
         systemPrompt += `\n\n──────────\n\nRELEVANT LIBRARY ARTICLES (point to these by title; do not invent others):\n${list}`
+      }
+
+      // PROJECTION: if a logged-in operator names a ZIP, hand Penny the real Property Forge
+      // projection for it so she speaks from a tool-backed estimate, not invented numbers. Non-account
+      // callers get no projection here; the prompt tells Penny to have them create an account.
+      const zipMatch = (message || '').match(/\b(\d{5})\b/)
+      if (zipMatch && user_id) {
+        const proj = await fetchProjection(supabaseUrl, supabaseKey, zipMatch[1], message)
+        if (proj) systemPrompt += `\n\n──────────\n\n${proj}`
       }
 
       // Build conversation messages for the AI
