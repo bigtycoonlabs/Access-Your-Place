@@ -374,6 +374,63 @@ async function upsertCommunity(url: string, key: string, a: any, staffId: string
   return data; // { ok:true, community_name, status_summary, client_facing_notes, created, ... }
 }
 
+// ---- staff invites (OWNERS ONLY: Vission & Rel) ----------------------------
+// Owner gate. Reads the requesting staff member's is_owner flag straight from the
+// staff_users table (DATA_SCHEMA), so only a real owner account can invite staff — the
+// client can't forge this by passing a flag; we look it up server-side by their id.
+async function staffIsOwner(url: string, key: string, staffId: string): Promise<{ owner: boolean; name: string | null }> {
+  if (!staffId) return { owner: false, name: null };
+  try {
+    const res = await fetch(`${url}/rest/v1/staff_users?id=eq.${encodeURIComponent(staffId)}&select=is_owner,is_active,name`, {
+      headers: { apikey: key, Authorization: `Bearer ${key}`, 'Accept-Profile': APP_SCHEMA },
+    });
+    if (!res.ok) { console.error('penny-staff-chat staff_is_owner_http', res.status); return { owner: false, name: null }; }
+    const rows = await res.json().catch(() => []);
+    const row = Array.isArray(rows) ? rows[0] : null;
+    if (!row) return { owner: false, name: null };
+    return { owner: row.is_owner === true && row.is_active !== false, name: row.name || null };
+  } catch (e) {
+    console.error('penny-staff-chat staff_is_owner_threw', e instanceof Error ? e.message : String(e));
+    return { owner: false, name: null };
+  }
+}
+
+// Create a NEW staff member and send them their setup email (temporary password + a link
+// to /staff/login, where they set their own password on first sign-in). Wraps the deployed,
+// admin-UI-proven manage-staff add_staff. Owner-gated in execTool; this only runs after the
+// owner has confirmed. Truthful: reports whether the email actually sent, and says plainly
+// when the person already has an account instead of implying a fresh invite went out.
+const STAFF_DEPARTMENTS = ['success_managers', 'acquisition_managers', 'setup_managers', 'content_team', 'support_team'];
+async function inviteStaff(url: string, key: string, a: any) {
+  const payload = {
+    action: 'add_staff',
+    first_name: String(a.first_name || '').trim(),
+    last_name: String(a.last_name || '').trim(),
+    email: String(a.email || '').trim(),
+    department: String(a.department || '').trim(),
+    phone: a.phone != null ? String(a.phone) : null,
+  };
+  const { ok, status, data } = await callFn(url, key, 'manage-staff', payload);
+  const d: any = data || {};
+  const errText = typeof d.error === 'string' ? d.error : (typeof data === 'string' ? data : '');
+  if (!ok || d.success === false) {
+    if (errText && /already exists/i.test(errText)) {
+      return { already_exists: true, email: payload.email, message: `A staff member with the email ${payload.email} already exists — no new invite was sent.` };
+    }
+    console.error('penny-staff-chat invite_staff', status, JSON.stringify(data).slice(0, 200));
+    return { error: d.error || 'invite_failed', http: status };
+  }
+  return {
+    ok: true,
+    staff_id: d.staff_id || d.id || null,
+    email: payload.email,
+    department: payload.department,
+    email_sent: d.email_sent === true,
+    email_error: d.email_error || null,
+    message: d.message || `Staff account created for ${payload.email}.`,
+  };
+}
+
 type Ctx = { url: string; key: string; staffId: string; staffName: string; docText?: string; docName?: string };
 
 async function execTool(name: string, args: any, ctx: Ctx): Promise<unknown> {
@@ -472,6 +529,27 @@ async function execTool(name: string, args: any, ctx: Ctx): Promise<unknown> {
         return { needs_confirmation: true, action: `save this status update for ${args.community_name}`, instruction: 'Read back to the staff member exactly what you will save for this community — the status, the internal detail, and any client-facing note — and get a clear yes. Then call again with confirmed:true.' };
       }
       return await upsertCommunity(url, key, args, staffId, staffName);
+    }
+    if (name === 'invite_staff') {
+      // OWNER-ONLY hard gate: only Vission or Rel (is_owner) may invite new staff.
+      const gate = await staffIsOwner(url, key, staffId);
+      if (!gate.owner) {
+        return { error: 'not_authorized', detail: 'Only an owner (Vission or Rel) can invite a new staff member. This account is not an owner, so the invite was not sent.' };
+      }
+      const first_name = args?.first_name ? String(args.first_name).trim() : '';
+      const last_name = args?.last_name ? String(args.last_name).trim() : '';
+      const email = args?.email ? String(args.email).trim() : '';
+      const department = args?.department ? String(args.department).trim() : '';
+      if (!first_name || !last_name || !email || !department) {
+        return { error: 'first_name, last_name, email, and department are all required' };
+      }
+      if (!STAFF_DEPARTMENTS.includes(department)) {
+        return { error: `unknown department "${department}"`, valid: STAFF_DEPARTMENTS };
+      }
+      if (args.confirmed !== true) {
+        return { needs_confirmation: true, action: `create a staff account for ${first_name} ${last_name} (${email}) on the ${department.replace(/_/g, ' ')} team and email them their setup link`, instruction: 'Read back to the owner exactly who this will email — their name, their email, and their department — and get a clear yes. Explain that it emails the new teammate a link with a temporary password to set up their own login, and that this email is all the gate they need (no second approval afterward). Then call again with confirmed:true.' };
+      }
+      return await inviteStaff(url, key, { first_name, last_name, email, department, phone: args?.phone });
     }
     return { error: `unknown_tool_${name}` };
   } catch (e) {
@@ -727,6 +805,26 @@ const TOOLS = [
       },
     },
   },
+  {
+    type: 'function',
+    function: {
+      name: 'invite_staff',
+      description: "OWNER ONLY (Vission or Rel): create a brand-new staff account and email that person their setup link. Use this when an owner asks you to send a new teammate a staff login, add someone to the staff team, or invite a new hire. It creates their account and emails them a temporary password plus a link to the staff login, where they set their own password the first time they sign in — that email is all the gate the new teammate needs, with no second approval afterward. This is a WRITE that creates an account and sends a real email: only call with confirmed:true after you've read back who it will email, their name, and their department, and the owner has clearly said yes. If a non-owner asks, the tool refuses. Requires first_name, last_name, email, and department.",
+      parameters: {
+        type: 'object',
+        properties: {
+          first_name: { type: 'string', description: "The new staff member's first name." },
+          last_name: { type: 'string', description: "The new staff member's last name." },
+          email: { type: 'string', description: "The new staff member's email address — where their setup link is sent." },
+          department: { type: 'string', enum: ['success_managers', 'acquisition_managers', 'setup_managers', 'content_team', 'support_team'], description: 'Which team they join.' },
+          phone: { type: 'string', description: 'Optional phone number.' },
+          confirmed: { type: 'boolean', description: 'Set true ONLY after reading back who it emails, their name and department, and getting a clear yes from the owner.' },
+        },
+        required: ['first_name', 'last_name', 'email', 'department'],
+        additionalProperties: false,
+      },
+    },
+  },
 ];
 
 function systemPrompt(first: string, docText?: string, docName?: string): string {
@@ -760,7 +858,9 @@ RECORDING CLOSINGS: staff will give you a completed deal - either by describing 
 
 COMMUNITY & PROPERTY STATUS: you keep the living memory of what's happening at every community or property we talk to clients about — the ones listed on the platform AND the ones we no longer sell but still work (for example Manchester House in Denton, TX, where a client's belongings are). When a staff member tells you what's going on somewhere, save it so the client-facing Penny reflects reality. Always call get_community first to see what you already hold there, then MERGE the new detail into a complete picture — never blow away existing context. Keep the full internal working detail in the update, and put in the client-facing note ONLY what is genuinely appropriate to say to a client (that note is the only part the client-facing Penny may repeat). Saving is a write: read back exactly what you'll save, get a clear yes, then call update_community with confirmed:true. If they ask which communities you know about, use list_communities; for one place, get_community. If a place isn't there yet, you can create it by saving its first update.
 
-SCOPE: you handle the reactive desk (opportunities, follow-ups, notes, status), keeping community/property status current, and composing client emails. Listing a brand-new deal needs photos and lives in the "List a Deal" tab — if they want to add a property, point them there warmly rather than trying to do it here.${docText ? `
+STAFF INVITES (OWNERS ONLY): only the owners — Vission and Rel — can bring a new staff member onto the team. If an owner asks you to send a new teammate a staff login, add someone to the team, or invite a new hire, gather their first name, last name, email, and which department they'll join (Success Managers, Acquisition Managers, Setup Managers, Content Team, or Support Team). Then read it ALL back — who you'll email, their name, and their department — and get a clear yes before you do anything. Only after that clear yes, call invite_staff with confirmed:true. It creates their account and emails them a temporary password with a link to the staff login, where they set their own password the first time they sign in — that email is all the gate the new teammate needs, so there is nothing more for the owner to approve afterward. If someone who is NOT an owner asks you to invite staff, tell them warmly that only an owner can do that (the tool refuses regardless). If the person already has a staff account, say so plainly instead of implying a new invite went out.
+
+SCOPE: you handle the reactive desk (opportunities, follow-ups, notes, status), keeping community/property status current, composing client emails, and — for owners — inviting new staff. Listing a brand-new deal needs photos and lives in the "List a Deal" tab — if they want to add a property, point them there warmly rather than trying to do it here.${docText ? `
 
 DOCUMENT SHARED THIS SESSION${docName ? ` ("${docName}")` : ''} - the staff member attached this. Read it and use it as the source when they ask you to record a closing; extract the client, property, and money, and confirm every number with them before recording. Never invent a figure the document does not state:
 -----
@@ -866,6 +966,7 @@ async function runAgent(messages: Array<{ role: string; content: string }>, firs
           : toolName === 'send_account_invite' ? (r?.email_sent === true)
           : toolName === 'record_closing' ? (r?.success === true)
           : toolName === 'update_community' ? (r?.ok === true)
+          : toolName === 'invite_staff' ? (r?.email_sent === true)
           : (toolName === 'update_opportunity_status' || toolName === 'add_opportunity_note') ? (r?.ok === true)
           : false;
         if (toolName && completed) toolsRun.push(toolName);
