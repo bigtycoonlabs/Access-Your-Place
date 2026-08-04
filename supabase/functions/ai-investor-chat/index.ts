@@ -78,6 +78,7 @@ Any client who wants research validated by a person — on a property they found
 AYP transactions run on Zelle, Cash App, wire transfer, and Bitcoin — not card processors like Stripe. This is deliberate: transaction sizes are large, and these rails keep payouts fast and funds unlocked rather than tied up. If asked how payment works, say this plainly.
 
 ## Grounding and honesty (this matters most)
+- You remember returning operators across conversations. When you know an operator's markets, strategy, portfolio, budget, or goals, it appears below — use it to tailor advice and avoid re-asking. Never claim to remember something that isn't actually there.
 - When there are live deals on the platform, you are handed them below — that is your source of truth about current inventory. Discuss them openly. If the client's market or deal type is NOT in that list, say so plainly and offer the live tooling / acquisition team — never invent inventory, an address, a link, or an "example" deal as if it were real.
 - When you are handed library articles below, point to them by title; never invent others.
 - You do NOT confirm payments, credit accounts, unlock deals, or send emails from this chat — the success team and the platform do that. Never say one of those happened unless it truly did; say what the next step is and who does it.
@@ -209,6 +210,58 @@ async function fetchDealAnalysis(url: string, key: string, zip: string, message:
     if (d && d.message) return `DEAL ANALYZER NOTE (relay this honestly; do not invent numbers): ${d.message}`
     return ''
   } catch { return '' }
+}
+
+// --- Operator memory (durable per-operator context) ------------------------------------------
+// Read the operator's stored memory and format it for Penny's prompt so she tailors advice and
+// stops re-asking. Service-role REST read (same pattern as ai_chat_sessions). Best-effort: on any
+// miss she simply has no memory this turn, never a fabricated one.
+function formatMemoryForPrompt(mem: Record<string, unknown>): string {
+  const label: Record<string, string> = { markets: 'Markets', strategies: 'Strategy', portfolio: 'Portfolio', budget: 'Budget', experience: 'Experience', goals: 'Goals', notes: 'Other notes' }
+  const lines: string[] = []
+  for (const [k, v] of Object.entries(mem)) {
+    if (v == null) continue
+    const name = label[k] || (k.charAt(0).toUpperCase() + k.slice(1))
+    const val = Array.isArray(v) ? v.filter(Boolean).join('; ') : String(v)
+    if (val.trim()) lines.push(`- ${name}: ${val}`)
+  }
+  return lines.join('\n')
+}
+
+async function fetchOperatorMemory(url: string, key: string, userId: string): Promise<string> {
+  try {
+    const res = await fetch(`${url}/rest/v1/penny_operator_memory?user_id=eq.${encodeURIComponent(userId)}&select=memory`, {
+      headers: { apikey: key, Authorization: `Bearer ${key}` },
+    })
+    if (!res.ok) return ''
+    const rows = await res.json()
+    const mem = Array.isArray(rows) && rows[0]?.memory && typeof rows[0].memory === 'object' ? rows[0].memory : null
+    if (!mem || Object.keys(mem).length === 0) return ''
+    const formatted = formatMemoryForPrompt(mem)
+    return formatted ? `WHAT YOU REMEMBER ABOUT THIS OPERATOR (from past conversations — use it to tailor your advice and avoid re-asking what you already know; if they correct any of it, go with the correction):\n${formatted}` : ''
+  } catch { return '' }
+}
+
+// Heuristic gate: does this message plausibly disclose durable operator facts worth remembering?
+// Generous on purpose — better to run an extraction that finds nothing than to miss a disclosure.
+// A pure question like "what's the ADR in 78701?" has no first-person business signal, so it's skipped.
+function mightHaveDurableFacts(msg: string): boolean {
+  const q = ' ' + (msg || '').toLowerCase().replace(/[^a-z0-9']+/g, ' ') + ' '
+  const firstPerson = [' i ', ' we ', ' my ', ' our ', " i'm ", " i've ", " we've "].some((t) => q.includes(t))
+  if (!firstPerson) return false
+  return ['run', 'running', 'operate', 'operating', 'own', 'manage', 'managing', 'portfolio', 'unit', 'units', 'door', 'doors', 'propert', 'budget', 'capital', 'invest', 'focus', 'target', 'expand', 'scal', 'looking to', 'plan to', 'planning', 'goal', 'based in', 'market', 'experience', 'year', 'new to', 'just start', 'arbitrage', 'lease', 'leasing', 'landlord', 'strateg', 'midterm', 'mid-term', 'shortterm', 'short-term', 'coliving', 'co-living'].some((t) => q.includes(t))
+}
+
+// Fire the memory-enrichment pass (get + extract + persist) in the operator-memory service using the
+// service role. Best-effort: records only real, stated facts and never invents; a failure is ignored.
+async function rememberOperator(url: string, svcKey: string, userId: string, convo: PennyMsg[]): Promise<void> {
+  try {
+    await fetch(`${url}/functions/v1/operator-memory`, {
+      method: 'POST',
+      headers: { apikey: svcKey, Authorization: `Bearer ${svcKey}`, 'Content-Type': 'application/json' },
+      body: JSON.stringify({ action: 'remember', user_id: userId, conversation: convo }),
+    })
+  } catch (_e) { /* best-effort */ }
 }
 
 // Cheap router: analytical questions get a little more room to reason.
@@ -378,9 +431,10 @@ serve(async (req) => {
 
       // REAL GROUNDING: hand Penny the actual live deals + relevant library articles, so she
       // speaks from real current inventory instead of invented examples.
-      const [deals, arts] = await Promise.all([
+      const [deals, arts, opMem] = await Promise.all([
         fetchLiveDeals(supabaseUrl, supabaseKey),
         searchLibrary(supabaseUrl, supabaseKey, message),
+        user_id ? fetchOperatorMemory(supabaseUrl, supabaseKey, user_id) : Promise.resolve(''),
       ])
       if (deals) {
         systemPrompt += `\n\n──────────\n\nLIVE DEALS ON THE PLATFORM RIGHT NOW (real market, type, economics, and score — this is your source of truth about current inventory). If the investor's market or deal type is not here, say so plainly and offer to line up an off-market search with the team; do not invent inventory:\n${deals}`
@@ -393,6 +447,8 @@ serve(async (req) => {
           .join('\n')
         systemPrompt += `\n\n──────────\n\nRELEVANT LIBRARY ARTICLES (point to these by title; do not invent others):\n${list}`
       }
+
+      if (opMem) systemPrompt += `\n\n──────────\n\n${opMem}`
 
       // PROJECTION: if a logged-in operator names a ZIP, hand Penny the real Property Forge
       // projection for it so she speaks from a tool-backed estimate, not invented numbers. Non-account
@@ -440,6 +496,17 @@ ${deal}`
       // The guard appends an honest correction rather than let a false completion stand.
       assistantMessage = guardReply(assistantMessage, []).text
       if (!assistantMessage) assistantMessage = "I'm sorry, I couldn't generate a response. Please try again."
+
+      // MEMORY (write): if the operator disclosed durable facts, enrich their memory in the
+      // background so it never adds reply latency and never changes this answer. Records only real,
+      // stated facts — never invents. Best-effort: a failure here is silently ignored.
+      if (user_id && mightHaveDurableFacts(message)) {
+        const convoForMemory: PennyMsg[] = [...messages.slice(-6), { role: 'assistant', content: assistantMessage }]
+        const memP = rememberOperator(supabaseUrl, supabaseKey, user_id, convoForMemory)
+        const er = (globalThis as any).EdgeRuntime
+        if (er && typeof er.waitUntil === 'function') er.waitUntil(memP)
+        else memP.catch(() => {})
+      }
 
       // Save the conversation to the database (unchanged behavior)
       if (user_id) {
