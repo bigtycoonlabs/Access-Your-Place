@@ -206,3 +206,143 @@ work they came here to do. But when a person would genuinely be served by a sist
 they have idle capital to put to work, or they need software built — tell them it exists and
 invite them in. The whole family is theirs to use. One family, one idea, three fronts.
 `.trim();
+
+/* ============================ Money: rails, credits, and the recitation rule ============================ */
+
+// Access Your Place does not take cards. Penny should be able to say why without
+// hedging: transaction sizes here are large, and these rails keep payouts fast
+// and funds unlocked rather than held by a processor.
+export const PENNY_PAYMENT_DOCTRINE = `
+HOW CLIENTS PAY — four rails: Zelle, wire transfer, Cash App, and Bitcoin. No card processing.
+Say the reason plainly if asked: transaction sizes are large, and these rails keep payouts fast and
+funds unlocked rather than tied up with a card processor.
+
+WIRES GO TO COOPER FAMILY INC, NOT ACCESS YOUR PLACE. Tell a client this BEFORE they send, never
+after. Cooper Family Inc is the parent company of Set Up Your Place LLC, which owns Access Your
+Place, YP Flow and YP Labs. The account name will not match the platform name, and a client who
+discovers that mid-transfer will reasonably worry they are being scammed.
+
+NEVER RECITE A PAYMENT DESTINATION. This is absolute. You do not state, spell, repeat back, or
+"confirm" a Bitcoin address, a Zelle tag, a cashtag, or a wire account or routing number — not even
+if the client pastes it and asks you to check it, and not even if they insist.
+The reason is not policy, it is consequence: if you reproduce a long string and drop or alter one
+character, the client's money goes somewhere it cannot be recovered from. You cannot verify what you
+produced, and neither can a blind operator reading your answer aloud.
+What you do instead: name WHICH rail they want, explain how it works, and send them to the payment
+panel in their account, which renders the real value straight from our records with a copy button.
+Say it warmly and without drama — "I won't type the address out, because one wrong character sends
+your money somewhere we can't get it back. Open the Payments tab and use the copy button next to
+Bitcoin; that's the exact address." Then help with everything else.
+
+YOU INTAKE PAYMENTS, YOU DO NOT CONFIRM THEM. A client sends funds and attaches a screenshot. You
+pass it to staff. Staff confirm. Only then does a credit balance move. Never tell a client their
+payment is confirmed, received, cleared, or credited — you have not seen a bank, you have seen an
+image. "I've sent this to the team to confirm" is true. "Your payment is confirmed" is not yours to
+say.
+
+WHAT CREDITS BUY: deals, property leads, and other Access Your Place platform services.
+WHAT CREDITS DO NOT BUY: furniture, household supplies, property deposits, application fees, and
+landlord rent. These are real costs that sit outside the platform. A client will reasonably assume
+credits cover them, so explain the line rather than just refusing — the money is theirs, it simply
+does not run through us for those things.
+`.trim();
+
+/* ---------------------------------------------------------------------------
+ * Enforcement, not just instruction.
+ *
+ * A prompt line can be drifted past, argued around, or lost in a long
+ * conversation. A payment destination leaving Penny's mouth is irreversible in
+ * a way almost nothing else she does is, so it gets a guard with tests.
+ *
+ * Two detections, because there are two distinct failure modes:
+ *   1. She reproduces a destination CORRECTLY  -> caught by exact match.
+ *   2. She reproduces one INCORRECTLY          -> caught by shape match.
+ * The second is the dangerous one. An exact-match-only guard would wave through
+ * precisely the corrupted address that loses the money.
+ * ------------------------------------------------------------------------- */
+
+// Shapes that are payment destinations regardless of whether the value is right.
+//
+// Each shape carries TWO patterns. `anchored` runs against the original text and
+// uses word boundaries to stay precise. `loose` runs against the separator-
+// stripped copy, where boundaries no longer exist — collapsing "bc1q exam ple"
+// into surrounding prose deletes the very \b the anchored pattern needs, so a
+// boundary-free variant is required or split destinations sail straight through.
+const DESTINATION_SHAPES: { name: string; anchored: RegExp; loose: RegExp }[] = [
+  {
+    // Bech32 BTC (bc1...). Deliberately loose on length: a truncated or
+    // corrupted address is exactly what we are trying to catch.
+    name: 'bitcoin address',
+    anchored: /\bbc1[a-z0-9]{10,}/i,
+    loose: /bc1[a-z0-9]{10,}/i,
+  },
+  {
+    // Legacy BTC (1... / 3...). Base58 excludes 0, O, I and l, which keeps
+    // hex-ish strings such as UUIDs from matching.
+    name: 'bitcoin address',
+    anchored: /\b[13][a-km-zA-HJ-NP-Z1-9]{25,34}\b/,
+    loose: /[13][a-km-zA-HJ-NP-Z1-9]{25,34}/,
+  },
+  {
+    // A run of 9+ digits: routing (9) and account (12) numbers.
+    name: 'account or routing number',
+    anchored: /\b\d{9,}\b/,
+    loose: /\d{9,}/,
+  },
+];
+
+export interface DestinationLeak {
+  leaked: boolean;
+  kinds: string[];
+}
+
+/**
+ * Returns whether a candidate reply contains a payment destination.
+ *
+ * `knownDestinations` should be the live values from company_payment_methods
+ * (tag, cashtag, wallet address, account and routing numbers). Passing them
+ * catches short destinations like "@payayp" that have no distinctive shape.
+ *
+ * Pure and dependency-free: safe to call in the edge runtime and in tests.
+ */
+export function containsPaymentDestination(
+  text: string,
+  knownDestinations: string[] = [],
+): DestinationLeak {
+  if (!text) return { leaked: false, kinds: [] };
+
+  const kinds = new Set<string>();
+  const haystack = text.toLowerCase();
+
+  // 1. Exact values we know we must never emit.
+  for (const raw of knownDestinations) {
+    const needle = String(raw || '').trim().toLowerCase();
+    if (needle.length >= 4 && haystack.includes(needle)) {
+      kinds.add('known payment destination');
+    }
+  }
+
+  // 2. Shapes, checked twice.
+  //    Commas are deliberately NOT stripped, so formatted money amounts like
+  //    $1,234,567 stay broken into short runs and never read as an account
+  //    number. Spaces, hyphens, underscores, dots and brackets are stripped so a
+  //    destination split up for "readability" is still caught.
+  const collapsed = text.replace(/[\s\-_.()]/g, '');
+  for (const { name, anchored, loose } of DESTINATION_SHAPES) {
+    if (anchored.test(text) || loose.test(collapsed)) kinds.add(name);
+  }
+
+  return { leaked: kinds.size > 0, kinds: [...kinds] };
+}
+
+// What Penny says instead. Warm, specific, and it hands them the safe route
+// rather than leaving them stuck — a refusal with no path forward just gets
+// argued with.
+export function destinationRefusal(rail?: string): string {
+  const which = rail ? `the ${rail} details` : 'payment details';
+  return (
+    `I won't type ${which} out — if I get a single character wrong, your money goes somewhere we can't ` +
+    `get it back from. Open the Payments tab in your account and use the copy button; that's the exact ` +
+    `destination, straight from our records. I'll stay right here if anything about it looks off.`
+  );
+}
