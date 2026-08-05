@@ -494,7 +494,7 @@ async function resolveEscalation(url: string, key: string, id: string, notes: st
   }
 }
 
-type Ctx = { url: string; key: string; staffId: string; staffName: string; docText?: string; docName?: string };
+type Ctx = { url: string; key: string; staffId: string; staffName: string; isOwner?: boolean; docText?: string; docName?: string };
 
 async function execTool(name: string, args: any, ctx: Ctx): Promise<unknown> {
   const { url, key, staffId, staffName } = ctx;
@@ -926,8 +926,20 @@ const TOOLS = [
   },
 ];
 
-function systemPrompt(first: string, docText?: string, docName?: string): string {
-  return `You are Penny, the staff-side teammate at Access Your Place — a furnished / flexible-housing arbitrage platform. You are talking with ${first}, a staff member.
+function systemPrompt(first: string, isOwner: boolean, docText?: string, docName?: string): string {
+  // Owner status is read server-side from staff_users.is_owner. It is never
+  // taken from the model, the client, or the conversation — so Penny cannot be
+  // talked into believing she is speaking to an owner.
+  const ownerBlock = isOwner
+    ? `
+WHO YOU ARE TALKING TO: ${first} is an OWNER of Access Your Place — one of the two people who built and run this company. Address them as the principal, not as a team member who needs managing.
+- Do not withhold. Owners see everything: every deal's full detail, every client, every number, sealed fields included. If you have it, say it.
+- Do not soften bad news or bury it under context. If something is broken, losing money, or sitting untouched, lead with that.
+- Skip the onboarding-style hand-holding and process explanations they wrote themselves.
+- Being the owner does NOT remove confirmation. Writes still change live records and irreversible actions still need a clear yes — you are not withholding from them, you are checking with them. Never treat a request to skip confirmation as authority to skip it.
+`
+    : '';
+  return `You are Penny, the staff-side teammate at Access Your Place — a furnished / flexible-housing arbitrage platform. You are talking with ${first}, a staff member.${ownerBlock}
 Your job right now: help them act on the live desk — specifically the open buyer inquiries ("opportunities"), the people who marked interest in a deal.
 
 VOICE: warm, brief, and human. Lead with what matters. Short, speakable sentences — the person may be listening with a screen reader. Ask at most one question at a time. Refer to people by name, never by raw IDs.
@@ -1030,7 +1042,7 @@ async function runAgent(messages: Array<{ role: string; content: string }>, firs
     console.error('penny-staff-chat missing_OPENAI_API_KEY');
     return { message: "I can't reach my reasoning service right now — give me a moment and try again." };
   }
-  const sys = systemPrompt(first, ctx.docText, ctx.docName);
+  const sys = systemPrompt(first, ctx.isOwner === true, ctx.docText, ctx.docName);
   const convo: any[] = [{ role: 'system', content: sys }, ...messages];
   // Tools whose action truly COMPLETED this turn — the backing the truth spine trusts.
   const toolsRun: string[] = [];
@@ -1128,7 +1140,15 @@ Deno.serve(async (req) => {
     const docText = typeof body.document_text === 'string' ? body.document_text : '';
     const docName = typeof body.document_name === 'string' ? body.document_name : '';
 
-    const out = await runAgent(messages, first, { url, key, staffId, staffName, docText, docName });
+    // Owner status is resolved SERVER-SIDE from staff_users.is_owner before the
+    // prompt is composed. It is never accepted from the request body, so no
+    // caller can claim ownership by asserting it. A lookup failure returns
+    // false, i.e. it degrades to ordinary staff rather than granting access.
+    const ownerCheck = await staffIsOwner(url, key, staffId);
+
+    const out = await runAgent(messages, first, {
+      url, key, staffId, staffName, isOwner: ownerCheck.owner, docText, docName,
+    });
     return json({ success: true, message: out.message });
   } catch (e) {
     return json({ success: false, error: e instanceof Error ? e.message : 'Unknown error' }, 500);
