@@ -23,10 +23,27 @@ export const ROLES = [
   'acquisition_closer', // negotiates, finalizes; the ONLY role that lists/approves deals
   'admin_support', // admin / dispute resolution / issue handling
   'setup_manager', // on-the-ground project management
+  'owner', // Vission or Rel — carries staff_users.is_owner; sees and may do everything
 ] as const;
 export type Role = (typeof ROLES)[number];
 
-export const STAFF_ROLES: readonly Role[] = ['acquisition_closer', 'admin_support', 'setup_manager'];
+// Owner is a STAFF role: it inherits every staff power and confidentiality
+// clearance, then adds owner-only powers on top. Listing it here means no
+// existing staff check has to learn about owners separately.
+export const STAFF_ROLES: readonly Role[] = [
+  'acquisition_closer',
+  'admin_support',
+  'setup_manager',
+  'owner',
+];
+
+// Owner status is NOT self-declared and NOT inferable from the staff role
+// string. It is the is_owner column on staff_users, read server-side, and it
+// must be threaded into the composed prompt so Penny actually knows who she is
+// speaking to — otherwise she treats an owner as an ordinary success manager.
+export function isOwner(role: Role): boolean {
+  return role === 'owner';
+}
 
 // A client's funding / credit posture — drives the confidentiality gate on LeadForge finds.
 //   unfunded  — no active deposit; sees score + data only.
@@ -88,6 +105,17 @@ export interface CapabilityProfile {
 
 export function capabilityProfile(ctx: ViewerContext): CapabilityProfile {
   const base = { role: ctx.role, surface: ctx.surface };
+
+  // Owner at the staff desk: the widest context Penny ever operates in. Wider
+  // budgets because owners ask cross-cutting questions that legitimately need
+  // several lookups before an answer is worth anything.
+  //
+  // Wider budget is NOT weaker safety. Owner-only powers stay gated per-action,
+  // and every irreversible action still requires explicit confirmation — being
+  // the owner means Penny does not withhold, not that she stops checking.
+  if (ctx.surface === 'staff' && isOwner(ctx.role)) {
+    return { ...base, canWrite: true, turnBudget: 10, toolCallBudget: 14 };
+  }
 
   // Staff control room: the only surface Penny may WRITE from. Every such write
   // is still gated per-action by the reasoning loop + approval queue (later phases).

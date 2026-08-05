@@ -8,6 +8,7 @@ import {
   deriveCreditState,
   creditsRemaining,
   isStaff,
+  isOwner,
   SEALED_DEAL_FIELDS,
   OPEN_DEAL_FIELDS,
   CREDITS_PER_DEPOSIT,
@@ -161,4 +162,47 @@ test('isStaff recognizes exactly the three success-team roles', () => {
   assert.equal(isStaff('client'), false);
   assert.equal(isStaff('landlord'), false);
   assert.equal(isStaff('visitor'), false);
+});
+
+/* ------------------------------ owner tier ------------------------------ */
+
+test('owner counts as staff, so every existing staff clearance applies unchanged', () => {
+  assert.equal(isStaff('owner'), true);
+});
+
+test('owner is recognised distinctly from ordinary staff roles', () => {
+  assert.equal(isOwner('owner'), true);
+  assert.equal(isOwner('acquisition_closer'), false);
+  assert.equal(isOwner('admin_support'), false);
+  assert.equal(isOwner('setup_manager'), false);
+  assert.equal(isOwner('client'), false);
+});
+
+test('owner at the staff desk gets a wider budget than ordinary staff', () => {
+  const owner = capabilityProfile({ surface: 'staff', role: 'owner' });
+  const staff = capabilityProfile({ surface: 'staff', role: 'acquisition_closer' });
+
+  assert.equal(owner.canWrite, true);
+  assert.ok(owner.turnBudget > staff.turnBudget);
+  assert.ok(owner.toolCallBudget > staff.toolCallBudget);
+});
+
+test('owner sees every sealed deal field, on both deal kinds', () => {
+  for (const kind of ['leadforge', 'marketplace'] as const) {
+    const v = visibleDealFields({ surface: 'staff', role: 'owner' }, { kind });
+    assert.deepEqual(v.sealed, []);
+    for (const f of SEALED_DEAL_FIELDS) {
+      assert.ok(v.visible.includes(f), `owner should see ${f} on a ${kind} deal`);
+    }
+    for (const f of OPEN_DEAL_FIELDS) {
+      assert.ok(v.visible.includes(f));
+    }
+  }
+});
+
+test('owner does NOT gain write powers from a non-staff surface', () => {
+  // Being an owner is not a bypass. The surface still governs whether any write
+  // is possible at all, so an owner reading the public site cannot act from it.
+  const p = capabilityProfile({ surface: 'public', role: 'owner' });
+  assert.equal(p.canWrite, false);
 });
