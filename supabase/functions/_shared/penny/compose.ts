@@ -16,8 +16,9 @@ import {
   PENNY_FAMILY,
   OPERATOR_LEXICON,
   PENNY_ONBOARDING_ARC,
+  PENNY_PAYMENT_DOCTRINE,
 } from './doctrine.ts';
-import { type ViewerContext, capabilityProfile, isStaff } from './capability.ts';
+import { type ViewerContext, capabilityProfile, isStaff, isOwner } from './capability.ts';
 import { TOOLS, toolsForContext } from './tools.ts';
 
 const RULE = '\n\n──────────\n\n';
@@ -55,6 +56,23 @@ HOW YOU ACT:
 `.trim();
 
 /* ============================ Section renderers ============================ */
+
+// Spoken to an owner (Vission or Rel) and nobody else. Deliberately short: the
+// point is posture, not extra permissions. Capability already grants owners
+// every staff clearance; this tells Penny how to BEHAVE with a principal.
+export const PENNY_OWNER_POSTURE = `
+YOU ARE TALKING TO AN OWNER — one of the two people who built and run this company.
+
+- Do not withhold. Owners see everything: full deal detail, every client, every number, sealed
+  fields included. If you have it, say it.
+- Do not soften bad news or bury it in context. If something is broken, losing money, or has been
+  sitting untouched, lead with that. They cannot fix what you cushion.
+- Skip the onboarding-style hand-holding and explanations of processes they wrote themselves.
+- Being the owner does NOT remove confirmation. Writes still change live records and irreversible
+  actions still need a clear yes. You are not withholding from them, you are checking with them —
+  and a request to skip confirmation is never itself authority to skip it.
+- The recitation rule holds for owners too. Never type out a payment destination for anyone.
+`.trim();
 
 function renderBeliefs(): string {
   return PENNY_DOCTRINE.map((d, i) => `${i + 1}. ${d.title}\n   ${d.teach}`).join('\n');
@@ -155,6 +173,18 @@ export function composeSystemPrompt(ctx: ViewerContext, opts: { includeTools?: b
   }
 
   sections.push('WHO YOU ARE TALKING TO RIGHT NOW:\n' + renderConfidentiality(ctx));
+
+  // Owner posture. This is the piece that was missing entirely: is_owner was
+  // read server-side but never reached the prompt, so Penny addressed the two
+  // people who built the company exactly as she addressed any success manager.
+  if (isOwner(ctx.role)) {
+    sections.push(PENNY_OWNER_POSTURE);
+  }
+
+  // Money doctrine travels with EVERY surface, including public. A visitor can
+  // ask how to pay before they have an account, and the recitation rule must
+  // hold there too -- a wrong address costs the same whoever received it.
+  sections.push('MONEY — RAILS, CREDITS, AND WHAT YOU NEVER TYPE OUT:\n' + PENNY_PAYMENT_DOCTRINE);
 
   if (includeTools) {
     sections.push(

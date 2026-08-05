@@ -2,6 +2,7 @@ import { test } from 'node:test';
 import assert from 'node:assert/strict';
 import { composeSystemPrompt, PENNY_TOOL_PROTOCOL } from './compose.ts';
 import { type ViewerContext } from './capability.ts';
+import { containsPaymentDestination } from './doctrine.ts';
 
 const visitor: ViewerContext = { surface: 'public', role: 'visitor' };
 const unfunded: ViewerContext = { surface: 'client', role: 'client', creditState: 'unfunded' };
@@ -79,4 +80,55 @@ test('public grounding mode omits the tool list and swaps in the grounding note'
   assert.match(p, /never invent an article/);
   assert.match(p, /Penny 10\.3/); // identity still present
   assert.match(p, /THE FAMILY/); // doctrine still present
+});
+
+/* ------------------------- owner posture & money doctrine ------------------------- */
+
+test('an owner at the staff desk gets the owner posture block', () => {
+  const p = composeSystemPrompt({ surface: 'staff', role: 'owner' });
+  assert.match(p, /YOU ARE TALKING TO AN OWNER/);
+  assert.match(p, /Do not withhold/);
+  assert.match(p, /lead with that/);
+});
+
+test('ordinary staff never see the owner posture block', () => {
+  for (const role of ['acquisition_closer', 'admin_support', 'setup_manager'] as const) {
+    const p = composeSystemPrompt({ surface: 'staff', role });
+    assert.doesNotMatch(p, /YOU ARE TALKING TO AN OWNER/, `leaked owner posture to ${role}`);
+  }
+});
+
+test('owner posture keeps confirmation rather than removing it', () => {
+  // The whole risk of an owner tier is that "you may do anything" reads as
+  // "you need not ask". The prompt must say the opposite, explicitly.
+  const p = composeSystemPrompt({ surface: 'staff', role: 'owner' });
+  assert.match(p, /does NOT remove confirmation/);
+  assert.match(p, /never itself authority to skip it/);
+});
+
+test('money doctrine reaches EVERY surface, including public', () => {
+  const surfaces: { surface: 'public' | 'client' | 'landlord' | 'staff'; role: any }[] = [
+    { surface: 'public', role: 'visitor' },
+    { surface: 'client', role: 'client' },
+    { surface: 'landlord', role: 'landlord' },
+    { surface: 'staff', role: 'acquisition_closer' },
+    { surface: 'staff', role: 'owner' },
+  ];
+  for (const ctx of surfaces) {
+    const p = composeSystemPrompt(ctx);
+    assert.match(p, /NEVER RECITE A PAYMENT DESTINATION/, `missing on ${ctx.surface}/${ctx.role}`);
+    assert.match(p, /Cooper Family Inc/, `missing holding-company note on ${ctx.surface}/${ctx.role}`);
+  }
+});
+
+test('the composed prompt never contains an actual payment destination', () => {
+  // Belt and braces: the doctrine describes destinations, it must not carry one.
+  const known = ['@payayp', '$accessyourplace'];
+  for (const ctx of [
+    { surface: 'public', role: 'visitor' },
+    { surface: 'staff', role: 'owner' },
+  ] as const) {
+    const leak = containsPaymentDestination(composeSystemPrompt(ctx), known);
+    assert.equal(leak.leaked, false, `prompt leaked ${leak.kinds.join(', ')} on ${ctx.surface}`);
+  }
 });
