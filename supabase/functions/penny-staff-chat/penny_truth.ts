@@ -83,10 +83,11 @@ export type ActionClass =
   | "payment_confirmed"
   | "emailed"
   | "deal_listed"
-  | "status_changed";
+  | "status_changed"
+  | "escalation_resolved";
 
 export const CLASSES: ActionClass[] = [
-  "credited", "unlocked", "payment_confirmed", "emailed", "deal_listed", "status_changed", "closing_recorded",
+  "credited", "unlocked", "payment_confirmed", "emailed", "deal_listed", "status_changed", "closing_recorded", "escalation_resolved",
 ];
 
 // If any of these frame the sentence as an offer or a future intention, a nearby verb is
@@ -158,6 +159,12 @@ function detectClaimsInClause(t: string): ActionClass[] {
     has(t, /\b(the )?(closing|deal record)\b[^.!?]{0,20}\b(is|has been|was|have been)\b[^.!?]{0,14}\b(recorded|logged|entered|booked|on the books|in the books|in the ledger)\b/)
   ) out.push("closing_recorded");
 
+  // ESCALATION RESOLVED - an open client escalation was marked resolved / closed out (staff desk).
+  if (
+    has(t, /\b(i'?ve|i have|i just|we'?ve|we have)\b[^.!?]{0,45}\b(resolved|closed|cleared|handled|marked)\b[^.!?]{0,26}\b(the |that |this )?escalation/) ||
+    has(t, /\bthe escalation\b[^.!?]{0,20}\b(is|has been|was|have been|'?s)\b[^.!?]{0,14}\b(now )?(resolved|closed|cleared|marked resolved|taken care of|handled)\b/)
+  ) out.push("escalation_resolved");
+
   return out;
 }
 
@@ -194,6 +201,7 @@ const TOOL_BACKS: Record<string, ActionClass[]> = {
   record_closing: ["closing_recorded"],
   update_community: ["status_changed"],
   invite_staff: ["emailed"],
+  resolve_escalation: ["escalation_resolved"],
 };
 
 export function backedActionsFromTools(toolsRun: string[]): Set<ActionClass> {
@@ -248,6 +256,12 @@ const META: Record<ActionClass, { correction: string; fallback: string }> = {
       "you told the staff member the closing was recorded, but no tool recorded a deal this turn - recording a closing writes to the live company P&L and only counts when record_closing actually runs and returns success",
     fallback:
       "To be accurate: I haven't recorded that closing yet. Confirm the numbers and tell me to go ahead, and I'll record it.",
+  },
+  escalation_resolved: {
+    correction:
+      "you told the staff member an escalation was resolved or closed, but no tool resolved one this turn - an escalation is only resolved when resolve_escalation actually runs and returns success",
+    fallback:
+      "To be accurate: I haven't resolved that escalation yet. Tell me to go ahead and I'll mark it resolved with your note.",
   },
 };
 

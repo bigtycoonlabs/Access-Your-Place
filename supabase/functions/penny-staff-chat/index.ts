@@ -431,6 +431,69 @@ async function inviteStaff(url: string, key: string, a: any) {
   };
 }
 
+// ---- escalations (urgent client situations Penny flagged for a human) --------
+// Read the still-open escalations straight from public.penny_escalations (service-role
+// REST; public schema, so no Accept-Profile). Read-only.
+async function listEscalations(url: string, key: string) {
+  try {
+    const res = await fetch(`${url}/rest/v1/penny_escalations?status=eq.open&select=id,user_name,user_type,summary,details,investor_id,created_at&order=created_at.asc`, {
+      headers: { apikey: key, Authorization: `Bearer ${key}` },
+    });
+    if (!res.ok) { console.error('penny-staff-chat list_escalations_http', res.status); return { error: 'read_failed', http: res.status }; }
+    const rows = await res.json().catch(() => []);
+    const list = Array.isArray(rows) ? rows : [];
+    return {
+      count: list.length,
+      escalations: list.map((r: any) => ({
+        escalation_id: r.id,
+        who: r.user_name || '(no name on record)',
+        user_type: r.user_type || null,
+        investor_id: r.investor_id || null,
+        summary: r.summary,
+        details: r.details || null,
+        raised_at: r.created_at,
+      })),
+    };
+  } catch (e) {
+    console.error('penny-staff-chat list_escalations_threw', e instanceof Error ? e.message : String(e));
+    return { error: 'read_failed' };
+  }
+}
+
+// Mark ONE open escalation resolved, with a note. Honest by construction: returns not_found
+// if the id doesn't exist and already_resolved if it was closed before, instead of implying a
+// fresh resolve. There is no resolved_by column, so the resolver's name is stamped into the
+// note for the audit trail. Direct service-role REST on public.penny_escalations.
+async function resolveEscalation(url: string, key: string, id: string, notes: string, staffName: string) {
+  try {
+    const look = await fetch(`${url}/rest/v1/penny_escalations?id=eq.${encodeURIComponent(id)}&select=id,status,user_name,summary`, {
+      headers: { apikey: key, Authorization: `Bearer ${key}` },
+    });
+    if (!look.ok) { console.error('penny-staff-chat resolve_look_http', look.status); return { error: 'read_failed', http: look.status }; }
+    const rows = await look.json().catch(() => []);
+    const row = Array.isArray(rows) ? rows[0] : null;
+    if (!row) return { error: 'not_found', escalation_id: id };
+    if (String(row.status) !== 'open') {
+      return { already_resolved: true, escalation_id: id, who: row.user_name || null, status: row.status, message: `That escalation was already ${row.status} - nothing to change.` };
+    }
+    const by = staffName ? String(staffName).trim() : '';
+    const stamped = (notes ? String(notes).trim() : '') + (by ? ` (resolved by ${by})` : '');
+    const patch = await fetch(`${url}/rest/v1/penny_escalations?id=eq.${encodeURIComponent(id)}&status=eq.open`, {
+      method: 'PATCH',
+      headers: { apikey: key, Authorization: `Bearer ${key}`, 'Content-Type': 'application/json', Prefer: 'return=representation' },
+      body: JSON.stringify({ status: 'resolved', resolved_at: new Date().toISOString(), resolution_notes: stamped }),
+    });
+    if (!patch.ok) { console.error('penny-staff-chat resolve_patch_http', patch.status); return { error: 'resolve_failed', http: patch.status }; }
+    const out = await patch.json().catch(() => []);
+    const saved = Array.isArray(out) ? out[0] : null;
+    if (!saved) return { error: 'resolve_failed', escalation_id: id };
+    return { ok: true, escalation_id: id, who: saved.user_name || row.user_name || null, resolution_notes: saved.resolution_notes || stamped, resolved_at: saved.resolved_at || null };
+  } catch (e) {
+    console.error('penny-staff-chat resolve_escalation_threw', e instanceof Error ? e.message : String(e));
+    return { error: 'resolve_failed' };
+  }
+}
+
 type Ctx = { url: string; key: string; staffId: string; staffName: string; docText?: string; docName?: string };
 
 async function execTool(name: string, args: any, ctx: Ctx): Promise<unknown> {
@@ -550,6 +613,17 @@ async function execTool(name: string, args: any, ctx: Ctx): Promise<unknown> {
         return { needs_confirmation: true, action: `create a staff account for ${first_name} ${last_name} (${email}) on the ${department.replace(/_/g, ' ')} team and email them their setup link`, instruction: 'Read back to the owner exactly who this will email — their name, their email, and their department — and get a clear yes. Explain that it emails the new teammate a link with a temporary password to set up their own login, and that this email is all the gate they need (no second approval afterward). Then call again with confirmed:true.' };
       }
       return await inviteStaff(url, key, { first_name, last_name, email, department, phone: args?.phone });
+    }
+    if (name === 'list_escalations') return await listEscalations(url, key);
+    if (name === 'resolve_escalation') {
+      const id = args?.escalation_id ? String(args.escalation_id).trim() : '';
+      const notes = args?.resolution_notes ? String(args.resolution_notes).trim() : '';
+      if (!id) return { error: 'escalation_id is required (get it from list_escalations)' };
+      if (!notes) return { error: 'resolution_notes is required - a short note of how it was resolved' };
+      if (args.confirmed !== true) {
+        return { needs_confirmation: true, action: 'mark this escalation resolved', instruction: 'Name whose escalation this is and read the resolution note back to the staff member, and get a clear yes. Then call again with confirmed:true. This closes the open escalation and records the note.' };
+      }
+      return await resolveEscalation(url, key, id, notes, staffName);
     }
     return { error: `unknown_tool_${name}` };
   } catch (e) {
@@ -825,6 +899,31 @@ const TOOLS = [
       },
     },
   },
+  {
+    type: 'function',
+    function: {
+      name: 'list_escalations',
+      description: "List the open escalations - urgent client situations that were flagged for a human and are still unresolved. Use this when a staff member asks what's escalated, what's urgent, what needs attention, or what's still open. Returns each one's id, who it's about, a short summary, and when it was raised. Read them back warmly, oldest first, and note how long each has been sitting.",
+      parameters: { type: 'object', properties: {}, additionalProperties: false },
+    },
+  },
+  {
+    type: 'function',
+    function: {
+      name: 'resolve_escalation',
+      description: "Mark an open escalation resolved, with a short note of how it was handled. Use this when a staff member says an escalated situation has been dealt with and wants it closed out. Get the escalation_id from list_escalations first. This is a WRITE: only call with confirmed:true after you've named whose escalation it is and read the resolution note back, and the staff member has clearly said yes. If it was already resolved, the tool says so plainly rather than implying a fresh change.",
+      parameters: {
+        type: 'object',
+        properties: {
+          escalation_id: { type: 'string', description: 'The id of the escalation to resolve (from list_escalations).' },
+          resolution_notes: { type: 'string', description: 'A short note of how it was resolved - what was done and any outcome.' },
+          confirmed: { type: 'boolean', description: 'Set true ONLY after reading the resolution note back and getting a clear yes.' },
+        },
+        required: ['escalation_id', 'resolution_notes'],
+        additionalProperties: false,
+      },
+    },
+  },
 ];
 
 function systemPrompt(first: string, docText?: string, docName?: string): string {
@@ -860,7 +959,9 @@ COMMUNITY & PROPERTY STATUS: you keep the living memory of what's happening at e
 
 STAFF INVITES (OWNERS ONLY): only the owners — Vission and Rel — can bring a new staff member onto the team. If an owner asks you to send a new teammate a staff login, add someone to the team, or invite a new hire, gather their first name, last name, email, and which department they'll join (Success Managers, Acquisition Managers, Setup Managers, Content Team, or Support Team). Then read it ALL back — who you'll email, their name, and their department — and get a clear yes before you do anything. Only after that clear yes, call invite_staff with confirmed:true. It creates their account and emails them a temporary password with a link to the staff login, where they set their own password the first time they sign in — that email is all the gate the new teammate needs, so there is nothing more for the owner to approve afterward. If someone who is NOT an owner asks you to invite staff, tell them warmly that only an owner can do that (the tool refuses regardless). If the person already has a staff account, say so plainly instead of implying a new invite went out.
 
-SCOPE: you handle the reactive desk (opportunities, follow-ups, notes, status), keeping community/property status current, composing client emails, and — for owners — inviting new staff. Listing a brand-new deal needs photos and lives in the "List a Deal" tab — if they want to add a property, point them there warmly rather than trying to do it here.${docText ? `
+ESCALATIONS: some client situations are flagged as escalations - urgent things a human needs to handle. When a staff member asks what's escalated, what's urgent, or what still needs attention, call list_escalations and read them back warmly, oldest first, noting how long each has been open. When they tell you an escalation has been handled and want it closed out, resolve it: find the right one with list_escalations, then read back whose it is and the resolution note you'll record, get a clear yes, and only then call resolve_escalation with confirmed:true. If it was already resolved, say so plainly. Never tell a staff member you resolved an escalation unless the tool actually did it this turn.
+
+SCOPE: you handle the reactive desk (opportunities, follow-ups, notes, status), resolving escalations, keeping community/property status current, composing client emails, and — for owners — inviting new staff. Listing a brand-new deal needs photos and lives in the "List a Deal" tab — if they want to add a property, point them there warmly rather than trying to do it here.${docText ? `
 
 DOCUMENT SHARED THIS SESSION${docName ? ` ("${docName}")` : ''} - the staff member attached this. Read it and use it as the source when they ask you to record a closing; extract the client, property, and money, and confirm every number with them before recording. Never invent a figure the document does not state:
 -----
@@ -967,6 +1068,7 @@ async function runAgent(messages: Array<{ role: string; content: string }>, firs
           : toolName === 'record_closing' ? (r?.success === true)
           : toolName === 'update_community' ? (r?.ok === true)
           : toolName === 'invite_staff' ? (r?.email_sent === true)
+          : toolName === 'resolve_escalation' ? (r?.ok === true)
           : (toolName === 'update_opportunity_status' || toolName === 'add_opportunity_note') ? (r?.ok === true)
           : false;
         if (toolName && completed) toolsRun.push(toolName);
