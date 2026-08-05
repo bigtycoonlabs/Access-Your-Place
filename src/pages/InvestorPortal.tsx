@@ -34,6 +34,7 @@ import { PWAInstallBanner } from '@/components/investor/PWAInstallBanner';
 import { InvestorCalendar } from '@/components/investor/InvestorCalendar';
 import { InvestorTabErrorBoundary } from '@/components/investor/InvestorTabErrorBoundary';
 import { PaymentHistory } from '@/components/investor/PaymentHistory';
+import PaymentMethodPanel from '@/components/investor/PaymentMethodPanel';
 import { PropertySearchLocator } from '@/components/investor/PropertySearchLocator';
 
 // Push Notification Manager for native iOS/Android
@@ -1303,7 +1304,14 @@ export default function InvestorPortal() {
                   />
                 </TabsContent>
                 <TabsContent value="payments">
-                  <PaymentHistory investorId={investor.id} />
+                  {/* How to pay comes BEFORE payment history: a client opening
+                      this tab is far more often trying to send funds than to
+                      audit past ones. Rails render from company_payment_methods
+                      via get-payment-methods -- never hardcoded here. */}
+                  <div className="space-y-8">
+                    <PaymentMethodPanel />
+                    <PaymentHistory investorId={investor.id} />
+                  </div>
                 </TabsContent>
               </Tabs>
             </InvestorTabErrorBoundary>
