@@ -302,28 +302,28 @@ export default function StaffDashboard() {
     
     const parsed = JSON.parse(session);
 
-    // A staff session with no id is NOT a usable session. Every staff-identified edge
-    // function reads staff_id from the request body and refuses without it, so an
-    // id-less session does not fail loudly at login — it fails quietly on every
-    // subsequent call. Observed live: manage-hr-commissions returning 403 on every
-    // dashboard load, and Penny telling an owner she could not tell who he was, both
-    // from this one cause.
+    // A staff session with no id is only half a session: every staff-identified edge
+    // function reads staff_id from the request body and refuses without it, so it does
+    // not fail at login — it fails quietly on every later call. Observed live:
+    // manage-hr-commissions 403ing on every dashboard load, and Penny telling an owner
+    // she could not tell who he was, both from this one cause.
     //
-    // Sessions stored before `id` was added to the login payload persist in
-    // localStorage indefinitely, so a staff member can stay signed in for months in a
-    // state where nothing that needs their identity works. Treat it as unauthenticated
-    // and send them back through login, which mints a session that has the id.
+    // This WAS a hard redirect to /staff/login. That was wrong and it locked the owner
+    // out: staff-login was independently returning a server error, so forcing a logout
+    // turned a degraded-but-usable dashboard into no dashboard at all. Never take away
+    // the working state someone still has on the strength of a fix that depends on a
+    // service you have not confirmed is up.
+    //
+    // So it now warns loudly and keeps them working. The session is still set; the
+    // person is told plainly what is broken, what it affects, and what fixes it.
     if (!parsed?.id) {
-      console.warn('[StaffDashboard] Stored session has no id — forcing re-login.');
-      localStorage.removeItem('staffSession');
-      localStorage.removeItem('staffSessionBackup');
+      console.warn('[StaffDashboard] Stored session has no id — identity-dependent features will fail.');
       toast({
-        title: 'Please sign in again',
+        title: 'Some features need you to sign in again',
         description:
-          'Your saved session is missing account details, so features that need to know who you are cannot work. Signing in again fixes it.',
+          'Your saved session is missing its account id, so anything that needs to know who you are — Penny, commissions, timesheets — will not work until you sign out and back in.',
+        variant: 'destructive',
       });
-      navigate('/staff/login');
-      return;
     }
 
     setStaffSession(parsed);
