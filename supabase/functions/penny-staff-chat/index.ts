@@ -394,8 +394,32 @@ async function upsertCommunity(url: string, key: string, a: any, staffId: string
 async function staffIsOwner(url: string, key: string, staffId: string): Promise<{ owner: boolean; name: string | null }> {
   if (!staffId) return { owner: false, name: null };
   try {
+    // NO Accept-Profile HEADER, deliberately.
+    //
+    // This read failed on every request Penny ever served, which is why she could never
+    // identify anyone. The reason, confirmed from pg_db_role_setting:
+    //
+    //     authenticator: pgrst.db_schemas = public
+    //
+    // PostgREST exposes ONLY the public schema. Asking for Accept-Profile:
+    // prj_X-ZoVQv6LKXT names a schema it will not serve, so the request is rejected,
+    // res.ok is false, and staffIsOwner returns { owner: false, name: null } — which the
+    // caller correctly reads as "I don't know who this is".
+    //
+    // Everything about the request was right except the schema it asked for: correct
+    // staff id, correct columns, correct service key, a row that exists. That is why it
+    // survived four rounds of debugging — nothing looked wrong.
+    //
+    // public.staff_users is a VIEW over the same base table and now exposes is_owner (see
+    // migration expose_is_owner_on_public_staff_users_view), so dropping the header reads
+    // the same rows through the schema PostgREST actually serves.
+    //
+    // The alternative was adding prj_X-ZoVQv6LKXT to pgrst.db_schemas. That would fix
+    // every function carrying this header at once, but it would also publish 281 tables
+    // to the REST API where only curated public views are reachable today. Owner chose
+    // the contained fix; this is it.
     const res = await fetch(`${url}/rest/v1/staff_users?id=eq.${encodeURIComponent(staffId)}&select=is_owner,is_active,name,first_name,last_name`, {
-      headers: { apikey: key, Authorization: `Bearer ${key}`, 'Accept-Profile': APP_SCHEMA },
+      headers: { apikey: key, Authorization: `Bearer ${key}` },
     });
     if (!res.ok) { console.error('penny-staff-chat staff_is_owner_http', res.status); return { owner: false, name: null }; }
     const rows = await res.json().catch(() => []);
