@@ -84,6 +84,12 @@ export type ActionClass =
   | "emailed"
   | "deal_listed"
   | "status_changed"
+  // closing_recorded was used by CLASSES, TOOL_BACKS, META and detectClaimsInClause but
+  // was missing from this union. esbuild strips types without checking them, so the
+  // parse-clean check passed and nothing surfaced it. Runtime behaviour was unaffected --
+  // the detector and its META entry both work -- but the guard's most financially
+  // consequential class was the one class not type-checked.
+  | "closing_recorded"
   | "escalation_resolved";
 
 export const CLASSES: ActionClass[] = [

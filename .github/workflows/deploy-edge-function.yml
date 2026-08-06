@@ -53,6 +53,11 @@ on:
         description: 'Function slug to deploy, e.g. penny-staff-chat'
         required: true
         type: string
+      verify_only:
+        description: 'Skip deploying. Only download what is live and diff it against the repo.'
+        required: false
+        default: false
+        type: boolean
 
 # Never deploy the same function twice at once.
 concurrency:
@@ -108,6 +113,7 @@ jobs:
           version: latest
 
       - name: Deploy
+        if: ${{ inputs.verify_only != true }}
         env:
           SUPABASE_ACCESS_TOKEN: ${{ secrets.SUPABASE_ACCESS_TOKEN }}
         run: |
@@ -117,6 +123,10 @@ jobs:
           # is how a private endpoint silently becomes a public one -- the exact defect
           # that was found in the old supabase/deploy-all.sh.
           supabase functions deploy "$SLUG" --project-ref "$PROJECT_REF"
+
+      - name: Note that deploy was skipped
+        if: ${{ inputs.verify_only == true }}
+        run: echo "verify_only was set. Nothing was deployed; only comparing live against repo."
 
       - name: Read back what actually landed, and diff it
         env:
@@ -137,9 +147,20 @@ jobs:
           if git diff --quiet -- "supabase/functions/$SLUG"; then
             echo "VERIFIED: deployed source is byte-identical to the repo."
           else
-            echo "::error::MISMATCH -- what is deployed differs from this repo."
-            echo "Do NOT treat this deploy as successful. The difference:"
+            echo "Deployed source differs from the repo. Full diff:"
             git --no-pager diff -- "supabase/functions/$SLUG"
+
+            # Also emit a compact summary as an ::error:: ANNOTATION. Annotations are
+            # readable through the REST API, whereas raw run logs are served from
+            # results-receiver.actions.githubusercontent.com -- a host that is often
+            # outside an agent's network allowlist. Without this, a failure here is
+            # visible in the browser but opaque to automation, which is exactly the
+            # "something is wrong but nobody can see what" state to avoid.
+            SUMMARY=$(git --no-pager diff --stat -- "supabase/functions/$SLUG")
+            NAMES=$(git --no-pager diff --name-only -- "supabase/functions/$SLUG" | tr '\n' ' ')
+            # %0A is the newline escape GitHub expects inside an annotation message.
+            ENCODED=$(printf '%s' "$SUMMARY" | head -c 3000 | sed ':a;N;$!ba;s/\n/%0A/g')
+            echo "::error title=Deployed source differs from repo::files: ${NAMES}%0A%0A${ENCODED}"
             exit 1
           fi
 
