@@ -67,6 +67,35 @@ const AppLayout: React.FC = () => {
 
       <Header />
 
+      {/*
+        Platform maintenance notice. Placed as the FIRST element inside <main>, before
+        the hero, so a screen reader reaches it immediately after the landmark rather
+        than after several sections of marketing copy.
+
+        role="status" with aria-live="polite" announces it without interrupting whatever
+        the person is already doing. It is not role="alert" — this is informational, not
+        an emergency, and an assertive announcement would talk over them.
+      */}
+      <section
+        role="status"
+        aria-live="polite"
+        aria-label="Platform status"
+        className="bg-[#d4a574] text-[#1a365d]"
+      >
+        <div className="mx-auto max-w-5xl px-4 py-3 text-center text-base font-medium leading-relaxed">
+          We're actively working on the Access Your Place platform right now, so some
+          features may be briefly unavailable. Your account and your data are safe. If
+          something isn't working, email{' '}
+          <a
+            href="mailto:success@accessyourplace.com"
+            className="underline underline-offset-2 hover:no-underline focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[#1a365d]"
+          >
+            success@accessyourplace.com
+          </a>{' '}
+          and we'll sort it out with you.
+        </div>
+      </section>
+
       <main id="main-content">
         <PennyHero />
         <Hero2026 />
