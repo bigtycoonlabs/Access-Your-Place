@@ -79,6 +79,12 @@ have never been used. Do not size work by code volume.
 - `manage-payment-proofs` (v1) — submit / list_mine / list_pending / review.
   Exactly-once, concurrency-safe claim, server-side staff verification,
   staff-verified amounts, honest partial-failure reporting.
+- `upload-payment-proof` (v1, deployed 5 Aug 2026) — private screenshot storage.
+  Writes to the PRIVATE `investor-documents` bucket, validates by magic number on
+  decoded bytes, derives the path from the investor id so a caller cannot choose it,
+  and returns a PATH not a URL. Staff exchange it for a 15-minute signed URL via
+  `get_signed_url`, which verifies staff server-side and FAILS rather than falling
+  back to `getPublicUrl`. Deploy verified by read-back.
 - `PaymentMethodPanel` wired into the investor portal Payments tab (front-end;
   live once Railway deploys the push).
 - Four tombstoned to HTTP 410: `weekly-market-data-refresh`,
@@ -88,10 +94,43 @@ have never been used. Do not size work by code volume.
 ## What is BUILT but NOT deployed
 
 - `penny-staff-chat` — owner status threaded into the composed prompt. **The job above.**
-- `upload-payment-proof` — private screenshot storage. Committed, esbuild-clean,
-  small enough (~7KB) to deploy safely via MCP.
+  Still v24 live as of 5 Aug 2026. Local file md5 `8d41eb282ef7b916e9cac68bcfb5a380`,
+  1,156 lines / 75,793 bytes; `penny_truth.ts` md5 `d2d0cca130367203a59c016ade44e5a2`,
+  17,229 bytes. Both parse clean under esbuild WITH the `.ts` extension.
 - The entire `_shared/penny/` spine — **78 tests passing**, imported by **zero**
   live functions.
+
+**Deployed 5 Aug 2026 (moved out of this section):** `upload-payment-proof` is now
+**LIVE at v1**, `verify_jwt: true`. Deployed via MCP and verified by read-back —
+safe to do here because it was a NEW slug with no live version to regress and no
+caller yet, so a bad transcription could not have broken anything in use. That
+reasoning does NOT transfer to `penny-staff-chat`.
+
+## Why the AI sandbox cannot do the penny-staff-chat deploy
+
+Established by test, not assumption, on 5 Aug 2026:
+
+- `api.supabase.com` → HTTP 403, `x-deny-reason: host_not_allowed`
+- `adcbrclppmnguzkzwiys.supabase.co` → HTTP 403, same reason
+- No `SUPABASE_*` credentials in the sandbox environment
+
+So the CLI cannot run from the sandbox and neither can a direct Management API
+`curl`. The only sandbox-available path is the MCP, which for this function means
+reproducing 93KB across two files verbatim over a function staff use daily.
+
+The read-back-and-diff fallback is weaker than it looks at this size: verifying it
+would mean eyeballing 93KB in a context window, which is the same class of
+unverifiable confidence the whole platform is built to avoid — and wrong code is
+live for the whole window between deploy and diff.
+
+**Two ways to unblock, either is enough:**
+
+1. Owner runs `./scripts/deploy-function.sh penny-staff-chat` from any machine with
+   the Supabase CLI and a `SUPABASE_ACCESS_TOKEN`. Bytes come off disk; no
+   transcription anywhere. This is the recommended path.
+2. Allowlist `api.supabase.com` for the sandbox and supply a `SUPABASE_ACCESS_TOKEN`.
+   Then the sandbox can `curl` the Management API with the file read from disk —
+   also transcription-free, and it makes every future deploy safe the same way.
 
 ---
 
