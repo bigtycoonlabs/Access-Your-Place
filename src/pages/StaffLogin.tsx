@@ -433,23 +433,44 @@ export default function StaffLogin() {
         }
       });
       
+      // This used to show "Check Your Email" no matter what happened — including when
+      // the send failed outright — and the fallback it tried, staff-login's
+      // forgot_password action, does not exist in that function at all. So a reset that
+      // never left the building looked identical to one that worked, and the person sat
+      // waiting for an email nothing had agreed to send.
+      //
+      // Not revealing WHETHER an account exists is a real security requirement and is
+      // still honoured: the server returns the same generic message either way. But a
+      // failure to SEND is our problem, not a fact about the person's account, and
+      // hiding it protects nobody.
+      let sendFailed = false;
+      let failure = '';
+
       if (invokeError) {
-        // Fallback to staff-login forgot_password action
-        console.log('Trying staff-login forgot_password action...');
-        const { data: fallbackData, error: fallbackError } = await supabase.functions.invoke('staff-login', {
-          body: { 
-            action: 'forgot_password', 
-            email: forgotEmail.toLowerCase().trim(),
-            base_url: window.location.origin
-          }
-        });
-        
-        if (fallbackError) {
-          console.log('Both edge functions unavailable for password reset');
+        const ctx = (invokeError as any)?.context;
+        if (ctx && typeof ctx.clone === 'function') {
+          const parsed = await ctx.clone().json().catch(() => null);
+          failure = parsed?.error || '';
         }
+        sendFailed = true;
+      } else if (data && data.success === false) {
+        sendFailed = true;
+        failure = data.error || '';
       }
-      
-      // Always show success message for security (don't reveal if email exists)
+
+      if (sendFailed) {
+        console.error('[StaffLogin] Password reset request failed:', failure || invokeError);
+        toast({
+          title: 'We could not send that reset email',
+          description:
+            failure ||
+            'Something went wrong on our side, so no reset email was sent. Please try again in a moment, or email success@accessyourplace.com.',
+          variant: 'destructive',
+        });
+        setLoading(false);
+        return;
+      }
+
       setView('reset_sent');
       toast({ 
         title: 'Check Your Email', 
@@ -457,11 +478,10 @@ export default function StaffLogin() {
       });
     } catch (err: any) {
       console.error('Forgot password error:', err);
-      // Still show success for security (don't reveal if email exists)
-      setView('reset_sent');
-      toast({ 
-        title: 'Check Your Email', 
-        description: 'If an account exists with that email, you will receive a password reset link.' 
+      toast({
+        title: 'We could not send that reset email',
+        description: 'Something went wrong on our side, so no reset email was sent. Please try again in a moment.',
+        variant: 'destructive',
       });
     }
     setLoading(false);
@@ -699,12 +719,6 @@ export default function StaffLogin() {
                 >
                   Forgot password?
                 </button>
-                <Link
-                  to="/staff/reset-password"
-                  className="text-sm text-gray-400 hover:text-gray-600 hover:underline"
-                >
-                  Reset via link
-                </Link>
               </div>
 
               <Button
