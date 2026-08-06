@@ -1,7 +1,14 @@
 # Supabase local dev config
 # https://supabase.com/docs/guides/local-development
 
-project_id = "lxfgylmkexnyryafmibi"
+# project_id is the LOCAL dev identifier (it names the local Docker stack). It is NOT the
+# deploy target -- that comes from `supabase link` or an explicit --project-ref. It held
+# "lxfgylmkexnyryafmibi" for a long time, which is a DIFFERENT project from the live one and
+# does not appear anywhere else in this repo. Corrected so the repo states one ref, not two,
+# and nobody copies the stale one into a real deploy command.
+#
+# Live project: adcbrclppmnguzkzwiys   (deploy with ./scripts/deploy-function.sh <slug>)
+project_id = "adcbrclppmnguzkzwiys"
 
 [api]
 port = 54321
