@@ -56,7 +56,7 @@ Deno.serve(async (req) => {
         method: 'POST',
         headers: { 'Authorization': `Bearer ${resendKey}`, 'Content-Type': 'application/json' },
         body: JSON.stringify({
-          from: 'Rental Arbitrage <notifications@updates.famous.ai>',
+          from: 'Access Your Place <notifications@accessyourplace.com>',
           to: ['team@rentalarbitrage.com'],
           subject: `New Discovery Call Request - ${request_type}`,
           html: `<h2>New Discovery Call Request</h2>

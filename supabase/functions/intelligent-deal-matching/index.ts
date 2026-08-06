@@ -174,7 +174,7 @@ async function sendEmailNotification(investor: any, property: Property, matchSco
         'Content-Type': 'application/json'
       },
       body: JSON.stringify({
-        from: 'Penny AI <penny@rentalacquisitions.com>',
+        from: 'Penny <penny@accessyourplace.com>',
         to: investor.email,
         subject: `ðŸ  New Deal Match: ${property.address} (${matchScore}% Match)`,
         html: `
@@ -221,7 +221,7 @@ async function sendEmailNotification(investor: any, property: Property, matchSco
                   </ul>
                 </div>
                 
-                <a href="https://rentalacquisitions.com/investor-portal?deal=${property.id}" 
+                <a href="https://accessyourplace.com/investor/login?deal=${property.id}" 
                    style="display: block; background: #10b981; color: white; text-align: center; padding: 14px 24px; border-radius: 8px; text-decoration: none; font-weight: bold;">
                   View Deal Details
                 </a>
@@ -230,7 +230,7 @@ async function sendEmailNotification(investor: any, property: Property, matchSco
             
             <div style="padding: 20px; text-align: center; color: #6b7280; font-size: 12px;">
               <p>You're receiving this because you have deal alerts enabled.</p>
-              <a href="https://rentalacquisitions.com/investor-portal/settings" style="color: #10b981;">Manage Preferences</a>
+              <a href="https://accessyourplace.com/investor/login" style="color: #10b981;">Manage Preferences</a>
             </div>
           </div>
         `

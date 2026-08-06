@@ -829,6 +829,7 @@ export default function InvestorPortal() {
             <Button
               variant="ghost"
               size="icon"
+              aria-label="Back to dashboard"
               onClick={() => setActiveTab('dashboard')}
               className="text-white hover:bg-white/20"
               aria-label="Close tab"

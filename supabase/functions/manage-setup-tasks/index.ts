@@ -111,7 +111,7 @@ async function notifyManager(supabase, managerId, subject, html) {
       await fetch('https://api.resend.com/emails', {
         method: 'POST',
         headers: { 'Authorization': `Bearer ${rk}`, 'Content-Type': 'application/json' },
-        body: JSON.stringify({ from: 'Setup Notifications <setup@rentalnarbitrage.com>', to: [mgr.email], subject, html })
+        body: JSON.stringify({ from: 'Access Your Place Setup <setup@accessyourplace.com>', to: [mgr.email], subject, html })
       });
     }
   } catch (e) { console.error('Notify manager error:', e); }
@@ -195,7 +195,7 @@ Deno.serve(async (req) => {
       if (project.setup_pro_email) {
         try {
           const rk = Deno.env.get('RESEND_API_KEY');
-          if (rk) await fetch('https://api.resend.com/emails', { method: 'POST', headers: { 'Authorization': `Bearer ${rk}`, 'Content-Type': 'application/json' }, body: JSON.stringify({ from: 'Setup Team <setup@rentalnarbitrage.com>', to: [project.setup_pro_email], subject: `Your Setup Pro Portal Access: ${project.property_address}`, html: `<h2>Setup Pro Portal Access</h2><p>Hi ${project.setup_pro_name || 'there'},</p><p>Access your portal for <strong>${project.property_address}</strong>:</p><p><a href="${portalUrl}" style="display:inline-block;background:#1a365d;color:#fff;padding:14px 28px;border-radius:8px;text-decoration:none;font-weight:600">Open Pro Portal</a></p>` }) });
+          if (rk) await fetch('https://api.resend.com/emails', { method: 'POST', headers: { 'Authorization': `Bearer ${rk}`, 'Content-Type': 'application/json' }, body: JSON.stringify({ from: 'Access Your Place Setup <setup@accessyourplace.com>', to: [project.setup_pro_email], subject: `Your Setup Pro Portal Access: ${project.property_address}`, html: `<h2>Setup Pro Portal Access</h2><p>Hi ${project.setup_pro_name || 'there'},</p><p>Access your portal for <strong>${project.property_address}</strong>:</p><p><a href="${portalUrl}" style="display:inline-block;background:#1a365d;color:#fff;padding:14px 28px;border-radius:8px;text-decoration:none;font-weight:600">Open Pro Portal</a></p>` }) });
         } catch (e) { console.error('Pro email error:', e); }
       }
       return ok({ success: true, project: data, portal_url: portalUrl, token });
@@ -209,7 +209,7 @@ Deno.serve(async (req) => {
       const portalUrl = `https://accessyourplace.com/pro-portal/${project.pro_portal_token}`;
       const rk = Deno.env.get('RESEND_API_KEY');
       if (!rk) throw new Error('Email not configured');
-      await fetch('https://api.resend.com/emails', { method: 'POST', headers: { 'Authorization': `Bearer ${rk}`, 'Content-Type': 'application/json' }, body: JSON.stringify({ from: 'Setup Team <setup@rentalnarbitrage.com>', to: [project.setup_pro_email], subject: `Your Setup Pro Portal: ${project.property_address}`, html: `<h2>Setup Pro Portal</h2><p>Hi ${project.setup_pro_name || 'there'},</p><p>Here is your portal link for <strong>${project.property_address}</strong>:</p><p><a href="${portalUrl}" style="display:inline-block;background:#1a365d;color:#fff;padding:14px 28px;border-radius:8px;text-decoration:none;font-weight:600">Open Pro Portal</a></p><p>This link is unique to you.</p>` }) });
+      await fetch('https://api.resend.com/emails', { method: 'POST', headers: { 'Authorization': `Bearer ${rk}`, 'Content-Type': 'application/json' }, body: JSON.stringify({ from: 'Access Your Place Setup <setup@accessyourplace.com>', to: [project.setup_pro_email], subject: `Your Setup Pro Portal: ${project.property_address}`, html: `<h2>Setup Pro Portal</h2><p>Hi ${project.setup_pro_name || 'there'},</p><p>Here is your portal link for <strong>${project.property_address}</strong>:</p><p><a href="${portalUrl}" style="display:inline-block;background:#1a365d;color:#fff;padding:14px 28px;border-radius:8px;text-decoration:none;font-weight:600">Open Pro Portal</a></p><p>This link is unique to you.</p>` }) });
       const { data } = await supabase.from('setup_projects').update({ updated_at: new Date().toISOString(), activity_log: addLog(project.activity_log, `Pro portal link emailed to ${project.setup_pro_email}`, params.staff_name) }).eq('id', params.project_id).select().single();
       return ok({ success: true, project: data, emailed_to: project.setup_pro_email });
     }
@@ -440,7 +440,7 @@ Deno.serve(async (req) => {
       const { data: up } = await supabase.from('setup_projects').update({ recap_sent: true, recap_sent_at: new Date().toISOString(), recap_type: type, recap_email_body: pt, updated_at: new Date().toISOString(), activity_log: addLog(project?.activity_log, `${type==='diy'?'DIY':'DFY'} recap ${params.send_as_message?'sent as portal message':'emailed'}`, params.staff_name) }).eq('id', params.project_id).select().single();
       let es = false, ms = false;
       if (project?.investor_email && !params.send_as_message) {
-        try { const rk = Deno.env.get('RESEND_API_KEY'); if (rk) { const r = await fetch('https://api.resend.com/emails', { method: 'POST', headers: { 'Authorization': `Bearer ${rk}`, 'Content-Type': 'application/json' }, body: JSON.stringify({ from: 'Setup Team <setup@rentalnarbitrage.com>', to: [project.investor_email], subject: subj, html, text: pt }) }); if (r.ok) es = true; } } catch (e) { console.error(e); }
+        try { const rk = Deno.env.get('RESEND_API_KEY'); if (rk) { const r = await fetch('https://api.resend.com/emails', { method: 'POST', headers: { 'Authorization': `Bearer ${rk}`, 'Content-Type': 'application/json' }, body: JSON.stringify({ from: 'Access Your Place Setup <setup@accessyourplace.com>', to: [project.investor_email], subject: subj, html, text: pt }) }); if (r.ok) es = true; } } catch (e) { console.error(e); }
       }
       if (params.send_as_message && project?.investor_id) {
         try { const { error: me } = await supabase.from('investor_messages').insert({ investor_id: project.investor_id, sender_type: 'staff', sender_name: params.staff_name || 'Setup Manager', subject: subj, message: pt, message_type: 'setup_recap', is_read: false }); if (!me) ms = true; } catch (e) { console.error(e); }

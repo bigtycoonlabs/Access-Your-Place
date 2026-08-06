@@ -111,7 +111,7 @@ export default function PaymentMethodPanel() {
   );
 
   return (
-    <section aria-labelledby="payment-methods-heading" className="space-y-4">
+    <section aria-labelledby="payment-methods-heading" aria-busy={loading} className="space-y-4">
       <h2 id="payment-methods-heading" className="text-xl font-semibold text-slate-900">
         How to pay
       </h2>

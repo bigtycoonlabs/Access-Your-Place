@@ -540,7 +540,7 @@ export function SupportRequestsTab({ staffId, staffName }: SupportRequestsTabPro
                   className="pl-9 w-64"
                 />
               </div>
-              <Button variant="outline" size="icon" onClick={() => { loadRequests(); loadStats(); }}>
+              <Button variant="outline" size="icon" aria-label="Refresh support requests" onClick={() => { loadRequests(); loadStats(); }}>
                 <RefreshCw className={`w-4 h-4 ${loading ? 'animate-spin' : ''}`} />
               </Button>
             </div>

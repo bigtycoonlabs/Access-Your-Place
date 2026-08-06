@@ -66,7 +66,7 @@ async function sendNotificationEmail(to: string, subject: string, html: string) 
         'Content-Type': 'application/json'
       },
       body: JSON.stringify({
-        from: 'Your Places <notifications@yourplaces.com>',
+        from: 'Access Your Place <notifications@accessyourplace.com>',
         to: [to],
         subject,
         html
@@ -153,7 +153,7 @@ Deno.serve(async (req) => {
             <p><strong>Investor:</strong> ${investor.full_name} (${investor.email})</p>
             <p><strong>Property ID:</strong> ${property_id}</p>
             <p>Your client has started the acquisition process and is proceeding with payment.</p>
-            <p><a href="https://app.yourplaces.com/staff/dashboard">View in Dashboard</a></p>`
+            <p><a href="https://accessyourplace.com/staff/login">View in Dashboard</a></p>`
           );
         }
       }
@@ -204,7 +204,7 @@ Deno.serve(async (req) => {
             <p><strong>Payment Method:</strong> ${payment_method.toUpperCase()}</p>
             <p><strong>Amount:</strong> $${amount}</p>
             <p><strong>Action Required:</strong> Verify payment and approve in dashboard.</p>
-            <p><a href="https://app.yourplaces.com/staff/dashboard">Review Payment</a></p>`
+            <p><a href="https://accessyourplace.com/staff/login">Review Payment</a></p>`
           );
         }
       }
@@ -281,7 +281,7 @@ Deno.serve(async (req) => {
             `<h2>Great news!</h2>
             <p>Your payment has been verified and approved.</p>
             <p>Full property details including the exact address and landlord contact information are now available in your dashboard.</p>
-            <p><a href="https://app.yourplaces.com/investor/portal">View Property Details</a></p>`
+            <p><a href="https://accessyourplace.com/investor/login">View Property Details</a></p>`
           );
         }
       }
@@ -538,7 +538,7 @@ Deno.serve(async (req) => {
         company: {
           name: 'Your Places LLC',
           address: '123 Business Ave, Suite 100, Austin, TX 78701',
-          support_email: 'support@yourplaces.com'
+          support_email: 'support@accessyourplace.com'
         }
       };
 

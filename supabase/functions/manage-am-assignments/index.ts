@@ -65,7 +65,7 @@ async function sendNotificationEmail(to: string, subject: string, html: string) 
         'Content-Type': 'application/json'
       },
       body: JSON.stringify({
-        from: 'Your Places <notifications@yourplaces.com>',
+        from: 'Access Your Place <notifications@accessyourplace.com>',
         to: [to],
         subject,
         html
@@ -159,7 +159,7 @@ Deno.serve(async (req) => {
             <p><strong>Preferred Markets:</strong> ${preferred_markets || 'Not specified'}</p>
             ${existing_am_name ? `<p><strong>Previously working with:</strong> ${existing_am_name}</p>` : ''}
             ${notes ? `<p><strong>Notes:</strong> ${notes}</p>` : ''}
-            <p><a href="https://app.yourplaces.com/staff/dashboard">View in Dashboard</a></p>`
+            <p><a href="https://accessyourplace.com/staff/login">View in Dashboard</a></p>`
           );
         }
       }
@@ -227,7 +227,7 @@ Deno.serve(async (req) => {
             <p><strong>Property Count:</strong> ${property_count || 'Not specified'}</p>
             <p><strong>Timeline:</strong> ${preferred_timeline || 'Not specified'}</p>
             ${notes ? `<p><strong>Notes:</strong> ${notes}</p>` : ''}
-            <p><a href="https://app.yourplaces.com/staff/dashboard">View in Dashboard</a></p>`
+            <p><a href="https://accessyourplace.com/staff/login">View in Dashboard</a></p>`
           );
         }
       }
@@ -320,7 +320,7 @@ Deno.serve(async (req) => {
             ${staff_phone ? `<p><strong>Phone:</strong> ${staff_phone}</p>` : ''}
           </div>
           <p>${staff_name} will be reaching out to you within the next 24 hours to discuss your investment goals and get started.</p>
-          <p><a href="https://app.yourplaces.com/investor/portal">Log in to your dashboard</a></p>`
+          <p><a href="https://accessyourplace.com/investor/login">Log in to your dashboard</a></p>`
         );
       }
 
@@ -390,7 +390,7 @@ Deno.serve(async (req) => {
             ${staff_phone ? `<p><strong>Phone:</strong> ${staff_phone}</p>` : ''}
           </div>
           <p>${staff_name} will be reaching out to you within the next 24 hours to discuss your setup needs.</p>
-          <p><a href="https://app.yourplaces.com/investor/portal">Log in to your dashboard</a></p>`
+          <p><a href="https://accessyourplace.com/investor/login">Log in to your dashboard</a></p>`
         );
       }
 
@@ -448,7 +448,7 @@ Deno.serve(async (req) => {
           <p>${staff_name} has been assigned as your acquisition manager.</p>
           ${staff_email ? `<p><strong>Email:</strong> ${staff_email}</p>` : ''}
           ${staff_phone ? `<p><strong>Phone:</strong> ${staff_phone}</p>` : ''}
-          <p><a href="https://app.yourplaces.com/investor/portal">Log in to your dashboard</a></p>`
+          <p><a href="https://accessyourplace.com/investor/login">Log in to your dashboard</a></p>`
         );
       }
 
@@ -503,7 +503,7 @@ Deno.serve(async (req) => {
           <p>${staff_name} has been assigned as your setup manager.</p>
           ${staff_email ? `<p><strong>Email:</strong> ${staff_email}</p>` : ''}
           ${staff_phone ? `<p><strong>Phone:</strong> ${staff_phone}</p>` : ''}
-          <p><a href="https://app.yourplaces.com/investor/portal">Log in to your dashboard</a></p>`
+          <p><a href="https://accessyourplace.com/investor/login">Log in to your dashboard</a></p>`
         );
       }
 

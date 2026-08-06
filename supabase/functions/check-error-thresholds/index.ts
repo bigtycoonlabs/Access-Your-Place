@@ -395,7 +395,7 @@ Deno.serve(async (req) => {
                 'Content-Type': 'application/json',
               },
               body: JSON.stringify({
-                from: 'AYP Alerts <alerts@mail.arbyourprice.com>',
+                from: 'Access Your Place Alerts <alerts@accessyourplace.com>',
                 to: recipientEmails,
                 subject: `[${severityLabel}] ${alert.title} | ${trendDirection === 'up' ? '▲' : trendDirection === 'down' ? '▼' : '—'} ${Math.abs(changePct)}% vs prev hour`,
                 html: emailHtml,

@@ -236,6 +236,7 @@ export function QuickViewModal({
                     <Button
                       variant="outline"
                       size="icon"
+                      aria-label="Save this deal"
                       onClick={onSave}
                       className={isSaved ? 'text-red-500 border-red-500' : ''}
                       aria-label={isSaved ? 'Remove from saved deals' : 'Save this deal'}

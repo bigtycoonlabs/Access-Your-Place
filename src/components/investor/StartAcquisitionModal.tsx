@@ -1,4 +1,5 @@
 import { useState, useEffect } from 'react';
+import PaymentMethodPanel from '@/components/investor/PaymentMethodPanel';
 import { loadStripe } from '@stripe/stripe-js';
 import { Elements, PaymentElement, useStripe, useElements } from '@stripe/react-stripe-js';
 import { supabase } from '@/lib/supabase';
@@ -53,22 +54,16 @@ interface Props {
   onSuccess: () => void;
 }
 
-// Wire/Zelle Payment Info
-const PAYMENT_INFO = {
-  zelle: {
-    email: 'payments@yourplaces.com',
-    phone: '(555) 123-4567',
-    name: 'Your Places LLC'
-  },
-  wire: {
-    bankName: 'Chase Bank',
-    accountName: 'Your Places LLC',
-    accountNumber: '****4567',
-    routingNumber: '021000021',
-    swiftCode: 'CHASUS33',
-    address: '123 Business Ave, Suite 100, New York, NY 10001'
-  }
-};
+// PAYMENT_INFO REMOVED -- it was fabricated placeholder data rendered to real clients
+// with working copy buttons: a Zelle address on a domain we do not own, a (555) 123-4567
+// placeholder phone, "Your Places LLC" (the wrong legal entity), a masked account number
+// against a real Chase routing number, and an invented street address.
+//
+// A client could copy those and send a wire. Nothing in the UI marked them as fake.
+//
+// Payment destinations now come from ONE place: company_payment_methods, read through
+// get-payment-methods and rendered by PaymentMethodPanel with copy buttons, aria-live
+// announcements and 44px targets. A destination is never hardcoded in a component again.
 
 // Terms of Service Component
 function TermsOfService({ onAccept, accepted }: { onAccept: (accepted: boolean) => void; accepted: boolean }) {
@@ -247,50 +242,13 @@ function ZellePayment({
 
   return (
     <div className="space-y-4">
-      <div className="bg-purple-50 border border-purple-200 rounded-lg p-4">
-        <h4 className="font-semibold text-purple-900 mb-3 flex items-center gap-2">
-          <Banknote className="w-5 h-5" />
-          Zelle Payment Instructions
-        </h4>
-        
-        <div className="space-y-3">
-          <div className="bg-white rounded-lg p-3 border border-purple-100">
-            <p className="text-xs text-gray-500 mb-1">Send To (Email)</p>
-            <div className="flex items-center justify-between">
-              <span className="font-mono font-medium">{PAYMENT_INFO.zelle.email}</span>
-              <Button 
-                size="sm" 
-                variant="ghost" 
-                onClick={() => copyToClipboard(PAYMENT_INFO.zelle.email, 'Email')}
-              >
-                <Copy className="w-4 h-4" />
-              </Button>
-            </div>
-          </div>
-
-          <div className="bg-white rounded-lg p-3 border border-purple-100">
-            <p className="text-xs text-gray-500 mb-1">Recipient Name</p>
-            <div className="flex items-center justify-between">
-              <span className="font-medium">{PAYMENT_INFO.zelle.name}</span>
-              <Button 
-                size="sm" 
-                variant="ghost" 
-                onClick={() => copyToClipboard(PAYMENT_INFO.zelle.name, 'Name')}
-              >
-                <Copy className="w-4 h-4" />
-              </Button>
-            </div>
-          </div>
-
-          <div className="bg-white rounded-lg p-3 border border-purple-100">
-            <p className="text-xs text-gray-500 mb-1">Amount to Send</p>
-            <span className="text-xl font-bold text-purple-700">${amount.toFixed(2)}</span>
-          </div>
-        </div>
-
-        <div className="mt-4 p-3 bg-purple-100 rounded-lg">
-          <p className="text-sm text-purple-800">
-            <strong>Important:</strong> Include your name and "Acquisition Fee" in the memo/note field.
+      <div className="space-y-3">
+        <PaymentMethodPanel />
+        <div className="bg-purple-50 border border-purple-200 rounded-lg p-3">
+          <p className="text-xs text-gray-500 mb-1">Amount to send</p>
+          <span className="text-xl font-bold text-purple-700">${amount.toFixed(2)}</span>
+          <p className="text-sm text-purple-800 mt-2">
+            <strong>Important:</strong> include your name and &quot;Acquisition Fee&quot; in the memo or note field.
           </p>
         </div>
       </div>
@@ -361,57 +319,15 @@ function WireTransferPayment({
 
   return (
     <div className="space-y-4">
-      <div className="bg-blue-50 border border-blue-200 rounded-lg p-4">
-        <h4 className="font-semibold text-blue-900 mb-3 flex items-center gap-2">
-          <Banknote className="w-5 h-5" />
-          Wire Transfer Instructions
-        </h4>
-        
-        <div className="space-y-2 text-sm">
-          <div className="grid grid-cols-2 gap-2">
-            <div className="bg-white rounded p-2 border border-blue-100">
-              <p className="text-xs text-gray-500">Bank Name</p>
-              <p className="font-medium">{PAYMENT_INFO.wire.bankName}</p>
-            </div>
-            <div className="bg-white rounded p-2 border border-blue-100">
-              <p className="text-xs text-gray-500">Account Name</p>
-              <p className="font-medium">{PAYMENT_INFO.wire.accountName}</p>
-            </div>
-          </div>
-          
-          <div className="bg-white rounded p-2 border border-blue-100">
-            <p className="text-xs text-gray-500">Routing Number</p>
-            <div className="flex items-center justify-between">
-              <span className="font-mono font-medium">{PAYMENT_INFO.wire.routingNumber}</span>
-              <Button size="sm" variant="ghost" onClick={() => copyToClipboard(PAYMENT_INFO.wire.routingNumber, 'Routing')}>
-                <Copy className="w-4 h-4" />
-              </Button>
-            </div>
-          </div>
-
-          <div className="bg-white rounded p-2 border border-blue-100">
-            <p className="text-xs text-gray-500">Account Number (Last 4 digits shown)</p>
-            <p className="font-mono font-medium">{PAYMENT_INFO.wire.accountNumber}</p>
-            <p className="text-xs text-gray-400 mt-1">Contact your AM for full account number</p>
-          </div>
-
-          <div className="bg-white rounded p-2 border border-blue-100">
-            <p className="text-xs text-gray-500">SWIFT Code (International)</p>
-            <div className="flex items-center justify-between">
-              <span className="font-mono font-medium">{PAYMENT_INFO.wire.swiftCode}</span>
-              <Button size="sm" variant="ghost" onClick={() => copyToClipboard(PAYMENT_INFO.wire.swiftCode, 'SWIFT')}>
-                <Copy className="w-4 h-4" />
-              </Button>
-            </div>
-          </div>
-
-          <div className="bg-white rounded p-2 border border-blue-100">
-            <p className="text-xs text-gray-500">Amount to Wire</p>
-            <span className="text-xl font-bold text-blue-700">${amount.toFixed(2)}</span>
-          </div>
+      <div className="space-y-3">
+        <PaymentMethodPanel />
+        <div className="bg-blue-50 border border-blue-200 rounded-lg p-3">
+          <p className="text-xs text-gray-500 mb-1">Amount to wire</p>
+          <span className="text-xl font-bold text-blue-700">${amount.toFixed(2)}</span>
         </div>
+      </div>
 
-        <div className="mt-4 p-3 bg-blue-100 rounded-lg">
+      <div className="mt-4 p-3 bg-blue-100 rounded-lg">
           <p className="text-sm text-blue-800">
             <strong>Reference:</strong> Include your full name and "Acquisition Fee" in the wire reference field.
           </p>
@@ -490,8 +406,8 @@ function NoAMNotification({ onClose }: { onClose: () => void }) {
       <div className="bg-blue-50 border border-blue-200 rounded-lg p-4 mb-6">
         <p className="text-sm text-blue-700">
           <strong>Need immediate assistance?</strong><br />
-          Call us at <a href="tel:+15551234567" className="underline">(555) 123-4567</a> or 
-          email <a href="mailto:support@yourplaces.com" className="underline">support@yourplaces.com</a>
+          Email <a href="mailto:support@accessyourplace.com" className="underline">support@accessyourplace.com</a>,
+          or message your acquisition manager from your portal and we&apos;ll pick it up there.
         </p>
       </div>
 

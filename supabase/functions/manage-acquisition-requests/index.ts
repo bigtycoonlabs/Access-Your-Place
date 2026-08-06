@@ -85,7 +85,7 @@ async function sendNotificationEmail(to: string, subject: string, html: string) 
         'Content-Type': 'application/json'
       },
       body: JSON.stringify({
-        from: 'Your Places <notifications@yourplaces.com>',
+        from: 'Access Your Place <notifications@accessyourplace.com>',
         to: [to],
         subject,
         html
@@ -185,7 +185,7 @@ Deno.serve(async (req) => {
             <p><strong>Property:</strong> ${property_title}</p>
             <p><strong>Location:</strong> ${property_city}, ${property_state}</p>
             <p style="color: red;"><strong>Action Required:</strong> Contact investor within 2 hours to assign AM and complete purchase.</p>
-            <p><a href="https://app.yourplaces.com/staff/dashboard">View in Dashboard</a></p>`
+            <p><a href="https://accessyourplace.com/staff/login">View in Dashboard</a></p>`
           );
         }
       }
@@ -533,7 +533,7 @@ Deno.serve(async (req) => {
             `<h2>Great news, ${reservation.investor_name}!</h2>
             <p>Your acquisition manager has reviewed and approved your deal for <strong>${reservation.property_title}</strong>.</p>
             <p>You can now proceed with payment to complete your acquisition.</p>
-            <p><a href="https://app.yourplaces.com/investor/portal" style="background-color: #d4a574; color: white; padding: 12px 24px; text-decoration: none; border-radius: 6px; display: inline-block; margin-top: 16px;">Complete Your Purchase</a></p>`
+            <p><a href="https://accessyourplace.com/investor/login" style="background-color: #d4a574; color: white; padding: 12px 24px; text-decoration: none; border-radius: 6px; display: inline-block; margin-top: 16px;">Complete Your Purchase</a></p>`
           );
         }
       }

@@ -248,6 +248,7 @@ export function AMNotificationBell({ staffId, staffName }: AMNotificationBellPro
               <Button
                 variant="ghost"
                 size="icon"
+                aria-label="Close notifications"
                 onClick={() => setIsOpen(false)}
                 className="text-white/60 hover:text-white hover:bg-white/10 h-7 w-7"
                 aria-label="Close notifications"

@@ -47,6 +47,7 @@ export function MessageNotificationBadge({ investorId, onClick }: MessageNotific
     <Button
       variant="ghost"
       size="icon"
+      aria-label="Open messages"
       className="relative text-white hover:bg-white/10 focus:ring-2 focus:ring-[#d4a574] focus:ring-offset-2 focus:ring-offset-[#1a365d]"
       onClick={onClick}
       aria-label={getAriaLabel()}

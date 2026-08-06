@@ -33,7 +33,7 @@ async function sendEmail(to: string, subject: string, html: string) {
     const res = await fetch('https://api.resend.com/emails', {
       method: 'POST',
       headers: { 'Authorization': `Bearer ${resendKey}`, 'Content-Type': 'application/json' },
-      body: JSON.stringify({ from: 'AYP Platform <notifications@mail.atyourpace.co>', to: [to], subject, html })
+      body: JSON.stringify({ from: 'Access Your Place <agreements@accessyourplace.com>', to: [to], subject, html })
     });
     const result = await res.json();
     console.log('[email] Sent to', to, res.ok);
@@ -542,7 +542,7 @@ Deno.serve(async (req) => {
               </div>
               <p>Please log in to your Investor Portal to review the full agreement and provide your electronic signature.</p>
               <div style="text-align: center; margin: 24px 0;">
-                <a href="https://atyourpace.co/investor/login" style="background: #d4a574; color: white; padding: 14px 28px; border-radius: 8px; text-decoration: none; font-weight: bold; display: inline-block;">Review & Sign Agreement</a>
+                <a href="https://accessyourplace.com/investor/login" style="background: #d4a574; color: white; padding: 14px 28px; border-radius: 8px; text-decoration: none; font-weight: bold; display: inline-block;">Review & Sign Agreement</a>
               </div>
               <p style="color: #666; font-size: 12px;">If you have questions, please contact your assigned acquisition manager.</p>
             </div>

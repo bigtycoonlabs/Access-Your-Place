@@ -301,7 +301,7 @@ export function SMAssignmentTab({ staffId, staffName }: Props) {
             <SelectItem value="assigned">SM Assigned</SelectItem>
           </SelectContent>
         </Select>
-        <Button onClick={loadData} variant="outline" size="icon">
+        <Button onClick={loadData} variant="outline" size="icon" aria-label="Refresh assignments">
           <RefreshCw className="w-4 h-4" />
         </Button>
       </div>

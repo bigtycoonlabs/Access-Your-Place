@@ -1051,6 +1051,7 @@ export default function StaffDashboard() {
               <Button
                 variant="ghost"
                 size="icon"
+                aria-label="Back to dashboard"
                 onClick={() => setActiveTab(defaultTab)}
                 className="text-white hover:bg-white/20"
                 aria-label="Close tab"

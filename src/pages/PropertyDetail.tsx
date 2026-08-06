@@ -1030,6 +1030,7 @@ export default function PropertyDetail() {
             <Button
               variant="ghost"
               size="icon"
+              aria-label="Close photo viewer"
               className="absolute top-4 right-4 text-white hover:bg-white/20 z-10"
               onClick={() => setLightboxOpen(false)}
             >
@@ -1050,6 +1051,7 @@ export default function PropertyDetail() {
                 <Button
                   variant="ghost"
                   size="icon"
+                  aria-label="Previous photo"
                   className="absolute left-4 top-1/2 -translate-y-1/2 text-white hover:bg-white/20"
                   onClick={() => setCurrentPhotoIndex(prev => (prev - 1 + photos.length) % photos.length)}
                 >
@@ -1058,6 +1060,7 @@ export default function PropertyDetail() {
                 <Button
                   variant="ghost"
                   size="icon"
+                  aria-label="Next photo"
                   className="absolute right-4 top-1/2 -translate-y-1/2 text-white hover:bg-white/20"
                   onClick={() => setCurrentPhotoIndex(prev => (prev + 1) % photos.length)}
                 >
@@ -1172,6 +1175,7 @@ export default function PropertyDetail() {
               <Button
                 variant="outline"
                 size="icon"
+                aria-label="Share this property on Facebook"
                 onClick={() => window.open(`https://www.facebook.com/sharer/sharer.php?u=${encodeURIComponent(window.location.href)}`, '_blank')}
               >
                 <Facebook className="w-5 h-5 text-blue-600" />
@@ -1179,6 +1183,7 @@ export default function PropertyDetail() {
               <Button
                 variant="outline"
                 size="icon"
+                aria-label="Share this property on X, formerly Twitter"
                 onClick={() => window.open(`https://twitter.com/intent/tweet?url=${encodeURIComponent(window.location.href)}&text=${encodeURIComponent(displayTitle)}`, '_blank')}
               >
                 <Twitter className="w-5 h-5 text-sky-500" />
@@ -1186,6 +1191,7 @@ export default function PropertyDetail() {
               <Button
                 variant="outline"
                 size="icon"
+                aria-label="Share this property on LinkedIn"
                 onClick={() => window.open(`https://www.linkedin.com/sharing/share-offsite/?url=${encodeURIComponent(window.location.href)}`, '_blank')}
               >
                 <Linkedin className="w-5 h-5 text-blue-700" />

@@ -377,7 +377,7 @@ export function AgreementTemplateManager({ staffId, staffName }: Props) {
             {CATEGORIES.map(c => <SelectItem key={c.value} value={c.value}>{c.label}</SelectItem>)}
           </SelectContent>
         </Select>
-        <Button variant="outline" size="icon" onClick={fetchTemplates}><RefreshCw className="w-4 h-4" /></Button>
+        <Button variant="outline" size="icon" aria-label="Refresh agreement templates" onClick={fetchTemplates}><RefreshCw className="w-4 h-4" /></Button>
       </div>
 
       {/* Template List */}

@@ -646,7 +646,7 @@ async function sendReportEmail(reportId: string) {
         'Content-Type': 'application/json'
       },
       body: JSON.stringify({
-        from: 'Rental Arbitrage Deals <reports@rentalarbitragedeals.com>',
+        from: 'Access Your Place <reports@accessyourplace.com>',
         to: recipients,
         subject: `Your ${monthName} ${report.report_year} Portfolio Report`,
         html: generateEmailHTML(report, investor, monthName)
@@ -735,7 +735,7 @@ function generateEmailHTML(report: any, investor: any, monthName: string): strin
     </div>
 
     <div style="text-align: center; margin: 30px 0;">
-      <a href="https://rentalarbitragedeals.com/investor-portal" 
+      <a href="https://accessyourplace.com/investor/login" 
          style="display: inline-block; background: #d4a574; color: white; padding: 14px 30px; border-radius: 8px; text-decoration: none; font-weight: 600;">
         View Full Report
       </a>

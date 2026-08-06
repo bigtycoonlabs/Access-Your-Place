@@ -273,6 +273,7 @@ export function WebhookEndpoints({ investorId }: Props) {
                             <Button
                               variant="outline"
                               size="icon"
+                              aria-label="Copy webhook URL"
                               onClick={() => copyToClipboard(connection.webhook_url!, connection.id)}
                             >
                               {copiedUrl === connection.id ? (
@@ -297,6 +298,7 @@ export function WebhookEndpoints({ investorId }: Props) {
                               <Button
                                 variant="outline"
                                 size="icon"
+                                aria-label="Copy webhook signing secret"
                                 onClick={() => copyToClipboard(connection.webhook_secret!, `${connection.id}-secret`)}
                               >
                                 {copiedUrl === `${connection.id}-secret` ? (

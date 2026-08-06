@@ -405,7 +405,7 @@ export function DealMarketplace({ investorId, investorName, investorEmail }: Pro
                     onKeyDown={(e) => e.key === 'Enter' && handleBrowseSearch()}
                     className="flex-1"
                   />
-                  <Button onClick={handleBrowseSearch} variant="outline" size="icon" className="flex-shrink-0">
+                  <Button onClick={handleBrowseSearch} variant="outline" size="icon" aria-label="Search deals" className="flex-shrink-0">
                     <Search className="w-4 h-4" />
                   </Button>
                 </div>
