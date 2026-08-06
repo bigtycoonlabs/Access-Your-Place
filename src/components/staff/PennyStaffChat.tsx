@@ -25,6 +25,17 @@ export function PennyStaffChat({ staffSession }: { staffSession: StaffLite | nul
   const staffId = staffSession?.id || '';
   const staffName = staffSession?.name || staffSession?.first_name || staffSession?.email || 'Staff';
 
+  // Penny has now reported "your session isn't identifying you" four times running, and
+  // three server-side theories for why have each been wrong. The one thing never
+  // actually observed is whether this browser is sending a staff id AT ALL — everything
+  // so far has been inference from server behaviour.
+  //
+  // So state it on the page. If the id is missing this is also a real, permanently
+  // useful warning: Penny, commissions and timesheets all need it, and until now the
+  // only symptom was Penny sounding confused.
+  const identityMissing = !staffId;
+  const idTail = staffId ? staffId.slice(-6) : '';
+
   const [messages, setMessages] = useState<Msg[]>([{ role: 'assistant', content: OPENER }]);
   const [input, setInput] = useState('');
   const [busy, setBusy] = useState(false);
@@ -76,6 +87,20 @@ export function PennyStaffChat({ staffSession }: { staffSession: StaffLite | nul
 
   return (
     <section aria-label="Chat with Penny" className="rounded-xl border border-slate-200 bg-white p-4">
+      {/* Announced politely rather than assertively: informative, not an emergency. */}
+      <p role="status" aria-live="polite" className="mb-3 text-sm">
+        {identityMissing ? (
+          <span className="block rounded-md bg-amber-50 px-3 py-2 text-amber-900">
+            Your session is not sending an account id, so Penny cannot tell who you are.
+            Sign out and back in to fix it. If it keeps happening after signing back in,
+            the session is not storing the id.
+          </span>
+        ) : (
+          <span className="block text-slate-500">
+            Signed in as {staffName}. Account id ending {idTail} is being sent to Penny.
+          </span>
+        )}
+      </p>
       <div
         ref={logRef}
         className="max-h-[50vh] overflow-y-auto space-y-3"
