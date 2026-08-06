@@ -301,6 +301,31 @@ export default function StaffDashboard() {
     }
     
     const parsed = JSON.parse(session);
+
+    // A staff session with no id is NOT a usable session. Every staff-identified edge
+    // function reads staff_id from the request body and refuses without it, so an
+    // id-less session does not fail loudly at login — it fails quietly on every
+    // subsequent call. Observed live: manage-hr-commissions returning 403 on every
+    // dashboard load, and Penny telling an owner she could not tell who he was, both
+    // from this one cause.
+    //
+    // Sessions stored before `id` was added to the login payload persist in
+    // localStorage indefinitely, so a staff member can stay signed in for months in a
+    // state where nothing that needs their identity works. Treat it as unauthenticated
+    // and send them back through login, which mints a session that has the id.
+    if (!parsed?.id) {
+      console.warn('[StaffDashboard] Stored session has no id — forcing re-login.');
+      localStorage.removeItem('staffSession');
+      localStorage.removeItem('staffSessionBackup');
+      toast({
+        title: 'Please sign in again',
+        description:
+          'Your saved session is missing account details, so features that need to know who you are cannot work. Signing in again fixes it.',
+      });
+      navigate('/staff/login');
+      return;
+    }
+
     setStaffSession(parsed);
 
     // v7.0: Check if AM needs to sign agreement before accessing dashboard
