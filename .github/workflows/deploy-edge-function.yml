@@ -157,7 +157,7 @@ jobs:
             # visible in the browser but opaque to automation, which is exactly the
             # "something is wrong but nobody can see what" state to avoid.
             SUMMARY=$(git --no-pager diff --stat -- "supabase/functions/$SLUG")
-            NAMES=$(git --no-pager diff --name-only -- "supabase/functions/$SLUG" | tr '\n' ' ')
+            NAMES=$(git --no-pager diff --name-only -- "supabase/functions/$SLUG" > /tmp/ayp_names.txt || true; tr '\n' ' ' < /tmp/ayp_names.txt)
 
             # A whitespace-insensitive diff too. `supabase functions download` is not
             # guaranteed to round-trip byte-for-byte -- it can reformat what it writes --
@@ -170,8 +170,14 @@ jobs:
               SEMANTIC="IGNORING WHITESPACE: STILL DIFFERENT. This is a real mismatch, not formatting."
             fi
 
-            HEAD_DIFF=$(git --no-pager diff --ignore-all-space -U1 -- "supabase/functions/$SLUG" | head -c 1800)
-            ENCODED=$(printf '%s\n\n%s\n\n%s' "$SUMMARY" "$SEMANTIC" "$HEAD_DIFF" | head -c 4000 | sed ':a;N;$!ba;s/\n/%0A/g')
+            # Write to a file BEFORE truncating. Piping git straight into `head` closes
+            # the pipe early, git takes SIGPIPE, and under `set -o pipefail` the step dies
+            # with exit 141 before it can report anything -- which is how the previous
+            # version of this fix silently destroyed the very annotation it was adding.
+            git --no-pager diff --ignore-all-space -U1 -- "supabase/functions/$SLUG" > /tmp/ayp_diff.txt || true
+            HEAD_DIFF=$(head -c 1800 /tmp/ayp_diff.txt || true)
+            printf '%s\n\n%s\n\n%s' "$SUMMARY" "$SEMANTIC" "$HEAD_DIFF" > /tmp/ayp_msg.txt
+            ENCODED=$(head -c 4000 /tmp/ayp_msg.txt | sed ':a;N;$!ba;s/\n/%0A/g')
             echo "::error title=Deployed source differs from repo::files: ${NAMES}%0A%0A${ENCODED}"
             exit 1
           fi
