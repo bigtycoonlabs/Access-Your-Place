@@ -649,6 +649,9 @@ export default function StaffLogin() {
                   onChange={(e) => setEmail(e.target.value)}
                   placeholder="you@accessyourplace.com"
                   autoComplete="email"
+                  autoCapitalize="none"
+                  autoCorrect="off"
+                  spellCheck={false}
                   aria-required="true"
                   disabled={isLockedOut}
                 />
@@ -664,6 +667,16 @@ export default function StaffLogin() {
                     onChange={(e) => setPassword(e.target.value)}
                     placeholder="Enter your password"
                     autoComplete="current-password"
+                    // iOS autocapitalises and autocorrects a type="text" input. The
+                    // show-password toggle flips this field to type="text", so revealing
+                    // the password could silently capitalise its first letter or
+                    // "correct" a word inside it — and the submitted value is then wrong
+                    // with nothing on screen to say so. That bites screen-reader users
+                    // hardest, because revealing the field is how you get VoiceOver to
+                    // read back what was actually typed.
+                    autoCapitalize="none"
+                    autoCorrect="off"
+                    spellCheck={false}
                     aria-required="true"
                     disabled={isLockedOut}
                   />
