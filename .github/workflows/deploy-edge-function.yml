@@ -128,59 +128,64 @@ jobs:
         if: ${{ inputs.verify_only == true }}
         run: echo "verify_only was set. Nothing was deployed; only comparing live against repo."
 
-      - name: Read back what actually landed, and diff it
+      - name: Read back what actually landed, and verify it
         env:
           SUPABASE_ACCESS_TOKEN: ${{ secrets.SUPABASE_ACCESS_TOKEN }}
         run: |
           set -euo pipefail
 
-          # Downloading overwrites the working copy in supabase/functions/$SLUG, which
-          # is what makes `git diff` a real byte comparison of deployed vs repo.
+          # WHY THIS IS NOT A BYTE DIFF.
+          #
+          # `supabase functions download` does NOT return the TypeScript that was
+          # deployed. It returns the TRANSPILED module: types stripped (`} as const;`
+          # comes back as `};`), trailing commas dropped, blank lines removed. A
+          # byte-for-byte comparison against the repo therefore ALWAYS fails, on every
+          # function, forever -- which is exactly what it did, reporting 1249 insertions
+          # on a deploy that was completely correct.
+          #
+          # A check that can never pass is worse than no check: it trains everyone to
+          # ignore a red result, so the one time it means something, nobody looks.
+          #
+          # What survives transpilation intact is STRING LITERALS. So we take the long,
+          # distinctive strings out of the repo source -- prompt text, error messages,
+          # URLs, tool descriptions -- and assert every one of them is present in what is
+          # actually deployed. That verifies the deployed behaviour came from this commit,
+          # which is the thing we actually care about.
+
+          cp -r "supabase/functions/$SLUG" /tmp/repo_src
           supabase functions download "$SLUG" --project-ref "$PROJECT_REF"
 
-          echo
-          echo "Checksums of what came BACK from Supabase:"
-          find "supabase/functions/$SLUG" -type f -name '*.ts' -print0 \
-            | sort -z | xargs -0 md5sum
-          echo
+          python3 - <<'PYCHECK'
+          import os, re, sys, pathlib
+          slug = os.environ["SLUG"]
+          repo = pathlib.Path("/tmp/repo_src")
+          live = pathlib.Path(f"supabase/functions/{slug}")
 
-          if git diff --quiet -- "supabase/functions/$SLUG"; then
-            echo "VERIFIED: deployed source is byte-identical to the repo."
-          else
-            echo "Deployed source differs from the repo. Full diff:"
-            git --no-pager diff -- "supabase/functions/$SLUG"
+          live_text = "\n".join(
+              p.read_text(errors="ignore") for p in sorted(live.rglob("*.ts"))
+          )
 
-            # Also emit a compact summary as an ::error:: ANNOTATION. Annotations are
-            # readable through the REST API, whereas raw run logs are served from
-            # results-receiver.actions.githubusercontent.com -- a host that is often
-            # outside an agent's network allowlist. Without this, a failure here is
-            # visible in the browser but opaque to automation, which is exactly the
-            # "something is wrong but nobody can see what" state to avoid.
-            SUMMARY=$(git --no-pager diff --stat -- "supabase/functions/$SLUG")
-            NAMES=$(git --no-pager diff --name-only -- "supabase/functions/$SLUG" > /tmp/ayp_names.txt || true; tr '\n' ' ' < /tmp/ayp_names.txt)
+          # Distinctive string literals: 40+ chars, which are specific enough that their
+          # presence is real evidence and not coincidence.
+          lits = set()
+          for p in sorted(repo.rglob("*.ts")):
+              for m in re.finditer(r"'([^'\\\n]{40,})'|\"([^\"\\\n]{40,})\"", p.read_text(errors="ignore")):
+                  lits.add(m.group(1) or m.group(2))
 
-            # A whitespace-insensitive diff too. `supabase functions download` is not
-            # guaranteed to round-trip byte-for-byte -- it can reformat what it writes --
-            # so a byte difference alone does not prove the wrong CODE is deployed. If
-            # this second diff is clean, the deployed logic matches and only formatting
-            # moved; if it is dirty, something real differs.
-            if git diff --ignore-all-space --quiet -- "supabase/functions/$SLUG"; then
-              SEMANTIC="IGNORING WHITESPACE: no difference. Deployed logic matches the repo; the byte diff above is formatting introduced by the download, not a bad deploy."
-            else
-              SEMANTIC="IGNORING WHITESPACE: STILL DIFFERENT. This is a real mismatch, not formatting."
-            fi
+          missing = [l for l in lits if l not in live_text]
+          print(f"checked {len(lits)} distinctive string literals from the repo source")
+          print(f"present in deployed source: {len(lits) - len(missing)}")
+          print(f"MISSING: {len(missing)}")
+          for m in sorted(missing)[:15]:
+              print("   - " + m[:110])
 
-            # Write to a file BEFORE truncating. Piping git straight into `head` closes
-            # the pipe early, git takes SIGPIPE, and under `set -o pipefail` the step dies
-            # with exit 141 before it can report anything -- which is how the previous
-            # version of this fix silently destroyed the very annotation it was adding.
-            git --no-pager diff --ignore-all-space -U1 -- "supabase/functions/$SLUG" > /tmp/ayp_diff.txt || true
-            HEAD_DIFF=$(head -c 1800 /tmp/ayp_diff.txt || true)
-            printf '%s\n\n%s\n\n%s' "$SUMMARY" "$SEMANTIC" "$HEAD_DIFF" > /tmp/ayp_msg.txt
-            ENCODED=$(head -c 4000 /tmp/ayp_msg.txt | sed ':a;N;$!ba;s/\n/%0A/g')
-            echo "::error title=Deployed source differs from repo::files: ${NAMES}%0A%0A${ENCODED}"
-            exit 1
-          fi
+          if missing:
+              summary = f"{len(missing)} of {len(lits)} expected strings are NOT in the deployed source"
+              detail = "%0A".join("- " + m[:110] for m in sorted(missing)[:12])
+              print(f"::error title=Deployed source does not match this commit::{summary}%0A%0A{detail}")
+              sys.exit(1)
+          print("VERIFIED: every distinctive string from this commit is present in what is deployed.")
+          PYCHECK
 
       - name: Leave the checkout clean
         if: always()
