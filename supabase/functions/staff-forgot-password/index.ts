@@ -104,6 +104,46 @@ Deno.serve(async (req) => {
       'Content-Type': 'application/json',
     };
 
+    /* --------------------------- VALIDATE A TOKEN --------------------------- */
+    // The reset page calls this on load to decide whether to show the form.
+    //
+    // It used to call staff-login with action 'validate_token' — an action staff-login
+    // does not implement. That request fell through to the LOGIN path with no email,
+    // returned 401, and the page's fallback then tried to read staff_users straight from
+    // the browser with the anon key, which RLS blocks. So a perfectly good token was
+    // reported as "This link is not valid", and the only clue was in a console the owner
+    // cannot see.
+    //
+    // Returns the name and email so the page can greet the person, and nothing else. The
+    // token IS the secret here, so confirming it is valid to whoever holds it reveals
+    // nothing they do not already have.
+    if (action === 'validate_token') {
+      const token = String(body.reset_token || '').trim();
+      if (!token) return json({ success: true, valid: false, error: 'No token supplied.' });
+
+      const look = await restRead(
+        `${supabaseUrl}/rest/v1/staff_users?reset_token=eq.${encodeURIComponent(token)}&select=id,email,name,first_name,last_name,reset_token_expires,is_active&limit=1`,
+        headers,
+      );
+      if (!look.ok) {
+        return json({ success: false, valid: false, error: 'We could not check that link right now. Please try again.' }, 502);
+      }
+      const u = look.rows[0];
+      if (!u) return json({ success: true, valid: false, error: 'This reset link is not valid. It may already have been used.' });
+      if (u.is_active === false) return json({ success: true, valid: false, error: 'This account is inactive. Please contact an administrator.' });
+      if (!u.reset_token_expires || new Date(u.reset_token_expires).getTime() < Date.now()) {
+        return json({ success: true, valid: false, error: 'This reset link has expired. Please request a new one.' });
+      }
+
+      return json({
+        success: true,
+        valid: true,
+        email: u.email || '',
+        name: u.name || `${u.first_name || ''} ${u.last_name || ''}`.trim(),
+        is_new_account: false,
+      });
+    }
+
     /* ------------------------- COMPLETE THE RESET ------------------------- */
     if (action === 'reset_password') {
       const token = String(body.reset_token || '').trim();

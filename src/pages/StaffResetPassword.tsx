@@ -45,35 +45,24 @@ export default function StaffResetPassword() {
     }
     
     try {
-      // Try staff-login validate_token action first
-      const { data, error } = await supabase.functions.invoke('staff-login', {
+      // This called staff-login with action 'validate_token' — an action staff-login does
+      // not implement. The request fell through to its LOGIN path with no email, came
+      // back 401, and the fallback below then tried to read staff_users straight from the
+      // browser with the anon key, which RLS blocks. So a perfectly valid token was
+      // reported as "This link is not valid".
+      //
+      // staff-forgot-password owns the reset lifecycle and now implements validate_token
+      // against the service role, so it is the correct place to ask. The browser-side DB
+      // fallback is gone: it could never have worked, and all it did was convert a
+      // specific server answer into a generic dead end.
+      const { data, error } = await supabase.functions.invoke('staff-forgot-password', {
         body: { action: 'validate_token', reset_token: token }
       });
-      
+
       if (error) {
-        console.error('Token validation error via staff-login:', error);
-        
-        // Fallback: Try direct database query
-        const { data: users, error: dbError } = await supabase
-          .from('staff_users')
-          .select('id, email, name, first_name, last_name, reset_token_expires')
-          .eq('reset_token', token)
-          .limit(1);
-        
-        if (dbError || !users?.length) {
-          console.error('Database fallback error:', dbError);
-          setTokenValid(false);
-        } else {
-          const user = users[0];
-          if (user.reset_token_expires && new Date(user.reset_token_expires) < new Date()) {
-            setTokenValid(false);
-          } else {
-            setTokenValid(true);
-            setUserEmail(user.email || '');
-            setUserName(user.name || `${user.first_name || ''} ${user.last_name || ''}`.trim());
-            setIsNewAccount(false);
-          }
-        }
+        console.error('Token validation failed:', error);
+        setTokenValid(false);
+        setError('We could not check that reset link right now. Please try again in a moment.');
       } else if (data?.valid) {
         setTokenValid(true);
         setUserEmail(data.email || '');
@@ -82,6 +71,9 @@ export default function StaffResetPassword() {
       } else {
         console.log('Token invalid:', data);
         setTokenValid(false);
+        // Show the SERVER's reason — expired, already used, inactive account — instead of
+        // one catch-all "invalid" for four different situations.
+        if (data?.error) setError(data.error);
       }
     } catch (err) {
       console.error('Token validation exception:', err);
