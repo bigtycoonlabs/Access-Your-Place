@@ -158,8 +158,20 @@ jobs:
             # "something is wrong but nobody can see what" state to avoid.
             SUMMARY=$(git --no-pager diff --stat -- "supabase/functions/$SLUG")
             NAMES=$(git --no-pager diff --name-only -- "supabase/functions/$SLUG" | tr '\n' ' ')
-            # %0A is the newline escape GitHub expects inside an annotation message.
-            ENCODED=$(printf '%s' "$SUMMARY" | head -c 3000 | sed ':a;N;$!ba;s/\n/%0A/g')
+
+            # A whitespace-insensitive diff too. `supabase functions download` is not
+            # guaranteed to round-trip byte-for-byte -- it can reformat what it writes --
+            # so a byte difference alone does not prove the wrong CODE is deployed. If
+            # this second diff is clean, the deployed logic matches and only formatting
+            # moved; if it is dirty, something real differs.
+            if git diff --ignore-all-space --quiet -- "supabase/functions/$SLUG"; then
+              SEMANTIC="IGNORING WHITESPACE: no difference. Deployed logic matches the repo; the byte diff above is formatting introduced by the download, not a bad deploy."
+            else
+              SEMANTIC="IGNORING WHITESPACE: STILL DIFFERENT. This is a real mismatch, not formatting."
+            fi
+
+            HEAD_DIFF=$(git --no-pager diff --ignore-all-space -U1 -- "supabase/functions/$SLUG" | head -c 1800)
+            ENCODED=$(printf '%s\n\n%s\n\n%s' "$SUMMARY" "$SEMANTIC" "$HEAD_DIFF" | head -c 4000 | sed ':a;N;$!ba;s/\n/%0A/g')
             echo "::error title=Deployed source differs from repo::files: ${NAMES}%0A%0A${ENCODED}"
             exit 1
           fi
