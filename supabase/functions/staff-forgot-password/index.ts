@@ -28,19 +28,47 @@
 import * as bcrypt from 'https://deno.land/x/bcrypt@v0.4.1/mod.ts';
 
 const DATA_SCHEMA = 'prj_X-ZoVQv6LKXT';
-const originalFetch = globalThis.fetch;
-globalThis.fetch = (input: any, init: any = {}) => {
-  const url = typeof input === 'string'
-    ? input
-    : input?.url?.toString?.() || input?.toString?.() || '';
-  if (url.includes('/rest/v1/')) {
-    const headers = new Headers(init.headers || {});
-    headers.set('Accept-Profile', DATA_SCHEMA);
-    headers.set('Content-Profile', DATA_SCHEMA);
-    init = { ...init, headers };
+
+// A blanket global-fetch shim forcing Accept-Profile was added here and the owner
+// immediately hit "We could not process that request" — the staff_users lookup was
+// returning not-ok. Before that shim this function reached the DEFAULT schema, where
+// staff_users is a VIEW over the same rows, and it demonstrably worked (five reset
+// emails in email_logs).
+//
+// I do not have a way to call PostgREST from where I am working, so I cannot prove
+// which profile it accepts. Rather than guess and leave the owner locked out, this
+// tries the data schema FIRST and falls back to the default profile if that read is
+// rejected — and logs which one answered, so the next person knows rather than
+// theorises. Whichever profile succeeds for the read is then reused for the write, so a
+// reset can never read one schema and write another.
+type Profile = 'data' | 'default';
+
+function withProfile(headers: Record<string, string>, profile: Profile): Record<string, string> {
+  return profile === 'data'
+    ? { ...headers, 'Accept-Profile': DATA_SCHEMA, 'Content-Profile': DATA_SCHEMA }
+    : headers;
+}
+
+// Runs a REST read against the data schema, then the default. Returns the rows AND the
+// profile that worked, so callers can write back through the same one.
+async function restRead(
+  url: string,
+  headers: Record<string, string>,
+): Promise<{ ok: boolean; rows: any[]; profile: Profile; status: number }> {
+  for (const profile of ['data', 'default'] as Profile[]) {
+    const res = await fetch(url, { headers: withProfile(headers, profile) });
+    if (res.ok) {
+      const rows = await res.json().catch(() => []);
+      console.log('staff-forgot-password read_ok', JSON.stringify({ profile }));
+      return { ok: true, rows: Array.isArray(rows) ? rows : [], profile, status: res.status };
+    }
+    console.error('staff-forgot-password read_failed', JSON.stringify({
+      profile, status: res.status, body: (await res.text()).slice(0, 200),
+    }));
+    if (profile === 'default') return { ok: false, rows: [], profile, status: res.status };
   }
-  return originalFetch(input, init);
-};
+  return { ok: false, rows: [], profile: 'default', status: 0 };
+}
 
 const corsHeaders = {
   'Access-Control-Allow-Origin': '*',
@@ -86,16 +114,14 @@ Deno.serve(async (req) => {
         return json({ success: false, error: 'Choose a password of at least 8 characters.' }, 400);
       }
 
-      const lookup = await fetch(
+      const lookup = await restRead(
         `${supabaseUrl}/rest/v1/staff_users?reset_token=eq.${encodeURIComponent(token)}&select=id,email,name,reset_token_expires,is_active&limit=1`,
-        { headers },
+        headers,
       );
       if (!lookup.ok) {
-        console.error('staff-forgot-password reset_lookup_failed', lookup.status);
         return json({ success: false, error: 'We could not check that reset link. Please try again.' }, 502);
       }
-      const rows = await lookup.json().catch(() => []);
-      const user = Array.isArray(rows) ? rows[0] : null;
+      const user = lookup.rows[0] || null;
 
       if (!user) {
         return json({ success: false, error: 'This reset link is not valid. It may already have been used. Please request a new one.' }, 400);
@@ -111,7 +137,7 @@ Deno.serve(async (req) => {
 
       const patch = await fetch(`${supabaseUrl}/rest/v1/staff_users?id=eq.${encodeURIComponent(user.id)}`, {
         method: 'PATCH',
-        headers: { ...headers, Prefer: 'return=representation' },
+        headers: { ...withProfile(headers, lookup.profile), Prefer: 'return=representation' },
         body: JSON.stringify({
           password_hash: hash,
           reset_token: null,
@@ -144,16 +170,15 @@ Deno.serve(async (req) => {
     const baseUrl = String(body.base_url || 'https://accessyourplace.com').replace(/\/+$/, '');
     if (!email) return json({ success: false, error: 'Enter the email address on your staff account.' }, 400);
 
-    const res = await fetch(
+    const read = await restRead(
       `${supabaseUrl}/rest/v1/staff_users?email=eq.${encodeURIComponent(email)}&is_active=eq.true&select=id,email,name&limit=1`,
-      { headers },
+      headers,
     );
-    if (!res.ok) {
-      console.error('staff-forgot-password lookup_failed', res.status);
+    if (!read.ok) {
       return json({ success: false, error: 'We could not process that request. Please try again.' }, 502);
     }
-    const users = await res.json().catch(() => []);
-    if (!Array.isArray(users) || !users.length) return json({ success: true, message: GENERIC });
+    const users = read.rows;
+    if (!users.length) return json({ success: true, message: GENERIC });
 
     const user = users[0];
     const token = `${crypto.randomUUID()}-${crypto.randomUUID()}`;
@@ -161,7 +186,7 @@ Deno.serve(async (req) => {
 
     const saveToken = await fetch(`${supabaseUrl}/rest/v1/staff_users?id=eq.${encodeURIComponent(user.id)}`, {
       method: 'PATCH',
-      headers,
+      headers: withProfile(headers, read.profile),
       body: JSON.stringify({ reset_token: token, reset_token_expires: expires.toISOString() }),
     });
     // Previously unchecked. If the token never saved, the emailed link cannot work.
@@ -204,7 +229,7 @@ Deno.serve(async (req) => {
 
     await fetch(`${supabaseUrl}/rest/v1/email_logs`, {
       method: 'POST',
-      headers,
+      headers: withProfile(headers, read.profile),
       body: JSON.stringify({
         template_type: 'staff_password_reset',
         recipient_email: user.email,
