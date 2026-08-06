@@ -176,7 +176,11 @@ export default function StaffLogin() {
   const isServerError = (msg: string | undefined | null): boolean => {
     if (!msg) return false;
     const m = String(msg).toLowerCase();
-    return (
+    // 'Account temporarily locked' contains 'temporarily' but is a DEFINITIVE answer,
+      // not an outage. Without this exclusion a locked-out staff member is told the
+      // service is down and keeps retrying, which is the worst possible advice.
+      if (m.includes('account temporarily locked') || m.includes('invalid email or password')) return false;
+      return (
       m.includes('temporary issue') ||
       m.includes('temporarily unavailable') ||
       m.includes('temporary connection') ||
@@ -221,6 +225,26 @@ export default function StaffLogin() {
     // Retry helper: attempts the edge function up to `maxAttempts` times.
     // Also retries when the function returns a transient server error payload
     // (e.g. `{ success: false, error: "The server is experiencing a temporary issue..." }`).
+    /**
+     * Pull the real HTTP status and body out of a supabase-js function error.
+     *
+     * supabase-js reports EVERY non-2xx as the same opaque message, "Edge Function
+     * returned a non-2xx status code". staff-login answers a wrong password with 401
+     * and a locked account with 423, so without unwrapping this, a rejected password is
+     * indistinguishable from the server being down — which is exactly what an owner
+     * saw: "The authentication service is temporarily unavailable" when the real answer
+     * was that the credentials were refused.
+     */
+    const readInvokeError = async (err: any): Promise<{ status: number | null; body: any }> => {
+      const ctx = err?.context;
+      if (ctx && typeof ctx.status === 'number') {
+        let body: any = null;
+        try { body = await ctx.clone().json(); } catch { /* not json */ }
+        return { status: ctx.status, body };
+      }
+      return { status: null, body: null };
+    };
+
     const invokeWithRetry = async (maxAttempts: number) => {
       let lastError: any = null;
       let lastData: any = null;
@@ -229,6 +253,20 @@ export default function StaffLogin() {
           const { data, error: invokeError } = await supabase.functions.invoke('staff-login', {
             body: { email: email.toLowerCase().trim(), password }
           });
+
+          // A 4xx is the server's ANSWER, not a failure to reach it. Retrying it is
+          // actively harmful here: staff-login increments failed_login_attempts on every
+          // 401 and locks the account at 10, so a 3x retry burned three of the ten on a
+          // single typo — locking someone out in four attempts instead of ten, while
+          // telling them the service was unavailable. Return 4xx immediately.
+          if (invokeError) {
+            const { status, body } = await readInvokeError(invokeError);
+            if (status !== null && status >= 400 && status < 500 && status !== 408 && status !== 429) {
+              console.warn(`[StaffLogin] Definitive ${status} from staff-login — not retrying.`);
+              return { data: body ?? { success: false, error: 'Invalid email or password' }, error: null };
+            }
+          }
+
           if (!invokeError) {
             // Check for transient server-side errors in the payload — retry those too
             if (data && data.success === false && isServerError(data.error)) {
