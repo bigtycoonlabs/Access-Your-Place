@@ -19,7 +19,7 @@ import {
   PENNY_PAYMENT_DOCTRINE,
 } from './doctrine.ts';
 import { type ViewerContext, capabilityProfile, isStaff, isOwner } from './capability.ts';
-import { TOOLS, toolsForContext } from './tools.ts';
+import { TOOLS, toolsForContext, type ToolName } from './tools.ts';
 
 const RULE = '\n\n──────────\n\n';
 
@@ -95,6 +95,52 @@ function renderTools(ctx: ViewerContext): string {
       return `- ${n}: ${t.summary}${t.requiresConfirmation ? ' [needs human confirmation]' : ''}`;
     })
     .join('\n');
+}
+
+/**
+ * THE MERGE — one Penny, aware everywhere, gated per surface.
+ *
+ * Penny used to be assembled as if she were several different assistants: the public
+ * surface was told about no tools at all, so she genuinely did not know that the rest of
+ * her existed. That produced a specific, avoidable failure — a visitor asks something she
+ * can absolutely do once they are inside, and she answers as though the capability is not
+ * real. She could not say "that lives in your portal, let's get you in there" because from
+ * where she was standing, it didn't.
+ *
+ * So awareness and permission are now separate things:
+ *   - EVERY surface is told Penny's FULL capability set. She always knows what she is.
+ *   - Each surface is told which of those she may EXECUTE right here.
+ *   - And where the rest lives, so she can route a person to it instead of dead-ending.
+ *
+ * This does NOT widen what she can do. Execution is enforced in planToolInvocation(),
+ * which rejects any tool absent from toolsForContext(ctx) before a single parameter is
+ * read. Awareness is prompt-level; permission is code-level. Telling her what exists
+ * cannot grant her the ability to run it — the gate is not the prompt, and never was.
+ */
+function renderFullAwareness(ctx: ViewerContext): string {
+  const here = new Set(toolsForContext(ctx));
+  const all = (Object.keys(TOOLS) as ToolName[]);
+  const elsewhere = all.filter((n) => !here.has(n));
+
+  const lines: string[] = [];
+  lines.push(
+    'EVERYTHING YOU CAN DO ANYWHERE ON THIS PLATFORM. This is the whole of you — not a menu for ' +
+      'this page. Knowing the full shape of yourself is what lets you tell someone honestly where ' +
+      'a thing happens instead of implying it does not exist.',
+  );
+  lines.push(all.map((n) => `- ${n}: ${TOOLS[n].summary}`).join('\n'));
+
+  if (elsewhere.length) {
+    lines.push(
+      'OF THOSE, THE ONES YOU CANNOT RUN FROM THIS SURFACE:\n' +
+        elsewhere.map((n) => `- ${n}`).join('\n') +
+        '\n\nDo not run these here and never imply you have. Say plainly that it happens inside the ' +
+        'platform, name what it will do for them, and walk them to where it lives — that is a real ' +
+        'answer, not a deflection. Continuity matters: the same you meets them there, so speak as ' +
+        'one person picking the conversation back up, not as a handoff to some other system.',
+    );
+  }
+  return lines.join('\n\n');
 }
 
 /**
@@ -186,13 +232,27 @@ export function composeSystemPrompt(ctx: ViewerContext, opts: { includeTools?: b
   // hold there too -- a wrong address costs the same whoever received it.
   sections.push('MONEY — RAILS, CREDITS, AND WHAT YOU NEVER TYPE OUT:\n' + PENNY_PAYMENT_DOCTRINE);
 
+  // THE MERGE: full capability awareness goes to EVERY surface, public included.
+  // Previously this block was skipped entirely when includeTools was false, which left
+  // the public Penny unaware that the rest of herself existed.
+  sections.push(renderFullAwareness(ctx));
+
   if (includeTools) {
     sections.push(
-      `YOUR TOOLS ON THIS SURFACE (you ${prof.canWrite ? 'may act, with confirmation where marked' : 'may read and reason; you cannot write from here'}):\n` +
+      `WHAT YOU MAY EXECUTE RIGHT HERE (you ${prof.canWrite ? 'may act, with confirmation where marked' : 'may read and reason; you cannot write from here'}):\n` +
         renderTools(ctx),
     );
     sections.push(PENNY_TOOL_PROTOCOL);
   } else {
+    // Public surface: she knows the full shape of herself from the block above, but
+    // executes nothing here. She is grounded by library articles injected each turn.
+    sections.push(
+      'WHAT YOU MAY EXECUTE RIGHT HERE: nothing. This surface is conversation only — you run no ' +
+        'tools from this page. That is a limit on your hands, not on your knowledge: you still know ' +
+        'exactly what you could do for this person once they are inside, so say so concretely and ' +
+        'invite them in. Never narrate running something here, and never state a number or an ' +
+        'address as though a tool produced it.',
+    );
     sections.push(PENNY_PUBLIC_GROUNDING);
   }
 

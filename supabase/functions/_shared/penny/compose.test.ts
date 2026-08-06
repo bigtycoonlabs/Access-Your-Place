@@ -1,5 +1,6 @@
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
+import { planToolInvocation } from './tools.ts';
 import { composeSystemPrompt, PENNY_TOOL_PROTOCOL } from './compose.ts';
 import { type ViewerContext } from './capability.ts';
 import { containsPaymentDestination } from './doctrine.ts';
@@ -23,14 +24,24 @@ test('every prompt carries identity, mission, values, and family', () => {
   }
 });
 
-test('visitor prompt seals identity and invites signup, offers only read tools', () => {
+test('visitor is AWARE of every tool, but only read tools are EXECUTABLE here', () => {
   const p = composeSystemPrompt(visitor);
   assert.match(p, /SEALED/);
   assert.match(p, /no account yet/);
-  assert.match(p, /- search_knowledge:/);
-  assert.match(p, /- read_article:/);
-  assert.ok(!p.includes('- draft_article:'), 'visitor must not be offered authoring tools');
-  assert.ok(!p.includes('- send_email:'), 'visitor must not be offered send tools');
+
+  // THE MERGE: she knows the full shape of herself on every surface, so she can tell a
+  // visitor what happens inside the platform instead of implying it does not exist.
+  assert.match(p, /EVERYTHING YOU CAN DO ANYWHERE/);
+  assert.ok(p.includes('- draft_article:'), 'visitor SHOULD be aware authoring exists');
+  assert.ok(p.includes('- send_email:'), 'visitor SHOULD be aware sending exists');
+
+  // Awareness is not permission. The original safety property still holds, now asserted
+  // against the EXECUTABLE section specifically rather than the whole prompt.
+  const exec = p.slice(p.indexOf('WHAT YOU MAY EXECUTE RIGHT HERE'));
+  assert.match(exec, /- search_knowledge:/);
+  assert.match(exec, /- read_article:/);
+  assert.ok(!exec.includes('- draft_article:'), 'visitor must not be able to EXECUTE authoring tools');
+  assert.ok(!exec.includes('- send_email:'), 'visitor must not be able to EXECUTE send tools');
   assert.match(p, /may read and reason; you cannot write/);
 });
 
@@ -72,14 +83,36 @@ test('composition is deterministic', () => {
   assert.equal(composeSystemPrompt(funded), composeSystemPrompt(funded));
 });
 
-test('public grounding mode omits the tool list and swaps in the grounding note', () => {
+test('public surface: fully aware of herself, executes nothing', () => {
   const p = composeSystemPrompt(visitor, { includeTools: false });
-  assert.ok(!p.includes('YOUR TOOLS ON THIS SURFACE'), 'no tool list in public grounding mode');
-  assert.ok(!p.includes('- search_knowledge:'), 'no tool entries');
+
+  // She is NOT stripped of self-knowledge here any more. Before the merge this surface
+  // was told about no tools at all, so she could not say "that lives in your portal" --
+  // from where she stood, it didn't exist.
+  assert.match(p, /EVERYTHING YOU CAN DO ANYWHERE/);
+  assert.ok(p.includes('- search_knowledge:'), 'public Penny should know her own capabilities');
+
+  // But she runs nothing from this page, and is told so in those words.
+  assert.match(p, /WHAT YOU MAY EXECUTE RIGHT HERE: nothing/);
+  assert.match(p, /a limit on your hands, not on your knowledge/);
+  assert.ok(!p.includes('HOW YOU ACT:'), 'the tool-invocation protocol must not appear where nothing runs');
+
   assert.match(p, /HOW YOU WORK ON THIS PAGE/);
   assert.match(p, /never invent an article/);
   assert.match(p, /Penny 10\.3/); // identity still present
   assert.match(p, /THE FAMILY/); // doctrine still present
+});
+
+test('MERGE INVARIANT: awareness never grants execution', () => {
+  // The whole safety argument for the merge in one test. Penny is told about every tool
+  // on the public surface; the code-level gate must still refuse to run them. If this
+  // ever fails, the merge has become a privilege escalation rather than a prompt change.
+  const p = composeSystemPrompt(visitor, { includeTools: false });
+  assert.ok(p.includes('- draft_article:'), 'precondition: she is aware of draft_article');
+
+  const decision = planToolInvocation('draft_article', { title: 'x', body: 'y' }, visitor);
+  assert.equal(decision.action, 'reject');
+  assert.match(String(decision.reason), /not available on the public surface/);
 });
 
 /* ------------------------- owner posture & money doctrine ------------------------- */

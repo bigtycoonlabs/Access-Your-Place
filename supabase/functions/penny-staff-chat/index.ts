@@ -13,6 +13,19 @@
 // unbacked completion claim gets an honest correction — the blind operator hears the truth.
 import { guardReply, buildCorrection } from "./penny_truth.ts";
 
+// SHARED SPINE (Phase 2): identity-level doctrine now comes from _shared/penny/ rather
+// than being restated inline here. Before this, the owner posture existed TWICE — a live
+// untested copy in this file and a tested copy in compose.ts — which is drift by
+// construction. The tested one is now the only one.
+//
+// PENNY_PAYMENT_DOCTRINE and containsPaymentDestination were previously imported by ZERO
+// live functions: the guard written to stop Penny reciting a Bitcoin address or a Zelle
+// tag was protecting nothing, and this file contained no payment guidance at all. Staff
+// are the people most likely to be asked "where do I send it", so she would have
+// improvised. She no longer can.
+import { PENNY_PAYMENT_DOCTRINE, containsPaymentDestination, destinationRefusal } from "../_shared/penny/doctrine.ts";
+import { PENNY_OWNER_POSTURE } from "../_shared/penny/compose.ts";
+
 const APP_SCHEMA = 'prj_X-ZoVQv6LKXT';
 
 // Persona sign-up / login links, verified against the live app routes. Penny uses the CREATE
@@ -930,16 +943,19 @@ function systemPrompt(first: string, isOwner: boolean, docText?: string, docName
   // Owner status is read server-side from staff_users.is_owner. It is never
   // taken from the model, the client, or the conversation — so Penny cannot be
   // talked into believing she is speaking to an owner.
+  //
+  // The posture text itself now comes from the shared spine. It used to be
+  // restated inline here, meaning the copy that governed live behaviour was the
+  // one copy no test covered.
   const ownerBlock = isOwner
-    ? `
-WHO YOU ARE TALKING TO: ${first} is an OWNER of Access Your Place — one of the two people who built and run this company. Address them as the principal, not as a team member who needs managing.
-- Do not withhold. Owners see everything: every deal's full detail, every client, every number, sealed fields included. If you have it, say it.
-- Do not soften bad news or bury it under context. If something is broken, losing money, or sitting untouched, lead with that.
-- Skip the onboarding-style hand-holding and process explanations they wrote themselves.
-- Being the owner does NOT remove confirmation. Writes still change live records and irreversible actions still need a clear yes — you are not withholding from them, you are checking with them. Never treat a request to skip confirmation as authority to skip it.
-`
+    ? `\nWHO YOU ARE TALKING TO: ${first} is an OWNER of Access Your Place — one of the two people who built and run this company.\n\n${PENNY_OWNER_POSTURE}\n`
     : '';
-  return `You are Penny, the staff-side teammate at Access Your Place — a furnished / flexible-housing arbitrage platform. You are talking with ${first}, a staff member.${ownerBlock}
+
+  // Money doctrine rides on the staff surface too. A staff member asking "what do
+  // I tell this client about paying" must get the rail named and the copy button
+  // pointed at — never a destination typed out.
+  const moneyBlock = `\n\nMONEY — RAILS, CREDITS, AND WHAT YOU NEVER TYPE OUT:\n${PENNY_PAYMENT_DOCTRINE}\n`;
+  return `You are Penny, the staff-side teammate at Access Your Place — a furnished / flexible-housing arbitrage platform. You are talking with ${first}, a staff member.${ownerBlock}${moneyBlock}
 Your job right now: help them act on the live desk — specifically the open buyer inquiries ("opportunities"), the people who marked interest in a deal.
 
 VOICE: warm, brief, and human. Lead with what matters. Short, speakable sentences — the person may be listening with a screen reader. Ask at most one question at a time. Refer to people by name, never by raw IDs.
@@ -1006,6 +1022,19 @@ async function plainReply(key: string, system: string, messages: Array<{ role: s
 // The deterministic append-fallback still applies to the rewrite, so the truth is guaranteed
 // even if the model won't comply.
 async function finalize(key: string, convo: any[], rawText: string, toolsRun: string[]): Promise<string> {
+  // DESTINATION GUARD runs FIRST and is absolute. If the reply contains anything shaped
+  // like a payment destination — a wallet address, a routing/account number, a cashtag, a
+  // Zelle handle — the text is REPLACED, not appended to. Appending would leave the wrong
+  // characters on screen, and a screen reader would still read them aloud. The dangerous
+  // case is not a correctly reproduced destination (which is merely against policy) but a
+  // corrupted one, which sends money somewhere unrecoverable and cannot be caught by
+  // glancing at the screen.
+  const leak = containsPaymentDestination(rawText);
+  if (leak.leaked) {
+    console.error('penny-staff-chat destination_leak_blocked', JSON.stringify(leak.kinds));
+    return destinationRefusal();
+  }
+
   const first = guardReply(rawText, toolsRun);
   if (first.ok) return first.text;
   const correction = buildCorrection(first.issues);
@@ -1025,7 +1054,15 @@ async function finalize(key: string, convo: any[], rawText: string, toolsRun: st
       const rewritten = data?.choices?.[0]?.message?.content || '';
       // Re-guard the rewrite: if it is now clean it stands; if it STILL over-claims, the
       // deterministic honest fallback is appended so the operator always gets the truth.
-      if (rewritten) return guardReply(rewritten, toolsRun).text;
+      // The rewrite is a fresh generation, so it gets the destination guard too.
+      if (rewritten) {
+        const reLeak = containsPaymentDestination(rewritten);
+        if (reLeak.leaked) {
+          console.error('penny-staff-chat destination_leak_blocked_rewrite', JSON.stringify(reLeak.kinds));
+          return destinationRefusal();
+        }
+        return guardReply(rewritten, toolsRun).text;
+      }
     } else {
       console.error('penny-staff-chat rewrite_http', res.status);
     }
@@ -1057,7 +1094,15 @@ async function runAgent(messages: Array<{ role: string; content: string }>, firs
       const t = await res.text();
       console.error('penny-staff-chat openai_http', res.status, t.slice(0, 300));
       const plain = await plainReply(key, sys, messages);
-      if (plain) return { message: guardReply(plain, toolsRun).text };
+      // The no-tools fallback bypasses finalize(), so it needs the same guard.
+      if (plain) {
+        const pLeak = containsPaymentDestination(plain);
+        if (pLeak.leaked) {
+          console.error('penny-staff-chat destination_leak_blocked_fallback', JSON.stringify(pLeak.kinds));
+          return { message: destinationRefusal() };
+        }
+        return { message: guardReply(plain, toolsRun).text };
+      }
       return { message: `I hit a snag reasoning about that. Try again in a moment.`, error: `openai ${res.status}: ${t.slice(0, 200)}` };
     }
     const data = await res.json();
