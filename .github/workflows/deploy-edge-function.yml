@@ -172,6 +172,13 @@ jobs:
               for m in re.finditer(r"'([^'\\\n]{40,})'|\"([^\"\\\n]{40,})\"", p.read_text(errors="ignore")):
                   lits.add(m.group(1) or m.group(2))
 
+          # Drop captures that ran across a template-literal boundary. A regex for quoted
+          # strings will happily match from inside one `template ${expr}` into the next,
+          # producing fragments that were never literals at all. They show up as false
+          # "missing" results and would make a passing verifier look broken -- the same
+          # cry-wolf problem this check exists to remove.
+          lits = {l for l in lits if "${" not in l and "`" not in l}
+
           missing = [l for l in lits if l not in live_text]
           print(f"checked {len(lits)} distinctive string literals from the repo source")
           print(f"present in deployed source: {len(lits) - len(missing)}")
