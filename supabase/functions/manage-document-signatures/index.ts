@@ -48,7 +48,7 @@ Deno.serve(async (req) => {
         method: 'POST',
         headers: { 'Authorization': `Bearer ${RESEND_API_KEY}`, 'Content-Type': 'application/json' },
         body: JSON.stringify({
-          from: 'AYP Success Team <notifications@accessyourplace.com>',
+          from: 'Penny <penny@accessyourplace.com>', reply_to: ['success@accessyourplace.com'],
           to: [to],
           subject,
           html

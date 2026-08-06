@@ -769,7 +769,7 @@ serve(async (req) => {
           const er = await fetch('https://api.resend.com/emails', {
             method: 'POST',
             headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${resendKey}` },
-            body: JSON.stringify({ from: 'Penny <penny@accessyourplace.com>', to: [r.to], subject: r.subject, html: r.html }),
+            body: JSON.stringify({ from: 'Penny <penny@accessyourplace.com>', reply_to: ['success@accessyourplace.com'], to: [r.to], subject: r.subject, html: r.html }),
           })
           if (er.ok) sent_to.push(r.to)
           else failures.push({ to: r.to, error: (await er.text()).slice(0, 200) })

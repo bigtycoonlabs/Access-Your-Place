@@ -38,7 +38,7 @@ async function sendEmail(to: string, subject: string, html: string) {
     await fetch('https://api.resend.com/emails', {
       method: 'POST',
       headers: { 'Authorization': `Bearer ${apiKey}`, 'Content-Type': 'application/json' },
-      body: JSON.stringify({ from: 'Access Your Place <marketplace@accessyourplace.com>', to, subject, html })
+      body: JSON.stringify({ from: 'Penny <penny@accessyourplace.com>', reply_to: ['success@accessyourplace.com'], to, subject, html })
     });
   } catch (e) { console.error('Email error:', e); }
 }

@@ -563,7 +563,7 @@ Deno.serve(async (req) => {
                 'Content-Type': 'application/json'
               },
               body: JSON.stringify({
-                from: 'Penny AI <penny@accessyourplace.com>',
+                from: 'Penny <penny@accessyourplace.com>', reply_to: ['success@accessyourplace.com'],
                 to: [investor_email],
                 subject: `Penny AI Analysis: ${property_data.city}, ${property_data.state} â€” Score ${pennyScore}/100`,
                 html: emailHtml

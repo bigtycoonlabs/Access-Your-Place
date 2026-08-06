@@ -667,7 +667,7 @@ export function PendingReservationsTab({ staffId, staffName, isSuccessManager = 
               <h4 className="font-semibold text-amber-800 mb-2">What happens when you grant permission:</h4>
               <ul className="text-sm text-amber-700 space-y-1">
                 <li>• The investor will be notified immediately via email and in-app notification</li>
-                <li>• They can proceed to complete payment (Stripe, Zelle, or Wire Transfer)</li>
+                <li>• They can proceed to complete payment using any active method in their Payments tab</li>
                 <li>• You will be notified when payment is submitted</li>
                 <li>• For Zelle/Wire payments, you'll need to approve the payment proof</li>
               </ul>

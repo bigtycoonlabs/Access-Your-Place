@@ -46,7 +46,7 @@ async function sendEmail(resendKey: string, to: string, subject: string, html: s
       method: 'POST',
       headers: { Authorization: `Bearer ${resendKey}`, 'Content-Type': 'application/json' },
       body: JSON.stringify({
-        from: 'Access Your Place <notifications@accessyourplace.com>',
+        from: 'Penny <penny@accessyourplace.com>',
         to: [to], reply_to: 'success@accessyourplace.com', subject, html,
       }),
     })

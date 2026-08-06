@@ -138,7 +138,7 @@ Here's how our process works:
 3. After that, we'll dive into product sourcing, which also takes 24 to 48 hours. We'll send you a detailed spreadsheet with all items sourced for the property, along with the furniture package fee. Once that's settled, we'll go ahead and purchase everything.
 4. Our on-the-ground setup team will be ready to receive, unbox, and assemble all items as they arrive. This process, including Wi-Fi setup if needed and property photos, takes about 7 to 14 business days. We'll also handle any cleanup, so you don't have to worry about leftover debris or boxes!
 
-For your convenience, you can make payments via Zelle to admin@cooperfamilyinc.net. And feel free to check out our website at accessyourplace.com for more information.
+When you're ready to pay, sign in and open your Payments tab. Every method we accept is listed there with a copy button and the exact details from our records, so nothing gets mistyped. Wires are received by Cooper Family Inc, the parent company of Set Up Your Place LLC, which operates Access Your Place -- that's the name you'll see on the transfer.
 
 If you have any questions or need anything else, just let me know! Looking forward to working together!
 
@@ -161,7 +161,7 @@ Here's how our process works:
 3. After that, we'll dive into product sourcing, which also takes 24 to 48 hours. We'll send you a detailed spreadsheet with all items sourced for the property, along with the furniture package fee. Once that's settled, we'll go ahead and purchase everything.
 4. Your on-the-ground setup team will need to be ready to receive, unbox, and assemble all items as they arrive. This process, including Wi-Fi setup if needed, takes about 7 to 14 business days. You'll also handle property photos and any cleanup (debris or boxes).
 
-For your convenience, you can make payments via Zelle to admin@cooperfamilyinc.net. And feel free to check out our website at accessyourplace.com for more information.
+When you're ready to pay, sign in and open your Payments tab. Every method we accept is listed there with a copy button and the exact details from our records, so nothing gets mistyped. Wires are received by Cooper Family Inc, the parent company of Set Up Your Place LLC, which operates Access Your Place -- that's the name you'll see on the transfer.
 
 If you have any questions or need anything else, just let me know! Looking forward to working together!
 

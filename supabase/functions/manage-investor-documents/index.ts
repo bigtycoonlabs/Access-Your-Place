@@ -52,7 +52,7 @@ Deno.serve(async (req) => {
         const res = await fetch('https://api.resend.com/emails', {
           method: 'POST',
           headers: { 'Authorization': `Bearer ${RESEND_API_KEY}`, 'Content-Type': 'application/json' },
-          body: JSON.stringify({ from: 'Access Your Place <notifications@accessyourplace.com>', to: [to], subject, html })
+          body: JSON.stringify({ from: 'Penny <penny@accessyourplace.com>', reply_to: ['success@accessyourplace.com'], to: [to], subject, html })
         });
         return res.ok;
       } catch (e) {

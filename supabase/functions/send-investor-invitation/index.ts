@@ -98,7 +98,7 @@ async function sendEmail(to: string, subject: string, html: string): Promise<{ s
     const res = await fetch('https://api.resend.com/emails', {
       method: 'POST',
       headers: { 'Authorization': 'Bearer ' + resendKey, 'Content-Type': 'application/json' },
-      body: JSON.stringify({ from: 'Access Your Place <invitations@accessyourplace.com>', to: [to], subject, html })
+      body: JSON.stringify({ from: 'Penny <penny@accessyourplace.com>', reply_to: ['success@accessyourplace.com'], to: [to], subject, html })
     });
     const result = await res.json();
     if (!res.ok) {

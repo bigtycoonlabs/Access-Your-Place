@@ -349,7 +349,7 @@ Deno.serve(async (req) => {
           const subj = isNoPortfolio
             ? `${investor.full_name?.split(' ')[0] || 'Investor'}, Your Market Intel This Week | ${weekDate}`
             : `Your Weekly Digest â€” ${active.length} Properties, ${newDeals.length} New Deals | ${weekDate}`;
-          const r = await fetch('https://api.resend.com/emails', { method: 'POST', headers: { 'Authorization': `Bearer ${RESEND}`, 'Content-Type': 'application/json' }, body: JSON.stringify({ from: 'Penny AI <penny@accessyourplace.com>', to: [investor.email], subject: subj, html: emailHtml }) });
+          const r = await fetch('https://api.resend.com/emails', { method: 'POST', headers: { 'Authorization': `Bearer ${RESEND}`, 'Content-Type': 'application/json' }, body: JSON.stringify({ from: 'Penny <penny@accessyourplace.com>', reply_to: ['success@accessyourplace.com'], to: [investor.email], subject: subj, html: emailHtml }) });
           const rr = await r.json();
           emailSent = r.ok; resendId = rr?.id || null;
         } catch (e: any) { console.error('[weekly-digest] Send failed:', e.message); }

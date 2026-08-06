@@ -646,7 +646,7 @@ async function sendReportEmail(reportId: string) {
         'Content-Type': 'application/json'
       },
       body: JSON.stringify({
-        from: 'Access Your Place <reports@accessyourplace.com>',
+        from: 'Penny <penny@accessyourplace.com>', reply_to: ['success@accessyourplace.com'],
         to: recipients,
         subject: `Your ${monthName} ${report.report_year} Portfolio Report`,
         html: generateEmailHTML(report, investor, monthName)

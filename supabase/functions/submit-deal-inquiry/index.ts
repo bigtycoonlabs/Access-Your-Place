@@ -28,7 +28,7 @@ async function sendEmail(to: string, subject: string, html: string): Promise<boo
       method: 'POST',
       headers: { Authorization: `Bearer ${key}`, 'Content-Type': 'application/json' },
       body: JSON.stringify({
-        from: 'Access Your Place <notifications@accessyourplace.com>',
+        from: 'Penny <penny@accessyourplace.com>',
         to: [to], reply_to: 'success@accessyourplace.com', subject, html,
       }),
     })

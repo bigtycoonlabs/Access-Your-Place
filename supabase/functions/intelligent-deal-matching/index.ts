@@ -174,7 +174,7 @@ async function sendEmailNotification(investor: any, property: Property, matchSco
         'Content-Type': 'application/json'
       },
       body: JSON.stringify({
-        from: 'Penny <penny@accessyourplace.com>',
+        from: 'Penny <penny@accessyourplace.com>', reply_to: ['success@accessyourplace.com'],
         to: investor.email,
         subject: `ðŸ  New Deal Match: ${property.address} (${matchScore}% Match)`,
         html: `

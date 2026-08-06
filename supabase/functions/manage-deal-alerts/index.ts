@@ -47,7 +47,7 @@ async function sendEmailAlert(to: string, investorName: string, deals: any[]): P
         'Content-Type': 'application/json'
       },
       body: JSON.stringify({
-        from: 'Penny AI <penny@accessyourplace.com>',
+        from: 'Penny <penny@accessyourplace.com>', reply_to: ['success@accessyourplace.com'],
         to: [to],
         subject: `ðŸ  ${deals.length} New Deal${deals.length > 1 ? 's' : ''} Matching Your Preferences!`,
         html: `

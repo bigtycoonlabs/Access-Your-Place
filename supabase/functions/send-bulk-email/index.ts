@@ -72,7 +72,7 @@ Deno.serve(async (req) => {
           method: 'POST',
           headers: { 'Authorization': `Bearer ${resendKey}`, 'Content-Type': 'application/json' },
           body: JSON.stringify({
-            from: 'Access Your Place <deals@accessyourplace.com>',
+            from: 'Penny <penny@accessyourplace.com>', reply_to: ['success@accessyourplace.com'],
             to: investor.email,
             subject,
             html: personalizedContent
