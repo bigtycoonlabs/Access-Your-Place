@@ -227,6 +227,175 @@ Deno.serve(async (req) => {
       });
     }
 
+    // ---- forgot_password / reset_password -----------------------------------
+    //
+    // Landlords previously had NO recovery path: this function implemented register,
+    // login, verify_session and logout, and nothing else. A landlord who forgot their
+    // password was locked out permanently with no self-serve route back, and no staff
+    // tool to fix it either.
+    //
+    // Mirrors the investor flow (investor-login): one-hour single-use token, expiry
+    // enforced, and the reply is identical whether or not the address is on file so this
+    // cannot be used to discover which landlords have portal accounts.
+
+    if (action === 'forgot_password') {
+      const { email, base_url } = params;
+      const GENERIC = 'If this email has a portal account, a reset link is on its way.';
+      if (!email) {
+        return new Response(JSON.stringify({ error: 'Enter the email on your account.' }), {
+          status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' }
+        });
+      }
+
+      const { data: landlord } = await supabase
+        .from('landlord_contacts')
+        .select('id,name,email,portal_enabled')
+        .eq('email', String(email).toLowerCase().trim())
+        .eq('portal_enabled', true)
+        .maybeSingle();
+
+      // Same reply as the success case — never reveal whether an account exists.
+      if (!landlord) {
+        return new Response(JSON.stringify({ success: true, message: GENERIC }), {
+          headers: { ...corsHeaders, 'Content-Type': 'application/json' }
+        });
+      }
+
+      const token = `${crypto.randomUUID()}-${crypto.randomUUID()}`;
+      const expires = new Date(Date.now() + 60 * 60 * 1000).toISOString();
+
+      const { error: tokenErr } = await supabase
+        .from('landlord_contacts')
+        .update({ reset_token: token, reset_token_expires: expires, updated_at: new Date().toISOString() })
+        .eq('id', landlord.id);
+
+      // Checked on purpose: if the token never saved, the emailed link cannot work and
+      // the landlord would burn an hour discovering that.
+      if (tokenErr) {
+        console.error('landlord-auth forgot_password token_write_failed', tokenErr.message);
+        return new Response(JSON.stringify({ error: 'We could not start a password reset. Please try again.' }), {
+          status: 502, headers: { ...corsHeaders, 'Content-Type': 'application/json' }
+        });
+      }
+
+      const site = String(base_url || 'https://accessyourplace.com').replace(/\/+$/, '');
+      const resetUrl = `${site}/landlord/reset-password?token=${token}`;
+      const resendKey = Deno.env.get('RESEND_API_KEY');
+      let emailOk = false;
+
+      if (!resendKey) {
+        console.error('landlord-auth forgot_password missing RESEND_API_KEY');
+      } else {
+        try {
+          const sendRes = await fetch('https://api.resend.com/emails', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${resendKey}` },
+            body: JSON.stringify({
+              from: 'Penny <penny@accessyourplace.com>',
+              reply_to: ['success@accessyourplace.com'],
+              to: [landlord.email],
+              subject: 'Reset your Access Your Place landlord password',
+              text:
+                `Hi ${landlord.name || 'there'},\n\n` +
+                `You asked to reset your landlord portal password. Open this link within the next hour to choose a new one:\n\n${resetUrl}\n\n` +
+                `If you didn't ask for this, ignore this email and your password stays as it is.\n\n` +
+                `Penny\nClient Success | Access Your Place`,
+            }),
+          });
+          emailOk = sendRes.ok;
+          if (!sendRes.ok) {
+            console.error('landlord-auth forgot_password send_failed', sendRes.status, (await sendRes.text()).slice(0, 200));
+          }
+        } catch (sendErr) {
+          console.error('landlord-auth forgot_password send_threw', sendErr instanceof Error ? sendErr.message : String(sendErr));
+        }
+      }
+
+      // A failure to SEND is our problem, not a fact about their account, so it is
+      // reported. The generic message still hides whether the address exists.
+      if (!emailOk) {
+        return new Response(JSON.stringify({ error: 'We could not send the reset email just now. Please try again in a moment.' }), {
+          status: 502, headers: { ...corsHeaders, 'Content-Type': 'application/json' }
+        });
+      }
+
+      return new Response(JSON.stringify({ success: true, message: GENERIC }), {
+        headers: { ...corsHeaders, 'Content-Type': 'application/json' }
+      });
+    }
+
+    if (action === 'reset_password') {
+      const { reset_token, new_password } = params;
+      if (!reset_token) {
+        return new Response(JSON.stringify({ error: 'This reset link is missing its token. Please request a new one.' }), {
+          status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' }
+        });
+      }
+      if (!new_password || String(new_password).length < 8) {
+        return new Response(JSON.stringify({ error: 'Choose a password of at least 8 characters.' }), {
+          status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' }
+        });
+      }
+
+      const { data: landlord } = await supabase
+        .from('landlord_contacts')
+        .select('id,reset_token_expires,portal_enabled,status')
+        .eq('reset_token', String(reset_token))
+        .maybeSingle();
+
+      if (!landlord) {
+        return new Response(JSON.stringify({ error: 'This reset link is not valid. It may already have been used. Please request a new one.' }), {
+          status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' }
+        });
+      }
+      if (landlord.status === 'suspended') {
+        return new Response(JSON.stringify({ error: 'This account is suspended. Please contact your acquisition manager.' }), {
+          status: 403, headers: { ...corsHeaders, 'Content-Type': 'application/json' }
+        });
+      }
+      if (!landlord.reset_token_expires || new Date(landlord.reset_token_expires).getTime() < Date.now()) {
+        return new Response(JSON.stringify({ error: 'This reset link has expired. Please request a new one.' }), {
+          status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' }
+        });
+      }
+
+      // Same SHA-256 + fixed-salt scheme the login path uses. Deliberately NOT changed
+      // to bcrypt here: login still compares this exact hash, so switching one side
+      // alone would lock every landlord out. The upgrade is worth doing and is cheap
+      // right now (landlord_contacts currently holds zero portal passwords) but it must
+      // change register, login and this path together, in its own commit.
+      const enc = new TextEncoder();
+      const digest = await crypto.subtle.digest('SHA-256', enc.encode(String(new_password) + 'ayp_landlord_salt_2026'));
+      const hashHex = Array.from(new Uint8Array(digest)).map((b) => b.toString(16).padStart(2, '0')).join('');
+
+      const { data: saved, error: saveErr } = await supabase
+        .from('landlord_contacts')
+        .update({
+          password_hash: hashHex,
+          reset_token: null,
+          reset_token_expires: null,
+          session_token: null,      // old sessions die with the old password
+          session_expires_at: null,
+          updated_at: new Date().toISOString(),
+        })
+        .eq('id', landlord.id)
+        .select('id')
+        .maybeSingle();
+
+      // Report success ONLY if the write landed. Never on the strength of no error.
+      if (saveErr || !saved) {
+        console.error('landlord-auth reset_password write_failed', saveErr?.message || 'no rows');
+        return new Response(JSON.stringify({ error: 'We could not save your new password. Please try again.' }), {
+          status: 502, headers: { ...corsHeaders, 'Content-Type': 'application/json' }
+        });
+      }
+
+      console.log('landlord-auth reset_completed', JSON.stringify({ landlord_id: landlord.id }));
+      return new Response(JSON.stringify({ success: true, message: 'Your password has been updated. You can sign in with it now.' }), {
+        headers: { ...corsHeaders, 'Content-Type': 'application/json' }
+      });
+    }
+
     return new Response(JSON.stringify({ error: 'Unknown action' }), {
       status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' }
     });
