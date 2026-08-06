@@ -29,6 +29,7 @@ import Pricing from "./pages/Pricing";
 import SetupServices from "./pages/SetupServices";
 import LandlordPartnership from "./pages/LandlordPartnership";
 import LandlordLogin from "./pages/LandlordLogin";
+import LandlordResetPassword from '@/pages/LandlordResetPassword';
 import LandlordPortal from "./pages/LandlordPortal";
 import AdminComments from "./pages/AdminComments";
 import OAuthCallback from "./pages/OAuthCallback";
@@ -122,6 +123,7 @@ const App = () => (
                   <Route path="/landlord-partnership" element={<LandlordPartnership />} />
                   <Route path="/careers" element={<Careers />} />
                   <Route path="/landlord/login" element={<LandlordLogin />} />
+                  <Route path="/landlord/reset-password" element={<LandlordResetPassword />} />
                   <Route path="/landlord/portal" element={<LandlordPortal />} />
                   <Route path="/admin/comments" element={<AdminComments />} />
                   <Route path="/oauth/callback" element={<OAuthCallback />} />

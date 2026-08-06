@@ -324,6 +324,48 @@ Deno.serve(async (req) => {
       });
     }
 
+    // validate_token — called by the reset page on load, so it can show the form or an
+    // honest reason instead of a dead end.
+    //
+    // Added at the same time as the page rather than after it. The staff and investor
+    // reset pages both shipped calling a validate_token that had never been written, and
+    // both reported perfectly good links as invalid for months. Building the page without
+    // this would have made the same mistake a third time.
+    if (action === 'validate_token') {
+      const { reset_token } = params;
+      if (!reset_token) {
+        return new Response(JSON.stringify({ success: true, valid: false, error: 'No token supplied.' }), {
+          headers: { ...corsHeaders, 'Content-Type': 'application/json' }
+        });
+      }
+
+      const { data: landlord } = await supabase
+        .from('landlord_contacts')
+        .select('id,name,email,reset_token_expires,status,portal_enabled')
+        .eq('reset_token', String(reset_token))
+        .maybeSingle();
+
+      if (!landlord) {
+        return new Response(JSON.stringify({ success: true, valid: false, error: 'This reset link is not valid. It may already have been used. Please request a new one.' }), {
+          headers: { ...corsHeaders, 'Content-Type': 'application/json' }
+        });
+      }
+      if (landlord.status === 'suspended') {
+        return new Response(JSON.stringify({ success: true, valid: false, error: 'This account is suspended. Please contact your acquisition manager.' }), {
+          headers: { ...corsHeaders, 'Content-Type': 'application/json' }
+        });
+      }
+      if (!landlord.reset_token_expires || new Date(landlord.reset_token_expires).getTime() < Date.now()) {
+        return new Response(JSON.stringify({ success: true, valid: false, error: 'This reset link has expired. Please request a new one.' }), {
+          headers: { ...corsHeaders, 'Content-Type': 'application/json' }
+        });
+      }
+
+      return new Response(JSON.stringify({ success: true, valid: true, email: landlord.email || '', name: landlord.name || '' }), {
+        headers: { ...corsHeaders, 'Content-Type': 'application/json' }
+      });
+    }
+
     if (action === 'reset_password') {
       const { reset_token, new_password } = params;
       if (!reset_token) {

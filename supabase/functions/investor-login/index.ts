@@ -239,6 +239,59 @@ serve(async (req: Request) => {
     }
 
     // ==================== RESET PASSWORD ====================
+    // ---- validate_token ------------------------------------------------------
+    // InvestorResetPassword.tsx calls this on load to decide whether to show the form.
+    // It was never implemented here — investor-login had forgot_password, login, logout,
+    // reset_password and validate_session, and nothing else. So the call fell through,
+    // the page treated the failure as a bad token, and a perfectly valid investor reset
+    // link reported itself invalid. Identical to the bug just fixed on the staff side;
+    // found by cross-checking every action the front end sends against what each auth
+    // function actually implements.
+    //
+    // The token IS the secret, so confirming it to whoever holds it reveals nothing they
+    // do not already have. Returns the name so the page can greet them.
+    if (action === 'validate_token') {
+      if (!reset_token) {
+        return new Response(
+          JSON.stringify({ success: true, valid: false, error: 'No token supplied.' }),
+          { headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+        )
+      }
+      const vUrl = `${supabaseUrl}/rest/v1/investors?reset_token=eq.${encodeURIComponent(String(reset_token))}&select=id,email,full_name,reset_token_expires,is_active&limit=1`
+      const vRes = await fetch(vUrl, { method: 'GET', headers })
+      if (!vRes.ok) {
+        console.error('validate_token lookup failed', vRes.status)
+        return new Response(
+          JSON.stringify({ success: false, valid: false, error: 'We could not check that link right now. Please try again.' }),
+          { status: 502, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+        )
+      }
+      const vRows = await vRes.json().catch(() => [])
+      const inv = Array.isArray(vRows) ? vRows[0] : null
+      if (!inv) {
+        return new Response(
+          JSON.stringify({ success: true, valid: false, error: 'This reset link is invalid or has already been used. Please request a new one.' }),
+          { headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+        )
+      }
+      if (inv.is_active === false) {
+        return new Response(
+          JSON.stringify({ success: true, valid: false, error: 'This account is inactive. Please contact your acquisition manager.' }),
+          { headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+        )
+      }
+      if (!inv.reset_token_expires || new Date(inv.reset_token_expires).getTime() < Date.now()) {
+        return new Response(
+          JSON.stringify({ success: true, valid: false, error: 'This reset link has expired. Please request a new one.' }),
+          { headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+        )
+      }
+      return new Response(
+        JSON.stringify({ success: true, valid: true, email: inv.email || '', name: inv.full_name || '' }),
+        { headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+      )
+    }
+
     if (action === 'reset_password') {
       if (!reset_token || !new_password) {
         return new Response(
