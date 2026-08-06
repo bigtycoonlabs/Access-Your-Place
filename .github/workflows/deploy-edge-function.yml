@@ -1,0 +1,158 @@
+# Deploy ONE Supabase edge function from this repo, then VERIFY what actually landed.
+#
+# WHY THIS EXISTS
+#
+# Edge function deploys had exactly two paths, and both had a problem:
+#
+#   1. The Supabase CLI, run by hand. Correct -- it copies bytes off disk -- but it
+#      needs a machine with the CLI and a token, so it could not be done from the AI
+#      sandbox (api.supabase.com returns 403 host_not_allowed there).
+#   2. The Supabase MCP's deploy_edge_function, which takes file CONTENTS as a
+#      parameter. That means an assistant must reproduce the whole file verbatim. A
+#      truncated call is harmless (invalid JSON, never executes) but a transcription
+#      slip produces a VALID call that deploys subtly wrong code over a live function.
+#      On penny-staff-chat that is 93KB across two files, and penny_truth.ts is dense
+#      with anchored regexes whose failure mode is SILENT -- a slipped character
+#      weakens the honesty guard without crashing anything.
+#
+# This workflow is the third path and the right one: the runner checks out the repo
+# and deploys from disk. The bytes go repo -> runner -> Supabase. No human and no
+# assistant ever retypes them, so transcription error is not merely unlikely, it is
+# structurally impossible.
+#
+# It then DOWNLOADS the deployed function back and diffs it against the repo. That
+# check is mechanical -- git compares the bytes -- rather than someone reading a diff
+# and judging it identical. If they differ, the job FAILS and prints the difference.
+# "Deployed" therefore means verified, not assumed.
+#
+# ONE-TIME SETUP (owner)
+#
+#   1. Supabase dashboard > Account > Access Tokens > generate a token (starts sbp_).
+#   2. This repo > Settings > Secrets and variables > Actions > New repository secret.
+#      Name it exactly:  SUPABASE_ACCESS_TOKEN
+#
+# RUNNING IT
+#
+#   GitHub > Actions > "Deploy edge function" > Run workflow > type the slug.
+#   Or from a terminal:  gh workflow run deploy-edge-function.yml -f slug=penny-staff-chat
+#
+# AFTER IT PASSES
+#
+# A green run means the deployed source matches the repo. It does NOT prove the new
+# behaviour is what you wanted -- verify that by using the thing. For penny-staff-chat
+# that means opening staff chat as Vission or Rel and checking Penny addresses you as
+# an owner: leading with problems, skipping the hand-holding. If she behaves as
+# before, the deploy did not take.
+
+name: Deploy edge function
+
+on:
+  workflow_dispatch:
+    inputs:
+      slug:
+        description: 'Function slug to deploy, e.g. penny-staff-chat'
+        required: true
+        type: string
+
+# Never deploy the same function twice at once.
+concurrency:
+  group: deploy-edge-function-${{ inputs.slug }}
+  cancel-in-progress: false
+
+jobs:
+  deploy:
+    name: Deploy and verify ${{ inputs.slug }}
+    runs-on: ubuntu-latest
+
+    env:
+      # The LIVE project. Deliberately NOT read from supabase/config.toml -- that
+      # file's project_id is a local-dev identifier, and it held a stale ref for a
+      # different project for a long time.
+      PROJECT_REF: adcbrclppmnguzkzwiys
+      SLUG: ${{ inputs.slug }}
+
+    steps:
+      - name: Check out the repo
+        uses: actions/checkout@v4
+
+      - name: Confirm the function exists in this repo
+        run: |
+          set -euo pipefail
+          if [ ! -d "supabase/functions/$SLUG" ]; then
+            echo "::error::No such function in this repo: supabase/functions/$SLUG"
+            echo "Available (first 40):"
+            ls supabase/functions | head -40
+            exit 1
+          fi
+          echo "Deploying $SLUG to project $PROJECT_REF"
+          echo
+          echo "Source checksums BEFORE deploy:"
+          find "supabase/functions/$SLUG" -type f -name '*.ts' -print0 \
+            | sort -z | xargs -0 md5sum
+
+      - name: Fail early if the token is missing
+        env:
+          SUPABASE_ACCESS_TOKEN: ${{ secrets.SUPABASE_ACCESS_TOKEN }}
+        run: |
+          set -euo pipefail
+          if [ -z "${SUPABASE_ACCESS_TOKEN:-}" ]; then
+            echo "::error::Repository secret SUPABASE_ACCESS_TOKEN is not set."
+            echo "Add it under Settings > Secrets and variables > Actions."
+            exit 1
+          fi
+          echo "Token present."
+
+      - name: Install the Supabase CLI
+        uses: supabase/setup-cli@v1
+        with:
+          version: latest
+
+      - name: Deploy
+        env:
+          SUPABASE_ACCESS_TOKEN: ${{ secrets.SUPABASE_ACCESS_TOKEN }}
+        run: |
+          set -euo pipefail
+          # NOTE: no verify_jwt flag is passed, on purpose. Omitting it preserves
+          # whatever the function is already configured with. Passing --no-verify-jwt
+          # is how a private endpoint silently becomes a public one -- the exact defect
+          # that was found in the old supabase/deploy-all.sh.
+          supabase functions deploy "$SLUG" --project-ref "$PROJECT_REF"
+
+      - name: Read back what actually landed, and diff it
+        env:
+          SUPABASE_ACCESS_TOKEN: ${{ secrets.SUPABASE_ACCESS_TOKEN }}
+        run: |
+          set -euo pipefail
+
+          # Downloading overwrites the working copy in supabase/functions/$SLUG, which
+          # is what makes `git diff` a real byte comparison of deployed vs repo.
+          supabase functions download "$SLUG" --project-ref "$PROJECT_REF"
+
+          echo
+          echo "Checksums of what came BACK from Supabase:"
+          find "supabase/functions/$SLUG" -type f -name '*.ts' -print0 \
+            | sort -z | xargs -0 md5sum
+          echo
+
+          if git diff --quiet -- "supabase/functions/$SLUG"; then
+            echo "VERIFIED: deployed source is byte-identical to the repo."
+          else
+            echo "::error::MISMATCH -- what is deployed differs from this repo."
+            echo "Do NOT treat this deploy as successful. The difference:"
+            git --no-pager diff -- "supabase/functions/$SLUG"
+            exit 1
+          fi
+
+      - name: Leave the checkout clean
+        if: always()
+        run: git checkout -- "supabase/functions/$SLUG" 2>/dev/null || true
+
+      - name: What to do next
+        run: |
+          echo "Deployed source matches the repo. That is not the same as the new"
+          echo "behaviour being right -- a green check is not evidence."
+          echo
+          echo "Verify by using it. For penny-staff-chat: open staff chat as Vission"
+          echo "or Rel and check Penny addresses you as an owner -- leads with"
+          echo "problems, skips the hand-holding. If she behaves as before, the"
+          echo "deploy did not take."
