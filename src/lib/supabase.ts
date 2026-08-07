@@ -89,7 +89,7 @@ if (typeof window !== 'undefined' && !(window as any).__aypLeadForgeFetchPatched
       try {
         payload = text ? JSON.parse(text) as Record<string, unknown> : {};
       } catch {
-        payload = { error: text || 'LeadForge returned an invalid response' };
+        payload = { error: text || 'Property Forge returned an invalid response' };
       }
       const normalized = response.ok
         ? { success: true, text: typeof payload.text === 'string' ? payload.text : '' }

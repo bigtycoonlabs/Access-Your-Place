@@ -507,7 +507,7 @@ export default function InvestorPortal() {
         'referrals': 'Referral Program',
         'disputes': 'Dispute Resolution',
         'settings': 'Account Settings',
-        'leadforge': 'LeadForge'
+        'leadforge': 'Property Forge'
       };
       const name = tabNames[activeTab] || activeTab;
       setAnnouncement(`Navigated to ${name} tab`);
@@ -1042,7 +1042,7 @@ export default function InvestorPortal() {
                   </TabsTrigger>
                   <TabsTrigger value="leadforge" className="flex items-center gap-2">
                     <Zap className="w-4 h-4" aria-hidden="true" />
-                    <span>LeadForge</span>
+                    <span>Property Forge</span>
                   </TabsTrigger>
                 </TabsList>
               </div>
@@ -1397,8 +1397,8 @@ export default function InvestorPortal() {
             </InvestorTabErrorBoundary>
           </TabsContent>
           {/* ===== LEADFORGE TAB ===== */}
-          <TabsContent value="leadforge" role="tabpanel" aria-label="Apollo LeadForge - investor lead search">
-            <InvestorTabErrorBoundary tabName="LeadForge">
+          <TabsContent value="leadforge" role="tabpanel" aria-label="Apollo Property Forge - investor lead search">
+            <InvestorTabErrorBoundary tabName="Property Forge">
               <InvestorLeadForge investorId={investor.id} investorName={investor.full_name} />
             </InvestorTabErrorBoundary>
           </TabsContent>

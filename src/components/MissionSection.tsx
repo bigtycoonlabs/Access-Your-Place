@@ -10,7 +10,7 @@ const ALONE = [
 
 const WITH_AYP = [
   'A living knowledge library from Penny — free',
-  'Find deals yourself with Penny + LeadForge — or let the team source and close',
+  'Find deals yourself with Penny + Property Forge — or let the team source and close',
   'Built to diversify: short-term, mid-term, corporate, co-living',
   'Coached and supported the whole way — as much or as little as you want',
 ];

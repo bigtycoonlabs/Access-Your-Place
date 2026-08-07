@@ -407,7 +407,7 @@ export function InvestorLeadForge({ investorId, investorName }: InvestorLeadForg
 
         <div style={{ display:"flex", alignItems:"center", gap:8, marginRight:28 }}>
           <span style={{ color:BLUE, fontSize:20, lineHeight:1 }}>⬡</span>
-          <span style={{ fontWeight:800, fontSize:15, color:"#fff", letterSpacing:"-0.02em" }}>LeadForge</span>
+          <span style={{ fontWeight:800, fontSize:15, color:"#fff", letterSpacing:"-0.02em" }}>Property Forge</span>
           <span style={{ fontSize:9, fontWeight:800, letterSpacing:"0.05em", textTransform:"uppercase",
             color:"#4ADE80", background:"rgba(74,222,128,0.12)", border:"1px solid rgba(74,222,128,0.25)",
             padding:"2px 8px", borderRadius:10 }}>● Apollo Live</span>

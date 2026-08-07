@@ -26,7 +26,7 @@ function extractJsonObject(text: string): unknown {
   } catch {
     const start = trimmed.indexOf("{");
     const end = trimmed.lastIndexOf("}");
-    if (start < 0 || end <= start) throw new Error("LeadForge returned malformed market data.");
+    if (start < 0 || end <= start) throw new Error("Property Forge returned malformed market data.");
     return JSON.parse(trimmed.slice(start, end + 1));
   }
 }
@@ -57,20 +57,20 @@ export default function LeadForge() {
     try {
       const { data: authData, error: authError } = await supabase.auth.getSession();
       if (authError || !authData.session) {
-        throw new Error("Your secure session has expired. Sign in again before running LeadForge.");
+        throw new Error("Your secure session has expired. Sign in again before running Property Forge.");
       }
 
       const { data, error } = await supabase.functions.invoke("apollo-leadforge", {
         body: { zip, radius: radiusNumber },
       });
 
-      if (error) throw new Error("LeadForge could not complete the scan. Please retry.");
-      if (!data || typeof data !== "object") throw new Error("LeadForge returned no usable data.");
+      if (error) throw new Error("Property Forge could not complete the scan. Please retry.");
+      if (!data || typeof data !== "object") throw new Error("Property Forge returned no usable data.");
       if (typeof data.error === "string" && data.error.trim()) throw new Error(data.error);
-      if (typeof data.text !== "string" || !data.text.trim()) throw new Error("LeadForge returned an empty result.");
+      if (typeof data.text !== "string" || !data.text.trim()) throw new Error("Property Forge returned an empty result.");
 
       const parsed = ScanSchema.safeParse(extractJsonObject(data.text));
-      if (!parsed.success) throw new Error("LeadForge returned market data in an unexpected format.");
+      if (!parsed.success) throw new Error("Property Forge returned market data in an unexpected format.");
 
       const nextResult: MarketSearchResult = {
         id: crypto.randomUUID(),
@@ -81,7 +81,7 @@ export default function LeadForge() {
       setResults((previous) => [nextResult, ...previous].slice(0, 25));
       setMessage("Market scan completed securely.");
     } catch (error) {
-      const text = error instanceof Error ? error.message : "LeadForge request failed.";
+      const text = error instanceof Error ? error.message : "Property Forge request failed.";
       setMessage(text);
     } finally {
       setLoading(false);
@@ -95,7 +95,7 @@ export default function LeadForge() {
           <CardHeader>
             <div className="flex flex-wrap items-center justify-between gap-3">
               <div>
-                <CardTitle className="text-2xl">LeadForge</CardTitle>
+                <CardTitle className="text-2xl">Property Forge</CardTitle>
                 <CardDescription className="text-slate-400">
                   Secure back-office leasing market scanner for Access Your Place staff.
                 </CardDescription>

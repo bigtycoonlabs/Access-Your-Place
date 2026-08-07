@@ -28,7 +28,7 @@ const steps = [
 ];
 
 const points = [
-  'Source deals yourself with Penny + LeadForge — or pick from the marketplace',
+  'Source deals yourself with Penny + Property Forge — or pick from the marketplace',
   'Negotiate your own, or let a certified Acquisition Manager close it',
   'Penny scores every deal and runs the numbers — free',
   'Our team guides and supports every step — as much or as little as you want',

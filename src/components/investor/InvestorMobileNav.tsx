@@ -207,7 +207,7 @@ export function getInvestorTabs(): InvestorNavItem[] {
     { value: 'saved', label: 'Saved Deals', icon: Heart, group: 'deals' },
     { value: 'deal-matching', label: 'Deal Matching', icon: Brain, group: 'deals' },
     { value: 'deal-alerts', label: 'Deal Alerts', icon: BellRing, group: 'deals' },
-    { value: 'leadforge', label: 'LeadForge', icon: Zap, group: 'deals' },
+    { value: 'leadforge', label: 'Property Forge', icon: Zap, group: 'deals' },
     { value: 'notifications-hub', label: 'Notifications & Alerts', icon: Bell, group: 'communications' },
     { value: 'inquiries', label: 'Inquiries', icon: MessageSquare, group: 'communications' },
     { value: 'messages', label: 'Messages', icon: Mail, group: 'communications' },
