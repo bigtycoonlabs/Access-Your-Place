@@ -852,7 +852,10 @@ const TOOLS = [
       description: "Show every property on the deal marketplace and its status. Read-only. Use this before changing anything so you can name the property back accurately.",
       parameters: { type: 'object', properties: {}, required: [] },
     },
-    {
+  },
+  {
+    type: 'function',
+    function: {
       name: 'unpublish_property',
       description: "Take a property OFF the deal marketplace. This is a WRITE and clients can see the marketplace, so only call with confirmed:true after the staff member has clearly said yes. It is REVERSIBLE — nothing is deleted, the listing can be put back — and you should say so when asking. Ask for a reason and pass it.",
       parameters: {
@@ -865,7 +868,10 @@ const TOOLS = [
         required: ['property_id'],
       },
     },
-    {
+  },
+  {
+    type: 'function',
+    function: {
       name: 'add_property',
       description: "Add a property to the platform. This is a WRITE — only call with confirmed:true after the staff member has said yes. IT DOES NOT GO LIVE: it lands as pending review, because a deal on the marketplace means a human has spoken to the landlord and validated the numbers. Say that plainly rather than implying it is listed.",
       parameters: {
@@ -884,7 +890,10 @@ const TOOLS = [
         required: ['address', 'city', 'state'],
       },
     },
-    {
+  },
+  {
+    type: 'function',
+    function: {
       name: 'update_opportunity_status',
       description: "Change an inquiry's status. This is a WRITE — only call with confirmed:true after the staff member has clearly said yes to this exact change.",
       parameters: {
