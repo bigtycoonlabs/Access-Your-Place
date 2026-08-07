@@ -110,6 +110,85 @@ async function listOpportunities(url: string, key: string) {
   };
 }
 
+// ---- leads, moderation, portfolio ----
+//
+// The leads gap was the urgent one. /start and /list-your-property write to `leads`, and
+// NO tool read them, so an inbound client or landlord could sit unseen indefinitely. A
+// real one was found sitting there when these were built.
+
+async function listLeads(url: string, key: string, limit?: number) {
+  const { ok, status, data } = await rpc(url, key, 'penny_open_leads', { p_limit: limit ?? 25 });
+  if (!ok) {
+    console.error('penny-staff-chat rpc_open_leads', status, JSON.stringify(data).slice(0, 200));
+    return { count: 0, leads: [], error: `read_failed_${status}` };
+  }
+  const rows = Array.isArray(data) ? data : [];
+  const KIND: Record<string, string> = {
+    need_property: 'wants a property',
+    have_property: 'landlord with a property',
+    live_operation_help: 'LIVE OPERATION — needs help now',
+    sell_operation: 'wants to sell an operation',
+    verify_scan: 'wants a scan verified',
+  };
+  return {
+    count: rows.length,
+    urgent_count: rows.filter((r: any) => r.urgent).length,
+    leads: rows.map((r: any) => ({
+      lead_id: r.id,
+      who: r.name,
+      email: r.email,
+      phone: r.phone || null,
+      wants: KIND[r.form_type] || r.form_type,
+      urgent: r.urgent === true,
+      city: r.city || null,
+      property: r.property_address || null,
+      said: r.message || null,
+      status: r.status,
+      came_from: r.source || null,
+      arrived: r.created_at,
+    })),
+  };
+}
+
+async function setLeadStatus(url: string, key: string, leadId: string, status: string, staffId: string) {
+  const { ok, status: code, data } = await rpc(url, key, 'penny_set_lead_status', {
+    p_lead_id: leadId, p_status: status, p_staff_id: staffId || null,
+  });
+  if (!ok) {
+    console.error('penny-staff-chat rpc_set_lead_status', code, JSON.stringify(data).slice(0, 200));
+    return { error: 'update_failed', http: code };
+  }
+  return data;
+}
+
+async function setClientActive(url: string, key: string, investorId: string, active: boolean, reason: string, staffId: string) {
+  const { ok, status, data } = await rpc(url, key, 'penny_set_investor_active', {
+    p_investor_id: investorId, p_active: active, p_reason: reason || null, p_staff_id: staffId || null,
+  });
+  if (!ok) {
+    console.error('penny-staff-chat rpc_set_investor_active', status, JSON.stringify(data).slice(0, 200));
+    return { error: 'update_failed', http: status };
+  }
+  return data;
+}
+
+async function clientPortfolio(url: string, key: string, investorId: string) {
+  const { ok, status, data } = await rpc(url, key, 'penny_client_portfolio', { p_investor_id: investorId });
+  if (!ok) {
+    console.error('penny-staff-chat rpc_client_portfolio', status, JSON.stringify(data).slice(0, 200));
+    return { error: `read_failed_${status}` };
+  }
+  const rows = Array.isArray(data) ? data : [];
+  return {
+    count: rows.length,
+    total_monthly_earnings: rows.reduce((n: number, r: any) => n + Number(r.monthly_earnings || 0), 0),
+    units: rows.map((r: any) => ({
+      address: r.address, where: [r.city, r.state].filter(Boolean).join(', '),
+      status: r.status, monthly_rent: r.monthly_rent, monthly_earnings: r.monthly_earnings,
+    })),
+  };
+}
+
 // ---- marketplace ----
 //
 // Penny had NO reach into properties at all. Her "opportunities" are deal INQUIRIES, so
@@ -668,6 +747,27 @@ async function execTool(name: string, args: any, ctx: Ctx): Promise<unknown> {
       }
       return await recordClosing(url, key, args, staffId, staffName);
     }
+    if (name === 'list_leads') return await listLeads(url, key, args?.limit ? Number(args.limit) : undefined);
+    if (name === 'set_lead_status') {
+      if (!args?.lead_id || !args?.status) return { error: 'lead_id and status required' };
+      return await setLeadStatus(url, key, String(args.lead_id), String(args.status), staffId);
+    }
+    if (name === 'get_client_portfolio') {
+      if (!args?.investor_id) return { error: 'investor_id required' };
+      return await clientPortfolio(url, key, String(args.investor_id));
+    }
+    if (name === 'suspend_client' || name === 'reinstate_client') {
+      if (!args?.investor_id) return { error: 'investor_id required' };
+      const activating = name === 'reinstate_client';
+      if (args.confirmed !== true) {
+        return {
+          needs_confirmation: true,
+          action: activating ? "give this client access back" : "suspend this client's access",
+          instruction: 'Name the client back, say what it does, get a clear yes, then call again with confirmed true. It is reversible — say so.',
+        };
+      }
+      return await setClientActive(url, key, String(args.investor_id), activating, String(args.reason || ''), staffId);
+    }
     if (name === 'list_marketplace') return await listMarketplace(url, key);
     if (name === 'unpublish_property') {
       if (!args?.property_id) return { error: 'property_id required' };
@@ -842,6 +942,77 @@ const TOOLS = [
         type: 'object',
         properties: { inquiry_id: { type: 'string', description: 'The inquiry_id from list_opportunities.' } },
         required: ['inquiry_id'], additionalProperties: false,
+      },
+    },
+  },
+  {
+    type: 'function',
+    function: {
+      name: 'list_leads',
+      description: "Show inbound leads from the website — people asking for a property, landlords with a property, someone with a LIVE OPERATION EMERGENCY, sellers, and scan-verification requests. Read-only. Check this when asked what is new, who needs calling, or what came in. Urgent ones are flagged and come first: say so immediately rather than reading the whole list.",
+      parameters: {
+        type: 'object',
+        properties: { limit: { type: 'number', description: 'How many to return. Default 25.' } },
+        required: [],
+      },
+    },
+  },
+  {
+    type: 'function',
+    function: {
+      name: 'set_lead_status',
+      description: "Move a lead along: new, contacted, working, closed or not_a_fit. Use it after someone has actually been called or emailed, so the queue reflects reality.",
+      parameters: {
+        type: 'object',
+        properties: {
+          lead_id: { type: 'string', description: 'From list_leads.' },
+          status: { type: 'string', enum: ['new', 'contacted', 'working', 'closed', 'not_a_fit'] },
+        },
+        required: ['lead_id', 'status'],
+      },
+    },
+  },
+  {
+    type: 'function',
+    function: {
+      name: 'get_client_portfolio',
+      description: "Read what a client actually holds — their units, status, rent and monthly earnings. Use find_client first to get the investor_id.",
+      parameters: {
+        type: 'object',
+        properties: { investor_id: { type: 'string' } },
+        required: ['investor_id'],
+      },
+    },
+  },
+  {
+    type: 'function',
+    function: {
+      name: 'suspend_client',
+      description: "Suspend a client's access so they can no longer sign in. This is a WRITE — only call with confirmed:true after the staff member has clearly said yes. REVERSIBLE: nothing is deleted and reinstate_client undoes it, so say that when asking. Ask for a reason.",
+      parameters: {
+        type: 'object',
+        properties: {
+          investor_id: { type: 'string' },
+          reason: { type: 'string' },
+          confirmed: { type: 'boolean' },
+        },
+        required: ['investor_id'],
+      },
+    },
+  },
+  {
+    type: 'function',
+    function: {
+      name: 'reinstate_client',
+      description: "Give a suspended client their access back. This is a WRITE — only call with confirmed:true after the staff member has said yes.",
+      parameters: {
+        type: 'object',
+        properties: {
+          investor_id: { type: 'string' },
+          reason: { type: 'string' },
+          confirmed: { type: 'boolean' },
+        },
+        required: ['investor_id'],
       },
     },
   },
@@ -1148,9 +1319,21 @@ ${PENNY_OWNERSHIP}
 WHAT YOU CAN ACTUALLY DO YOURSELF, TODAY. This list is the truth. Everything else you own
 by routing it, not by claiming it.
 
+INBOUND LEADS — check this FIRST when asked what is new or who needs calling:
+list_leads shows everyone who came in through the website: people wanting a property,
+landlords with one, sellers, scan-verification requests, and LIVE OPERATION EMERGENCIES.
+Urgent ones are flagged and sorted first — lead with those, by name, immediately. Do not
+read a whole list aloud when one of them is an emergency. set_lead_status moves a lead to
+contacted, working, closed or not_a_fit once someone has actually been reached.
+
 THE DESK — buyer inquiries:
 list_opportunities, get_opportunity, update_opportunity_status, add_opportunity_note,
 record_closing.
+
+CLIENT PORTFOLIO AND ACCESS:
+get_client_portfolio reads what a client actually holds — units, rent, monthly earnings.
+suspend_client stops a client signing in; reinstate_client gives it back. Both are WRITES,
+both need explicit confirmation, and both are REVERSIBLE — say so when you ask.
 
 THE MARKETPLACE:
 list_marketplace shows every property and its status. unpublish_property takes a listing
@@ -1171,8 +1354,8 @@ ISSUES:
 list_escalations, resolve_escalation.
 
 WHAT YOU CANNOT YET DO YOURSELF — own these, route them, never claim them:
-banning or suspending a user, booking an appointment, running a market scan from this
-chat, editing a client's portfolio, issuing a refund, changing commission. When one of
+booking an appointment, running a market scan from this chat, editing a client's
+portfolio, issuing a refund, changing commission. When one of
 these comes up, say what you can see, say who does it, and offer to draft whatever gets it
 moving. Do not say it is done.
 
