@@ -166,3 +166,56 @@ numbers, and terms are pre-negotiated. No call is offered because the work is do
 
 `capture-lead` accepts `verify_scan`. It is the warmest lead the platform produces —
 the person has already found a property they like and is asking for a human.
+
+---
+
+## Three scan types, three different markets
+
+Penny asks which scan the user wants before showing anything: **STR, shared living, MTR,
+or all three.** She does not dump a wall of numbers at an address — especially not read
+aloud.
+
+That is not interface polish. These are three different businesses in the same building,
+and they do not share a data source or a number.
+
+### STR — nightly
+
+Hotel occupancy and hotel ADR as the 80%, aggregators as the 20%.
+`public.ayp_deal_score(research_id)`.
+
+### MTR — monthly furnished, 30+ days
+
+Rate comps from Furnished Finder.
+
+**In Virginia and Massachusetts a stay of 30+ days falls outside the lodging tax
+entirely.** So MTR can beat STR on net while losing on gross. Always compare net in those
+markets.
+
+### Shared living — per room, in a house the operator controls
+
+`public.ayp_shared_living_projection(research_id, rooms)`.
+
+Priced **monthly or weekly, never nightly**. Not by the bed — per-bed is a sober-living
+model and is not what rental arbitrage acquisition does.
+
+Four tiers: **budget, median, average, luxury.** The spread is the point. It shows an
+operator what a room earns depending on how much they put into setting it up, which is
+the actual decision they are making. A five-room Houston house at test rates grossed
+$3,250 budget against $5,750 luxury — a $2,500 monthly swing on furnishing effort alone.
+
+**Weekly quotes convert at 52/12, not times four.** Four weeks a month undercounts by
+about 8% and would understate every weekly market by roughly a month's rent a year.
+
+### Room rate sources
+
+PadSplit is the closest public comp — individual rooms in a house, priced weekly.
+Furnished Finder covers the monthly and upper end. The budget tier lives on Marketplace,
+Craigslist and SpareRoom, which are not citable as a single URL, so an acquisition
+manager records the observed range and the date. Judgement recorded honestly beats a
+scraped number that looks precise and is not.
+
+### Same refusal rule
+
+Each projection refuses independently and names what is missing. A market with hotel data
+but no room comps can produce an STR score and no shared-living projection, and it says
+so rather than borrowing one number for the other.
