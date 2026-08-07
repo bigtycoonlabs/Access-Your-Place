@@ -660,9 +660,10 @@ Deno.serve(async (req) => {
           method: 'PATCH',
           headers,
           body: JSON.stringify({
-            account_locked: false,
-            failed_login_attempts: 0,
-            lockout_until: null,
+            // investors has NO account_locked / failed_login_attempts / lockout_until.
+            // Writing them failed the entire PATCH, so support could never actually
+            // restore a client's access. is_active is the real switch.
+            is_active: true,
             updated_at: new Date().toISOString()
           })
         }

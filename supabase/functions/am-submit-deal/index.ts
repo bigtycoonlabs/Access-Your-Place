@@ -490,7 +490,7 @@ Deno.serve(async (req) => {
         body: JSON.stringify({
           deal_status: 'am_approved', status: 'new', workflow_stage: 'new',
           workflow_stage_entered_at: new Date().toISOString(),
-          verification_status: 'verified', staff_verified: true, is_verified: true,
+          staff_verified: true, is_verified: true, verified_at: new Date().toISOString(),
           approved_by_staff_id: approved_by_staff_id || null,
           approved_by_staff_name: approved_by_name || 'Success Team',
           approved_at: new Date().toISOString(),

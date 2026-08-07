@@ -163,8 +163,11 @@ serve(async (req) => {
         headers,
         body: JSON.stringify({
           is_active: false,
-          deactivated_by,
-          deactivated_at: new Date().toISOString(),
+          // deactivated_by / deactivated_at do NOT exist on staff_users. Including them
+          // failed the whole PATCH, so is_active never became false and deactivating a
+          // staff member silently left their access intact.
+          session_token: null,
+          session_expires: null,
           updated_at: new Date().toISOString()
         })
       })
