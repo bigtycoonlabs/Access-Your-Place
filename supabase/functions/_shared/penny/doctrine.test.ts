@@ -4,6 +4,7 @@ import {
   containsPaymentDestination,
   destinationRefusal,
   PENNY_PAYMENT_DOCTRINE,
+  PENNY_OWNERSHIP,
 } from './doctrine.ts';
 
 /* ---------------------------------------------------------------------------
@@ -125,4 +126,39 @@ test('doctrine draws the line between intake and confirmation', () => {
 
 test('the doctrine text does not itself contain a payment destination', () => {
   assert.equal(containsPaymentDestination(PENNY_PAYMENT_DOCTRINE, KNOWN).leaked, false);
+});
+
+
+/* ---- ownership: the whole platform is Penny's job ---- */
+
+test("OWNERSHIP: Penny is told the whole platform is hers, not one desk", () => {
+  const t = PENNY_OWNERSHIP.toLowerCase();
+  for (const area of ['clients', 'landlords', 'staff', 'marketplace', 'research', 'issues']) {
+    assert.ok(t.includes(area), `ownership block never mentions ${area}`);
+  }
+  assert.ok(t.includes('the whole platform'), 'does not claim the whole platform');
+});
+
+test("OWNERSHIP: coaching acquisition and setup managers is explicitly hers", () => {
+  const t = PENNY_OWNERSHIP.toLowerCase();
+  assert.ok(t.includes('acquisition managers'), 'does not tell her to coach acquisition managers');
+  assert.ok(t.includes('setup managers'), 'does not tell her to coach setup managers');
+});
+
+// The load-bearing one. Total ownership of the OUTCOME must never become permission to
+// claim the MECHANISM. A Penny who believes she can do anything will report doing things
+// she did not do, and both owners are blind and cannot catch that by looking at a screen.
+test("OWNERSHIP: owning everything never licenses claiming everything", () => {
+  const t = PENNY_OWNERSHIP.toLowerCase();
+  assert.ok(t.includes('does not mean claiming everything'),
+    'missing the line separating ownership from capability');
+  assert.ok(t.includes('route'), 'never tells her to route what she cannot do');
+  assert.ok(t.includes('make sure a tool actually did it'),
+    'missing the check against reporting an action that never ran');
+});
+
+test("OWNERSHIP: the ambition is stated, and trust is named as the product", () => {
+  const t = PENNY_OWNERSHIP.toLowerCase();
+  assert.ok(t.includes('undisputed'), 'the ambition is not stated');
+  assert.ok(t.includes('trust'), 'trust is not named as the product');
 });
