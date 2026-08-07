@@ -138,7 +138,42 @@ Deno.serve(async (req) => {
             });
             if (error) throw error;
             if (!data?.success) throw new Error(data?.error || 'No success flag in scoring response');
-            // Update penny_scored_at on properties row
+
+            // GUARD: never publish a score that has no research behind it.
+            //
+            // 42 of the 43 rows in penny_deal_scores were produced without a single one
+            // of the inputs the acquisition managers' method depends on -- no hotel
+            // occupancy, no hotel ADR, no regulation check, no competition analysis -- and
+            // scored HIGHER and with MORE confidence than the one deal where the work was
+            // actually done. All 21 live properties carried one, and they render to
+            // investors in five places.
+            //
+            // Those were suppressed in migration suppress_unresearched_penny_scores, which
+            // also nulled penny_scored_at. This job selects on penny_scored_at IS NULL, so
+            // without this guard the next manual run would refill every one of them.
+            //
+            // A score is only written if the scorer reports the raw-market research that
+            // makes it defensible. Otherwise the timestamp advances (so the property is
+            // not rescanned forever) and the score stays empty. Penny saying "we have not
+            // scored this one yet" is true; a confident number from nothing is not, and
+            // this company's clients buy because they trust the data.
+            const researched =
+              data.sop_hotel_occupancy_checked === true &&
+              data.sop_hotel_adr_checked === true &&
+              data.sop_travel_trends_checked === true &&
+              data.sop_seasonality_checked === true &&
+              data.sop_regulation_checked === true &&
+              data.sop_competition_checked === true;
+
+            if (!researched) {
+              console.warn('nightly-penny-score-refresh score_withheld_no_research', JSON.stringify({ property_id: prop.id }));
+              await supabase
+                .from('properties')
+                .update({ penny_scored_at: new Date().toISOString() })
+                .eq('id', prop.id);
+              return { success: true, propertyId: prop.id, withheld: true };
+            }
+
             await supabase
               .from('properties')
               .update({
