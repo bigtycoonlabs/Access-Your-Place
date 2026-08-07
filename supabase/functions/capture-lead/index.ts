@@ -38,13 +38,18 @@ const json = (body: unknown, status = 200) =>
 const SUCCESS_INBOX = 'success@accessyourplace.com';
 
 // The three doors. Anything else is rejected rather than silently stored as junk.
-const KINDS = new Set(['need_property', 'have_property', 'live_operation_help', 'sell_operation']);
+// verify_scan: someone ran a Penny scan on an address and wants a human to verify it.
+// A scan is honest work but nobody has spoken to the landlord yet, and the free
+// verification call is how a scan becomes an Access Your Place verified deal. It is also
+// the warmest lead the platform produces -- they have already found a property they like.
+const KINDS = new Set(['need_property', 'have_property', 'live_operation_help', 'sell_operation', 'verify_scan']);
 
 const LABELS: Record<string, string> = {
   need_property: 'Client looking for a property',
   have_property: 'Landlord with a property',
   live_operation_help: 'LIVE OPERATION — needs help now',
   sell_operation: 'Wants to sell an existing operation',
+  verify_scan: 'Wants an acquisition manager to verify a Penny scan',
 };
 
 Deno.serve(async (req) => {
@@ -216,6 +221,15 @@ Deno.serve(async (req) => {
             '', 'https://accessyourplace.com/investor/login', '',
             "If you can't remember your password, use the Forgot Password link on that page and it will email you a reset straight away.",
             '', "I've passed what you sent to the team as well, so nothing is waiting on you.",
+          ];
+        } else if (kind === 'verify_scan') {
+          subject = 'Booking your verification call';
+          lines = [
+            `Hi ${first},`, '',
+            'Thanks for asking us to take a proper look at that property.',
+            '',
+            "Penny's scan is real research — hotel occupancy, lodging tax collections, travel demand, seasonality and local regulation, cross-referenced against the aggregators. What it cannot do is pick up the phone. On the call an acquisition manager walks the numbers with you and, if it holds up, speaks to the landlord directly.",
+            '', 'There is no charge for this and no obligation. Someone will be in touch to arrange a time.',
           ];
         } else if (isLandlord) {
           subject = 'Getting your property in front of our operators';

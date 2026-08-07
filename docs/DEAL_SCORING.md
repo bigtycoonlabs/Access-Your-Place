@@ -120,3 +120,49 @@ human rubber-stamps six numbers they actually checked two of.
 - A regulation status outside allowed / restricted / prohibited / unclear is refused.
 - **A partly-confirmed deal still refuses to score, and lists what remains** — even when
   Penny has already drafted those fields.
+
+---
+
+## Approved sources only
+
+Penny may cite from `research_sources` and nowhere else.
+
+The alternative — letting her search broadly and cite whatever she finds — is faster to
+set up and much easier to fool. This tool is free to the public AND the thing the
+acquisition team relies on, so one fabricated citation in front of a client costs more
+than the extra market coverage is worth.
+
+Where a market has no approved source for a field, Penny leaves it empty and says so.
+Same rule the scorer enforces: name the gap, do not fill it.
+
+Seeded national sources, all free:
+
+- Local lodging / tourist development tax collections (government open data)
+- Convention and visitor bureau monthly lodging reports (occupancy and ADR)
+- Airport passenger statistics (travel demand)
+- City or county zoning code and STR ordinance (regulation — always primary, never a
+  secondary summary)
+- City of Austin hotel occupancy tax open data
+
+Adding a market means adding its sources. That is deliberate friction.
+
+## Telling users what a scan is
+
+`public.ayp_scan_disclosure(tier)` returns the wording. One function, used on every
+surface, so the language cannot drift until one screen overclaims.
+
+For a **Penny scan** it says the numbers come from real market research, and that what
+has not happened is the human step — nobody has spoken to the landlord yet — and that an
+acquisition manager will do that on a **free call** if they want it.
+
+The tone is deliberate. A scan is real work and it is free; the disclosure is not an
+apology for Penny. It tells the user what they have, what they do not have yet, and that
+the missing part is available at no cost.
+
+For an **ayp_verified** deal it says we have spoken to the landlord, validated the
+numbers, and terms are pre-negotiated. No call is offered because the work is done.
+
+## The verification call is a lead
+
+`capture-lead` accepts `verify_scan`. It is the warmest lead the platform produces —
+the person has already found a property they like and is asking for a human.
