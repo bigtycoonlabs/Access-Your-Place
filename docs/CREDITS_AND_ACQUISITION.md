@@ -41,26 +41,43 @@ When a client wants AYP to negotiate on their behalf, they pay the remaining **$
 Pricing lives in `ayp_pricing` rather than in code, so a rate change is a row and not a
 deploy.
 
-## OPEN QUESTION — not built, deliberately
+## The two payments, settled
 
-There is one ambiguity in the spec and it concerns money, so it has not been guessed at.
+**First $1,250 — funding.** The minimum to start with Access Your Place. It buys up to 20
+property releases, each opening full detail AND the landlord's contact.
 
-The owner said both of these:
+It does two things beyond paying for releases, and both are the point:
 
-1. "Only if the user wants full details and contact details for the landlord should the
-   property be released and their credit amount updated."
-2. "When they confirm that they would like contact details to make outreach... they will
-   need to pay the remainder $1,250."
+- It verifies the person actually has capital for an opportunity, before our time goes
+  into them.
+- The remaining balance is what keeps a client engaged — they either want to finish it out,
+  or they come back when a negotiation stalls.
 
-These can be read two ways:
+**A self-negotiating client needs nothing more.** Twenty addresses, contacts included, and
+they can approach every landlord themselves.
 
-- **(a)** A release burns one of the 20 AND shows contact details. The second $1,250 is
-  only for AYP negotiating on their behalf.
-- **(b)** A release burns one of the 20 and shows full detail, but contact details are a
-  separate gate that costs the second $1,250 whether or not AYP negotiates.
+**Second $1,250 — negotiation, and only after it worked.** Due when an acquisition manager
+has actually negotiated, we have verified the landlord is willing to sign a corporate
+lease, and the client wants our team to finalise paperwork and get them keys. Especially on
+a master lease.
 
-The difference decides whether a funded client can contact landlords themselves for
-$1,250 or $2,500. That is the client's core economics, and getting it wrong either
-undercharges every self-negotiating client or overcharges them.
+$2,500 total.
 
-**Answer needed before the release flow is built.**
+**The timing is enforced, not incidental.** It becomes due AFTER the AM succeeded, never
+before. Charging it up front would be selling an outcome we have not delivered, and this
+company's whole position is that it does not do that.
+
+## Implemented
+
+- `ayp_forge_status(investor_id)` — funded or not, releases used, releases left, in words.
+- `ayp_release_property(investor_id, property_id, staff_id, idempotency_key)` — opens full
+  detail and landlord contact, burns one release.
+
+Verified by calling:
+
+- An unfunded client is refused, and told searching stays free until they fund.
+- A funded client releases, sees the landlord contact, and is told 19 remain and that they
+  can negotiate it themselves at no further cost.
+- **Releasing the same property twice does NOT burn a second release.** Still 1 used, 19
+  left. Charging twice for the same address would be theft by bookkeeping.
+- All test data removed and funding restored to 0.
