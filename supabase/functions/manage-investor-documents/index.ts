@@ -146,7 +146,7 @@ Deno.serve(async (req) => {
       if (!targetPath && params.document_id) {
         try {
           const docRes = await fetch(
-            `${SUPABASE_URL}/rest/v1/investor_documents?id=eq.${params.document_id}&select=file_path,document_url`,
+            `${SUPABASE_URL}/rest/v1/investor_documents?id=eq.${params.document_id}&select=file_path`,
             { headers: getH }
           );
           if (docRes.ok) {

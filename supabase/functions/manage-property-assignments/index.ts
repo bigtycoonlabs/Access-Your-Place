@@ -255,7 +255,7 @@ Deno.serve(async (req) => {
           // Try staff_members
           if (!amEmail) {
             try {
-              const r = await fetch(`${supabaseUrl}/rest/v1/staff_members?id=eq.${investor.assigned_acquisition_manager_id}&select=id,full_name,email`, { headers: getHeaders });
+              const r = await fetch(`${supabaseUrl}/rest/v1/staff_members?id=eq.${investor.assigned_acquisition_manager_id}&select=id,name,email`, { headers: getHeaders });
               if (r.ok) { const d = await r.json(); const am = Array.isArray(d) ? d[0] : d; if (am?.email) { amEmail = am.email; amName = am.full_name || amName; } }
             } catch {}
           }

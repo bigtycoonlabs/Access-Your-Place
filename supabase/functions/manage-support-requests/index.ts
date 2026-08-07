@@ -75,7 +75,7 @@ Deno.serve(async (req) => {
         try {
           if (req.investor_id) {
             const invRes = await fetch(
-              `${SUPABASE_URL}/rest/v1/investors?id=eq.${req.investor_id}&select=id,full_name,email,phone,status,email_verified,account_locked,failed_login_attempts`,
+              `${SUPABASE_URL}/rest/v1/investors?id=eq.${req.investor_id}&select=id,full_name,email,phone,status,email_verified`,
               { headers }
             );
             const investors = await invRes.json();
@@ -138,7 +138,7 @@ Deno.serve(async (req) => {
       if (!request.investor && request.email) {
         try {
           const invRes = await fetch(
-            `${SUPABASE_URL}/rest/v1/investors?email=eq.${encodeURIComponent(request.email.toLowerCase())}&select=id,full_name,email,phone,status,email_verified,account_locked,failed_login_attempts`,
+            `${SUPABASE_URL}/rest/v1/investors?email=eq.${encodeURIComponent(request.email.toLowerCase())}&select=id,full_name,email,phone,status,email_verified`,
             { headers }
           );
           const investors = await invRes.json();
@@ -644,7 +644,7 @@ Deno.serve(async (req) => {
       const { request_id, email, staff_id, staff_name } = body;
       
       const invRes = await fetch(
-        `${SUPABASE_URL}/rest/v1/investors?email=eq.${encodeURIComponent(email.toLowerCase())}&select=id,full_name,email,account_locked,failed_login_attempts`,
+        `${SUPABASE_URL}/rest/v1/investors?email=eq.${encodeURIComponent(email.toLowerCase())}&select=id,full_name,email`,
         { headers }
       );
       const investors = await invRes.json();
@@ -762,7 +762,7 @@ Deno.serve(async (req) => {
       const { email } = body;
       
       const invRes = await fetch(
-        `${SUPABASE_URL}/rest/v1/investors?email=eq.${encodeURIComponent(email.toLowerCase())}&select=id,full_name,email,phone,status,email_verified,account_locked,failed_login_attempts,created_at,last_login`,
+        `${SUPABASE_URL}/rest/v1/investors?email=eq.${encodeURIComponent(email.toLowerCase())}&select=id,full_name,email,phone,status,email_verified,created_at,last_login`,
         { headers }
       );
       const investors = await invRes.json();
