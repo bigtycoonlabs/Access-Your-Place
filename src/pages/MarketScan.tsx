@@ -2,7 +2,12 @@ import { useState } from 'react';
 import { supabase } from '@/lib/supabase';
 
 /**
- * /property-forge — free market research, open to anyone.
+ * /market-scan — free market research, open to anyone.
+ *
+ * NAMING: this is NOT Property Forge. Property Forge / LeadForge is the owner's existing
+ * lead-generation system (StaffLeadForge, InvestorLeadForge, admin/LeadForge, the
+ * leadforge and apollo-leadforge functions) where an operator sources their own deals.
+ * This page is the market research scan and is named for what it is.
  *
  * The flow is deliberately two steps, because Penny asks before she answers:
  *
@@ -21,7 +26,7 @@ import { supabase } from '@/lib/supabase';
 
 type Choice = { value: string; label: string; blurb: string };
 
-export default function PropertyForge() {
+export default function MarketScan() {
   const [city, setCity] = useState('');
   const [state, setState] = useState('');
   const [rooms, setRooms] = useState('');
@@ -93,7 +98,7 @@ export default function PropertyForge() {
         body: {
           kind: 'verify_scan', name, email, phone, city,
           message: `Asked for verification of a ${scan || 'market'} scan in ${city}, ${state}.`,
-          source: 'property_forge',
+          source: 'market_scan',
         },
       });
       if (err) { setCallError(await readErr(err, 'Could not send that just now. Email success@accessyourplace.com.')); return; }
@@ -167,7 +172,7 @@ export default function PropertyForge() {
   return (
     <main className="min-h-screen bg-slate-50 px-4 py-10">
       <div className="mx-auto max-w-2xl">
-        <h1 className="text-2xl font-semibold text-slate-900">Property Forge</h1>
+        <h1 className="text-2xl font-semibold text-slate-900">Market scan</h1>
         <p className="mt-2 text-slate-700">
           Free market research. Tell us where you are looking and Penny will run the numbers
           on real market data — hotel occupancy, lodging tax collections, travel demand,
