@@ -670,8 +670,8 @@ export function PaymentHistory({ investorId }: Props) {
           </DialogHeader>
           <form onSubmit={(e) => { e.preventDefault(); submitCreditRequest(); }} className="space-y-4">
             <div>
-              <Label>Estimated Credit Amount ($)</Label>
-              <Input
+              <Label htmlFor="estimated-credit-amount">Estimated Credit Amount ($)</Label>
+              <Input id="estimated-credit-amount"
                 type="number"
                 min="0"
                 value={requestForm.amount}
@@ -681,16 +681,16 @@ export function PaymentHistory({ investorId }: Props) {
               <p className="text-xs text-gray-500 mt-1">Leave blank if unsure</p>
             </div>
             <div>
-              <Label>Related Property Address</Label>
-              <Input
+              <Label htmlFor="related-property-address">Related Property Address</Label>
+              <Input id="related-property-address"
                 value={requestForm.property_address}
                 onChange={(e) => setRequestForm({ ...requestForm, property_address: e.target.value })}
                 placeholder="123 Main St, City, State"
               />
             </div>
             <div>
-              <Label>Reason for Credit *</Label>
-              <Textarea
+              <Label htmlFor="reason-for-credit">Reason for Credit *</Label>
+              <Textarea id="reason-for-credit"
                 value={requestForm.reason}
                 onChange={(e) => setRequestForm({ ...requestForm, reason: e.target.value })}
                 placeholder="Explain why you believe you have a credit..."
@@ -699,8 +699,8 @@ export function PaymentHistory({ investorId }: Props) {
               />
             </div>
             <div>
-              <Label>Additional Details</Label>
-              <Textarea
+              <Label htmlFor="additional-details">Additional Details</Label>
+              <Textarea id="additional-details"
                 value={requestForm.details}
                 onChange={(e) => setRequestForm({ ...requestForm, details: e.target.value })}
                 placeholder="Reference numbers, dates, etc..."

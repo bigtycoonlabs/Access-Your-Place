@@ -794,10 +794,10 @@ export function ExpenseTracker({ investorId, properties }: Props) {
               </div>
               
               <div>
-                <Label>Amount *</Label>
+                <Label htmlFor="amount">Amount *</Label>
                 <div className="relative">
                   <DollarSign className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400" />
-                  <Input 
+                  <Input id="amount" 
                     type="number" 
                     step="0.01" 
                     min="0" 
@@ -813,8 +813,8 @@ export function ExpenseTracker({ investorId, properties }: Props) {
             
             <div className="grid grid-cols-2 gap-4">
               <div>
-                <Label>Date</Label>
-                <Input 
+                <Label htmlFor="date">Date</Label>
+                <Input id="date" 
                   type="date" 
                   value={formData.expense_date} 
                   onChange={(e) => setFormData({ ...formData, expense_date: e.target.value })} 
@@ -822,8 +822,8 @@ export function ExpenseTracker({ investorId, properties }: Props) {
               </div>
               
               <div>
-                <Label>Vendor</Label>
-                <Input 
+                <Label htmlFor="vendor">Vendor</Label>
+                <Input id="vendor" 
                   placeholder="e.g., Home Depot"
                   value={formData.vendor} 
                   onChange={(e) => setFormData({ ...formData, vendor: e.target.value })} 
@@ -832,8 +832,8 @@ export function ExpenseTracker({ investorId, properties }: Props) {
             </div>
             
             <div>
-              <Label>Description</Label>
-              <Input 
+              <Label htmlFor="description">Description</Label>
+              <Input id="description" 
                 placeholder="Brief description of expense"
                 value={formData.description} 
                 onChange={(e) => setFormData({ ...formData, description: e.target.value })} 
@@ -870,8 +870,8 @@ export function ExpenseTracker({ investorId, properties }: Props) {
             )}
             
             <div>
-              <Label>Receipt</Label>
-              <input 
+              <Label htmlFor="receipt">Receipt</Label>
+              <input id="receipt" 
                 ref={fileInputRef}
                 type="file" 
                 accept="image/*,.pdf" 
@@ -895,8 +895,8 @@ export function ExpenseTracker({ investorId, properties }: Props) {
             </div>
             
             <div>
-              <Label>Notes</Label>
-              <Textarea 
+              <Label htmlFor="notes">Notes</Label>
+              <Textarea id="notes" 
                 placeholder="Additional notes..."
                 value={formData.notes} 
                 onChange={(e) => setFormData({ ...formData, notes: e.target.value })}

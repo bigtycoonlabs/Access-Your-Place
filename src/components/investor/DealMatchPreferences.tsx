@@ -375,8 +375,8 @@ export function DealMatchPreferences({ investorId }: Props) {
             <CardContent>
               <div className="grid md:grid-cols-2 gap-4">
                 <div>
-                  <Label>Minimum Budget</Label>
-                  <Input
+                  <Label htmlFor="minimum-budget">Minimum Budget</Label>
+                  <Input id="minimum-budget"
                     type="number"
                     value={currentPreference.min_budget || ''}
                     onChange={(e) => setCurrentPreference({ 
@@ -388,8 +388,8 @@ export function DealMatchPreferences({ investorId }: Props) {
                   />
                 </div>
                 <div>
-                  <Label>Maximum Budget</Label>
-                  <Input
+                  <Label htmlFor="maximum-budget">Maximum Budget</Label>
+                  <Input id="maximum-budget"
                     type="number"
                     value={currentPreference.max_budget || ''}
                     onChange={(e) => setCurrentPreference({ 

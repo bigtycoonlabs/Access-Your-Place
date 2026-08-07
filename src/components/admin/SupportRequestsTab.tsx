@@ -532,7 +532,7 @@ export function SupportRequestsTab({ staffId, staffName }: SupportRequestsTabPro
             <div className="flex items-center gap-2">
               <div className="relative">
                 <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400" />
-                <Input
+                <Input aria-label="Search by email or name"
                   placeholder="Search by email or name..."
                   value={searchQuery}
                   onChange={(e) => setSearchQuery(e.target.value)}
@@ -800,8 +800,8 @@ export function SupportRequestsTab({ staffId, staffName }: SupportRequestsTabPro
                     </Label>
                     <div className="space-y-3">
                       <div>
-                        <Label className="text-xs text-gray-600">Subject (optional)</Label>
-                        <Input
+                        <Label className="text-xs text-gray-600" htmlFor="subject-optional">Subject (optional)</Label>
+                        <Input id="subject-optional"
                           placeholder="Re: Your Support Request - Access Your Place"
                           value={replySubject}
                           onChange={(e) => setReplySubject(e.target.value)}
@@ -809,8 +809,8 @@ export function SupportRequestsTab({ staffId, staffName }: SupportRequestsTabPro
                         />
                       </div>
                       <div>
-                        <Label className="text-xs text-gray-600">Message</Label>
-                        <Textarea
+                        <Label className="text-xs text-gray-600" htmlFor="message">Message</Label>
+                        <Textarea id="message"
                           placeholder="Type your reply to the investor... This will be sent as an email."
                           value={replyMessage}
                           onChange={(e) => setReplyMessage(e.target.value)}
@@ -891,9 +891,9 @@ export function SupportRequestsTab({ staffId, staffName }: SupportRequestsTabPro
                 {/* Add Internal Note */}
                 {selectedRequest.status !== 'resolved' && (
                   <div className="border rounded-lg p-4">
-                    <Label className="text-xs text-gray-500 mb-2 block">Add Internal Note</Label>
+                    <Label className="text-xs text-gray-500 mb-2 block" htmlFor="add-internal-note">Add Internal Note</Label>
                     <div className="flex gap-2">
-                      <Textarea
+                      <Textarea id="add-internal-note"
                         placeholder="Add an internal note (not visible to investor)..."
                         value={newNote}
                         onChange={(e) => setNewNote(e.target.value)}
@@ -958,7 +958,7 @@ export function SupportRequestsTab({ staffId, staffName }: SupportRequestsTabPro
             </AlertDialogDescription>
           </AlertDialogHeader>
           <div className="py-4">
-            <Textarea
+            <Textarea aria-label="Resolution notes (optional)"
               placeholder="Resolution notes (optional)..."
               value={resolutionNotes}
               onChange={(e) => setResolutionNotes(e.target.value)}

@@ -397,7 +397,7 @@ function DocumentUploadPanel({ staffId, staffName }: { staffId: string; staffNam
               <div className="relative">
                 <div className="relative">
                   <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400" />
-                  <Input
+                  <Input aria-label="Search by investor name or email"
                     placeholder="Search by investor name or email..."
                     value={investorSearch}
                     onChange={(e) => handleSearchInvestors(e.target.value)}
@@ -442,8 +442,8 @@ function DocumentUploadPanel({ staffId, staffName }: { staffId: string; staffNam
 
           {/* Document Name */}
           <div>
-            <Label>Document Name *</Label>
-            <Input
+            <Label htmlFor="document-name">Document Name *</Label>
+            <Input id="document-name"
               value={docName}
               onChange={(e) => setDocName(e.target.value)}
               placeholder="e.g., Acquisition Agreement Template, Lease Addendum..."
@@ -482,8 +482,8 @@ function DocumentUploadPanel({ staffId, staffName }: { staffId: string; staffNam
               )}
             </div>
             <div>
-              <Label>File *</Label>
-              <Input
+              <Label htmlFor="file">File *</Label>
+              <Input id="file"
                 ref={fileInputRef}
                 type="file"
                 accept=".pdf,.doc,.docx,.xlsx,.xls,.csv,.txt,.png,.jpg,.jpeg"

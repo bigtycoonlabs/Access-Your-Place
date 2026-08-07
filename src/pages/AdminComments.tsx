@@ -78,7 +78,7 @@ export default function AdminComments() {
       <div className="min-h-screen flex items-center justify-center bg-gray-50">
         <Card className="p-8 w-96">
           <h1 className="text-2xl font-bold mb-4">Admin Login</h1>
-          <Input
+          <Input aria-label="Enter admin password"
             type="password"
             placeholder="Enter admin password"
             value={password}

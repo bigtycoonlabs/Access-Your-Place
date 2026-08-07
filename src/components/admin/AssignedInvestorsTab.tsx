@@ -381,7 +381,7 @@ export function AssignedInvestorsTab({ staffId, staffName }: Props) {
           <div className="flex flex-col md:flex-row gap-4 mb-6">
             <div className="relative flex-1">
               <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400" />
-              <Input
+              <Input aria-label="Search by name or email"
                 placeholder="Search by name or email..."
                 value={searchTerm}
                 onChange={(e) => setSearchTerm(e.target.value)}
@@ -546,7 +546,7 @@ export function AssignedInvestorsTab({ staffId, staffName }: Props) {
           <div className="space-y-4 py-4">
             <div>
               <label className="text-sm font-medium">Subject</label>
-              <Input
+              <Input aria-label="Message subject"
                 placeholder="Message subject..."
                 value={messageSubject}
                 onChange={(e) => setMessageSubject(e.target.value)}
@@ -555,7 +555,7 @@ export function AssignedInvestorsTab({ staffId, staffName }: Props) {
             </div>
             <div>
               <label className="text-sm font-medium">Message</label>
-              <Textarea
+              <Textarea aria-label="Type your message"
                 placeholder="Type your message..."
                 value={messageText}
                 onChange={(e) => setMessageText(e.target.value)}

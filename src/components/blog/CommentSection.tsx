@@ -132,10 +132,10 @@ function CommentForm({ articleSlug, parentId, onSuccess, toast }: any) {
   return (
     <form onSubmit={handleSubmit} className="space-y-4">
       <div className="grid grid-cols-2 gap-4">
-        <Input placeholder="Your Name" value={name} onChange={(e) => setName(e.target.value)} />
-        <Input type="email" placeholder="Your Email" value={email} onChange={(e) => setEmail(e.target.value)} />
+        <Input aria-label="Your Name" placeholder="Your Name" value={name} onChange={(e) => setName(e.target.value)} />
+        <Input aria-label="Your Email" type="email" placeholder="Your Email" value={email} onChange={(e) => setEmail(e.target.value)} />
       </div>
-      <Textarea placeholder="Your comment..." value={text} onChange={(e) => setText(e.target.value)} rows={4} />
+      <Textarea aria-label="Your comment" placeholder="Your comment..." value={text} onChange={(e) => setText(e.target.value)} rows={4} />
       <Button type="submit" disabled={submitting}>{submitting ? 'Submitting...' : parentId ? 'Post Reply' : 'Post Comment'}</Button>
     </form>
   );

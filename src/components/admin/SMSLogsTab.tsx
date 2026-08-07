@@ -266,7 +266,7 @@ export function SMSLogsTab() {
             <div className="flex-1 min-w-[200px]">
               <div className="relative">
                 <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400" aria-hidden="true" />
-                <Input
+                <Input aria-label="Search by phone, name, or message"
                   placeholder="Search by phone, name, or message..."
                   value={searchQuery}
                   onChange={(e) => setSearchQuery(e.target.value)}

@@ -379,7 +379,7 @@ export function AcquisitionManagerSection({ investorId, investorName, investorEm
                       Already working with an acquisition manager?
                     </p>
                     <div className="mt-2">
-                      <label className="flex items-center gap-2 cursor-pointer">
+                      <label className="flex items-center gap-2 cursor-pointer" htmlFor="yes-i-ve-been-working-with-someone">
                         <input
                           type="checkbox"
                           checked={hasExistingAM}
@@ -391,7 +391,7 @@ export function AcquisitionManagerSection({ investorId, investorName, investorEm
                         </span>
                       </label>
                       {hasExistingAM && (
-                        <Input
+                        <Input id="yes-i-ve-been-working-with-someone"
                           value={existingAMName}
                           onChange={(e) => setExistingAMName(e.target.value)}
                           placeholder="Enter their first and last name"

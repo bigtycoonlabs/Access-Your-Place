@@ -2304,7 +2304,7 @@ Create your free account: [Link]
             
             {!saveAsPending && (
               <Select value={bulkChannel} onValueChange={(v: 'sms' | 'email' | 'both') => setBulkChannel(v)}>
-                <SelectTrigger className="w-[200px]">
+                <SelectTrigger id="tag-color" className="w-[200px]">
                   <SelectValue />
                 </SelectTrigger>
                 <SelectContent>

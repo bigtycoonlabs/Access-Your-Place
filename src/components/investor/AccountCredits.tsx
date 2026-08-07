@@ -666,21 +666,21 @@ export function AccountCredits({ investorId, investorEmail, onFundingComplete }:
           </DialogHeader>
           <form onSubmit={(e) => { e.preventDefault(); submitCreditRequest(); }} className="space-y-4">
             <div>
-              <Label>Estimated Credit Amount ($)</Label>
-              <Input type="number" min="0" value={creditRequestForm.amount} onChange={(e) => setCreditRequestForm({ ...creditRequestForm, amount: e.target.value })} placeholder="499" />
+              <Label htmlFor="estimated-credit-amount">Estimated Credit Amount ($)</Label>
+              <Input id="estimated-credit-amount" type="number" min="0" value={creditRequestForm.amount} onChange={(e) => setCreditRequestForm({ ...creditRequestForm, amount: e.target.value })} placeholder="499" />
               <p className="text-xs text-gray-500 mt-1">Leave blank if unsure</p>
             </div>
             <div>
-              <Label>Related Property Address (if applicable)</Label>
-              <Input value={creditRequestForm.property_address} onChange={(e) => setCreditRequestForm({ ...creditRequestForm, property_address: e.target.value })} placeholder="123 Main St, City, State" />
+              <Label htmlFor="related-property-address-if-applicable">Related Property Address (if applicable)</Label>
+              <Input id="related-property-address-if-applicable" value={creditRequestForm.property_address} onChange={(e) => setCreditRequestForm({ ...creditRequestForm, property_address: e.target.value })} placeholder="123 Main St, City, State" />
             </div>
             <div>
-              <Label>Reason for Credit *</Label>
-              <Textarea value={creditRequestForm.reason} onChange={(e) => setCreditRequestForm({ ...creditRequestForm, reason: e.target.value })} placeholder="e.g., I paid for a deal but the property fell through..." rows={3} required />
+              <Label htmlFor="reason-for-credit">Reason for Credit *</Label>
+              <Textarea id="reason-for-credit" value={creditRequestForm.reason} onChange={(e) => setCreditRequestForm({ ...creditRequestForm, reason: e.target.value })} placeholder="e.g., I paid for a deal but the property fell through..." rows={3} required />
             </div>
             <div>
-              <Label>Additional Details</Label>
-              <Textarea value={creditRequestForm.details} onChange={(e) => setCreditRequestForm({ ...creditRequestForm, details: e.target.value })} placeholder="Any reference numbers, dates, or other information..." rows={2} />
+              <Label htmlFor="additional-details">Additional Details</Label>
+              <Textarea id="additional-details" value={creditRequestForm.details} onChange={(e) => setCreditRequestForm({ ...creditRequestForm, details: e.target.value })} placeholder="Any reference numbers, dates, or other information..." rows={2} />
             </div>
             <DialogFooter>
               <Button type="button" variant="outline" onClick={() => setShowCreditRequestModal(false)}>Cancel</Button>

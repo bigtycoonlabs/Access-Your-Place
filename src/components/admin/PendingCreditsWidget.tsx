@@ -268,7 +268,7 @@ export function PendingCreditsWidget({ staffId, staffName }: Props) {
       {credits.length > 3 && (
         <div className="relative">
           <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400" />
-          <Input
+          <Input aria-label="Search by investor name, email, or property address"
             placeholder="Search by investor name, email, or property address..."
             value={searchQuery}
             onChange={(e) => setSearchQuery(e.target.value)}
@@ -402,8 +402,8 @@ export function PendingCreditsWidget({ staffId, staffName }: Props) {
                     <div className="mt-4 pt-4 border-t border-red-100 bg-red-50/50 -mx-5 -mb-5 p-5 rounded-b-lg">
                       <div className="space-y-3">
                         <div>
-                          <label className="text-sm font-medium text-red-800">Reason for Denial (optional)</label>
-                          <Textarea
+                          <label className="text-sm font-medium text-red-800" htmlFor="reason-for-denial-optional">Reason for Denial (optional)</label>
+                          <Textarea id="reason-for-denial-optional"
                             value={denyReason}
                             onChange={(e) => setDenyReason(e.target.value)}
                             placeholder="e.g., Lease agreements have been confirmed as received..."

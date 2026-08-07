@@ -202,12 +202,12 @@ export default function SetupCostCalculator({ onGetQuote }: CalculatorProps) {
             <div className="space-y-6">
               {/* Number of Properties */}
               <div>
-                <label className="flex items-center gap-2 text-sm font-semibold text-[#1a2332] mb-3">
+                <label className="flex items-center gap-2 text-sm font-semibold text-[#1a2332] mb-3" htmlFor="number-of-properties">
                   <Building size={18} className="text-[#d4a574]" />
                   Number of Properties
                 </label>
                 <div className="flex items-center gap-4">
-                  <input
+                  <input id="number-of-properties"
                     type="range"
                     min="1"
                     max="20"
@@ -304,11 +304,11 @@ export default function SetupCostCalculator({ onGetQuote }: CalculatorProps) {
 
               {/* Location */}
               <div>
-                <label className="flex items-center gap-2 text-sm font-semibold text-[#1a2332] mb-3">
+                <label className="flex items-center gap-2 text-sm font-semibold text-[#1a2332] mb-3" htmlFor="property-location">
                   <MapPin size={18} className="text-[#d4a574]" />
                   Property Location
                 </label>
-                <input
+                <input id="property-location"
                   type="text"
                   value={location}
                   onChange={(e) => setLocation(e.target.value)}

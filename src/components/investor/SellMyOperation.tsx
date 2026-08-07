@@ -1098,8 +1098,8 @@ export function SellMyOperation({ investorId, investorName }: Props) {
               <div className="border-t pt-4">
                 <h4 className="font-medium mb-3 flex items-center gap-2"><DollarSign className="w-4 h-4" /> Pricing</h4>
                 <div>
-                  <Label>Your Asking / Takeover Fee *</Label>
-                  <Input type="number" min="0" value={form.asking_price} onChange={(e) => setForm({ ...form, asking_price: e.target.value })} placeholder="e.g., 15000" />
+                  <Label htmlFor="your-asking-takeover-fee">Your Asking / Takeover Fee *</Label>
+                  <Input id="your-asking-takeover-fee" type="number" min="0" value={form.asking_price} onChange={(e) => setForm({ ...form, asking_price: e.target.value })} placeholder="e.g., 15000" />
                 </div>
                 {askingPrice > 0 && (
                   <div className="grid grid-cols-3 gap-3 mt-3">
@@ -1124,24 +1124,24 @@ export function SellMyOperation({ investorId, investorName }: Props) {
                 <h4 className="font-medium mb-3 flex items-center gap-2"><BarChart3 className="w-4 h-4" /> Financial Data</h4>
                 <div className="grid grid-cols-2 gap-3">
                   <div>
-                    <Label>Projected Monthly Revenue</Label>
-                    <Input type="number" min="0" value={form.projected_monthly_revenue} onChange={(e) => setForm({ ...form, projected_monthly_revenue: e.target.value })} placeholder="4500" />
+                    <Label htmlFor="projected-monthly-revenue">Projected Monthly Revenue</Label>
+                    <Input id="projected-monthly-revenue" type="number" min="0" value={form.projected_monthly_revenue} onChange={(e) => setForm({ ...form, projected_monthly_revenue: e.target.value })} placeholder="4500" />
                   </div>
                   <div>
-                    <Label>Average Daily Rate (ADR)</Label>
-                    <Input type="number" min="0" value={form.adr} onChange={(e) => setForm({ ...form, adr: e.target.value })} placeholder="150" />
+                    <Label htmlFor="average-daily-rate-adr">Average Daily Rate (ADR)</Label>
+                    <Input id="average-daily-rate-adr" type="number" min="0" value={form.adr} onChange={(e) => setForm({ ...form, adr: e.target.value })} placeholder="150" />
                   </div>
                   <div>
-                    <Label>Occupancy Rate (%)</Label>
-                    <Input type="number" min="0" max="100" value={form.occupancy_rate} onChange={(e) => setForm({ ...form, occupancy_rate: e.target.value })} placeholder="75" />
+                    <Label htmlFor="occupancy-rate">Occupancy Rate (%)</Label>
+                    <Input id="occupancy-rate" type="number" min="0" max="100" value={form.occupancy_rate} onChange={(e) => setForm({ ...form, occupancy_rate: e.target.value })} placeholder="75" />
                   </div>
                   <div>
-                    <Label>Monthly Rent</Label>
-                    <Input type="number" min="0" value={form.monthly_rent} onChange={(e) => setForm({ ...form, monthly_rent: e.target.value })} placeholder="2000" />
+                    <Label htmlFor="monthly-rent">Monthly Rent</Label>
+                    <Input id="monthly-rent" type="number" min="0" value={form.monthly_rent} onChange={(e) => setForm({ ...form, monthly_rent: e.target.value })} placeholder="2000" />
                   </div>
                   <div>
-                    <Label>Lease Months Remaining</Label>
-                    <Input type="number" min="0" value={form.lease_months_remaining} onChange={(e) => setForm({ ...form, lease_months_remaining: e.target.value })} placeholder="8" />
+                    <Label htmlFor="lease-months-remaining">Lease Months Remaining</Label>
+                    <Input id="lease-months-remaining" type="number" min="0" value={form.lease_months_remaining} onChange={(e) => setForm({ ...form, lease_months_remaining: e.target.value })} placeholder="8" />
                   </div>
                 </div>
               </div>
@@ -1151,8 +1151,8 @@ export function SellMyOperation({ investorId, investorName }: Props) {
                 <h4 className="font-medium mb-3 flex items-center gap-2"><ShieldCheck className="w-4 h-4" /> Verification Info</h4>
                 <div className="space-y-4">
                   <div>
-                    <Label className="flex items-center gap-2"><Package className="w-4 h-4" /> Inventory List of Furniture & Assets *</Label>
-                    <Textarea
+                    <Label className="flex items-center gap-2" htmlFor="inventory-list-of-furniture-assets"><Package className="w-4 h-4" /> Inventory List of Furniture & Assets *</Label>
+                    <Textarea id="inventory-list-of-furniture-assets"
                       value={form.inventory_list}
                       onChange={(e) => setForm({ ...form, inventory_list: e.target.value })}
                       placeholder={"List all furniture and assets included in the sale, e.g.:\n- Living room: Sofa, coffee table, TV stand, 55\" TV\n- Bedroom 1: Queen bed frame, mattress, dresser, nightstand\n- Kitchen: Dishes, cookware, utensils, coffee maker\n- Linens: 4 sets of sheets, towels, pillows"}
@@ -1160,8 +1160,8 @@ export function SellMyOperation({ investorId, investorName }: Props) {
                     />
                   </div>
                   <div>
-                    <Label className="flex items-center gap-2"><Video className="w-4 h-4" /> Video Walkthrough URL</Label>
-                    <Input
+                    <Label className="flex items-center gap-2" htmlFor="video-walkthrough-url"><Video className="w-4 h-4" /> Video Walkthrough URL</Label>
+                    <Input id="video-walkthrough-url"
                       value={form.video_walkthrough_url}
                       onChange={(e) => setForm({ ...form, video_walkthrough_url: e.target.value })}
                       placeholder="https://youtube.com/watch?v=... or Google Drive link"
@@ -1177,8 +1177,8 @@ export function SellMyOperation({ investorId, investorName }: Props) {
 
               {/* Description */}
               <div className="border-t pt-4">
-                <Label>Listing Description *</Label>
-                <Textarea
+                <Label htmlFor="listing-description">Listing Description *</Label>
+                <Textarea id="listing-description"
                   value={form.description}
                   onChange={(e) => setForm({ ...form, description: e.target.value })}
                   placeholder="Describe your operation, what makes it attractive, booking history highlights, neighborhood, etc."

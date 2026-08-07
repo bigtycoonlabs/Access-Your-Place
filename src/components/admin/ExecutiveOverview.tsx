@@ -590,12 +590,12 @@ export function ExecutiveOverview({ staffId, staffName, isAdmin = false }: Execu
           </DialogHeader>
           <div className="space-y-4">
             <div>
-              <Label>Client Name *</Label>
-              <Input value={formData.client_name} onChange={(e) => setFormData({ ...formData, client_name: e.target.value })} placeholder="Client full name" />
+              <Label htmlFor="client-name">Client Name *</Label>
+              <Input id="client-name" value={formData.client_name} onChange={(e) => setFormData({ ...formData, client_name: e.target.value })} placeholder="Client full name" />
             </div>
             <div>
-              <Label>Property Address</Label>
-              <Input value={formData.property_address} onChange={(e) => setFormData({ ...formData, property_address: e.target.value })} placeholder="Property address" />
+              <Label htmlFor="property-address">Property Address</Label>
+              <Input id="property-address" value={formData.property_address} onChange={(e) => setFormData({ ...formData, property_address: e.target.value })} placeholder="Property address" />
             </div>
             <div>
               <Label>Deal Type</Label>
@@ -631,24 +631,24 @@ export function ExecutiveOverview({ staffId, staffName, isAdmin = false }: Execu
             {formData.deal_type === 'acquisition' && (
               <div className="grid grid-cols-3 gap-4">
                 <div>
-                  <Label>Acquisition Fee</Label>
+                  <Label htmlFor="acquisition-fee">Acquisition Fee</Label>
                   <div className="relative">
                     <DollarSign className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400" />
-                    <Input type="number" step="0.01" className="pl-8" value={formData.acquisition_fee_total} onChange={(e) => setFormData({ ...formData, acquisition_fee_total: e.target.value })} placeholder="0.00" />
+                    <Input id="acquisition-fee" type="number" step="0.01" className="pl-8" value={formData.acquisition_fee_total} onChange={(e) => setFormData({ ...formData, acquisition_fee_total: e.target.value })} placeholder="0.00" />
                   </div>
                 </div>
                 <div>
-                  <Label>Funded Payment</Label>
+                  <Label htmlFor="funded-payment">Funded Payment</Label>
                   <div className="relative">
                     <DollarSign className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400" />
-                    <Input type="number" step="0.01" className="pl-8" value={formData.funded_payment} onChange={(e) => setFormData({ ...formData, funded_payment: e.target.value })} placeholder="0.00" />
+                    <Input id="funded-payment" type="number" step="0.01" className="pl-8" value={formData.funded_payment} onChange={(e) => setFormData({ ...formData, funded_payment: e.target.value })} placeholder="0.00" />
                   </div>
                 </div>
                 <div>
-                  <Label>Commission Paid</Label>
+                  <Label htmlFor="commission-paid-3">Commission Paid</Label>
                   <div className="relative">
                     <DollarSign className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400" />
-                    <Input type="number" step="0.01" className="pl-8" value={formData.commission_paid} onChange={(e) => setFormData({ ...formData, commission_paid: e.target.value })} placeholder="0.00" />
+                    <Input id="commission-paid-3" type="number" step="0.01" className="pl-8" value={formData.commission_paid} onChange={(e) => setFormData({ ...formData, commission_paid: e.target.value })} placeholder="0.00" />
                   </div>
                 </div>
               </div>
@@ -656,28 +656,28 @@ export function ExecutiveOverview({ staffId, staffName, isAdmin = false }: Execu
             {formData.deal_type === 'third_party' && (
               <div className="grid grid-cols-2 gap-4">
                 <div>
-                  <Label>Acquisition Cost</Label>
+                  <Label htmlFor="acquisition-cost">Acquisition Cost</Label>
                   <div className="relative">
                     <DollarSign className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400" />
-                    <Input type="number" step="0.01" className="pl-8" value={formData.acquisition_cost} onChange={(e) => setFormData({ ...formData, acquisition_cost: e.target.value })} placeholder="0.00" />
+                    <Input id="acquisition-cost" type="number" step="0.01" className="pl-8" value={formData.acquisition_cost} onChange={(e) => setFormData({ ...formData, acquisition_cost: e.target.value })} placeholder="0.00" />
                   </div>
                   <p className="text-xs text-gray-500 mt-1">Company takes 20% of this amount.</p>
                 </div>
                 <div>
-                  <Label>Commission Paid</Label>
+                  <Label htmlFor="commission-paid-2">Commission Paid</Label>
                   <div className="relative">
                     <DollarSign className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400" />
-                    <Input type="number" step="0.01" className="pl-8" value={formData.commission_paid} onChange={(e) => setFormData({ ...formData, commission_paid: e.target.value })} placeholder="0.00" />
+                    <Input id="commission-paid-2" type="number" step="0.01" className="pl-8" value={formData.commission_paid} onChange={(e) => setFormData({ ...formData, commission_paid: e.target.value })} placeholder="0.00" />
                   </div>
                 </div>
               </div>
             )}
             {formData.deal_type === 'setup' && (
               <div>
-                <Label>Commission Paid</Label>
+                <Label htmlFor="commission-paid">Commission Paid</Label>
                 <div className="relative">
                   <DollarSign className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400" />
-                  <Input type="number" step="0.01" className="pl-8" value={formData.commission_paid} onChange={(e) => setFormData({ ...formData, commission_paid: e.target.value })} placeholder="0.00" />
+                  <Input id="commission-paid" type="number" step="0.01" className="pl-8" value={formData.commission_paid} onChange={(e) => setFormData({ ...formData, commission_paid: e.target.value })} placeholder="0.00" />
                 </div>
               </div>
             )}
@@ -688,17 +688,17 @@ export function ExecutiveOverview({ staffId, staffName, isAdmin = false }: Execu
               </p>
               <div className="grid grid-cols-2 gap-4">
                 <div>
-                  <Label>Setup Fee</Label>
+                  <Label htmlFor="setup-fee">Setup Fee</Label>
                   <div className="relative">
                     <DollarSign className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400" />
-                    <Input type="number" step="0.01" className="pl-8" value={formData.setup_fee} onChange={(e) => setFormData({ ...formData, setup_fee: e.target.value })} placeholder="0.00" />
+                    <Input id="setup-fee" type="number" step="0.01" className="pl-8" value={formData.setup_fee} onChange={(e) => setFormData({ ...formData, setup_fee: e.target.value })} placeholder="0.00" />
                   </div>
                 </div>
                 <div>
-                  <Label>Logistics Reserve</Label>
+                  <Label htmlFor="logistics-reserve">Logistics Reserve</Label>
                   <div className="relative">
                     <DollarSign className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400" />
-                    <Input type="number" step="0.01" className="pl-8" value={formData.logistics_reserve} onChange={(e) => setFormData({ ...formData, logistics_reserve: e.target.value })} placeholder="0.00" />
+                    <Input id="logistics-reserve" type="number" step="0.01" className="pl-8" value={formData.logistics_reserve} onChange={(e) => setFormData({ ...formData, logistics_reserve: e.target.value })} placeholder="0.00" />
                   </div>
                 </div>
               </div>
@@ -726,8 +726,8 @@ export function ExecutiveOverview({ staffId, staffName, isAdmin = false }: Execu
               </Select>
             </div>
             <div>
-              <Label>Notes</Label>
-              <Textarea value={formData.notes} onChange={(e) => setFormData({ ...formData, notes: e.target.value })} placeholder="Additional notes..." rows={2} />
+              <Label htmlFor="notes">Notes</Label>
+              <Textarea id="notes" value={formData.notes} onChange={(e) => setFormData({ ...formData, notes: e.target.value })} placeholder="Additional notes..." rows={2} />
             </div>
           </div>
           <DialogFooter>

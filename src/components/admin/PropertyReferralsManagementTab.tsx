@@ -256,7 +256,7 @@ export function PropertyReferralsManagementTab({ staffId, staffName }: Props) {
           <div className="flex flex-col sm:flex-row gap-3 mb-4">
             <div className="relative flex-1">
               <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
-              <Input
+              <Input aria-label="Search by address, referrer, landlord, city"
                 placeholder="Search by address, referrer, landlord, city..."
                 value={searchTerm}
                 onChange={(e) => setSearchTerm(e.target.value)}
@@ -444,16 +444,16 @@ export function PropertyReferralsManagementTab({ staffId, staffName }: Props) {
                     <h4 className="font-medium mb-3 flex items-center gap-2"><Target className="w-4 h-4" /> Acquisition Manager & Notes</h4>
                     <div className="space-y-3">
                       <div>
-                        <Label>Assigned AM</Label>
-                        <Input
+                        <Label htmlFor="assigned-am">Assigned AM</Label>
+                        <Input id="assigned-am"
                           value={amName}
                           onChange={(e) => setAmName(e.target.value)}
                           placeholder="Enter AM name..."
                         />
                       </div>
                       <div>
-                        <Label>AM Notes</Label>
-                        <Textarea
+                        <Label htmlFor="am-notes">AM Notes</Label>
+                        <Textarea id="am-notes"
                           value={actionNotes}
                           onChange={(e) => setActionNotes(e.target.value)}
                           placeholder="Add notes about landlord outreach, negotiations, etc."
@@ -461,8 +461,8 @@ export function PropertyReferralsManagementTab({ staffId, staffName }: Props) {
                         />
                       </div>
                       <div>
-                        <Label>Payout Amount ($)</Label>
-                        <Input
+                        <Label htmlFor="payout-amount">Payout Amount ($)</Label>
+                        <Input id="payout-amount"
                           type="number"
                           min="0"
                           value={payoutAmount}
@@ -501,8 +501,8 @@ export function PropertyReferralsManagementTab({ staffId, staffName }: Props) {
 
                     {actionType === 'reject' ? (
                       <div className="space-y-3">
-                        <Label>Rejection Reason *</Label>
-                        <Textarea
+                        <Label htmlFor="rejection-reason">Rejection Reason *</Label>
+                        <Textarea id="rejection-reason"
                           value={rejectionReason}
                           onChange={(e) => setRejectionReason(e.target.value)}
                           placeholder="Explain why this referral is being rejected..."

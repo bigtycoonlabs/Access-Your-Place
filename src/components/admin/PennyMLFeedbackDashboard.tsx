@@ -814,16 +814,16 @@ export function PennyMLFeedbackDashboard({ staffId, staffName }: PennyMLFeedback
                 </Select>
               </div>
               <div>
-                <Label>Period Start</Label>
-                <Input 
+                <Label htmlFor="period-start">Period Start</Label>
+                <Input id="period-start" 
                   type="date" 
                   value={form.period_start_date}
                   onChange={e => setForm({...form, period_start_date: e.target.value})}
                 />
               </div>
               <div>
-                <Label>Period End</Label>
-                <Input 
+                <Label htmlFor="period-end">Period End</Label>
+                <Input id="period-end" 
                   type="date" 
                   value={form.period_end_date}
                   onChange={e => setForm({...form, period_end_date: e.target.value})}
@@ -839,8 +839,8 @@ export function PennyMLFeedbackDashboard({ staffId, staffName }: PennyMLFeedback
               </h4>
               <div className="grid grid-cols-2 gap-4">
                 <div>
-                  <Label>Actual ADR ($) *</Label>
-                  <Input 
+                  <Label htmlFor="actual-adr">Actual ADR ($) *</Label>
+                  <Input id="actual-adr" 
                     type="number" 
                     placeholder="150"
                     value={form.actual_adr}
@@ -848,8 +848,8 @@ export function PennyMLFeedbackDashboard({ staffId, staffName }: PennyMLFeedback
                   />
                 </div>
                 <div>
-                  <Label>Actual Occupancy (%) *</Label>
-                  <Input 
+                  <Label htmlFor="actual-occupancy">Actual Occupancy (%) *</Label>
+                  <Input id="actual-occupancy" 
                     type="number" 
                     placeholder="65"
                     value={form.actual_occupancy_rate}
@@ -857,8 +857,8 @@ export function PennyMLFeedbackDashboard({ staffId, staffName }: PennyMLFeedback
                   />
                 </div>
                 <div>
-                  <Label>Gross Revenue ($) *</Label>
-                  <Input 
+                  <Label htmlFor="gross-revenue">Gross Revenue ($) *</Label>
+                  <Input id="gross-revenue" 
                     type="number" 
                     placeholder="4500"
                     value={form.actual_gross_revenue}
@@ -866,8 +866,8 @@ export function PennyMLFeedbackDashboard({ staffId, staffName }: PennyMLFeedback
                   />
                 </div>
                 <div>
-                  <Label>Net Revenue ($)</Label>
-                  <Input 
+                  <Label htmlFor="net-revenue">Net Revenue ($)</Label>
+                  <Input id="net-revenue" 
                     type="number" 
                     placeholder="3200"
                     value={form.actual_net_revenue}
@@ -875,8 +875,8 @@ export function PennyMLFeedbackDashboard({ staffId, staffName }: PennyMLFeedback
                   />
                 </div>
                 <div>
-                  <Label>Total Expenses ($)</Label>
-                  <Input 
+                  <Label htmlFor="total-expenses">Total Expenses ($)</Label>
+                  <Input id="total-expenses" 
                     type="number" 
                     placeholder="1300"
                     value={form.actual_expenses}
@@ -884,8 +884,8 @@ export function PennyMLFeedbackDashboard({ staffId, staffName }: PennyMLFeedback
                   />
                 </div>
                 <div>
-                  <Label>Booking Count</Label>
-                  <Input 
+                  <Label htmlFor="booking-count">Booking Count</Label>
+                  <Input id="booking-count" 
                     type="number" 
                     placeholder="8"
                     value={form.actual_booking_count}
@@ -893,8 +893,8 @@ export function PennyMLFeedbackDashboard({ staffId, staffName }: PennyMLFeedback
                   />
                 </div>
                 <div>
-                  <Label>Avg Length of Stay (nights)</Label>
-                  <Input 
+                  <Label htmlFor="avg-length-of-stay-nights">Avg Length of Stay (nights)</Label>
+                  <Input id="avg-length-of-stay-nights" 
                     type="number" 
                     step="0.5"
                     placeholder="3.5"
@@ -920,8 +920,8 @@ export function PennyMLFeedbackDashboard({ staffId, staffName }: PennyMLFeedback
 
             {/* Notes */}
             <div>
-              <Label>Notes</Label>
-              <Textarea 
+              <Label htmlFor="notes">Notes</Label>
+              <Textarea id="notes" 
                 placeholder="Any observations about this period's performance..."
                 value={form.notes}
                 onChange={e => setForm({...form, notes: e.target.value})}
@@ -931,16 +931,16 @@ export function PennyMLFeedbackDashboard({ staffId, staffName }: PennyMLFeedback
 
             <div className="grid grid-cols-2 gap-4">
               <div>
-                <Label>Challenges Faced (comma-separated)</Label>
-                <Input 
+                <Label htmlFor="challenges-faced-commaseparated">Challenges Faced (comma-separated)</Label>
+                <Input id="challenges-faced-commaseparated" 
                   placeholder="Low season, maintenance issues"
                   value={form.challenges_faced}
                   onChange={e => setForm({...form, challenges_faced: e.target.value})}
                 />
               </div>
               <div>
-                <Label>Success Factors (comma-separated)</Label>
-                <Input 
+                <Label htmlFor="success-factors-commaseparated">Success Factors (comma-separated)</Label>
+                <Input id="success-factors-commaseparated" 
                   placeholder="Great reviews, local events"
                   value={form.success_factors}
                   onChange={e => setForm({...form, success_factors: e.target.value})}

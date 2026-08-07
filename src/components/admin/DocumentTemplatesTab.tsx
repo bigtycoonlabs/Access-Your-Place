@@ -842,12 +842,12 @@ export function DocumentTemplatesTab() {
                     {selected ? (
                       <div className="space-y-4">
                         <div>
-                          <Label>Template Name</Label>
-                          <Input value={selected.name} onChange={(e) => setSelected({ ...selected, name: e.target.value })} className="mt-1" />
+                          <Label htmlFor="template-name-2">Template Name</Label>
+                          <Input id="template-name-2" value={selected.name} onChange={(e) => setSelected({ ...selected, name: e.target.value })} className="mt-1" />
                         </div>
                         <div>
-                          <Label>Template Content</Label>
-                          <Textarea
+                          <Label htmlFor="template-content-2">Template Content</Label>
+                          <Textarea id="template-content-2"
                             value={selected.content}
                             onChange={(e) => {
                               const newContent = e.target.value;
@@ -909,8 +909,8 @@ export function DocumentTemplatesTab() {
           </DialogHeader>
           <div className="space-y-4">
             <div>
-              <Label>Template Name *</Label>
-              <Input value={newTemplate.name} onChange={(e) => setNewTemplate(t => ({ ...t, name: e.target.value }))} placeholder="e.g., Custom Agreement" />
+              <Label htmlFor="template-name">Template Name *</Label>
+              <Input id="template-name" value={newTemplate.name} onChange={(e) => setNewTemplate(t => ({ ...t, name: e.target.value }))} placeholder="e.g., Custom Agreement" />
             </div>
             <div className="grid grid-cols-2 gap-4">
               <div>
@@ -933,8 +933,8 @@ export function DocumentTemplatesTab() {
               </div>
             </div>
             <div>
-              <Label>Template Content *</Label>
-              <Textarea value={newTemplate.content} onChange={(e) => setNewTemplate(t => ({ ...t, content: e.target.value }))} rows={12} className="font-mono text-sm" placeholder="Enter content with {{variable}} placeholders..." />
+              <Label htmlFor="template-content">Template Content *</Label>
+              <Textarea id="template-content" value={newTemplate.content} onChange={(e) => setNewTemplate(t => ({ ...t, content: e.target.value }))} rows={12} className="font-mono text-sm" placeholder="Enter content with {{variable}} placeholders..." />
             </div>
           </div>
           <DialogFooter>

@@ -329,8 +329,8 @@ export default function LandlordPortal() {
                 <div className="bg-white rounded-xl border border-gray-200 p-6 space-y-6">
                   <div className="grid md:grid-cols-2 gap-4">
                     <div>
-                      <label className="block text-sm font-medium text-gray-700 mb-1">Contact Name</label>
-                      <input
+                      <label className="block text-sm font-medium text-gray-700 mb-1" htmlFor="contact-name">Contact Name</label>
+                      <input id="contact-name"
                         type="text"
                         value={profileForm.contact_name}
                         onChange={e => setProfileForm({...profileForm, contact_name: e.target.value})}
@@ -338,8 +338,8 @@ export default function LandlordPortal() {
                       />
                     </div>
                     <div>
-                      <label className="block text-sm font-medium text-gray-700 mb-1">Company Name</label>
-                      <input
+                      <label className="block text-sm font-medium text-gray-700 mb-1" htmlFor="company-name">Company Name</label>
+                      <input id="company-name"
                         type="text"
                         value={profileForm.company_name}
                         onChange={e => setProfileForm({...profileForm, company_name: e.target.value})}
@@ -347,8 +347,8 @@ export default function LandlordPortal() {
                       />
                     </div>
                     <div>
-                      <label className="block text-sm font-medium text-gray-700 mb-1">Phone</label>
-                      <input
+                      <label className="block text-sm font-medium text-gray-700 mb-1" htmlFor="phone">Phone</label>
+                      <input id="phone"
                         type="tel"
                         value={profileForm.phone}
                         onChange={e => setProfileForm({...profileForm, phone: e.target.value})}
@@ -356,8 +356,8 @@ export default function LandlordPortal() {
                       />
                     </div>
                     <div>
-                      <label className="block text-sm font-medium text-gray-700 mb-1">Location</label>
-                      <input
+                      <label className="block text-sm font-medium text-gray-700 mb-1" htmlFor="location">Location</label>
+                      <input id="location"
                         type="text"
                         value={profileForm.location}
                         onChange={e => setProfileForm({...profileForm, location: e.target.value})}
@@ -366,8 +366,8 @@ export default function LandlordPortal() {
                     </div>
                   </div>
                   <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-1">Email</label>
-                    <input type="email" value={landlord.email} disabled className="w-full px-3 py-2.5 rounded-lg border border-gray-200 bg-gray-50 text-sm text-gray-500" />
+                    <label className="block text-sm font-medium text-gray-700 mb-1" htmlFor="email">Email</label>
+                    <input id="email" type="email" value={landlord.email} disabled className="w-full px-3 py-2.5 rounded-lg border border-gray-200 bg-gray-50 text-sm text-gray-500" />
                     <p className="text-xs text-gray-400 mt-1">Email cannot be changed. Contact support if needed.</p>
                   </div>
                   <div className="flex justify-end">

@@ -540,8 +540,8 @@ export function DealKanbanBoard({ properties, onRefresh, onViewDetails, staffId,
           </DialogHeader>
           <div className="space-y-4">
             <div>
-              <Label>Notes (optional)</Label>
-              <Textarea value={moveNotes} onChange={e => setMoveNotes(e.target.value)} placeholder="Add notes about this stage change..." rows={3} />
+              <Label htmlFor="notes-optional">Notes (optional)</Label>
+              <Textarea id="notes-optional" value={moveNotes} onChange={e => setMoveNotes(e.target.value)} placeholder="Add notes about this stage change..." rows={3} />
             </div>
           </div>
           <DialogFooter>

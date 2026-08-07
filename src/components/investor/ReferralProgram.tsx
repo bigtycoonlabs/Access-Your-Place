@@ -685,10 +685,10 @@ export function ReferralProgram({ investorId, investorName }: Props) {
               {payoutMethod !== 'yp_credit' && (
                 <div className="space-y-4 pt-4 border-t">
                   <h4 className="font-medium">Payment Details</h4>
-                  {payoutMethod === 'zelle' && <div><Label>Zelle Email or Phone</Label><Input value={payoutDetails.email || ''} onChange={(e) => setPayoutDetails({ ...payoutDetails, email: e.target.value })} placeholder="email@example.com" /></div>}
-                  {payoutMethod === 'cashapp' && <div><Label>Cash App $Cashtag</Label><Input value={payoutDetails.username || ''} onChange={(e) => setPayoutDetails({ ...payoutDetails, username: e.target.value })} placeholder="$yourcashtag" /></div>}
-                  {payoutMethod === 'venmo' && <div><Label>Venmo Username</Label><Input value={payoutDetails.username || ''} onChange={(e) => setPayoutDetails({ ...payoutDetails, username: e.target.value })} placeholder="@yourusername" /></div>}
-                  {payoutMethod === 'apple_pay' && <div><Label>Apple Pay Phone</Label><Input value={payoutDetails.phone || ''} onChange={(e) => setPayoutDetails({ ...payoutDetails, phone: e.target.value })} placeholder="(555) 123-4567" /></div>}
+                  {payoutMethod === 'zelle' && <div><Label htmlFor="zelle-email-or-phone">Zelle Email or Phone</Label><Input id="zelle-email-or-phone" value={payoutDetails.email || ''} onChange={(e) => setPayoutDetails({ ...payoutDetails, email: e.target.value })} placeholder="email@example.com" /></div>}
+                  {payoutMethod === 'cashapp' && <div><Label htmlFor="cash-app-cashtag">Cash App $Cashtag</Label><Input id="cash-app-cashtag" value={payoutDetails.username || ''} onChange={(e) => setPayoutDetails({ ...payoutDetails, username: e.target.value })} placeholder="$yourcashtag" /></div>}
+                  {payoutMethod === 'venmo' && <div><Label htmlFor="venmo-username">Venmo Username</Label><Input id="venmo-username" value={payoutDetails.username || ''} onChange={(e) => setPayoutDetails({ ...payoutDetails, username: e.target.value })} placeholder="@yourusername" /></div>}
+                  {payoutMethod === 'apple_pay' && <div><Label htmlFor="apple-pay-phone">Apple Pay Phone</Label><Input id="apple-pay-phone" value={payoutDetails.phone || ''} onChange={(e) => setPayoutDetails({ ...payoutDetails, phone: e.target.value })} placeholder="(555) 123-4567" /></div>}
                 </div>
               )}
               <Button onClick={savePayoutPreferences} disabled={savingPrefs} className="bg-[#d4a574] hover:bg-[#c49464]">
@@ -769,34 +769,34 @@ export function ReferralProgram({ investorId, investorName }: Props) {
               </Select>
             </div>
             <div>
-              <Label>Property Address *</Label>
-              <Input value={propertyForm.property_address} onChange={(e) => setPropertyForm({ ...propertyForm, property_address: e.target.value })} placeholder="123 Main St, Apt 4B" />
+              <Label htmlFor="property-address">Property Address *</Label>
+              <Input id="property-address" value={propertyForm.property_address} onChange={(e) => setPropertyForm({ ...propertyForm, property_address: e.target.value })} placeholder="123 Main St, Apt 4B" />
             </div>
             <div className="grid grid-cols-3 gap-3">
-              <div><Label>City</Label><Input value={propertyForm.property_city} onChange={(e) => setPropertyForm({ ...propertyForm, property_city: e.target.value })} placeholder="Miami" /></div>
-              <div><Label>State</Label><Input value={propertyForm.property_state} onChange={(e) => setPropertyForm({ ...propertyForm, property_state: e.target.value })} placeholder="FL" /></div>
-              <div><Label>ZIP</Label><Input value={propertyForm.property_zip} onChange={(e) => setPropertyForm({ ...propertyForm, property_zip: e.target.value })} placeholder="33126" /></div>
+              <div><Label htmlFor="city">City</Label><Input id="city" value={propertyForm.property_city} onChange={(e) => setPropertyForm({ ...propertyForm, property_city: e.target.value })} placeholder="Miami" /></div>
+              <div><Label htmlFor="state">State</Label><Input id="state" value={propertyForm.property_state} onChange={(e) => setPropertyForm({ ...propertyForm, property_state: e.target.value })} placeholder="FL" /></div>
+              <div><Label htmlFor="zip">ZIP</Label><Input id="zip" value={propertyForm.property_zip} onChange={(e) => setPropertyForm({ ...propertyForm, property_zip: e.target.value })} placeholder="33126" /></div>
             </div>
             <div className="border-t pt-4">
               <h4 className="font-medium mb-3 flex items-center gap-2"><Phone className="w-4 h-4" />Landlord Contact</h4>
               <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
-                <div><Label>Landlord Name</Label><Input value={propertyForm.landlord_name} onChange={(e) => setPropertyForm({ ...propertyForm, landlord_name: e.target.value })} placeholder="John Smith" /></div>
-                <div><Label>Phone</Label><Input value={propertyForm.landlord_phone} onChange={(e) => setPropertyForm({ ...propertyForm, landlord_phone: e.target.value })} placeholder="(555) 123-4567" /></div>
-                <div><Label>Email</Label><Input value={propertyForm.landlord_email} onChange={(e) => setPropertyForm({ ...propertyForm, landlord_email: e.target.value })} placeholder="landlord@email.com" /></div>
+                <div><Label htmlFor="landlord-name">Landlord Name</Label><Input id="landlord-name" value={propertyForm.landlord_name} onChange={(e) => setPropertyForm({ ...propertyForm, landlord_name: e.target.value })} placeholder="John Smith" /></div>
+                <div><Label htmlFor="phone">Phone</Label><Input id="phone" value={propertyForm.landlord_phone} onChange={(e) => setPropertyForm({ ...propertyForm, landlord_phone: e.target.value })} placeholder="(555) 123-4567" /></div>
+                <div><Label htmlFor="email">Email</Label><Input id="email" value={propertyForm.landlord_email} onChange={(e) => setPropertyForm({ ...propertyForm, landlord_email: e.target.value })} placeholder="landlord@email.com" /></div>
               </div>
             </div>
             <div className="border-t pt-4">
               <h4 className="font-medium mb-3 flex items-center gap-2"><DollarSign className="w-4 h-4" />Financial Projections *</h4>
               <div className="grid grid-cols-2 gap-3">
-                <div><Label>Projected Monthly Revenue</Label><Input type="number" value={propertyForm.projected_revenue} onChange={(e) => setPropertyForm({ ...propertyForm, projected_revenue: e.target.value })} placeholder="4500" /></div>
-                <div><Label>Average Daily Rate (ADR)</Label><Input type="number" value={propertyForm.average_daily_rate} onChange={(e) => setPropertyForm({ ...propertyForm, average_daily_rate: e.target.value })} placeholder="150" /></div>
-                <div><Label>Monthly Room Rent (if applicable)</Label><Input type="number" value={propertyForm.projected_monthly_room_rent} onChange={(e) => setPropertyForm({ ...propertyForm, projected_monthly_room_rent: e.target.value })} placeholder="800" /></div>
-                <div><Label>Property Rent *</Label><Input type="number" value={propertyForm.property_rent} onChange={(e) => setPropertyForm({ ...propertyForm, property_rent: e.target.value })} placeholder="2000" /></div>
+                <div><Label htmlFor="projected-monthly-revenue">Projected Monthly Revenue</Label><Input id="projected-monthly-revenue" type="number" value={propertyForm.projected_revenue} onChange={(e) => setPropertyForm({ ...propertyForm, projected_revenue: e.target.value })} placeholder="4500" /></div>
+                <div><Label htmlFor="average-daily-rate-adr">Average Daily Rate (ADR)</Label><Input id="average-daily-rate-adr" type="number" value={propertyForm.average_daily_rate} onChange={(e) => setPropertyForm({ ...propertyForm, average_daily_rate: e.target.value })} placeholder="150" /></div>
+                <div><Label htmlFor="monthly-room-rent-if-applicable">Monthly Room Rent (if applicable)</Label><Input id="monthly-room-rent-if-applicable" type="number" value={propertyForm.projected_monthly_room_rent} onChange={(e) => setPropertyForm({ ...propertyForm, projected_monthly_room_rent: e.target.value })} placeholder="800" /></div>
+                <div><Label htmlFor="property-rent">Property Rent *</Label><Input id="property-rent" type="number" value={propertyForm.property_rent} onChange={(e) => setPropertyForm({ ...propertyForm, property_rent: e.target.value })} placeholder="2000" /></div>
               </div>
             </div>
             <div className="grid grid-cols-1 gap-3">
-              <div><Label>Deposit Amount</Label><Input type="number" value={propertyForm.deposit_amount} onChange={(e) => setPropertyForm({ ...propertyForm, deposit_amount: e.target.value })} placeholder="2000" /></div>
-              <div><Label>Deposit/Specials/Negotiations</Label><Textarea value={propertyForm.special_negotiations} onChange={(e) => setPropertyForm({ ...propertyForm, special_negotiations: e.target.value })} placeholder="e.g., First month free, reduced deposit, landlord agreed to 12-month lease..." rows={3} /></div>
+              <div><Label htmlFor="deposit-amount">Deposit Amount</Label><Input id="deposit-amount" type="number" value={propertyForm.deposit_amount} onChange={(e) => setPropertyForm({ ...propertyForm, deposit_amount: e.target.value })} placeholder="2000" /></div>
+              <div><Label htmlFor="depositspecialsnegotiations">Deposit/Specials/Negotiations</Label><Textarea id="depositspecialsnegotiations" value={propertyForm.special_negotiations} onChange={(e) => setPropertyForm({ ...propertyForm, special_negotiations: e.target.value })} placeholder="e.g., First month free, reduced deposit, landlord agreed to 12-month lease..." rows={3} /></div>
             </div>
             <div className="bg-blue-50 border border-blue-200 rounded-lg p-3 text-sm text-blue-700">
               <p className="font-medium flex items-center gap-1"><AlertCircle className="w-4 h-4" /> Important</p>
@@ -839,7 +839,7 @@ export function ReferralProgram({ investorId, investorName }: Props) {
       <Dialog open={inviteOpen} onOpenChange={setInviteOpen}>
         <DialogContent>
           <DialogHeader><DialogTitle>Invite Someone</DialogTitle><DialogDescription>Send an email invitation with your referral link</DialogDescription></DialogHeader>
-          <div><Label>Email Address</Label><Input type="email" value={inviteEmail} onChange={(e) => setInviteEmail(e.target.value)} placeholder="friend@example.com" /></div>
+          <div><Label htmlFor="email-address">Email Address</Label><Input id="email-address" type="email" value={inviteEmail} onChange={(e) => setInviteEmail(e.target.value)} placeholder="friend@example.com" /></div>
           <DialogFooter>
             <Button variant="outline" onClick={() => setInviteOpen(false)}>Cancel</Button>
             <Button onClick={sendInvite} disabled={sending} className="bg-[#d4a574] hover:bg-[#c49464]">

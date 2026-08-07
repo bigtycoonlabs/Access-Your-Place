@@ -169,11 +169,11 @@ export function WeeklyReportForm({ staffId, staffName, isAdmin }: WeeklyReportFo
         <CardContent>
           <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 mb-4">
             <div>
-              <Label className="flex items-center gap-1.5 mb-1.5">
+              <Label className="flex items-center gap-1.5 mb-1.5" htmlFor="active-clients-engaged">
                 <Users className="w-4 h-4 text-blue-500" />
                 Active Clients Engaged
               </Label>
-              <Input
+              <Input id="active-clients-engaged"
                 type="number"
                 min="0"
                 value={formData.client_volume}
@@ -184,11 +184,11 @@ export function WeeklyReportForm({ staffId, staffName, isAdmin }: WeeklyReportFo
               <p className="text-xs text-gray-400 mt-1">How many active clients did you engage this week?</p>
             </div>
             <div>
-              <Label className="flex items-center gap-1.5 mb-1.5">
+              <Label className="flex items-center gap-1.5 mb-1.5" htmlFor="deals-closed-signed-lease">
                 <Handshake className="w-4 h-4 text-emerald-500" />
                 Deals Closed (Signed Lease)
               </Label>
-              <Input
+              <Input id="deals-closed-signed-lease"
                 type="number"
                 min="0"
                 value={formData.closings}
@@ -199,11 +199,11 @@ export function WeeklyReportForm({ staffId, staffName, isAdmin }: WeeklyReportFo
               <p className="text-xs text-gray-400 mt-1">How many deals moved to 'Signed Lease' this week?</p>
             </div>
             <div>
-              <Label className="flex items-center gap-1.5 mb-1.5">
+              <Label className="flex items-center gap-1.5 mb-1.5" htmlFor="new-inventory-submitted">
                 <Building2 className="w-4 h-4 text-purple-500" />
                 New Inventory Submitted
               </Label>
-              <Input
+              <Input id="new-inventory-submitted"
                 type="number"
                 min="0"
                 value={formData.new_inventory}
@@ -215,11 +215,11 @@ export function WeeklyReportForm({ staffId, staffName, isAdmin }: WeeklyReportFo
             </div>
           </div>
           <div className="mb-4">
-            <Label className="flex items-center gap-1.5 mb-1.5">
+            <Label className="flex items-center gap-1.5 mb-1.5" htmlFor="notes-blockers">
               <MessageSquare className="w-4 h-4 text-gray-500" />
               Notes & Blockers
             </Label>
-            <Textarea
+            <Textarea id="notes-blockers"
               value={formData.notes}
               onChange={(e) => setFormData({ ...formData, notes: e.target.value })}
               placeholder="Blockers, wins, or assistance needed from Success Team..."
@@ -337,8 +337,8 @@ export function WeeklyReportForm({ staffId, staffName, isAdmin }: WeeklyReportFo
               )}
               {isAdmin && (
                 <div>
-                  <Label>Admin Feedback</Label>
-                  <Textarea
+                  <Label htmlFor="admin-feedback">Admin Feedback</Label>
+                  <Textarea id="admin-feedback"
                     value={reviewFeedback}
                     onChange={(e) => setReviewFeedback(e.target.value)}
                     placeholder="Provide feedback on this report..."

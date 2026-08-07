@@ -1461,7 +1461,7 @@ export function AcquisitionManagerDashboard({ staffId, staffRole, staffRoles = [
           <div className="flex flex-col md:flex-row gap-4">
             <div className="relative flex-1">
               <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400" aria-hidden="true" />
-              <Input
+              <Input aria-label="Search deals by address or city"
                 placeholder="Search deals by address or city..."
                 value={searchQuery}
                 onChange={(e) => setSearchQuery(e.target.value)}
@@ -1612,7 +1612,7 @@ export function AcquisitionManagerDashboard({ staffId, staffRole, staffRoles = [
               <div className="mt-4">
                 <div className="relative">
                   <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400" aria-hidden="true" />
-                  <Input
+                  <Input aria-label="Filter investors by name, email, or phone"
                     placeholder="Filter investors by name, email, or phone..."
                     value={investorSearchFilter}
                     onChange={(e) => setInvestorSearchFilter(e.target.value)}
@@ -1638,7 +1638,7 @@ export function AcquisitionManagerDashboard({ staffId, staffRole, staffRoles = [
               <div className="flex gap-2">
                 <div className="relative flex-1">
                   <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400" aria-hidden="true" />
-                  <Input
+                  <Input aria-label="Search investors by name, email, or phone"
                     placeholder="Search investors by name, email, or phone..."
                     value={investorSearch}
                     onChange={(e) => setInvestorSearch(e.target.value)}

@@ -414,7 +414,7 @@ export function AMAssignmentRequestsTab({ staffId, staffName }: Props) {
       {/* Search */}
       <div className="relative">
         <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400" />
-        <Input
+        <Input aria-label="Search by investor name, email, or AM name"
           placeholder="Search by investor name, email, or AM name..."
           value={searchTerm}
           onChange={(e) => setSearchTerm(e.target.value)}
@@ -709,7 +709,7 @@ export function AMAssignmentRequestsTab({ staffId, staffName }: Props) {
             <div>
               <Label htmlFor="staff-select">Select Acquisition Manager</Label>
               <Select value={selectedStaffId} onValueChange={setSelectedStaffId}>
-                <SelectTrigger className="mt-2">
+                <SelectTrigger id="staff-select" className="mt-2">
                   <SelectValue placeholder="Choose an AM..." />
                 </SelectTrigger>
                 <SelectContent>
@@ -800,7 +800,7 @@ export function AMAssignmentRequestsTab({ staffId, staffName }: Props) {
             <div>
               <Label htmlFor="new-am-select">Select New Acquisition Manager</Label>
               <Select value={newAMId} onValueChange={setNewAMId}>
-                <SelectTrigger className="mt-2">
+                <SelectTrigger id="new-am-select" className="mt-2">
                   <SelectValue placeholder="Choose a new AM..." />
                 </SelectTrigger>
                 <SelectContent>

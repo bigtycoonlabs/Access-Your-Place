@@ -362,7 +362,7 @@ export function PendingReservationsTab({ staffId, staffName, isSuccessManager = 
       {/* Filters */}
       <div className="flex flex-col md:flex-row gap-4">
         <div className="relative flex-1">
-          <Input
+          <Input aria-label="Search by investor name, property, or city"
             placeholder="Search by investor name, property, or city..."
             value={searchQuery}
             onChange={(e) => setSearchQuery(e.target.value)}
@@ -614,8 +614,8 @@ export function PendingReservationsTab({ staffId, staffName, isSuccessManager = 
               </p>
             </div>
             <div>
-              <Label>Message</Label>
-              <Textarea
+              <Label htmlFor="message">Message</Label>
+              <Textarea id="message"
                 value={contactMessage}
                 onChange={(e) => setContactMessage(e.target.value)}
                 placeholder="Type your message here..."
@@ -674,8 +674,8 @@ export function PendingReservationsTab({ staffId, staffName, isSuccessManager = 
             </div>
 
             <div>
-              <Label>Notes (Optional)</Label>
-              <Textarea
+              <Label htmlFor="notes-optional">Notes (Optional)</Label>
+              <Textarea id="notes-optional"
                 value={grantNotes}
                 onChange={(e) => setGrantNotes(e.target.value)}
                 placeholder="Add any notes about this approval..."

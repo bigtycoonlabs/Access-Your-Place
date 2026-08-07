@@ -132,13 +132,13 @@ export function AMMessageDialog({ open, onOpenChange, investor, staffId, staffNa
 
         {/* Compose */}
         <div className="space-y-3 pt-3 border-t">
-          <Input
+          <Input aria-label="Subject (optional)"
             placeholder="Subject (optional)"
             value={subject}
             onChange={e => setSubject(e.target.value)}
           />
           <div className="flex gap-2">
-            <Textarea
+            <Textarea aria-label="Type your message"
               placeholder="Type your message..."
               value={message}
               onChange={e => setMessage(e.target.value)}
@@ -263,7 +263,7 @@ export function AMNotesDialog({ open, onOpenChange, investor, staffId, staffName
                 <SelectItem value="important">Important</SelectItem>
               </SelectContent>
             </Select>
-            <Textarea
+            <Textarea aria-label="Add a note"
               placeholder="Add a note..."
               value={noteText}
               onChange={e => setNoteText(e.target.value)}
@@ -411,8 +411,8 @@ export function AMDocumentsDialog({ open, onOpenChange, investor, staffId, staff
         <div className="space-y-3 pb-3 border-b">
           <div className="grid grid-cols-2 gap-2">
             <div>
-              <Label className="text-xs">Document Name *</Label>
-              <Input
+              <Label className="text-xs" htmlFor="document-name">Document Name *</Label>
+              <Input id="document-name"
                 value={docName}
                 onChange={e => setDocName(e.target.value)}
                 placeholder="Lease Agreement"
@@ -436,16 +436,16 @@ export function AMDocumentsDialog({ open, onOpenChange, investor, staffId, staff
             </div>
           </div>
           <div>
-            <Label className="text-xs">Document URL (optional)</Label>
-            <Input
+            <Label className="text-xs" htmlFor="document-url-optional">Document URL (optional)</Label>
+            <Input id="document-url-optional"
               value={docUrl}
               onChange={e => setDocUrl(e.target.value)}
               placeholder="https://..."
             />
           </div>
           <div>
-            <Label className="text-xs">Notes (optional)</Label>
-            <Input
+            <Label className="text-xs" htmlFor="notes-optional">Notes (optional)</Label>
+            <Input id="notes-optional"
               value={docNotes}
               onChange={e => setDocNotes(e.target.value)}
               placeholder="Additional notes..."
@@ -593,7 +593,7 @@ export function AMSendDealDialog({ open, onOpenChange, investor, staffId, staffN
         </DialogHeader>
 
         {/* Search Deals */}
-        <Input
+        <Input aria-label="Search deals by address or city"
           placeholder="Search deals by address or city..."
           value={searchQuery}
           onChange={e => setSearchQuery(e.target.value)}
@@ -650,8 +650,8 @@ export function AMSendDealDialog({ open, onOpenChange, investor, staffId, staffN
 
         {/* Personal Note */}
         <div>
-          <Label className="text-xs">Personal Note (optional)</Label>
-          <Textarea
+          <Label className="text-xs" htmlFor="personal-note-optional">Personal Note (optional)</Label>
+          <Textarea id="personal-note-optional"
             value={personalNote}
             onChange={e => setPersonalNote(e.target.value)}
             placeholder="Add a personal note about why this deal is a good fit..."

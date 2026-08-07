@@ -256,8 +256,8 @@ export function PaymentProfileManager({ staffId }: PaymentProfileManagerProps) {
               </Select>
             </div>
             <div>
-              <Label>Label (Optional)</Label>
-              <Input value={formLabel} onChange={(e) => setFormLabel(e.target.value)} placeholder="e.g., Personal Checking, Business Account" />
+              <Label htmlFor="label-optional">Label (Optional)</Label>
+              <Input id="label-optional" value={formLabel} onChange={(e) => setFormLabel(e.target.value)} placeholder="e.g., Personal Checking, Business Account" />
             </div>
             {methodConfig?.fields.map(field => (
               <div key={field.key}>

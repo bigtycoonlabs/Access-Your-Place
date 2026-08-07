@@ -115,7 +115,7 @@ export function MarketplaceHeader({
             {/* Search Input */}
             <div className="flex-1 relative">
               <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-gray-400" />
-              <Input
+              <Input aria-label="Search by city, ZIP code, or property type"
                 placeholder="Search by city, ZIP code, or property type..."
                 value={searchQuery}
                 onChange={(e) => onSearchChange(e.target.value)}

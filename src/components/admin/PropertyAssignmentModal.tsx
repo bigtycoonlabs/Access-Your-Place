@@ -604,7 +604,7 @@ export function PropertyAssignmentModal({
                     <div className="p-2 border-b bg-gray-50 flex-shrink-0">
                       <div className="relative">
                         <Search className="absolute left-2.5 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400 pointer-events-none" />
-                        <input
+                        <input aria-label="Filter deals"
                           id="deal-popover-search"
                           type="text"
                           placeholder="Filter deals..."
@@ -737,12 +737,12 @@ export function PropertyAssignmentModal({
 
             {/* Search bar */}
             <div>
-              <Label className="mb-1.5 block font-medium">
+              <Label className="mb-1.5 block font-medium" htmlFor="field-0">
                 {mode === 'assign_to_property' ? 'Search Investors' : 'Search Properties'}
               </Label>
               <div className="relative">
                 <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400 pointer-events-none" />
-                <Input
+                <Input id="field-0"
                   placeholder={mode === 'assign_to_property' ? 'Name, email, or company...' : 'Address, city, or ZIP...'}
                   value={searchQuery}
                   onChange={(e) => setSearchQuery(e.target.value)}

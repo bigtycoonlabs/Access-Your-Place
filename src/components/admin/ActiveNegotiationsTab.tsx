@@ -472,10 +472,10 @@ export function ActiveNegotiationsTab() {
         <CardContent className="p-4">
           <div className="flex flex-col md:flex-row gap-4 items-end">
             <div className="flex-1">
-              <Label className="text-xs text-gray-500 mb-1 block">Search Negotiations</Label>
+              <Label className="text-xs text-gray-500 mb-1 block" htmlFor="search-negotiations">Search Negotiations</Label>
               <div className="relative">
                 <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400" />
-                <Input
+                <Input id="search-negotiations"
                   placeholder="Search by buyer name, seller name, property address, or email..."
                   value={searchInput}
                   onChange={(e) => setSearchInput(e.target.value)}
@@ -921,7 +921,7 @@ export function ActiveNegotiationsTab() {
                 <div className="flex items-center gap-3">
                   <div className="relative flex-1">
                     <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400" />
-                    <Input
+                    <Input aria-label="Search closed deals by buyer, seller, or property"
                       placeholder="Search closed deals by buyer, seller, or property..."
                       value={closedSearchInput}
                       onChange={(e) => setClosedSearchInput(e.target.value)}
@@ -1183,8 +1183,8 @@ export function ActiveNegotiationsTab() {
 
                 {/* Staff Notes */}
                 <div>
-                  <Label className="text-sm font-medium">Staff Notes (optional)</Label>
-                  <Textarea
+                  <Label className="text-sm font-medium" htmlFor="staff-notes-optional">Staff Notes (optional)</Label>
+                  <Textarea id="staff-notes-optional"
                     value={soldStaffNotes}
                     onChange={(e) => setSoldStaffNotes(e.target.value)}
                     placeholder="Add any internal notes about this transaction (e.g., payment method, special terms, follow-up needed)..."
@@ -1268,8 +1268,8 @@ export function ActiveNegotiationsTab() {
 
               {/* Note Input */}
               <div>
-                <Label className="text-sm font-medium">Staff Note</Label>
-                <Textarea
+                <Label className="text-sm font-medium" htmlFor="staff-note">Staff Note</Label>
+                <Textarea id="staff-note"
                   value={staffNoteText}
                   onChange={(e) => setStaffNoteText(e.target.value)}
                   placeholder="Add internal notes about this offer (e.g., follow-up needed, buyer seems motivated, seller may accept lower...)..."

@@ -453,11 +453,11 @@ export function PhotoManagementPanel({ property, open, onOpenChange, staffId, st
 
         {/* Add Photo URL */}
         <div className="bg-gray-50 p-3 rounded-lg border">
-          <Label className="text-xs font-medium flex items-center gap-1.5 mb-1.5">
+          <Label className="text-xs font-medium flex items-center gap-1.5 mb-1.5" htmlFor="add-photo-by-url">
             <Plus className="w-3.5 h-3.5" /> Add Photo by URL
           </Label>
           <div className="flex gap-2">
-            <Input
+            <Input id="add-photo-by-url"
               value={newPhotoUrl}
               onChange={(e) => setNewPhotoUrl(e.target.value)}
               placeholder="https://example.com/photo.jpg"

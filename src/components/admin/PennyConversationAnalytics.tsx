@@ -329,7 +329,7 @@ export function PennyConversationAnalytics({ staffId, staffName }: Props) {
               <div className="flex flex-col md:flex-row gap-4">
                 <div className="flex-1 relative">
                   <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400" aria-hidden="true" />
-                  <Input
+                  <Input aria-label="Search by investor name, email, or message content"
                     placeholder="Search by investor name, email, or message content..."
                     value={searchQuery}
                     onChange={(e) => setSearchQuery(e.target.value)}

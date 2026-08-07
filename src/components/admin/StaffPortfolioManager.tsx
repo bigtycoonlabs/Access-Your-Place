@@ -754,7 +754,7 @@ export function StaffPortfolioManager({ investorId, investorName, staffId, staff
 
                     {notePropertyId === prop.id && (
                       <div className="mt-2 flex gap-2">
-                        <input type="text" placeholder="Add a note..." value={noteText}
+                        <input aria-label="Add a note" type="text" placeholder="Add a note..." value={noteText}
                           onChange={(e) => setNoteText(e.target.value)}
                           onKeyDown={(e) => e.key === 'Enter' && handleAddNote(prop.id)}
                           className="flex-1 h-9 rounded-md border border-input bg-background px-3 py-1 text-sm"
@@ -911,7 +911,7 @@ export function StaffPortfolioManager({ investorId, investorName, staffId, staff
                 <div>
                   <div className="relative">
                     <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400 pointer-events-none" />
-                    <Input
+                    <Input aria-label="Search by address, city, or ZIP"
                       placeholder="Search by address, city, or ZIP..."
                       value={dealSearchQuery}
                       onChange={(e) => setDealSearchQuery(e.target.value)}

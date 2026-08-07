@@ -255,7 +255,7 @@ export function CommissionLedger({ staffId, staffName, isAdmin }: CommissionLedg
         <div className="flex gap-2 flex-wrap">
           <div className="relative">
             <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400" />
-            <Input
+            <Input aria-label="Search commissions"
               placeholder="Search commissions..."
               value={searchQuery}
               onChange={(e) => setSearchQuery(e.target.value)}
@@ -388,12 +388,12 @@ export function CommissionLedger({ staffId, staffName, isAdmin }: CommissionLedg
           </DialogHeader>
           <div className="space-y-4">
             <div>
-              <Label>Client Name *</Label>
-              <Input value={formData.client_name} onChange={(e) => setFormData({ ...formData, client_name: e.target.value })} placeholder="Client full name" />
+              <Label htmlFor="client-name">Client Name *</Label>
+              <Input id="client-name" value={formData.client_name} onChange={(e) => setFormData({ ...formData, client_name: e.target.value })} placeholder="Client full name" />
             </div>
             <div>
-              <Label>Property Address *</Label>
-              <Input value={formData.property_address} onChange={(e) => setFormData({ ...formData, property_address: e.target.value })} placeholder="Full property address" />
+              <Label htmlFor="property-address">Property Address *</Label>
+              <Input id="property-address" value={formData.property_address} onChange={(e) => setFormData({ ...formData, property_address: e.target.value })} placeholder="Full property address" />
             </div>
             <div className="grid grid-cols-2 gap-4">
               <div>
@@ -406,10 +406,10 @@ export function CommissionLedger({ staffId, staffName, isAdmin }: CommissionLedg
                 </Select>
               </div>
               <div>
-                <Label>Claimed Amount *</Label>
+                <Label htmlFor="claimed-amount">Claimed Amount *</Label>
                 <div className="relative">
                   <DollarSign className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400" />
-                  <Input
+                  <Input id="claimed-amount"
                     type="number"
                     step="0.01"
                     className="pl-8"
@@ -421,8 +421,8 @@ export function CommissionLedger({ staffId, staffName, isAdmin }: CommissionLedg
               </div>
             </div>
             <div>
-              <Label>Notes</Label>
-              <Textarea value={formData.notes} onChange={(e) => setFormData({ ...formData, notes: e.target.value })} placeholder="Additional details about this commission..." rows={3} />
+              <Label htmlFor="notes">Notes</Label>
+              <Textarea id="notes" value={formData.notes} onChange={(e) => setFormData({ ...formData, notes: e.target.value })} placeholder="Additional details about this commission..." rows={3} />
             </div>
           </div>
           <DialogFooter>
@@ -465,10 +465,10 @@ export function CommissionLedger({ staffId, staffName, isAdmin }: CommissionLedg
               </div>
               {reviewData.status === 'approved' && (
                 <div>
-                  <Label>Approved Amount</Label>
+                  <Label htmlFor="approved-amount">Approved Amount</Label>
                   <div className="relative">
                     <DollarSign className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400" />
-                    <Input
+                    <Input id="approved-amount"
                       type="number"
                       step="0.01"
                       className="pl-8"
@@ -479,8 +479,8 @@ export function CommissionLedger({ staffId, staffName, isAdmin }: CommissionLedg
                 </div>
               )}
               <div>
-                <Label>Comment</Label>
-                <Textarea
+                <Label htmlFor="comment">Comment</Label>
+                <Textarea id="comment"
                   value={reviewData.admin_comment}
                   onChange={(e) => setReviewData({ ...reviewData, admin_comment: e.target.value })}
                   placeholder="Reason for decision..."

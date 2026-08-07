@@ -573,7 +573,7 @@ export function DealVerificationTab({ staffId, staffName }: DealVerificationTabP
             <div className="flex-1 min-w-[250px]">
               <div className="relative">
                 <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400" aria-hidden="true" />
-                <Input
+                <Input aria-label="Search by title, address, city, ZIP, or AM name"
                   placeholder="Search by title, address, city, ZIP, or AM name..."
                   value={search}
                   onChange={(e) => setSearch(e.target.value)}

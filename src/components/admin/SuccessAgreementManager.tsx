@@ -824,7 +824,7 @@ export function SuccessAgreementManager({ staffId, staffName }: Props) {
         <div className="flex gap-2">
           <div className="relative flex-1 sm:w-80">
             <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400" />
-            <Input
+            <Input aria-label="Search by investor name or email"
               placeholder="Search by investor name or email..."
               value={searchQuery}
               onChange={(e) => setSearchQuery(e.target.value)}
@@ -947,9 +947,9 @@ export function SuccessAgreementManager({ staffId, staffName }: Props) {
           <div className="space-y-4">
             {/* Investor Search */}
             <div>
-              <Label>Search Investor *</Label>
+              <Label htmlFor="search-investor">Search Investor *</Label>
               <div className="relative">
-                <Input
+                <Input id="search-investor"
                   placeholder="Type investor name or email..."
                   value={investorSearch}
                   onChange={(e) => handleSearchInvestors(e.target.value)}
@@ -1073,8 +1073,8 @@ export function SuccessAgreementManager({ staffId, staffName }: Props) {
 
             {/* Document Name */}
             <div>
-              <Label>Document Name</Label>
-              <Input value={agreementName} onChange={(e) => setAgreementName(e.target.value)} />
+              <Label htmlFor="document-name">Document Name</Label>
+              <Input id="document-name" value={agreementName} onChange={(e) => setAgreementName(e.target.value)} />
             </div>
 
             {/* Agreement Content Editor */}

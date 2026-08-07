@@ -201,7 +201,7 @@ export function StaffInternalNotes({ property, staffId, staffName, onUpdate }: S
               </Select>
             ) : (
               <div className="space-y-2">
-                <Input
+                <Input aria-label="Enter acquisition manager name"
                   placeholder="Enter acquisition manager name..."
                   value={formData.found_by_am_name}
                   onChange={(e) => handleChange('found_by_am_name', e.target.value)}
@@ -217,8 +217,8 @@ export function StaffInternalNotes({ property, staffId, staffName, onUpdate }: S
 
           {formData.found_by_am_id === 'custom' && (
             <div>
-              <Label className="mb-1.5">Custom AM Name</Label>
-              <Input
+              <Label className="mb-1.5" htmlFor="custom-am-name">Custom AM Name</Label>
+              <Input id="custom-am-name"
                 placeholder="Enter acquisition manager name..."
                 value={formData.found_by_am_name}
                 onChange={(e) => handleChange('found_by_am_name', e.target.value)}
@@ -252,22 +252,22 @@ export function StaffInternalNotes({ property, staffId, staffName, onUpdate }: S
         </CardHeader>
         <CardContent className="space-y-4">
           <div>
-            <Label className="flex items-center gap-1.5 mb-1.5">
+            <Label className="flex items-center gap-1.5 mb-1.5" htmlFor="referred-by-partner-name-company">
               <Building className="w-3.5 h-3.5 text-emerald-500" />
               Referred By (Partner Name / Company)
             </Label>
-            <Input
+            <Input id="referred-by-partner-name-company"
               placeholder="e.g., John Smith, ABC Realty, Partner Network..."
               value={formData.referred_by_partner}
               onChange={(e) => handleChange('referred_by_partner', e.target.value)}
             />
           </div>
           <div>
-            <Label className="flex items-center gap-1.5 mb-1.5">
+            <Label className="flex items-center gap-1.5 mb-1.5" htmlFor="referral-partner-notes">
               <FileText className="w-3.5 h-3.5 text-emerald-500" />
               Referral Partner Notes
             </Label>
-            <Textarea
+            <Textarea id="referral-partner-notes"
               placeholder="Details about the referral arrangement, commission terms, partner contact info, etc."
               value={formData.referral_partner_notes}
               onChange={(e) => handleChange('referral_partner_notes', e.target.value)}
@@ -298,11 +298,11 @@ export function StaffInternalNotes({ property, staffId, staffName, onUpdate }: S
         </CardHeader>
         <CardContent className="space-y-4">
           <div>
-            <Label className="flex items-center gap-1.5 mb-1.5">
+            <Label className="flex items-center gap-1.5 mb-1.5" htmlFor="internal-notes-staff-only">
               <Shield className="w-3.5 h-3.5 text-gray-500" />
               Internal Notes (Staff Only)
             </Label>
-            <Textarea
+            <Textarea id="internal-notes-staff-only"
               placeholder="Any internal notes about this property that should only be visible to staff..."
               value={formData.staff_internal_notes}
               onChange={(e) => handleChange('staff_internal_notes', e.target.value)}
@@ -310,11 +310,11 @@ export function StaffInternalNotes({ property, staffId, staffName, onUpdate }: S
             />
           </div>
           <div>
-            <Label className="flex items-center gap-1.5 mb-1.5">
+            <Label className="flex items-center gap-1.5 mb-1.5" htmlFor="legacy-internal-notes">
               <FileText className="w-3.5 h-3.5 text-gray-500" />
               Legacy Internal Notes
             </Label>
-            <Textarea
+            <Textarea id="legacy-internal-notes"
               placeholder="Additional internal notes..."
               value={formData.internal_notes}
               onChange={(e) => handleChange('internal_notes', e.target.value)}

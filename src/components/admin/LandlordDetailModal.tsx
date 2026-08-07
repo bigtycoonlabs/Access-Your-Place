@@ -62,10 +62,10 @@ export function LandlordDetailModal({ landlord, onClose, isNew }: Props) {
 
           <TabsContent value="details" className="space-y-4">
             <div className="grid grid-cols-2 gap-4">
-              <div><label className="text-sm font-medium">Name *</label><Input value={form.name} onChange={e => setForm({...form, name: e.target.value})} /></div>
-              <div><label className="text-sm font-medium">Company</label><Input value={form.company_name} onChange={e => setForm({...form, company_name: e.target.value})} /></div>
-              <div><label className="text-sm font-medium">Email</label><Input type="email" value={form.email} onChange={e => setForm({...form, email: e.target.value})} /></div>
-              <div><label className="text-sm font-medium">Phone</label><Input value={form.phone} onChange={e => setForm({...form, phone: e.target.value})} /></div>
+              <div><label className="text-sm font-medium" htmlFor="name">Name *</label><Input id="name" value={form.name} onChange={e => setForm({...form, name: e.target.value})} /></div>
+              <div><label className="text-sm font-medium" htmlFor="company">Company</label><Input id="company" value={form.company_name} onChange={e => setForm({...form, company_name: e.target.value})} /></div>
+              <div><label className="text-sm font-medium" htmlFor="email">Email</label><Input id="email" type="email" value={form.email} onChange={e => setForm({...form, email: e.target.value})} /></div>
+              <div><label className="text-sm font-medium" htmlFor="phone">Phone</label><Input id="phone" value={form.phone} onChange={e => setForm({...form, phone: e.target.value})} /></div>
               <div><label className="text-sm font-medium">Type</label>
                 <Select value={form.contact_type} onValueChange={v => setForm({...form, contact_type: v})}>
                   <SelectTrigger><SelectValue /></SelectTrigger>
@@ -79,7 +79,7 @@ export function LandlordDetailModal({ landlord, onClose, isNew }: Props) {
                 </Select>
               </div>
             </div>
-            <div><label className="text-sm font-medium">Notes</label><Textarea value={form.notes} onChange={e => setForm({...form, notes: e.target.value})} rows={3} /></div>
+            <div><label className="text-sm font-medium" htmlFor="notes">Notes</label><Textarea id="notes" value={form.notes} onChange={e => setForm({...form, notes: e.target.value})} rows={3} /></div>
             <Button onClick={handleSave} disabled={saving} className="bg-[#d4a574]"><Save className="w-4 h-4 mr-2" />{saving ? 'Saving...' : 'Save'}</Button>
           </TabsContent>
 
@@ -97,11 +97,11 @@ export function LandlordDetailModal({ landlord, onClose, isNew }: Props) {
                     <SelectContent><SelectItem value="outbound">Outbound</SelectItem><SelectItem value="inbound">Inbound</SelectItem></SelectContent>
                   </Select>
                 </div>
-                <Input placeholder="Subject" value={newComm.subject} onChange={e => setNewComm({...newComm, subject: e.target.value})} />
-                <Textarea placeholder="Details" value={newComm.content} onChange={e => setNewComm({...newComm, content: e.target.value})} rows={2} />
+                <Input aria-label="Subject" placeholder="Subject" value={newComm.subject} onChange={e => setNewComm({...newComm, subject: e.target.value})} />
+                <Textarea aria-label="Details" placeholder="Details" value={newComm.content} onChange={e => setNewComm({...newComm, content: e.target.value})} rows={2} />
                 <div className="flex gap-3 items-center">
-                  <label className="flex items-center gap-2 text-sm"><input type="checkbox" checked={newComm.follow_up_required} onChange={e => setNewComm({...newComm, follow_up_required: e.target.checked})} />Follow-up needed</label>
-                  {newComm.follow_up_required && <Input type="date" value={newComm.follow_up_date} onChange={e => setNewComm({...newComm, follow_up_date: e.target.value})} className="w-40" />}
+                  <label className="flex items-center gap-2 text-sm" htmlFor="follow-up-needed"><input type="checkbox" checked={newComm.follow_up_required} onChange={e => setNewComm({...newComm, follow_up_required: e.target.checked})} />Follow-up needed</label>
+                  {newComm.follow_up_required && <Input id="follow-up-needed" type="date" value={newComm.follow_up_date} onChange={e => setNewComm({...newComm, follow_up_date: e.target.value})} className="w-40" />}
                 </div>
                 <Button onClick={logComm} size="sm"><Plus className="w-4 h-4 mr-1" />Log</Button>
               </div>

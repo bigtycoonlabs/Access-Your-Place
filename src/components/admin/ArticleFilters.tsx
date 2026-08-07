@@ -27,7 +27,7 @@ export function ArticleFilters({
       <div className="flex-1 min-w-[200px]">
         <div className="relative">
           <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400" />
-          <Input
+          <Input aria-label="Search articles by title"
             placeholder="Search articles by title..."
             value={searchQuery}
             onChange={(e) => onSearchChange(e.target.value)}

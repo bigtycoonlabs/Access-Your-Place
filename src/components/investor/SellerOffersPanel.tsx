@@ -349,8 +349,8 @@ export function SellerOffersPanel({ investorId, investorName }: Props) {
               {selectedNegotiation.has_pending && (
                 <div className="space-y-4 border-t pt-4">
                   <h4 className="font-semibold text-sm">Respond to this offer</h4>
-                  <div><Label className="text-xs text-gray-500">Optional message with your response</Label>
-                    <Textarea value={responseMessage} onChange={(e) => setResponseMessage(e.target.value)} placeholder="Add a message to the buyer (optional)..." rows={2} className="mt-1" /></div>
+                  <div><Label className="text-xs text-gray-500" htmlFor="optional-message-with-your-response">Optional message with your response</Label>
+                    <Textarea id="optional-message-with-your-response" value={responseMessage} onChange={(e) => setResponseMessage(e.target.value)} placeholder="Add a message to the buyer (optional)..." rows={2} className="mt-1" /></div>
                   <div className="flex gap-2">
                     <Button onClick={() => handleAccept(selectedNegotiation.latest_offer.id)} disabled={processing} className="flex-1 bg-green-600 hover:bg-green-700 text-white">
                       {processing && <Loader2 className="w-4 h-4 mr-2 animate-spin" />}<CheckCircle className="w-4 h-4 mr-2" /> Accept ${selectedNegotiation.latest_offer.offer_amount.toLocaleString()}

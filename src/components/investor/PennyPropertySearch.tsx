@@ -359,7 +359,7 @@ export function PennyPropertySearch({ investorId, investorName, hasAcquisitionMa
           <div className="grid md:grid-cols-3 gap-4">
             <div>
               <label className="text-sm font-medium text-gray-700 mb-1 block">City</label>
-              <Input
+              <Input aria-label="e.g., Austin"
                 placeholder="e.g., Austin"
                 value={searchParams.city}
                 onChange={(e) => setSearchParams(prev => ({ ...prev, city: e.target.value }))}
@@ -367,7 +367,7 @@ export function PennyPropertySearch({ investorId, investorName, hasAcquisitionMa
             </div>
             <div>
               <label className="text-sm font-medium text-gray-700 mb-1 block">State</label>
-              <Input
+              <Input aria-label="e.g., TX"
                 placeholder="e.g., TX"
                 value={searchParams.state}
                 onChange={(e) => setSearchParams(prev => ({ ...prev, state: e.target.value }))}
@@ -375,7 +375,7 @@ export function PennyPropertySearch({ investorId, investorName, hasAcquisitionMa
             </div>
             <div>
               <label className="text-sm font-medium text-gray-700 mb-1 block">ZIP Code</label>
-              <Input
+              <Input aria-label="e.g., 78701"
                 placeholder="e.g., 78701"
                 value={searchParams.zip_code}
                 onChange={(e) => setSearchParams(prev => ({ ...prev, zip_code: e.target.value }))}
@@ -403,7 +403,7 @@ export function PennyPropertySearch({ investorId, investorName, hasAcquisitionMa
             </div>
             <div>
               <label className="text-sm font-medium text-gray-700 mb-1 block">Min Bedrooms</label>
-              <Input
+              <Input aria-label="Any"
                 type="number"
                 placeholder="Any"
                 value={searchParams.min_bedrooms}
@@ -412,7 +412,7 @@ export function PennyPropertySearch({ investorId, investorName, hasAcquisitionMa
             </div>
             <div>
               <label className="text-sm font-medium text-gray-700 mb-1 block">Max Rent</label>
-              <Input
+              <Input aria-label="Any"
                 type="number"
                 placeholder="Any"
                 value={searchParams.max_price}
@@ -613,7 +613,7 @@ export function PennyPropertySearch({ investorId, investorName, hasAcquisitionMa
             <div className="bg-gray-50 rounded-lg p-4 space-y-3">
               <div>
                 <label className="text-sm font-medium text-gray-700 mb-1 block">City *</label>
-                <Input
+                <Input aria-label="e.g., Austin"
                   placeholder="e.g., Austin"
                   value={searchParams.city}
                   onChange={(e) => setSearchParams(prev => ({ ...prev, city: e.target.value }))}
@@ -622,7 +622,7 @@ export function PennyPropertySearch({ investorId, investorName, hasAcquisitionMa
               <div className="grid grid-cols-2 gap-3">
                 <div>
                   <label className="text-sm font-medium text-gray-700 mb-1 block">State *</label>
-                  <Input
+                  <Input aria-label="e.g., TX"
                     placeholder="e.g., TX"
                     value={searchParams.state}
                     onChange={(e) => setSearchParams(prev => ({ ...prev, state: e.target.value }))}
@@ -630,7 +630,7 @@ export function PennyPropertySearch({ investorId, investorName, hasAcquisitionMa
                 </div>
                 <div>
                   <label className="text-sm font-medium text-gray-700 mb-1 block">ZIP Code</label>
-                  <Input
+                  <Input aria-label="Optional"
                     placeholder="Optional"
                     value={searchParams.zip_code}
                     onChange={(e) => setSearchParams(prev => ({ ...prev, zip_code: e.target.value }))}

@@ -88,17 +88,17 @@ export function AcquisitionDetailModal({ acquisition, open, onClose, onUpdate }:
           <TabsContent value="details" className="space-y-4">
             <div className="grid grid-cols-2 gap-4">
               <div><Label>Status</Label><Select defaultValue={acquisition.workflow_status} onValueChange={v => updateField('workflow_status', v)}><SelectTrigger><SelectValue /></SelectTrigger><SelectContent><SelectItem value="in_progress">In Progress</SelectItem><SelectItem value="pending">Pending</SelectItem><SelectItem value="awaiting_info">Awaiting Info</SelectItem><SelectItem value="on_hold">On Hold</SelectItem></SelectContent></Select></div>
-              <div><Label>Assigned Staff</Label><Input defaultValue={acquisition.assigned_staff || ''} onBlur={e => updateField('assigned_staff', e.target.value)} /></div>
-              <div><Label>Acquisition Fee ($)</Label><Input type="number" defaultValue={acquisition.acquisition_fee || ''} onBlur={e => updateField('acquisition_fee', parseFloat(e.target.value))} /></div>
-              <div><Label>Monthly Rent ($)</Label><Input type="number" defaultValue={acquisition.monthly_rent || ''} onBlur={e => updateField('monthly_rent', parseFloat(e.target.value))} /></div>
+              <div><Label htmlFor="assigned-staff">Assigned Staff</Label><Input id="assigned-staff" defaultValue={acquisition.assigned_staff || ''} onBlur={e => updateField('assigned_staff', e.target.value)} /></div>
+              <div><Label htmlFor="acquisition-fee">Acquisition Fee ($)</Label><Input id="acquisition-fee" type="number" defaultValue={acquisition.acquisition_fee || ''} onBlur={e => updateField('acquisition_fee', parseFloat(e.target.value))} /></div>
+              <div><Label htmlFor="monthly-rent">Monthly Rent ($)</Label><Input id="monthly-rent" type="number" defaultValue={acquisition.monthly_rent || ''} onBlur={e => updateField('monthly_rent', parseFloat(e.target.value))} /></div>
             </div>
           </TabsContent>
           <TabsContent value="negotiation" className="space-y-4">
             <div className="grid grid-cols-2 gap-4">
-              <div><Label>Landlord Name</Label><Input defaultValue={acquisition.landlord_name || ''} onBlur={e => updateField('landlord_name', e.target.value)} /></div>
-              <div><Label>Landlord Contact</Label><Input defaultValue={acquisition.landlord_contact || ''} onBlur={e => updateField('landlord_contact', e.target.value)} /></div>
+              <div><Label htmlFor="landlord-name">Landlord Name</Label><Input id="landlord-name" defaultValue={acquisition.landlord_name || ''} onBlur={e => updateField('landlord_name', e.target.value)} /></div>
+              <div><Label htmlFor="landlord-contact">Landlord Contact</Label><Input id="landlord-contact" defaultValue={acquisition.landlord_contact || ''} onBlur={e => updateField('landlord_contact', e.target.value)} /></div>
             </div>
-            <div><Label>Negotiation Notes</Label><Textarea defaultValue={acquisition.negotiation_notes || ''} onBlur={e => updateField('negotiation_notes', e.target.value)} rows={4} /></div>
+            <div><Label htmlFor="negotiation-notes">Negotiation Notes</Label><Textarea id="negotiation-notes" defaultValue={acquisition.negotiation_notes || ''} onBlur={e => updateField('negotiation_notes', e.target.value)} rows={4} /></div>
           </TabsContent>
           <TabsContent value="setup">
             <div className="grid grid-cols-2 gap-3">{Object.entries(acquisition.setup_checklist || {}).map(([key, val]) => <div key={key} className="flex items-center gap-2 p-3 bg-gray-50 rounded"><Checkbox checked={val as boolean} onCheckedChange={() => toggleChecklist(key)} /><span className="capitalize text-sm">{key.replace(/_/g, ' ')}</span></div>)}</div>
@@ -107,7 +107,7 @@ export function AcquisitionDetailModal({ acquisition, open, onClose, onUpdate }:
             <DocumentsTab acquisitionId={acquisition.id} investorId={acquisition.investor_id} documents={documents} onUpdate={fetchDocuments} />
           </TabsContent>
           <TabsContent value="notes" className="space-y-4">
-            <div className="flex gap-2"><Textarea placeholder="Add a note..." value={note} onChange={e => setNote(e.target.value)} className="flex-1" /><div className="flex flex-col gap-2"><Select value={noteType} onValueChange={(v: any) => setNoteType(v)}><SelectTrigger className="w-28"><SelectValue /></SelectTrigger><SelectContent><SelectItem value="investor">Investor</SelectItem><SelectItem value="internal">Internal</SelectItem></SelectContent></Select><Button onClick={addNote} disabled={saving} className="bg-[#d4a574]"><MessageSquare className="w-4 h-4" /></Button></div></div>
+            <div className="flex gap-2"><Textarea aria-label="Add a note" placeholder="Add a note..." value={note} onChange={e => setNote(e.target.value)} className="flex-1" /><div className="flex flex-col gap-2"><Select value={noteType} onValueChange={(v: any) => setNoteType(v)}><SelectTrigger className="w-28"><SelectValue /></SelectTrigger><SelectContent><SelectItem value="investor">Investor</SelectItem><SelectItem value="internal">Internal</SelectItem></SelectContent></Select><Button onClick={addNote} disabled={saving} className="bg-[#d4a574]"><MessageSquare className="w-4 h-4" /></Button></div></div>
             {noteType === 'investor' && <p className="text-xs text-blue-600 flex items-center gap-1"><span className="w-2 h-2 bg-blue-500 rounded-full animate-pulse"></span>Investor-visible notes will trigger email notification</p>}
             {acquisition.team_notes && <div className="bg-blue-50 p-4 rounded"><h4 className="font-semibold text-blue-900 mb-2">Investor-Visible Notes</h4><pre className="text-sm whitespace-pre-wrap">{acquisition.team_notes}</pre></div>}
             {acquisition.internal_notes && <div className="bg-gray-100 p-4 rounded"><h4 className="font-semibold text-gray-700 mb-2">Internal Notes</h4><pre className="text-sm whitespace-pre-wrap">{acquisition.internal_notes}</pre></div>}

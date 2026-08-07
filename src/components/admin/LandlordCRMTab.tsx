@@ -88,7 +88,7 @@ export function LandlordCRMTab({ userRole = 'Acquisition_Manager' }: LandlordCRM
         <CardContent>
           <div className="relative mb-4">
             <Search className="absolute left-3 top-3 w-4 h-4 text-gray-400" />
-            <Input placeholder="Search landlords..." value={search} onChange={e => setSearch(e.target.value)} className="pl-10" />
+            <Input aria-label="Search landlords" placeholder="Search landlords..." value={search} onChange={e => setSearch(e.target.value)} className="pl-10" />
           </div>
           
           <div className="space-y-3">

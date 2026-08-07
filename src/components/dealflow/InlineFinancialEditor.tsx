@@ -244,16 +244,16 @@ export function InlineFinancialEditor({ property, open, onOpenChange, staffId, s
           </h4>
           <div className="grid grid-cols-3 gap-4">
             <div>
-              <Label className="text-xs">Monthly Property Rent ($)</Label>
-              <Input type="number" min={0} step={50} value={form.monthly_rent || ''} onChange={(e) => setForm({ ...form, monthly_rent: Number(e.target.value) })} placeholder="1500" />
+              <Label className="text-xs" htmlFor="monthly-property-rent">Monthly Property Rent ($)</Label>
+              <Input id="monthly-property-rent" type="number" min={0} step={50} value={form.monthly_rent || ''} onChange={(e) => setForm({ ...form, monthly_rent: Number(e.target.value) })} placeholder="1500" />
             </div>
             <div>
-              <Label className="text-xs">Acquisition Fee ($)</Label>
-              <Input type="number" min={0} step={100} value={form.acquisition_fee || ''} onChange={(e) => setForm({ ...form, acquisition_fee: Number(e.target.value) })} placeholder="2500" />
+              <Label className="text-xs" htmlFor="acquisition-fee">Acquisition Fee ($)</Label>
+              <Input id="acquisition-fee" type="number" min={0} step={100} value={form.acquisition_fee || ''} onChange={(e) => setForm({ ...form, acquisition_fee: Number(e.target.value) })} placeholder="2500" />
             </div>
             <div>
-              <Label className="text-xs flex items-center gap-1"><Percent className="w-3 h-3" /> Avg Occupancy Rate (%)</Label>
-              <Input type="number" min={0} max={100} step={1} value={form.avg_occupancy_rate || ''} onChange={(e) => setForm({ ...form, avg_occupancy_rate: Number(e.target.value) })} placeholder="75" />
+              <Label className="text-xs flex items-center gap-1" htmlFor="avg-occupancy-rate"><Percent className="w-3 h-3" /> Avg Occupancy Rate (%)</Label>
+              <Input id="avg-occupancy-rate" type="number" min={0} max={100} step={1} value={form.avg_occupancy_rate || ''} onChange={(e) => setForm({ ...form, avg_occupancy_rate: Number(e.target.value) })} placeholder="75" />
             </div>
           </div>
 
@@ -263,16 +263,16 @@ export function InlineFinancialEditor({ property, open, onOpenChange, staffId, s
           </h4>
           <div className="grid grid-cols-3 gap-4">
             <div>
-              <Label className="text-xs">Asking Price ($)</Label>
-              <Input type="number" min={0} step={1000} value={form.asking_price || ''} onChange={(e) => setForm({ ...form, asking_price: Number(e.target.value) })} placeholder="250000" />
+              <Label className="text-xs" htmlFor="asking-price">Asking Price ($)</Label>
+              <Input id="asking-price" type="number" min={0} step={1000} value={form.asking_price || ''} onChange={(e) => setForm({ ...form, asking_price: Number(e.target.value) })} placeholder="250000" />
             </div>
             <div>
-              <Label className="text-xs flex items-center gap-1"><Square className="w-3 h-3" /> Square Footage</Label>
-              <Input type="number" min={0} step={10} value={form.sqft || ''} onChange={(e) => setForm({ ...form, sqft: Number(e.target.value) })} placeholder="1500" />
+              <Label className="text-xs flex items-center gap-1" htmlFor="square-footage"><Square className="w-3 h-3" /> Square Footage</Label>
+              <Input id="square-footage" type="number" min={0} step={10} value={form.sqft || ''} onChange={(e) => setForm({ ...form, sqft: Number(e.target.value) })} placeholder="1500" />
             </div>
             <div>
-              <Label className="text-xs">Avg Room Rate ($/month)</Label>
-              <Input type="number" min={0} step={25} value={form.monthly_room_rate || ''} onChange={(e) => setForm({ ...form, monthly_room_rate: Number(e.target.value) })} placeholder="850" />
+              <Label className="text-xs" htmlFor="avg-room-rate-month">Avg Room Rate ($/month)</Label>
+              <Input id="avg-room-rate-month" type="number" min={0} step={25} value={form.monthly_room_rate || ''} onChange={(e) => setForm({ ...form, monthly_room_rate: Number(e.target.value) })} placeholder="850" />
             </div>
           </div>
 
@@ -281,12 +281,12 @@ export function InlineFinancialEditor({ property, open, onOpenChange, staffId, s
           </h4>
           <div className="grid grid-cols-3 gap-4">
             <div>
-              <Label className="text-xs">ADR - Peak Season ($)</Label>
-              <Input type="number" min={0} step={5} value={form.adr_peak_season || ''} onChange={(e) => setForm({ ...form, adr_peak_season: Number(e.target.value) })} placeholder="180" />
+              <Label className="text-xs" htmlFor="adr-peak-season">ADR - Peak Season ($)</Label>
+              <Input id="adr-peak-season" type="number" min={0} step={5} value={form.adr_peak_season || ''} onChange={(e) => setForm({ ...form, adr_peak_season: Number(e.target.value) })} placeholder="180" />
             </div>
             <div>
-              <Label className="text-xs">ADR - Slow Season ($)</Label>
-              <Input type="number" min={0} step={5} value={form.adr_slow_season || ''} onChange={(e) => setForm({ ...form, adr_slow_season: Number(e.target.value) })} placeholder="120" />
+              <Label className="text-xs" htmlFor="adr-slow-season">ADR - Slow Season ($)</Label>
+              <Input id="adr-slow-season" type="number" min={0} step={5} value={form.adr_slow_season || ''} onChange={(e) => setForm({ ...form, adr_slow_season: Number(e.target.value) })} placeholder="120" />
             </div>
             <div>
               {/* Spacer for alignment */}
@@ -298,16 +298,16 @@ export function InlineFinancialEditor({ property, open, onOpenChange, staffId, s
           </h4>
           <div className="grid grid-cols-3 gap-4">
             <div>
-              <Label className="text-xs">Projected Yearly Revenue ($)</Label>
-              <Input type="number" min={0} step={500} value={form.projected_yearly_revenue || ''} onChange={(e) => setForm({ ...form, projected_yearly_revenue: Number(e.target.value) })} placeholder="48000" />
+              <Label className="text-xs" htmlFor="projected-yearly-revenue">Projected Yearly Revenue ($)</Label>
+              <Input id="projected-yearly-revenue" type="number" min={0} step={500} value={form.projected_yearly_revenue || ''} onChange={(e) => setForm({ ...form, projected_yearly_revenue: Number(e.target.value) })} placeholder="48000" />
             </div>
             <div>
-              <Label className="text-xs">Monthly Revenue - Peak ($)</Label>
-              <Input type="number" min={0} step={100} value={form.projected_monthly_revenue_peak || ''} onChange={(e) => setForm({ ...form, projected_monthly_revenue_peak: Number(e.target.value) })} placeholder="5400" />
+              <Label className="text-xs" htmlFor="monthly-revenue-peak">Monthly Revenue - Peak ($)</Label>
+              <Input id="monthly-revenue-peak" type="number" min={0} step={100} value={form.projected_monthly_revenue_peak || ''} onChange={(e) => setForm({ ...form, projected_monthly_revenue_peak: Number(e.target.value) })} placeholder="5400" />
             </div>
             <div>
-              <Label className="text-xs">Monthly Revenue - Slow ($)</Label>
-              <Input type="number" min={0} step={100} value={form.projected_monthly_revenue_slow || ''} onChange={(e) => setForm({ ...form, projected_monthly_revenue_slow: Number(e.target.value) })} placeholder="3200" />
+              <Label className="text-xs" htmlFor="monthly-revenue-slow">Monthly Revenue - Slow ($)</Label>
+              <Input id="monthly-revenue-slow" type="number" min={0} step={100} value={form.projected_monthly_revenue_slow || ''} onChange={(e) => setForm({ ...form, projected_monthly_revenue_slow: Number(e.target.value) })} placeholder="3200" />
             </div>
           </div>
 
@@ -317,12 +317,12 @@ export function InlineFinancialEditor({ property, open, onOpenChange, staffId, s
           </h4>
           <div className="grid grid-cols-2 gap-4">
             <div>
-              <Label className="text-xs flex items-center gap-1"><Calendar className="w-3 h-3" /> Peak Season Description</Label>
-              <Input value={form.peak_season_description || ''} onChange={(e) => setForm({ ...form, peak_season_description: e.target.value })} placeholder="e.g., May through September" />
+              <Label className="text-xs flex items-center gap-1" htmlFor="peak-season-description"><Calendar className="w-3 h-3" /> Peak Season Description</Label>
+              <Input id="peak-season-description" value={form.peak_season_description || ''} onChange={(e) => setForm({ ...form, peak_season_description: e.target.value })} placeholder="e.g., May through September" />
             </div>
             <div>
-              <Label className="text-xs flex items-center gap-1"><FileText className="w-3 h-3" /> Deposits / Concessions Notes</Label>
-              <Input value={form.deposits_concessions_notes || ''} onChange={(e) => setForm({ ...form, deposits_concessions_notes: e.target.value })} placeholder="e.g., First/last month, pet deposit $300" />
+              <Label className="text-xs flex items-center gap-1" htmlFor="deposits-concessions-notes"><FileText className="w-3 h-3" /> Deposits / Concessions Notes</Label>
+              <Input id="deposits-concessions-notes" value={form.deposits_concessions_notes || ''} onChange={(e) => setForm({ ...form, deposits_concessions_notes: e.target.value })} placeholder="e.g., First/last month, pet deposit $300" />
             </div>
           </div>
         </div>

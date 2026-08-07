@@ -645,7 +645,7 @@ export function StaffMessaging({ staffId, staffName }: Props) {
               </CardTitle>
               <div className="relative mt-2">
                 <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400" />
-                <input
+                <input aria-label="Search investors"
                   type="text"
                   placeholder="Search investors..."
                   value={searchTerm}
@@ -761,7 +761,7 @@ export function StaffMessaging({ staffId, staffName }: Props) {
 
                 {/* Compose area */}
                 <div className="flex-shrink-0 p-4 border-t bg-white space-y-3">
-                  <input
+                  <input aria-label="Subject (optional)"
                     type="text"
                     placeholder="Subject (optional)"
                     value={investorSubject}
@@ -770,7 +770,7 @@ export function StaffMessaging({ staffId, staffName }: Props) {
                     className="w-full h-10 rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2"
                   />
                   <div className="flex gap-2">
-                    <textarea
+                    <textarea aria-label="Type your message to the investor"
                       ref={investorTextareaRef}
                       placeholder="Type your message to the investor..."
                       value={investorMessage}
@@ -816,7 +816,7 @@ export function StaffMessaging({ staffId, staffName }: Props) {
               </div>
               <div className="relative mt-2">
                 <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400" />
-                <input
+                <input aria-label="Search staff"
                   type="text"
                   placeholder="Search staff..."
                   value={searchTerm}
@@ -915,7 +915,7 @@ export function StaffMessaging({ staffId, staffName }: Props) {
                 </div>
 
                 <div className="flex-shrink-0 p-4 border-t bg-white space-y-3">
-                  <input
+                  <input aria-label="Subject (optional)"
                     type="text"
                     placeholder="Subject (optional)"
                     value={staffSubject}
@@ -924,7 +924,7 @@ export function StaffMessaging({ staffId, staffName }: Props) {
                     className="w-full h-10 rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2"
                   />
                   <div className="flex gap-2">
-                    <textarea
+                    <textarea aria-label="Type your message"
                       ref={staffTextareaRef}
                       placeholder="Type your message..."
                       value={staffMessage}
@@ -1005,14 +1005,14 @@ export function StaffMessaging({ staffId, staffName }: Props) {
             </div>
             <div>
               <label className="text-sm font-medium">Subject (optional)</label>
-              <input type="text" placeholder="Message subject" value={newStaffModalSubject}
+              <input aria-label="Message subject" type="text" placeholder="Message subject" value={newStaffModalSubject}
                 onChange={(e) => setNewStaffModalSubject(e.target.value)}
                 className="w-full h-10 rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2"
               />
             </div>
             <div>
               <label className="text-sm font-medium">Message</label>
-              <textarea placeholder="Type your message..." value={newStaffModalMessage}
+              <textarea aria-label="Type your message" placeholder="Type your message..." value={newStaffModalMessage}
                 onChange={(e) => setNewStaffModalMessage(e.target.value)} rows={4}
                 className="w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 resize-y min-h-[100px]"
               />
@@ -1048,7 +1048,7 @@ export function StaffMessaging({ staffId, staffName }: Props) {
               <label className="text-sm font-medium">Search Investor *</label>
               <div className="relative">
                 <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400" />
-                <input
+                <input aria-label="Type investor name or email"
                   type="text"
                   placeholder="Type investor name or email..."
                   value={newInvSearch}
@@ -1084,7 +1084,7 @@ export function StaffMessaging({ staffId, staffName }: Props) {
 
             <div>
               <label className="text-sm font-medium">Subject (optional)</label>
-              <input type="text" placeholder="Message subject" value={newInvSubject}
+              <input aria-label="Message subject" type="text" placeholder="Message subject" value={newInvSubject}
                 onChange={(e) => setNewInvSubject(e.target.value)}
                 className="w-full h-10 rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2"
               />
@@ -1092,7 +1092,7 @@ export function StaffMessaging({ staffId, staffName }: Props) {
 
             <div>
               <label className="text-sm font-medium">Message *</label>
-              <textarea placeholder="Type your message to the investor..." value={newInvMessage}
+              <textarea aria-label="Type your message to the investor" placeholder="Type your message to the investor..." value={newInvMessage}
                 onChange={(e) => setNewInvMessage(e.target.value)} rows={5}
                 className="w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 resize-y min-h-[120px]"
               />

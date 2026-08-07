@@ -569,7 +569,7 @@ export function AcquisitionRequestsTab() {
                     Assign Acquisition Manager
                   </label>
                   <div className="flex gap-2">
-                    <Input
+                    <Input aria-label="Manager name"
                       placeholder="Manager name..."
                       value={managerName}
                       onChange={(e) => setManagerName(e.target.value)}
@@ -600,7 +600,7 @@ export function AcquisitionRequestsTab() {
                       Researching
                     </Button>
                   </div>
-                  <Textarea
+                  <Textarea aria-label="Add notes about your research"
                     placeholder="Add notes about your research..."
                     value={managerNotes}
                     onChange={(e) => setManagerNotes(e.target.value)}
@@ -654,7 +654,7 @@ export function AcquisitionRequestsTab() {
               <label className="text-sm font-medium text-gray-700 mb-1 block">
                 Negotiated Monthly Rent (optional)
               </label>
-              <Input
+              <Input aria-label="e.g., 1800"
                 type="number"
                 placeholder="e.g., 1800"
                 value={negotiatedPrice}
@@ -666,7 +666,7 @@ export function AcquisitionRequestsTab() {
               <label className="text-sm font-medium text-gray-700 mb-1 block">
                 Negotiated Terms (optional)
               </label>
-              <Textarea
+              <Textarea aria-label="e.g., 12-month lease, pets allowed, subletting permitted"
                 placeholder="e.g., 12-month lease, pets allowed, subletting permitted..."
                 value={negotiatedTerms}
                 onChange={(e) => setNegotiatedTerms(e.target.value)}
@@ -678,7 +678,7 @@ export function AcquisitionRequestsTab() {
               <label className="text-sm font-medium text-gray-700 mb-1 block">
                 Notes for Investor
               </label>
-              <Textarea
+              <Textarea aria-label="Notes that will be visible to the investor"
                 placeholder="Notes that will be visible to the investor..."
                 value={managerNotes}
                 onChange={(e) => setManagerNotes(e.target.value)}
@@ -723,10 +723,10 @@ export function AcquisitionRequestsTab() {
             </p>
 
             <div>
-              <label className="text-sm font-medium text-gray-700 mb-1 block">
+              <label className="text-sm font-medium text-gray-700 mb-1 block" htmlFor="decline-reason">
                 Decline Reason
               </label>
-              <Textarea
+              <Textarea id="decline-reason"
                 placeholder="e.g., Property does not meet our criteria for a viable arbitrage opportunity..."
                 value={declineReason}
                 onChange={(e) => setDeclineReason(e.target.value)}

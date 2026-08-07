@@ -293,7 +293,7 @@ h1{color:#1a365d;border-bottom:2px solid #d4a574;padding-bottom:10px}.content{wh
 <body><div style="text-align:center"><h1>${doc.document_name}</h1><span class="badge">SIGNED</span></div>
 <div class="content">${doc.document_content || 'Agreement content on file.'}</div>
 <div class="sig-block"><p><strong>Electronic Signature:</strong></p>
-${sigData.signature_image_url ? `<img src="${sigData.signature_image_url}" style="max-width:300px;border:1px solid #ddd;border-radius:4px;padding:4px" />` : 
+${sigData.signature_image_url ? `<img src="${sigData.signature_image_url}" alt="Signature of the person who signed this document" style="max-width:300px;border:1px solid #ddd;border-radius:4px;padding:4px" />` : 
 `<p class="sig">${sigData.signed_name || investorName}</p>`}
 <p><strong>Signed by:</strong> ${sigData.signed_name || investorName}</p>
 <p><strong>Date:</strong> ${doc.signed_at ? new Date(doc.signed_at).toLocaleString() : 'N/A'}</p>
@@ -575,10 +575,10 @@ ${sigData.signature_image_url ? `<img src="${sigData.signature_image_url}" style
 
             {/* Step 2: Initials */}
             <div>
-              <Label className="text-sm font-semibold flex items-center gap-1.5 text-gray-700 mb-2">
+              <Label className="text-sm font-semibold flex items-center gap-1.5 text-gray-700 mb-2" htmlFor="step-2-your-initials">
                 Step 2: Your Initials
               </Label>
-              <Input
+              <Input id="step-2-your-initials"
                 value={initials}
                 onChange={(e) => setInitials(e.target.value.toUpperCase())}
                 placeholder="e.g., JD"

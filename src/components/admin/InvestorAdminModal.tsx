@@ -396,12 +396,12 @@ export function InvestorAdminModal({ investor, onClose }: Props) {
                             </Select>
                           </div>
                           <div>
-                            <Label>Amount</Label>
-                            <Input type="number" value={creditAmount} onChange={e => setCreditAmount(e.target.value)} placeholder="0" />
+                            <Label htmlFor="amount">Amount</Label>
+                            <Input id="amount" type="number" value={creditAmount} onChange={e => setCreditAmount(e.target.value)} placeholder="0" />
                           </div>
                           <div>
-                            <Label>Reason</Label>
-                            <Input value={creditReason} onChange={e => setCreditReason(e.target.value)} placeholder="Reason for change" />
+                            <Label htmlFor="reason">Reason</Label>
+                            <Input id="reason" value={creditReason} onChange={e => setCreditReason(e.target.value)} placeholder="Reason for change" />
                           </div>
                         </div>
                         <Button onClick={handleUpdateCredits} disabled={savingCredits} className="bg-[#1a365d] hover:bg-[#2d4a7c] w-full">
@@ -560,9 +560,9 @@ export function InvestorAdminModal({ investor, onClose }: Props) {
                     </Card>
 
                     <div className="space-y-3">
-                      <Label className="text-base font-semibold flex items-center gap-2"><UserCheck className="w-5 h-5 text-[#d4a574]" />Acquisition Manager</Label>
+                      <Label className="text-base font-semibold flex items-center gap-2" htmlFor="acquisition-manager"><UserCheck className="w-5 h-5 text-[#d4a574]" />Acquisition Manager</Label>
                       <div className="flex gap-2">
-                        <Input placeholder="Manager name" value={managerName} onChange={e => setManagerName(e.target.value)} className="flex-1" />
+                        <Input id="acquisition-manager" placeholder="Manager name" value={managerName} onChange={e => setManagerName(e.target.value)} className="flex-1" />
                         <Button onClick={handleAssignManager} disabled={savingManager} className="bg-[#d4a574] hover:bg-[#c49464]">
                           {savingManager ? <Loader2 className="w-4 h-4 animate-spin" /> : 'Save'}
                         </Button>
@@ -675,8 +675,8 @@ export function InvestorAdminModal({ investor, onClose }: Props) {
                 <div className="px-6 py-4 border-b bg-gray-50">
                   <p className="text-sm font-medium mb-3">Add Document</p>
                   <div className="grid grid-cols-4 gap-3">
-                    <Input placeholder="Document name" value={documentUpload.name} onChange={e => setDocumentUpload({...documentUpload, name: e.target.value})} />
-                    <Input placeholder="Document URL" value={documentUpload.url} onChange={e => setDocumentUpload({...documentUpload, url: e.target.value})} className="col-span-2" />
+                    <Input aria-label="Document name" placeholder="Document name" value={documentUpload.name} onChange={e => setDocumentUpload({...documentUpload, name: e.target.value})} />
+                    <Input aria-label="Document URL" placeholder="Document URL" value={documentUpload.url} onChange={e => setDocumentUpload({...documentUpload, url: e.target.value})} className="col-span-2" />
                     <div className="flex gap-2">
                       <Select value={documentUpload.type} onValueChange={v => setDocumentUpload({...documentUpload, type: v})}>
                         <SelectTrigger><SelectValue /></SelectTrigger>

@@ -314,7 +314,7 @@ export function SuccessTeamRequestCenter({ staffId, staffName }: SuccessTeamRequ
           <div className="flex flex-wrap items-center gap-3">
             <div className="relative flex-1 min-w-[200px]">
               <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400" />
-              <Input placeholder="Search investor, address, city..." value={searchQuery} onChange={(e) => setSearchQuery(e.target.value)} className="pl-10" />
+              <Input aria-label="Search investor, address, city" placeholder="Search investor, address, city..." value={searchQuery} onChange={(e) => setSearchQuery(e.target.value)} className="pl-10" />
             </div>
             <Select value={filterType} onValueChange={setFilterType}>
               <SelectTrigger className="w-[180px]"><Filter className="w-4 h-4 mr-2" /><SelectValue /></SelectTrigger>
@@ -509,25 +509,25 @@ export function SuccessTeamRequestCenter({ staffId, staffName }: SuccessTeamRequ
           </DialogHeader>
           <div className="space-y-4">
             <div>
-              <Label className="text-xs">Address</Label>
-              <Input value={editForm.address || ''} onChange={(e) => setEditForm(p => ({ ...p, address: e.target.value }))} />
+              <Label className="text-xs" htmlFor="address">Address</Label>
+              <Input id="address" value={editForm.address || ''} onChange={(e) => setEditForm(p => ({ ...p, address: e.target.value }))} />
             </div>
             <div className="grid grid-cols-3 gap-3">
-              <div><Label className="text-xs">City</Label><Input value={editForm.city || ''} onChange={(e) => setEditForm(p => ({ ...p, city: e.target.value }))} /></div>
-              <div><Label className="text-xs">State</Label><Input value={editForm.state || ''} onChange={(e) => setEditForm(p => ({ ...p, state: e.target.value }))} /></div>
-              <div><Label className="text-xs">ZIP</Label><Input value={editForm.zip_code || ''} onChange={(e) => setEditForm(p => ({ ...p, zip_code: e.target.value }))} /></div>
+              <div><Label className="text-xs" htmlFor="city">City</Label><Input id="city" value={editForm.city || ''} onChange={(e) => setEditForm(p => ({ ...p, city: e.target.value }))} /></div>
+              <div><Label className="text-xs" htmlFor="state">State</Label><Input id="state" value={editForm.state || ''} onChange={(e) => setEditForm(p => ({ ...p, state: e.target.value }))} /></div>
+              <div><Label className="text-xs" htmlFor="zip">ZIP</Label><Input id="zip" value={editForm.zip_code || ''} onChange={(e) => setEditForm(p => ({ ...p, zip_code: e.target.value }))} /></div>
             </div>
             <div className="grid grid-cols-2 gap-3">
-              <div><Label className="text-xs">Bedrooms</Label><Input type="number" value={editForm.bedrooms || 0} onChange={(e) => setEditForm(p => ({ ...p, bedrooms: parseInt(e.target.value) || 0 }))} /></div>
-              <div><Label className="text-xs">Bathrooms</Label><Input type="number" step="0.5" value={editForm.bathrooms || 0} onChange={(e) => setEditForm(p => ({ ...p, bathrooms: parseFloat(e.target.value) || 0 }))} /></div>
+              <div><Label className="text-xs" htmlFor="bedrooms">Bedrooms</Label><Input id="bedrooms" type="number" value={editForm.bedrooms || 0} onChange={(e) => setEditForm(p => ({ ...p, bedrooms: parseInt(e.target.value) || 0 }))} /></div>
+              <div><Label className="text-xs" htmlFor="bathrooms">Bathrooms</Label><Input id="bathrooms" type="number" step="0.5" value={editForm.bathrooms || 0} onChange={(e) => setEditForm(p => ({ ...p, bathrooms: parseFloat(e.target.value) || 0 }))} /></div>
             </div>
             <div className="grid grid-cols-2 gap-3">
-              <div><Label className="text-xs">Monthly Rent ($)</Label><Input type="number" value={editForm.monthly_rent || 0} onChange={(e) => setEditForm(p => ({ ...p, monthly_rent: parseFloat(e.target.value) || 0 }))} /></div>
-              <div><Label className="text-xs">Acquisition Fee ($)</Label><Input type="number" value={editForm.acquisition_fee || 0} onChange={(e) => setEditForm(p => ({ ...p, acquisition_fee: parseFloat(e.target.value) || 0 }))} /></div>
+              <div><Label className="text-xs" htmlFor="monthly-rent">Monthly Rent ($)</Label><Input id="monthly-rent" type="number" value={editForm.monthly_rent || 0} onChange={(e) => setEditForm(p => ({ ...p, monthly_rent: parseFloat(e.target.value) || 0 }))} /></div>
+              <div><Label className="text-xs" htmlFor="acquisition-fee">Acquisition Fee ($)</Label><Input id="acquisition-fee" type="number" value={editForm.acquisition_fee || 0} onChange={(e) => setEditForm(p => ({ ...p, acquisition_fee: parseFloat(e.target.value) || 0 }))} /></div>
             </div>
             <div>
-              <Label className="text-xs">Notes</Label>
-              <Textarea value={editForm.notes || ''} onChange={(e) => setEditForm(p => ({ ...p, notes: e.target.value }))} rows={2} />
+              <Label className="text-xs" htmlFor="notes">Notes</Label>
+              <Textarea id="notes" value={editForm.notes || ''} onChange={(e) => setEditForm(p => ({ ...p, notes: e.target.value }))} rows={2} />
             </div>
           </div>
           <DialogFooter>
@@ -564,8 +564,8 @@ export function SuccessTeamRequestCenter({ staffId, staffName }: SuccessTeamRequ
                 <p className="text-gray-500">{actionModal.request.investor_name} - {actionModal.request.investor_email}</p>
               </div>
               <div>
-                <Label className="text-sm">{actionModal.action === 'approve' ? 'Notes (optional)' : 'Reason for rejection'}</Label>
-                <Textarea
+                <Label className="text-sm" htmlFor="field-0">{actionModal.action === 'approve' ? 'Notes (optional)' : 'Reason for rejection'}</Label>
+                <Textarea id="field-0"
                   value={actionNotes}
                   onChange={(e) => setActionNotes(e.target.value)}
                   placeholder={actionModal.action === 'approve' ? 'Any notes for the investor...' : 'Please explain what needs to be changed...'}

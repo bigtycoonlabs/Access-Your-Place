@@ -538,9 +538,9 @@ export function EmailTemplatesTab() {
 
                       {/* Test Email Section */}
                       <div className="pt-4 border-t">
-                        <Label className="mb-2 block">Send Test Email</Label>
+                        <Label className="mb-2 block" htmlFor="send-test-email">Send Test Email</Label>
                         <div className="flex gap-2">
-                          <Input
+                          <Input id="send-test-email"
                             placeholder="your@email.com"
                             value={testEmail}
                             onChange={(e) => setTestEmail(e.target.value)}
@@ -707,7 +707,7 @@ export function EmailTemplatesTab() {
                       <div className="flex gap-2">
                         <div className="relative flex-1">
                           <Phone className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400" />
-                          <Input
+                          <Input aria-label="(555) 123-4567"
                             placeholder="(555) 123-4567"
                             value={testPhone}
                             onChange={(e) => setTestPhone(formatPhoneNumber(e.target.value))}

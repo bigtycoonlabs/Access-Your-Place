@@ -223,12 +223,12 @@ export function InvestorDetailModal({ investor, onClose }: Props) {
 
           <TabsContent value="profile" className="space-y-4 mt-4">
             <div className="grid grid-cols-2 gap-4">
-              <div><Label>Name</Label><Input value={form.name || form.full_name || ''} onChange={e => setForm({...form, name: e.target.value, full_name: e.target.value})} /></div>
-              <div><Label>Email</Label><Input value={form.email || ''} onChange={e => setForm({...form, email: e.target.value})} /></div>
-              <div><Label>Phone</Label><Input value={form.phone || ''} onChange={e => setForm({...form, phone: e.target.value})} /></div>
-              <div><Label>Company</Label><Input value={form.company_name || ''} onChange={e => setForm({...form, company_name: e.target.value})} /></div>
-              <div><Label>Budget Min</Label><Input type="number" value={form.budget_min || form.investment_budget_min || 0} onChange={e => setForm({...form, budget_min: parseInt(e.target.value)})} /></div>
-              <div><Label>Budget Max</Label><Input type="number" value={form.budget_max || form.investment_budget_max || 0} onChange={e => setForm({...form, budget_max: parseInt(e.target.value)})} /></div>
+              <div><Label htmlFor="name">Name</Label><Input id="name" value={form.name || form.full_name || ''} onChange={e => setForm({...form, name: e.target.value, full_name: e.target.value})} /></div>
+              <div><Label htmlFor="email">Email</Label><Input id="email" value={form.email || ''} onChange={e => setForm({...form, email: e.target.value})} /></div>
+              <div><Label htmlFor="phone">Phone</Label><Input id="phone" value={form.phone || ''} onChange={e => setForm({...form, phone: e.target.value})} /></div>
+              <div><Label htmlFor="company">Company</Label><Input id="company" value={form.company_name || ''} onChange={e => setForm({...form, company_name: e.target.value})} /></div>
+              <div><Label htmlFor="budget-min">Budget Min</Label><Input id="budget-min" type="number" value={form.budget_min || form.investment_budget_min || 0} onChange={e => setForm({...form, budget_min: parseInt(e.target.value)})} /></div>
+              <div><Label htmlFor="budget-max">Budget Max</Label><Input id="budget-max" type="number" value={form.budget_max || form.investment_budget_max || 0} onChange={e => setForm({...form, budget_max: parseInt(e.target.value)})} /></div>
             </div>
             <Button onClick={handleSave} disabled={saving} className="bg-[#d4a574]">{saving ? <Loader2 className="w-4 h-4 animate-spin mr-2" /> : <Save className="w-4 h-4 mr-2" />}Save</Button>
           </TabsContent>
@@ -438,7 +438,7 @@ export function InvestorDetailModal({ investor, onClose }: Props) {
 
           <TabsContent value="log" className="mt-4 space-y-4">
             <Select value={commType} onValueChange={setCommType}><SelectTrigger className="w-32"><SelectValue /></SelectTrigger><SelectContent><SelectItem value="note">Note</SelectItem><SelectItem value="call">Call</SelectItem><SelectItem value="email">Email</SelectItem><SelectItem value="meeting">Meeting</SelectItem></SelectContent></Select>
-            <Textarea placeholder="Enter details..." value={commContent} onChange={e => setCommContent(e.target.value)} rows={4} />
+            <Textarea aria-label="Enter details" placeholder="Enter details..." value={commContent} onChange={e => setCommContent(e.target.value)} rows={4} />
             <Button onClick={logCommunication} className="bg-[#d4a574]"><MessageSquare className="w-4 h-4 mr-2" />Log</Button>
           </TabsContent>
         </Tabs>

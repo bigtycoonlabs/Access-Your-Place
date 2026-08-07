@@ -278,7 +278,7 @@ export function EmailDeliveryTab() {
           <div className="flex flex-col md:flex-row gap-4 mb-6">
             <div className="flex-1 relative">
               <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400" aria-hidden="true" />
-              <Input
+              <Input aria-label="Search by email or subject"
                 placeholder="Search by email or subject..."
                 value={search}
                 onChange={(e) => setSearch(e.target.value)}

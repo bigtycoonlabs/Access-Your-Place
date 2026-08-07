@@ -541,9 +541,9 @@ export function DealAlertSettings({ investorId, investorEmail, onNavigate }: Pro
             </CardHeader>
             <CardContent className="space-y-4">
               <div>
-                <Label>Preferred Cities</Label>
+                <Label htmlFor="preferred-cities">Preferred Cities</Label>
                 <div className="flex gap-2 mt-2">
-                  <Input
+                  <Input id="preferred-cities"
                     value={newLocation}
                     onChange={(e) => setNewLocation(e.target.value)}
                     placeholder="Enter city name (e.g., Austin, Nashville)..."
@@ -601,8 +601,8 @@ export function DealAlertSettings({ investorId, investorEmail, onNavigate }: Pro
             <CardContent>
               <div className="grid md:grid-cols-2 gap-4">
                 <div>
-                  <Label>Minimum Price / Rent</Label>
-                  <Input
+                  <Label htmlFor="minimum-price-rent">Minimum Price / Rent</Label>
+                  <Input id="minimum-price-rent"
                     type="number"
                     value={settings.min_price || ''}
                     onChange={(e) => setSettings({ ...settings, min_price: e.target.value ? parseInt(e.target.value) : null })}
@@ -611,8 +611,8 @@ export function DealAlertSettings({ investorId, investorEmail, onNavigate }: Pro
                   />
                 </div>
                 <div>
-                  <Label>Maximum Price / Rent</Label>
-                  <Input
+                  <Label htmlFor="maximum-price-rent">Maximum Price / Rent</Label>
+                  <Input id="maximum-price-rent"
                     type="number"
                     value={settings.max_price || ''}
                     onChange={(e) => setSettings({ ...settings, max_price: e.target.value ? parseInt(e.target.value) : null })}

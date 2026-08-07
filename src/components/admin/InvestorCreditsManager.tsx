@@ -250,8 +250,8 @@ export function InvestorCreditsManager({ investorId, investorName, currentBalanc
           {/* Amount and Reason */}
           <div className="grid grid-cols-2 gap-3">
             <div>
-              <Label>Amount</Label>
-              <Input
+              <Label htmlFor="amount">Amount</Label>
+              <Input id="amount"
                 type="number"
                 min={0}
                 value={amount}
@@ -288,8 +288,8 @@ export function InvestorCreditsManager({ investorId, investorName, currentBalanc
           </div>
 
           <div>
-            <Label>Custom Reason (optional)</Label>
-            <Input
+            <Label htmlFor="custom-reason-optional">Custom Reason (optional)</Label>
+            <Input id="custom-reason-optional"
               value={reason}
               onChange={(e) => { setReason(e.target.value); setQuickReason(''); }}
               placeholder="Describe the reason for this credit change..."

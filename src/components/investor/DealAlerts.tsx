@@ -257,9 +257,9 @@ export function DealAlerts({ investorId }: Props) {
             <CardContent className="space-y-4">
               {/* Cities */}
               <div>
-                <Label>Preferred Cities</Label>
+                <Label htmlFor="preferred-cities">Preferred Cities</Label>
                 <div className="flex gap-2 mt-2">
-                  <Input
+                  <Input id="preferred-cities"
                     value={newLocation}
                     onChange={(e) => setNewLocation(e.target.value)}
                     placeholder="Enter city name..."
@@ -313,8 +313,8 @@ export function DealAlerts({ investorId }: Props) {
             <CardContent>
               <div className="grid md:grid-cols-2 gap-4">
                 <div>
-                  <Label>Minimum Price</Label>
-                  <Input
+                  <Label htmlFor="minimum-price">Minimum Price</Label>
+                  <Input id="minimum-price"
                     type="number"
                     value={preferences.min_price || ''}
                     onChange={(e) => setPreferences({ ...preferences, min_price: parseInt(e.target.value) || undefined })}
@@ -322,8 +322,8 @@ export function DealAlerts({ investorId }: Props) {
                   />
                 </div>
                 <div>
-                  <Label>Maximum Price</Label>
-                  <Input
+                  <Label htmlFor="maximum-price">Maximum Price</Label>
+                  <Input id="maximum-price"
                     type="number"
                     value={preferences.max_price || ''}
                     onChange={(e) => setPreferences({ ...preferences, max_price: parseInt(e.target.value) || undefined })}

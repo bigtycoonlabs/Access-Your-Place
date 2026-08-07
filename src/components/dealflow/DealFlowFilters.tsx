@@ -35,7 +35,7 @@ export function DealFlowFilters({
       <div className="flex flex-wrap gap-2">
         <div className="relative flex-1 min-w-[200px] max-w-[300px]">
           <Home className="absolute left-3 top-1/2 transform -translate-y-1/2 w-4 h-4 text-gray-400" aria-hidden="true" />
-          <Input 
+          <Input aria-label="Search by address" 
             placeholder="Search by address..." 
             value={addressSearch} 
             onChange={(e) => onAddressSearchChange(e.target.value)} 
@@ -46,7 +46,7 @@ export function DealFlowFilters({
         </div>
         <div className="relative min-w-[120px] max-w-[140px]">
           <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 w-4 h-4 text-gray-400" aria-hidden="true" />
-          <Input 
+          <Input aria-label="ZIP Code" 
             placeholder="ZIP Code" 
             value={zipCode} 
             onChange={(e) => onZipCodeChange(e.target.value)} 
@@ -57,7 +57,7 @@ export function DealFlowFilters({
         </div>
         <div className="relative min-w-[140px] max-w-[180px]">
           <MapPin className="absolute left-3 top-1/2 transform -translate-y-1/2 w-4 h-4 text-gray-400" aria-hidden="true" />
-          <Input 
+          <Input aria-label="City, State" 
             placeholder="City, State" 
             value={cityState} 
             onChange={(e) => onCityStateChange?.(e.target.value)} 

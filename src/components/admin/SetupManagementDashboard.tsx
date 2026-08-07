@@ -371,7 +371,7 @@ export function SetupManagementDashboard({ currentStaffId, currentStaffName }: P
       <div className="flex flex-col sm:flex-row gap-3">
         <div className="relative flex-1">
           <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400" />
-          <Input
+          <Input aria-label="Search by address, operator, or manager"
             placeholder="Search by address, operator, or manager..."
             value={searchTerm}
             onChange={e => setSearchTerm(e.target.value)}

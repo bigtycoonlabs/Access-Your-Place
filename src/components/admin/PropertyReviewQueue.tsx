@@ -425,8 +425,8 @@ export function PropertyReviewQueue({ staffId, staffName }: Props) {
 
                             {showRejectForm === property.id ? (
                               <div className="bg-red-50 border border-red-200 rounded-lg p-3 space-y-2">
-                                <label className="block text-xs font-medium text-red-700">Rejection Reason *</label>
-                                <textarea
+                                <label className="block text-xs font-medium text-red-700" htmlFor="rejection-reason">Rejection Reason *</label>
+                                <textarea id="rejection-reason"
                                   value={rejectReason}
                                   onChange={e => setRejectReason(e.target.value)}
                                   placeholder="Property does not meet current acquisition criteria because..."

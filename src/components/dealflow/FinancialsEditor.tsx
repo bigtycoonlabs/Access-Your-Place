@@ -322,11 +322,11 @@ export function FinancialsEditor({ property, onUpdate }: FinancialsEditorProps) 
             <div className="space-y-4 mt-4 pt-4 border-t border-indigo-200">
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                 <div>
-                  <Label className="flex items-center gap-1.5 mb-1.5">
+                  <Label className="flex items-center gap-1.5 mb-1.5" htmlFor="total-units-in-community">
                     <Users className="w-3.5 h-3.5 text-indigo-500" />
                     Total Units in Community
                   </Label>
-                  <Input
+                  <Input id="total-units-in-community"
                     type="number"
                     min="1"
                     placeholder="e.g., 24"
@@ -335,11 +335,11 @@ export function FinancialsEditor({ property, onUpdate }: FinancialsEditorProps) 
                   />
                 </div>
                 <div>
-                  <Label className="flex items-center gap-1.5 mb-1.5">
+                  <Label className="flex items-center gap-1.5 mb-1.5" htmlFor="community-amenities">
                     <FileText className="w-3.5 h-3.5 text-indigo-500" />
                     Community Amenities
                   </Label>
-                  <Input
+                  <Input id="community-amenities"
                     placeholder="e.g., Pool, Gym, Clubhouse, Laundry"
                     value={communityAmenities}
                     onChange={(e) => { setCommunityAmenities(e.target.value); setHasChanges(true); }}
@@ -388,8 +388,8 @@ export function FinancialsEditor({ property, onUpdate }: FinancialsEditorProps) 
                         </div>
                         <div className="grid grid-cols-2 md:grid-cols-5 gap-3">
                           <div>
-                            <Label className="text-xs text-gray-500">Unit Name</Label>
-                            <Input
+                            <Label className="text-xs text-gray-500" htmlFor="unit-name">Unit Name</Label>
+                            <Input id="unit-name"
                               placeholder="e.g., 2BR/1BA"
                               value={unit.unit_type}
                               onChange={(e) => updateUnitMix(unit.id, 'unit_type', e.target.value)}
@@ -397,10 +397,10 @@ export function FinancialsEditor({ property, onUpdate }: FinancialsEditorProps) 
                             />
                           </div>
                           <div>
-                            <Label className="text-xs text-gray-500 flex items-center gap-1">
+                            <Label className="text-xs text-gray-500 flex items-center gap-1" htmlFor="bedrooms">
                               <Bed className="w-3 h-3" /> Bedrooms
                             </Label>
-                            <Input
+                            <Input id="bedrooms"
                               type="number"
                               min="0"
                               value={unit.bedrooms}
@@ -409,10 +409,10 @@ export function FinancialsEditor({ property, onUpdate }: FinancialsEditorProps) 
                             />
                           </div>
                           <div>
-                            <Label className="text-xs text-gray-500 flex items-center gap-1">
+                            <Label className="text-xs text-gray-500 flex items-center gap-1" htmlFor="bathrooms">
                               <Bath className="w-3 h-3" /> Bathrooms
                             </Label>
-                            <Input
+                            <Input id="bathrooms"
                               type="number"
                               min="0"
                               step="0.5"
@@ -422,10 +422,10 @@ export function FinancialsEditor({ property, onUpdate }: FinancialsEditorProps) 
                             />
                           </div>
                           <div>
-                            <Label className="text-xs text-gray-500 flex items-center gap-1">
+                            <Label className="text-xs text-gray-500 flex items-center gap-1" htmlFor="of-units">
                               <Users className="w-3 h-3" /> # of Units
                             </Label>
-                            <Input
+                            <Input id="of-units"
                               type="number"
                               min="1"
                               value={unit.count}
@@ -546,7 +546,7 @@ export function FinancialsEditor({ property, onUpdate }: FinancialsEditorProps) 
               </Label>
               <div className="relative">
                 <span className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400 text-sm">$</span>
-                <Input
+                <Input aria-label="e.g., 150.00"
                   type="number"
                   step="0.01"
                   placeholder="e.g., 150.00"
@@ -563,7 +563,7 @@ export function FinancialsEditor({ property, onUpdate }: FinancialsEditorProps) 
               </Label>
               <div className="relative">
                 <span className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400 text-sm">$</span>
-                <Input
+                <Input aria-label="e.g., 95.00"
                   type="number"
                   step="0.01"
                   placeholder="e.g., 95.00"
@@ -580,7 +580,7 @@ export function FinancialsEditor({ property, onUpdate }: FinancialsEditorProps) 
               </Label>
               <div className="relative">
                 <span className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400 text-sm">$</span>
-                <Input
+                <Input aria-label="e.g., 800.00"
                   type="number"
                   step="0.01"
                   placeholder="e.g., 800.00"
@@ -591,12 +591,12 @@ export function FinancialsEditor({ property, onUpdate }: FinancialsEditorProps) 
               </div>
             </div>
             <div>
-              <Label className="flex items-center gap-1.5 mb-1.5">
+              <Label className="flex items-center gap-1.5 mb-1.5" htmlFor="average-occupancy-rate">
                 <Percent className="w-3.5 h-3.5 text-teal-500" />
                 Average Occupancy Rate (%)
               </Label>
               <div className="relative">
-                <Input
+                <Input id="average-occupancy-rate"
                   type="number"
                   step="0.1"
                   min="0"
@@ -629,7 +629,7 @@ export function FinancialsEditor({ property, onUpdate }: FinancialsEditorProps) 
               </Label>
               <div className="relative">
                 <span className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400 text-sm">$</span>
-                <Input
+                <Input aria-label="e.g., 2000.00"
                   type="number"
                   step="0.01"
                   placeholder="e.g., 2000.00"
@@ -646,7 +646,7 @@ export function FinancialsEditor({ property, onUpdate }: FinancialsEditorProps) 
               </Label>
               <div className="relative">
                 <span className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400 text-sm">$</span>
-                <Input
+                <Input aria-label="e.g., 2500.00"
                   type="number"
                   step="0.01"
                   placeholder="e.g., 2500.00"
@@ -658,11 +658,11 @@ export function FinancialsEditor({ property, onUpdate }: FinancialsEditorProps) 
             </div>
           </div>
           <div>
-            <Label className="flex items-center gap-1.5 mb-1.5">
+            <Label className="flex items-center gap-1.5 mb-1.5" htmlFor="deposits-concessions-special-notes">
               <FileText className="w-3.5 h-3.5 text-gray-500" />
               Deposits, Concessions & Special Notes
             </Label>
-            <Textarea
+            <Textarea id="deposits-concessions-special-notes"
               placeholder="e.g., $500 deposit, first month free, pet deposit $300, community amenities include pool and gym..."
               value={formData.deposits_concessions_notes}
               onChange={(e) => handleChange('deposits_concessions_notes', e.target.value)}
@@ -717,7 +717,7 @@ export function FinancialsEditor({ property, onUpdate }: FinancialsEditorProps) 
               </Label>
               <div className="relative">
                 <span className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400 text-sm">$</span>
-                <Input
+                <Input aria-label="e.g., 5500.00"
                   type="number"
                   step="0.01"
                   placeholder="e.g., 5500.00"
@@ -734,7 +734,7 @@ export function FinancialsEditor({ property, onUpdate }: FinancialsEditorProps) 
               </Label>
               <div className="relative">
                 <span className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400 text-sm">$</span>
-                <Input
+                <Input aria-label="e.g., 3000.00"
                   type="number"
                   step="0.01"
                   placeholder="e.g., 3000.00"
@@ -746,11 +746,11 @@ export function FinancialsEditor({ property, onUpdate }: FinancialsEditorProps) 
             </div>
           </div>
           <div>
-            <Label className="flex items-center gap-1.5 mb-1.5">
+            <Label className="flex items-center gap-1.5 mb-1.5" htmlFor="peak-season-description">
               <Calendar className="w-3.5 h-3.5 text-orange-500" />
               Peak Season Description
             </Label>
-            <Input
+            <Input id="peak-season-description"
               placeholder="e.g., May through September, holidays, spring break..."
               value={formData.peak_season_description}
               onChange={(e) => handleChange('peak_season_description', e.target.value)}

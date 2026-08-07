@@ -284,7 +284,7 @@ export function SMAssignmentTab({ staffId, staffName }: Props) {
       <div className="flex flex-col md:flex-row gap-4">
         <div className="relative flex-1">
           <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400" />
-          <Input
+          <Input aria-label="Search by investor name or email"
             placeholder="Search by investor name or email..."
             value={searchTerm}
             onChange={(e) => setSearchTerm(e.target.value)}
@@ -566,7 +566,7 @@ export function SMAssignmentTab({ staffId, staffName }: Props) {
             <div>
               <Label htmlFor="sm-select">Select Setup Manager</Label>
               <Select value={selectedManagerId} onValueChange={setSelectedManagerId}>
-                <SelectTrigger className="mt-2">
+                <SelectTrigger id="sm-select" className="mt-2">
                   <SelectValue placeholder="Choose a setup manager..." />
                 </SelectTrigger>
                 <SelectContent>

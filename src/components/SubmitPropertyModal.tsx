@@ -69,57 +69,57 @@ export default function SubmitPropertyModal() {
           <form onSubmit={handleSubmit} className="space-y-4">
             <div className="grid md:grid-cols-3 gap-4">
               <div>
-                <Label>Owner Name *</Label>
-                <Input required value={formData.ownerName} onChange={(e) => setFormData({...formData, ownerName: e.target.value})} />
+                <Label htmlFor="owner-name">Owner Name *</Label>
+                <Input id="owner-name" required value={formData.ownerName} onChange={(e) => setFormData({...formData, ownerName: e.target.value})} />
               </div>
               <div>
-                <Label>Email *</Label>
-                <Input type="email" required value={formData.email} onChange={(e) => setFormData({...formData, email: e.target.value})} />
+                <Label htmlFor="email">Email *</Label>
+                <Input id="email" type="email" required value={formData.email} onChange={(e) => setFormData({...formData, email: e.target.value})} />
               </div>
               <div>
-                <Label>Phone *</Label>
-                <Input required value={formData.phone} onChange={(e) => setFormData({...formData, phone: e.target.value})} />
+                <Label htmlFor="phone">Phone *</Label>
+                <Input id="phone" required value={formData.phone} onChange={(e) => setFormData({...formData, phone: e.target.value})} />
               </div>
             </div>
             <div>
-              <Label>Property Address *</Label>
-              <Input required value={formData.propertyAddress} onChange={(e) => setFormData({...formData, propertyAddress: e.target.value})} />
+              <Label htmlFor="property-address">Property Address *</Label>
+              <Input id="property-address" required value={formData.propertyAddress} onChange={(e) => setFormData({...formData, propertyAddress: e.target.value})} />
             </div>
             <div className="grid md:grid-cols-3 gap-4">
               <div>
-                <Label>City *</Label>
-                <Input required value={formData.city} onChange={(e) => setFormData({...formData, city: e.target.value})} />
+                <Label htmlFor="city">City *</Label>
+                <Input id="city" required value={formData.city} onChange={(e) => setFormData({...formData, city: e.target.value})} />
               </div>
               <div>
-                <Label>State *</Label>
-                <Input required value={formData.state} onChange={(e) => setFormData({...formData, state: e.target.value})} />
+                <Label htmlFor="state">State *</Label>
+                <Input id="state" required value={formData.state} onChange={(e) => setFormData({...formData, state: e.target.value})} />
               </div>
               <div>
-                <Label>ZIP Code *</Label>
-                <Input required value={formData.zip} onChange={(e) => setFormData({...formData, zip: e.target.value})} />
+                <Label htmlFor="zip-code">ZIP Code *</Label>
+                <Input id="zip-code" required value={formData.zip} onChange={(e) => setFormData({...formData, zip: e.target.value})} />
               </div>
             </div>
             <div className="grid md:grid-cols-4 gap-4">
               <div>
-                <Label>Bedrooms *</Label>
-                <Input type="number" required value={formData.bedrooms} onChange={(e) => setFormData({...formData, bedrooms: e.target.value})} />
+                <Label htmlFor="bedrooms">Bedrooms *</Label>
+                <Input id="bedrooms" type="number" required value={formData.bedrooms} onChange={(e) => setFormData({...formData, bedrooms: e.target.value})} />
               </div>
               <div>
-                <Label>Bathrooms *</Label>
-                <Input type="number" step="0.5" required value={formData.bathrooms} onChange={(e) => setFormData({...formData, bathrooms: e.target.value})} />
+                <Label htmlFor="bathrooms">Bathrooms *</Label>
+                <Input id="bathrooms" type="number" step="0.5" required value={formData.bathrooms} onChange={(e) => setFormData({...formData, bathrooms: e.target.value})} />
               </div>
               <div>
-                <Label>Monthly Rent *</Label>
-                <Input type="number" required value={formData.rent} onChange={(e) => setFormData({...formData, rent: e.target.value})} placeholder="$" />
+                <Label htmlFor="monthly-rent">Monthly Rent *</Label>
+                <Input id="monthly-rent" type="number" required value={formData.rent} onChange={(e) => setFormData({...formData, rent: e.target.value})} placeholder="$" />
               </div>
               <div>
-                <Label>Utilities Included?</Label>
-                <Input value={formData.utilities} onChange={(e) => setFormData({...formData, utilities: e.target.value})} placeholder="Yes/No/Partial" />
+                <Label htmlFor="utilities-included">Utilities Included?</Label>
+                <Input id="utilities-included" value={formData.utilities} onChange={(e) => setFormData({...formData, utilities: e.target.value})} placeholder="Yes/No/Partial" />
               </div>
             </div>
             <div>
-              <Label>Additional Notes</Label>
-              <Textarea value={formData.notes} onChange={(e) => setFormData({...formData, notes: e.target.value})} rows={3} />
+              <Label htmlFor="additional-notes">Additional Notes</Label>
+              <Textarea id="additional-notes" value={formData.notes} onChange={(e) => setFormData({...formData, notes: e.target.value})} rows={3} />
             </div>
             <Button type="submit" className="w-full" disabled={isSubmitting}>
               {isSubmitting ? 'Submitting...' : 'Submit Property'}

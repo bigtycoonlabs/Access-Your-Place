@@ -271,21 +271,21 @@ export function ComplianceDocuments({ staffId, staffName, isAdmin }: ComplianceD
                 </Select>
               </div>
               <div>
-                <Label>Year</Label>
-                <Input type="number" value={uploadForm.year} onChange={(e) => setUploadForm({ ...uploadForm, year: e.target.value })} />
+                <Label htmlFor="year">Year</Label>
+                <Input id="year" type="number" value={uploadForm.year} onChange={(e) => setUploadForm({ ...uploadForm, year: e.target.value })} />
               </div>
             </div>
             <div>
-              <Label>Title</Label>
-              <Input value={uploadForm.title} onChange={(e) => setUploadForm({ ...uploadForm, title: e.target.value })} placeholder="Document title" />
+              <Label htmlFor="title">Title</Label>
+              <Input id="title" value={uploadForm.title} onChange={(e) => setUploadForm({ ...uploadForm, title: e.target.value })} placeholder="Document title" />
             </div>
             <div>
-              <Label>File (PDF)</Label>
-              <Input type="file" accept=".pdf,.doc,.docx" onChange={(e) => setUploadFile(e.target.files?.[0] || null)} />
+              <Label htmlFor="file-pdf">File (PDF)</Label>
+              <Input id="file-pdf" type="file" accept=".pdf,.doc,.docx" onChange={(e) => setUploadFile(e.target.files?.[0] || null)} />
             </div>
             <div>
-              <Label>Notes</Label>
-              <Input value={uploadForm.notes} onChange={(e) => setUploadForm({ ...uploadForm, notes: e.target.value })} placeholder="Optional notes" />
+              <Label htmlFor="notes">Notes</Label>
+              <Input id="notes" value={uploadForm.notes} onChange={(e) => setUploadForm({ ...uploadForm, notes: e.target.value })} placeholder="Optional notes" />
             </div>
           </div>
           <DialogFooter>

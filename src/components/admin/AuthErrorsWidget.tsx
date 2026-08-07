@@ -238,7 +238,7 @@ export function AuthErrorsWidget({ staffId }: Props) {
         <div className="flex gap-4 mb-4">
           <div className="relative flex-1">
             <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400" />
-            <Input
+            <Input aria-label="Search by email"
               placeholder="Search by email..."
               value={searchEmail}
               onChange={(e) => setSearchEmail(e.target.value)}
@@ -351,8 +351,8 @@ export function AuthErrorsWidget({ staffId }: Props) {
                 </div>
 
                 <div>
-                  <label className="text-sm font-medium">Resolution Notes (optional)</label>
-                  <Textarea
+                  <label className="text-sm font-medium" htmlFor="resolution-notes-optional">Resolution Notes (optional)</label>
+                  <Textarea id="resolution-notes-optional"
                     placeholder="e.g., Contacted investor via email, reset password manually..."
                     value={resolveNotes}
                     onChange={(e) => setResolveNotes(e.target.value)}

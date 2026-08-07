@@ -442,7 +442,7 @@ export function InvestorLeadForge({ investorId, investorName }: InvestorLeadForg
 
             <div style={{ flex:"1 1 110px" }}>
               <div style={{ fontSize:10, color:MUTED, fontWeight:800, textTransform:"uppercase", letterSpacing:"0.07em", marginBottom:6 }}>Zip Code</div>
-              <input style={inpStyle} placeholder="e.g. 78201" maxLength={5} value={zip}
+              <input aria-label="e.g. 78201" style={inpStyle} placeholder="e.g. 78201" maxLength={5} value={zip}
                 onChange={e => setZip(e.target.value.replace(/\D/g, ""))}
                 onKeyDown={e => e.key === "Enter" && doSearch()} />
             </div>
@@ -844,7 +844,7 @@ export function InvestorLeadForge({ investorId, investorName }: InvestorLeadForg
                   ))
                 }
                 <div style={{ display:"flex", gap:7 }}>
-                  <input style={{ ...inpStyle, fontSize:12, padding:"8px 10px" }}
+                  <input aria-label="Add a note" style={{ ...inpStyle, fontSize:12, padding:"8px 10px" }}
                     placeholder="Add a note…" value={noteText}
                     onChange={e => setNoteText(e.target.value)}
                     onKeyDown={e => e.key==="Enter" && addNote()} />

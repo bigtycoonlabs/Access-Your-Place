@@ -323,7 +323,7 @@ export function ReportPreferences({ investorId }: Props) {
               </p>
               
               <div className="flex gap-2">
-                <Input
+                <Input aria-label="email@example.com"
                   type="email"
                   placeholder="email@example.com"
                   value={newEmail}

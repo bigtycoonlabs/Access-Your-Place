@@ -127,8 +127,8 @@ export default function LandlordLogin() {
               )}
 
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-2">Email Address</label>
-                <input
+                <label className="block text-sm font-medium text-gray-700 mb-2" htmlFor="email-address-2">Email Address</label>
+                <input id="email-address-2"
                   type="email"
                   required
                   value={email}
@@ -236,8 +236,8 @@ export default function LandlordLogin() {
                     </div>
                   )}
                   <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-2">Email Address</label>
-                    <input
+                    <label className="block text-sm font-medium text-gray-700 mb-2" htmlFor="email-address">Email Address</label>
+                    <input id="email-address"
                       type="email"
                       required
                       value={email}

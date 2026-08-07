@@ -105,7 +105,7 @@ export function SetupTasksManager({ propertyId, investorId, propertyTitle }: Pro
                   <p className="text-xs text-gray-500">{task.description}</p>
                 </div>
                 <Input type="date" className="w-36" value={task.due_date || ''} onChange={e => updateTask(task.id, { due_date: e.target.value })} />
-                <Input placeholder="Assigned to" className="w-32" value={task.assigned_to || ''} onChange={e => updateTask(task.id, { assigned_to: e.target.value })} />
+                <Input aria-label="Assigned to" placeholder="Assigned to" className="w-32" value={task.assigned_to || ''} onChange={e => updateTask(task.id, { assigned_to: e.target.value })} />
                 {task.status === 'completed' && <Badge className="bg-green-500"><CheckCircle className="w-3 h-3 mr-1" />Done</Badge>}
               </div>
             </Card>

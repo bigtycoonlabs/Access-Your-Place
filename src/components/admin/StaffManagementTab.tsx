@@ -932,7 +932,7 @@ export function StaffManagementTab({ currentStaffId, isSuccessManager = false }:
           <div className="flex flex-col md:flex-row gap-4">
             <div className="relative flex-1">
               <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400" aria-hidden="true" />
-              <Input
+              <Input aria-label="Search by name or email"
                 placeholder="Search by name or email..."
                 value={searchQuery}
                 onChange={(e) => setSearchQuery(e.target.value)}
@@ -1787,12 +1787,12 @@ export function StaffManagementTab({ currentStaffId, isSuccessManager = false }:
 
             {/* v10.0: Import from Investor Account */}
             <div className="border border-blue-200 bg-blue-50/50 rounded-lg p-3">
-              <Label className="text-xs font-medium text-blue-800 mb-1.5 block">
+              <Label className="text-xs font-medium text-blue-800 mb-1.5 block" htmlFor="import-from-existing-investor-account">
                 <Search className="w-3 h-3 inline mr-1" aria-hidden="true" />
                 Import from Existing Investor Account
               </Label>
               <div className="flex gap-2">
-                <Input
+                <Input id="import-from-existing-investor-account"
                   placeholder="Search investor by name or email..."
                   value={investorSearchQuery}
                   onChange={(e) => setInvestorSearchQuery(e.target.value)}
@@ -2257,8 +2257,8 @@ export function StaffManagementTab({ currentStaffId, isSuccessManager = false }:
               {selectedCertification.status === 'pending' && (
                 <>
                   <div>
-                    <Label>Rejection Reason (if rejecting)</Label>
-                    <Textarea
+                    <Label htmlFor="rejection-reason-if-rejecting">Rejection Reason (if rejecting)</Label>
+                    <Textarea id="rejection-reason-if-rejecting"
                       value={rejectionReason}
                       onChange={(e) => setRejectionReason(e.target.value)}
                       placeholder="Enter reason for rejection..."

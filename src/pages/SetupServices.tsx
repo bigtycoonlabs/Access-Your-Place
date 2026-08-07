@@ -847,8 +847,8 @@ export default function SetupServices() {
                   
                   <div className="grid md:grid-cols-2 gap-5">
                     <div>
-                      <label className="block text-sm font-medium mb-2">Full Name *</label>
-                      <input
+                      <label className="block text-sm font-medium mb-2" htmlFor="full-name">Full Name *</label>
+                      <input id="full-name"
                         type="text"
                         required
                         value={formData.name}
@@ -858,8 +858,8 @@ export default function SetupServices() {
                       />
                     </div>
                     <div>
-                      <label className="block text-sm font-medium mb-2">Email *</label>
-                      <input
+                      <label className="block text-sm font-medium mb-2" htmlFor="email">Email *</label>
+                      <input id="email"
                         type="email"
                         required
                         value={formData.email}
@@ -872,8 +872,8 @@ export default function SetupServices() {
 
                   <div className="grid md:grid-cols-2 gap-5">
                     <div>
-                      <label className="block text-sm font-medium mb-2">Phone</label>
-                      <input
+                      <label className="block text-sm font-medium mb-2" htmlFor="phone">Phone</label>
+                      <input id="phone"
                         type="tel"
                         value={formData.phone}
                         onChange={(e) => setFormData({ ...formData, phone: e.target.value })}
@@ -933,8 +933,8 @@ export default function SetupServices() {
 
                   <div className="grid md:grid-cols-2 gap-5">
                     <div>
-                      <label className="block text-sm font-medium mb-2">Property Location *</label>
-                      <input
+                      <label className="block text-sm font-medium mb-2" htmlFor="property-location">Property Location *</label>
+                      <input id="property-location"
                         type="text"
                         required
                         value={formData.location}
@@ -959,8 +959,8 @@ export default function SetupServices() {
                   </div>
 
                   <div>
-                    <label className="block text-sm font-medium mb-2">Additional Details</label>
-                    <textarea
+                    <label className="block text-sm font-medium mb-2" htmlFor="additional-details">Additional Details</label>
+                    <textarea id="additional-details"
                       rows={4}
                       value={formData.message}
                       onChange={(e) => setFormData({ ...formData, message: e.target.value })}

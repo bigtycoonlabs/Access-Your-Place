@@ -395,7 +395,7 @@ export function LoginSupportChat({ failedAttempts = 0, lastAttemptEmail = '' }: 
                   {/* Input */}
                   <div className="p-4 border-t bg-white">
                     <div className="flex gap-2">
-                      <Input
+                      <Input aria-label="Type your message"
                         placeholder="Type your message..."
                         value={newMessage}
                         onChange={(e) => setNewMessage(e.target.value)}

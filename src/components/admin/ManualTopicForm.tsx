@@ -52,8 +52,8 @@ export function ManualTopicForm({ onTopicAdded }: ManualTopicFormProps) {
       </CardHeader>
       <CardContent>
         <form onSubmit={handleSubmit} className="space-y-4">
-          <div><Label>Topic Title *</Label><Input value={title} onChange={(e) => setTitle(e.target.value)} placeholder="e.g., New STR regulations in Austin" className="mt-1" /></div>
-          <div><Label>Description</Label><Textarea value={description} onChange={(e) => setDescription(e.target.value)} placeholder="Brief description..." className="mt-1" rows={3} /></div>
+          <div><Label htmlFor="topic-title">Topic Title *</Label><Input id="topic-title" value={title} onChange={(e) => setTitle(e.target.value)} placeholder="e.g., New STR regulations in Austin" className="mt-1" /></div>
+          <div><Label htmlFor="description">Description</Label><Textarea id="description" value={description} onChange={(e) => setDescription(e.target.value)} placeholder="Brief description..." className="mt-1" rows={3} /></div>
           <div className="grid grid-cols-2 gap-4">
             <div><Label>Source</Label>
               <Select value={source} onValueChange={setSource}><SelectTrigger className="mt-1"><SelectValue /></SelectTrigger>

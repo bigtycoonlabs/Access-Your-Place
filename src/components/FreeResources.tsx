@@ -116,7 +116,7 @@ export default function FreeResources() {
             <h3 className="text-2xl font-bold text-[#1a2332] mb-4">Download {selectedResource.title}</h3>
             <p className="text-gray-600 mb-6">Enter your information to receive this free resource</p>
             <form onSubmit={handleSubmit}>
-              <input 
+              <input aria-label="Full Name *" 
                 type="text" 
                 placeholder="Full Name *" 
                 required 
@@ -124,7 +124,7 @@ export default function FreeResources() {
                 onChange={(e) => setFormData({ ...formData, name: e.target.value })}
                 className="w-full border border-gray-300 rounded-lg px-4 py-3 mb-4" 
               />
-              <input 
+              <input aria-label="Email Address *" 
                 type="email" 
                 placeholder="Email Address *" 
                 required 
@@ -132,7 +132,7 @@ export default function FreeResources() {
                 onChange={(e) => setFormData({ ...formData, email: e.target.value })}
                 className="w-full border border-gray-300 rounded-lg px-4 py-3 mb-4" 
               />
-              <input 
+              <input aria-label="Phone Number *" 
                 type="tel" 
                 placeholder="Phone Number *" 
                 required 

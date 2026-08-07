@@ -80,7 +80,7 @@ export function AutomationRulesModal({ open, onClose }: AutomationRulesModalProp
 
         {editing ? (
           <div className="space-y-4">
-            <Input placeholder="Sequence name" value={editing.name} onChange={e => setEditing({...editing, name: e.target.value})} />
+            <Input aria-label="Sequence name" placeholder="Sequence name" value={editing.name} onChange={e => setEditing({...editing, name: e.target.value})} />
             <div className="grid grid-cols-2 gap-3">
               <Select value={editing.trigger_stage} onValueChange={v => setEditing({...editing, trigger_stage: v})}>
                 <SelectTrigger><SelectValue /></SelectTrigger>
@@ -99,9 +99,9 @@ export function AutomationRulesModal({ open, onClose }: AutomationRulesModalProp
                 </SelectContent>
               </Select>
             </div>
-            <Input type="number" placeholder="Delay (days)" value={editing.delay_days} onChange={e => setEditing({...editing, delay_days: parseInt(e.target.value) || 0})} />
-            <Input placeholder="Email subject" value={editing.email_subject} onChange={e => setEditing({...editing, email_subject: e.target.value})} />
-            <Textarea placeholder="Email body (use {{name}}, {{email}})" value={editing.email_body} onChange={e => setEditing({...editing, email_body: e.target.value})} rows={5} />
+            <Input aria-label="Delay (days)" type="number" placeholder="Delay (days)" value={editing.delay_days} onChange={e => setEditing({...editing, delay_days: parseInt(e.target.value) || 0})} />
+            <Input aria-label="Email subject" placeholder="Email subject" value={editing.email_subject} onChange={e => setEditing({...editing, email_subject: e.target.value})} />
+            <Textarea aria-label="Email body (use {{name}}, {{email}})" placeholder="Email body (use {{name}}, {{email}})" value={editing.email_body} onChange={e => setEditing({...editing, email_body: e.target.value})} rows={5} />
             <div className="flex items-center gap-2">
               <Switch checked={editing.is_active} onCheckedChange={v => setEditing({...editing, is_active: v})} />
               <span>Active</span>

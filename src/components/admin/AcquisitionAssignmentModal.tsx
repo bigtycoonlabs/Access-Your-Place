@@ -101,8 +101,8 @@ export function AcquisitionAssignmentModal({ property, open, onOpenChange, onAss
               </Select>
             </div>
             <div className="grid grid-cols-2 gap-4">
-              <div><Label className="flex items-center gap-1"><DollarSign className="w-4 h-4" />Acquisition Fee</Label><Input type="number" value={acquisitionFee} onChange={e => setAcquisitionFee(e.target.value)} /></div>
-              <div><Label className="flex items-center gap-1"><Calendar className="w-4 h-4" />Closing Date</Label><Input type="date" value={closingDate} onChange={e => setClosingDate(e.target.value)} /></div>
+              <div><Label className="flex items-center gap-1" htmlFor="acquisition-fee"><DollarSign className="w-4 h-4" />Acquisition Fee</Label><Input id="acquisition-fee" type="number" value={acquisitionFee} onChange={e => setAcquisitionFee(e.target.value)} /></div>
+              <div><Label className="flex items-center gap-1" htmlFor="closing-date"><Calendar className="w-4 h-4" />Closing Date</Label><Input id="closing-date" type="date" value={closingDate} onChange={e => setClosingDate(e.target.value)} /></div>
             </div>
             <Button onClick={handleAssign} disabled={loading || !selectedInvestor} className="w-full bg-green-600 hover:bg-green-700">
               {loading ? <Loader2 className="w-4 h-4 mr-2 animate-spin" /> : <CheckCircle className="w-4 h-4 mr-2" />}Assign & Start Workflow
@@ -110,9 +110,9 @@ export function AcquisitionAssignmentModal({ property, open, onOpenChange, onAss
           </div>
         ) : (
           <div className="space-y-4">
-            <div><Label className="flex items-center gap-1"><Mail className="w-4 h-4" />Email *</Label><Input type="email" value={inviteEmail} onChange={e => setInviteEmail(e.target.value)} placeholder="investor@email.com" /></div>
-            <div><Label>Name</Label><Input value={inviteName} onChange={e => setInviteName(e.target.value)} placeholder="John Smith" /></div>
-            <div><Label>Phone</Label><Input value={invitePhone} onChange={e => setInvitePhone(e.target.value)} placeholder="(555) 123-4567" /></div>
+            <div><Label className="flex items-center gap-1" htmlFor="email"><Mail className="w-4 h-4" />Email *</Label><Input id="email" type="email" value={inviteEmail} onChange={e => setInviteEmail(e.target.value)} placeholder="investor@email.com" /></div>
+            <div><Label htmlFor="name">Name</Label><Input id="name" value={inviteName} onChange={e => setInviteName(e.target.value)} placeholder="John Smith" /></div>
+            <div><Label htmlFor="phone">Phone</Label><Input id="phone" value={invitePhone} onChange={e => setInvitePhone(e.target.value)} placeholder="(555) 123-4567" /></div>
             <Button onClick={handleInvite} disabled={loading || !inviteEmail} className="w-full bg-blue-600 hover:bg-blue-700">
               {loading ? <Loader2 className="w-4 h-4 mr-2 animate-spin" /> : <Mail className="w-4 h-4 mr-2" />}Send Invitation
             </Button>

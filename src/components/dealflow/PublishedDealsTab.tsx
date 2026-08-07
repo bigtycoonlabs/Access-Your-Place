@@ -496,7 +496,7 @@ export function PublishedDealsTab({ staffId, staffName, userRole }: PublishedDea
         <div className="flex flex-wrap gap-3 mb-6">
           <div className="relative flex-1 min-w-[200px]">
             <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400" />
-            <Input placeholder="Search by title, address, city, state, or ZIP..." value={searchTerm} onChange={(e) => setSearchTerm(e.target.value)} className="pl-9" />
+            <Input aria-label="Search by title, address, city, state, or ZIP" placeholder="Search by title, address, city, state, or ZIP..." value={searchTerm} onChange={(e) => setSearchTerm(e.target.value)} className="pl-9" />
           </div>
           <Select value={typeFilter} onValueChange={setTypeFilter}>
             <SelectTrigger className="w-[160px]"><Filter className="w-4 h-4 mr-2" /><SelectValue placeholder="Property Type" /></SelectTrigger>

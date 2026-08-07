@@ -957,7 +957,7 @@ export function AIChat({ investorId, investorName }: AIChatProps) {
 
           <div className="border-t p-4 bg-gray-50/50">
             <form onSubmit={(e) => { e.preventDefault(); sendMessage(); }} className="flex gap-2 items-center">
-              <input
+              <input aria-label="Ask about deals, markets, or use voice"
                 ref={inputRef}
                 type="text"
                 placeholder="Ask about deals, markets, or use voice..."

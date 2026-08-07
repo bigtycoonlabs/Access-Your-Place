@@ -156,7 +156,7 @@ export function TimeTrackerWidget({ staffId, compact = false }: TimeTrackerWidge
             <div className="flex flex-col gap-2">
               {activeTimer ? (
                 <>
-                  <Input
+                  <Input aria-label="Session notes (optional)"
                     placeholder="Session notes (optional)"
                     value={stopNotes}
                     onChange={(e) => setStopNotes(e.target.value)}

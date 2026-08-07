@@ -218,12 +218,12 @@ export function InvestorMessaging({ investorId, investorName, assignedAMName, as
         {/* Compose Area */}
         {showCompose && (
           <div className="p-4 border-b bg-gray-50 space-y-3">
-            <Input
+            <Input aria-label="Subject (optional)"
               placeholder="Subject (optional)"
               value={newSubject}
               onChange={(e) => setNewSubject(e.target.value)}
             />
-            <Textarea
+            <Textarea aria-label="Type your message to your AM and Success Team"
               placeholder="Type your message to your AM and Success Team..."
               value={newMessage}
               onChange={(e) => setNewMessage(e.target.value)}

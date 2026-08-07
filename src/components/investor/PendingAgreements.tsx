@@ -389,10 +389,10 @@ export function PendingAgreements({ investorId, investorName, investorEmail, onN
 
             {/* Step 2: Initials */}
             <div>
-              <Label className="text-sm font-semibold flex items-center gap-1.5 text-gray-700 mb-2">
+              <Label className="text-sm font-semibold flex items-center gap-1.5 text-gray-700 mb-2" htmlFor="step-2-your-initials">
                 Step 2: Your Initials
               </Label>
-              <Input
+              <Input id="step-2-your-initials"
                 value={initials}
                 onChange={(e) => setInitials(e.target.value.toUpperCase())}
                 placeholder="e.g., JD"

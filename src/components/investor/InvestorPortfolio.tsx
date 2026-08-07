@@ -803,14 +803,14 @@ export function InvestorPortfolio({ investorId, investorName, investorEmail }: P
                         </Select>
                       </div>
                       <div>
-                        <Label>Acquisition Date</Label>
-                        <Input type="date" value={formData.acquisition_date} onChange={(e) => setFormData({ ...formData, acquisition_date: e.target.value })} />
+                        <Label htmlFor="acquisition-date">Acquisition Date</Label>
+                        <Input id="acquisition-date" type="date" value={formData.acquisition_date} onChange={(e) => setFormData({ ...formData, acquisition_date: e.target.value })} />
                       </div>
                     </div>
                     <div className="grid md:grid-cols-2 gap-4">
                       <div>
-                        <Label>Acquisition Fee Paid ($)</Label>
-                        <Input type="number" min="0" value={formData.acquisition_fee} onChange={(e) => setFormData({ ...formData, acquisition_fee: parseFloat(e.target.value) || 0 })} />
+                        <Label htmlFor="acquisition-fee-paid">Acquisition Fee Paid ($)</Label>
+                        <Input id="acquisition-fee-paid" type="number" min="0" value={formData.acquisition_fee} onChange={(e) => setFormData({ ...formData, acquisition_fee: parseFloat(e.target.value) || 0 })} />
                       </div>
                       <div className="flex items-end">
                         <div className="flex items-center gap-3 p-3 bg-white rounded-lg border w-full">
@@ -843,11 +843,11 @@ export function InvestorPortfolio({ investorId, investorName, investorEmail }: P
             {/* Property Address */}
             <fieldset className="space-y-4">
               <legend className="font-semibold text-base">Property Address</legend>
-              <Input placeholder="Street Address *" value={formData.address} onChange={(e) => setFormData({ ...formData, address: e.target.value })} required />
+              <Input aria-label="Street Address *" placeholder="Street Address *" value={formData.address} onChange={(e) => setFormData({ ...formData, address: e.target.value })} required />
               <div className="grid grid-cols-3 gap-4">
-                <Input placeholder="City *" value={formData.city} onChange={(e) => setFormData({ ...formData, city: e.target.value })} required />
-                <Input placeholder="State *" value={formData.state} onChange={(e) => setFormData({ ...formData, state: e.target.value })} required />
-                <Input placeholder="ZIP" value={formData.zip_code} onChange={(e) => setFormData({ ...formData, zip_code: e.target.value })} />
+                <Input aria-label="City *" placeholder="City *" value={formData.city} onChange={(e) => setFormData({ ...formData, city: e.target.value })} required />
+                <Input aria-label="State *" placeholder="State *" value={formData.state} onChange={(e) => setFormData({ ...formData, state: e.target.value })} required />
+                <Input aria-label="ZIP" placeholder="ZIP" value={formData.zip_code} onChange={(e) => setFormData({ ...formData, zip_code: e.target.value })} />
               </div>
             </fieldset>
 
@@ -865,16 +865,16 @@ export function InvestorPortfolio({ investorId, investorName, investorEmail }: P
                   </Select>
                 </div>
                 <div>
-                  <Label>Bedrooms</Label>
-                  <Input type="number" min="0" value={formData.bedrooms} onChange={(e) => setFormData({ ...formData, bedrooms: parseInt(e.target.value) || 0 })} />
+                  <Label htmlFor="bedrooms">Bedrooms</Label>
+                  <Input id="bedrooms" type="number" min="0" value={formData.bedrooms} onChange={(e) => setFormData({ ...formData, bedrooms: parseInt(e.target.value) || 0 })} />
                 </div>
                 <div>
-                  <Label>Bathrooms</Label>
-                  <Input type="number" min="0" step="0.5" value={formData.bathrooms} onChange={(e) => setFormData({ ...formData, bathrooms: parseFloat(e.target.value) || 0 })} />
+                  <Label htmlFor="bathrooms">Bathrooms</Label>
+                  <Input id="bathrooms" type="number" min="0" step="0.5" value={formData.bathrooms} onChange={(e) => setFormData({ ...formData, bathrooms: parseFloat(e.target.value) || 0 })} />
                 </div>
                 <div>
-                  <Label>Sq. Footage</Label>
-                  <Input type="number" min="0" value={formData.square_footage || ''} onChange={(e) => setFormData({ ...formData, square_footage: parseInt(e.target.value) || 0 })} placeholder="e.g. 1500" />
+                  <Label htmlFor="sq-footage">Sq. Footage</Label>
+                  <Input id="sq-footage" type="number" min="0" value={formData.square_footage || ''} onChange={(e) => setFormData({ ...formData, square_footage: parseInt(e.target.value) || 0 })} placeholder="e.g. 1500" />
                 </div>
               </div>
             </fieldset>
@@ -890,24 +890,24 @@ export function InvestorPortfolio({ investorId, investorName, investorEmail }: P
               <legend className="font-semibold text-base">Financial Details</legend>
               <div className="grid grid-cols-3 gap-4">
                 <div>
-                  <Label>Monthly Rent ($)</Label>
-                  <Input type="number" min="0" value={formData.monthly_rent} onChange={(e) => setFormData({ ...formData, monthly_rent: parseFloat(e.target.value) || 0 })} />
+                  <Label htmlFor="monthly-rent">Monthly Rent ($)</Label>
+                  <Input id="monthly-rent" type="number" min="0" value={formData.monthly_rent} onChange={(e) => setFormData({ ...formData, monthly_rent: parseFloat(e.target.value) || 0 })} />
                 </div>
                 <div>
-                  <Label>Initial Investment ($)</Label>
-                  <Input type="number" min="0" value={formData.initial_investment} onChange={(e) => setFormData({ ...formData, initial_investment: parseFloat(e.target.value) || 0 })} />
+                  <Label htmlFor="initial-investment">Initial Investment ($)</Label>
+                  <Input id="initial-investment" type="number" min="0" value={formData.initial_investment} onChange={(e) => setFormData({ ...formData, initial_investment: parseFloat(e.target.value) || 0 })} />
                 </div>
                 <div>
-                  <Label>Monthly Earnings ($)</Label>
-                  <Input type="number" min="0" value={formData.monthly_earnings} onChange={(e) => setFormData({ ...formData, monthly_earnings: parseFloat(e.target.value) || 0 })} />
+                  <Label htmlFor="monthly-earnings">Monthly Earnings ($)</Label>
+                  <Input id="monthly-earnings" type="number" min="0" value={formData.monthly_earnings} onChange={(e) => setFormData({ ...formData, monthly_earnings: parseFloat(e.target.value) || 0 })} />
                 </div>
               </div>
             </fieldset>
 
             {/* Notes */}
             <div>
-              <Label>Notes</Label>
-              <Textarea value={formData.notes} onChange={(e) => setFormData({ ...formData, notes: e.target.value })} rows={2} placeholder="Add any additional notes..." />
+              <Label htmlFor="notes">Notes</Label>
+              <Textarea id="notes" value={formData.notes} onChange={(e) => setFormData({ ...formData, notes: e.target.value })} rows={2} placeholder="Add any additional notes..." />
             </div>
 
             <DialogFooter>

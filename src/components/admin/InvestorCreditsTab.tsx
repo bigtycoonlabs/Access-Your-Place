@@ -541,7 +541,7 @@ export function InvestorCreditsTab() {
         <div className="flex gap-2">
           <div className="relative flex-1 sm:w-80">
             <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400" />
-            <Input
+            <Input aria-label="Search by investor name or email"
               placeholder="Search by investor name or email..."
               value={searchQuery}
               onChange={(e) => setSearchQuery(e.target.value)}
@@ -914,9 +914,9 @@ export function InvestorCreditsTab() {
 
           <div className="space-y-4">
             <div>
-              <Label>Search Investor</Label>
+              <Label htmlFor="search-investor">Search Investor</Label>
               <div className="relative">
-                <Input
+                <Input id="search-investor"
                   placeholder="Type investor name or email..."
                   value={assignForm.investor_search}
                   onChange={(e) => handleSearchInvestors(e.target.value)}
@@ -949,8 +949,8 @@ export function InvestorCreditsTab() {
 
             <div className="grid grid-cols-2 gap-4">
               <div>
-                <Label>Amount ($)</Label>
-                <Input
+                <Label htmlFor="amount">Amount ($)</Label>
+                <Input id="amount"
                   type="number"
                   min="0"
                   step="0.01"
@@ -1003,8 +1003,8 @@ export function InvestorCreditsTab() {
             </div>
 
             <div>
-              <Label>Description / Reason</Label>
-              <Textarea
+              <Label htmlFor="description-reason">Description / Reason</Label>
+              <Textarea id="description-reason"
                 value={assignForm.description}
                 onChange={(e) => setAssignForm({ ...assignForm, description: e.target.value })}
                 placeholder="Reason for assigning this credit..."
@@ -1058,8 +1058,8 @@ export function InvestorCreditsTab() {
               </Card>
 
               <div>
-                <Label>Approved Amount ($)</Label>
-                <Input
+                <Label htmlFor="approved-amount">Approved Amount ($)</Label>
+                <Input id="approved-amount"
                   type="number"
                   min="0"
                   step="0.01"
@@ -1072,8 +1072,8 @@ export function InvestorCreditsTab() {
               </div>
 
               <div>
-                <Label>Admin Notes</Label>
-                <Textarea
+                <Label htmlFor="admin-notes">Admin Notes</Label>
+                <Textarea id="admin-notes"
                   value={reviewForm.admin_notes}
                   onChange={(e) => setReviewForm({ ...reviewForm, admin_notes: e.target.value })}
                   placeholder="Add notes about this decision..."

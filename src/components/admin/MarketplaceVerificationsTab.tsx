@@ -813,7 +813,7 @@ export function MarketplaceVerificationsTab() {
               </TabsContent>
               <TabsContent value="actions" className="space-y-4 mt-4">
                 <VerificationChecklistUI listingId={selectedAlert.listing_id} compact />
-                <div><Label>Rejection Reason (if rejecting)</Label><Textarea value={rejectionReason} onChange={(e) => setRejectionReason(e.target.value)} placeholder="Explain why this listing is being rejected..." rows={3} /></div>
+                <div><Label htmlFor="rejection-reason-if-rejecting-2">Rejection Reason (if rejecting)</Label><Textarea id="rejection-reason-if-rejecting-2" value={rejectionReason} onChange={(e) => setRejectionReason(e.target.value)} placeholder="Explain why this listing is being rejected..." rows={3} /></div>
                 <div className="flex gap-2 justify-end">
                   <Button variant="outline" onClick={() => { setChangesTargetListingId(selectedAlert.listing_id); setShowAlertModal(false); setShowChangesModal(true); }}><Edit className="w-4 h-4 mr-2" /> Request Changes</Button>
                   <Button variant="destructive" onClick={() => handleRejectListing(selectedAlert.listing_id)} disabled={processing}>Reject</Button>
@@ -832,7 +832,7 @@ export function MarketplaceVerificationsTab() {
       <Dialog open={showChangesModal} onOpenChange={setShowChangesModal}>
         <DialogContent>
           <DialogHeader><DialogTitle>Request Changes</DialogTitle><DialogDescription>Describe what changes the investor needs to make.</DialogDescription></DialogHeader>
-          <div><Label>Changes Required</Label><Textarea value={changesRequested} onChange={(e) => setChangesRequested(e.target.value)} placeholder="e.g., Please provide proof of lease, update revenue figures..." rows={5} /></div>
+          <div><Label htmlFor="changes-required">Changes Required</Label><Textarea id="changes-required" value={changesRequested} onChange={(e) => setChangesRequested(e.target.value)} placeholder="e.g., Please provide proof of lease, update revenue figures..." rows={5} /></div>
           <DialogFooter>
             <Button variant="outline" onClick={() => { setShowChangesModal(false); setChangesTargetListingId(null); }}>Cancel</Button>
             <Button onClick={() => { const targetId = changesTargetListingId || selectedAlert?.listing_id || selectedListing?.id; if (targetId) handleRequestChanges(targetId); }}
@@ -860,7 +860,7 @@ export function MarketplaceVerificationsTab() {
                 <CardContent className="space-y-4">
                   <div className="flex items-center justify-between"><div><p className="font-medium">Call Completed</p><p className="text-sm text-gray-500">Contact: {selectedVerification.listing?.seller?.full_name}</p></div>
                     <Switch checked={verificationForm.seller_call_completed} onCheckedChange={(c) => setVerificationForm({...verificationForm, seller_call_completed: c})} /></div>
-                  {verificationForm.seller_call_completed && (<><div><Label>Call Notes</Label><Textarea value={verificationForm.seller_call_notes} onChange={(e) => setVerificationForm({...verificationForm, seller_call_notes: e.target.value})} rows={3} /></div>
+                  {verificationForm.seller_call_completed && (<><div><Label htmlFor="call-notes">Call Notes</Label><Textarea id="call-notes" value={verificationForm.seller_call_notes} onChange={(e) => setVerificationForm({...verificationForm, seller_call_notes: e.target.value})} rows={3} /></div>
                     <div className="flex items-center justify-between"><Label>Seller is Verified Operator</Label><Switch checked={verificationForm.seller_verified_operator} onCheckedChange={(c) => setVerificationForm({...verificationForm, seller_verified_operator: c})} /></div></>)}
                 </CardContent>
               </Card>
@@ -870,11 +870,11 @@ export function MarketplaceVerificationsTab() {
                   <div className="flex items-center justify-between"><Label>Landlord Contacted</Label><Switch checked={verificationForm.landlord_contacted} onCheckedChange={(c) => setVerificationForm({...verificationForm, landlord_contacted: c})} /></div>
                   {verificationForm.landlord_contacted && (<>
                     <div className="grid md:grid-cols-3 gap-4">
-                      <div><Label>Name</Label><Input value={verificationForm.landlord_name} onChange={(e) => setVerificationForm({...verificationForm, landlord_name: e.target.value})} /></div>
-                      <div><Label>Phone</Label><Input value={verificationForm.landlord_phone} onChange={(e) => setVerificationForm({...verificationForm, landlord_phone: e.target.value})} /></div>
-                      <div><Label>Email</Label><Input value={verificationForm.landlord_email} onChange={(e) => setVerificationForm({...verificationForm, landlord_email: e.target.value})} /></div>
+                      <div><Label htmlFor="name">Name</Label><Input id="name" value={verificationForm.landlord_name} onChange={(e) => setVerificationForm({...verificationForm, landlord_name: e.target.value})} /></div>
+                      <div><Label htmlFor="phone">Phone</Label><Input id="phone" value={verificationForm.landlord_phone} onChange={(e) => setVerificationForm({...verificationForm, landlord_phone: e.target.value})} /></div>
+                      <div><Label htmlFor="email">Email</Label><Input id="email" value={verificationForm.landlord_email} onChange={(e) => setVerificationForm({...verificationForm, landlord_email: e.target.value})} /></div>
                     </div>
-                    <div><Label>Notes</Label><Textarea value={verificationForm.landlord_notes} onChange={(e) => setVerificationForm({...verificationForm, landlord_notes: e.target.value})} rows={2} /></div>
+                    <div><Label htmlFor="notes">Notes</Label><Textarea id="notes" value={verificationForm.landlord_notes} onChange={(e) => setVerificationForm({...verificationForm, landlord_notes: e.target.value})} rows={2} /></div>
                     <div className="flex items-center justify-between"><Label>Landlord Verified & Approves Transfer</Label><Switch checked={verificationForm.landlord_verified} onCheckedChange={(c) => setVerificationForm({...verificationForm, landlord_verified: c})} /></div>
                   </>)}
                 </CardContent>
@@ -937,7 +937,7 @@ export function MarketplaceVerificationsTab() {
               </TabsContent>
               <TabsContent value="review" className="space-y-4 mt-4">
                 <VerificationChecklistUI listingId={selectedListing.id} />
-                <div><Label>Rejection Reason (if rejecting)</Label><Textarea value={rejectionReason} onChange={(e) => setRejectionReason(e.target.value)} placeholder="Explain why this listing is being rejected..." rows={3} /></div>
+                <div><Label htmlFor="rejection-reason-if-rejecting">Rejection Reason (if rejecting)</Label><Textarea id="rejection-reason-if-rejecting" value={rejectionReason} onChange={(e) => setRejectionReason(e.target.value)} placeholder="Explain why this listing is being rejected..." rows={3} /></div>
                 <div className="flex gap-2 justify-end">
                   <Button variant="outline" onClick={() => { setChangesTargetListingId(selectedListing.id); setShowListingModal(false); setShowChangesModal(true); }}><Edit className="w-4 h-4 mr-2" /> Request Changes</Button>
                   <Button variant="destructive" onClick={() => handleRejectListing(selectedListing.id)} disabled={processing}>Reject</Button>

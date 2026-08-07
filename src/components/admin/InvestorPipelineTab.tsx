@@ -126,7 +126,7 @@ export function InvestorPipelineTab() {
 
       <div className="relative">
         <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400" />
-        <Input placeholder="Search investors..." value={searchTerm} onChange={e => setSearchTerm(e.target.value)} className="pl-10" />
+        <Input aria-label="Search investors" placeholder="Search investors..." value={searchTerm} onChange={e => setSearchTerm(e.target.value)} className="pl-10" />
       </div>
 
       <div className="flex gap-4 overflow-x-auto pb-4">

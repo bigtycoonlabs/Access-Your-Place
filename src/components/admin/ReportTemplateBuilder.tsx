@@ -109,16 +109,16 @@ export function ReportTemplateBuilder() {
           <CardHeader><CardTitle>Edit Template</CardTitle></CardHeader>
           <CardContent className="space-y-6">
             <div className="grid md:grid-cols-2 gap-4">
-              <div><Label>Template Name</Label><Input value={selected.name} onChange={e => setSelected({...selected, name: e.target.value})} /></div>
-              <div><Label>Description</Label><Input value={selected.description} onChange={e => setSelected({...selected, description: e.target.value})} /></div>
+              <div><Label htmlFor="template-name">Template Name</Label><Input id="template-name" value={selected.name} onChange={e => setSelected({...selected, name: e.target.value})} /></div>
+              <div><Label htmlFor="description">Description</Label><Input id="description" value={selected.description} onChange={e => setSelected({...selected, description: e.target.value})} /></div>
             </div>
 
             <div>
-              <Label className="flex items-center gap-2 mb-3"><Palette className="w-4 h-4" />Brand Colors</Label>
+              <Label className="flex items-center gap-2 mb-3" htmlFor="brand-colors"><Palette className="w-4 h-4" />Brand Colors</Label>
               <div className="flex gap-4">
                 {(['primary', 'secondary', 'accent'] as const).map(c => (
                   <div key={c} className="flex items-center gap-2">
-                    <input type="color" value={selected.colors[c]} onChange={e => setSelected({...selected, colors: {...selected.colors, [c]: e.target.value}})} className="w-10 h-10 rounded cursor-pointer" />
+                    <input id="brand-colors" type="color" value={selected.colors[c]} onChange={e => setSelected({...selected, colors: {...selected.colors, [c]: e.target.value}})} className="w-10 h-10 rounded cursor-pointer" />
                     <span className="text-sm capitalize">{c}</span>
                   </div>
                 ))}
@@ -128,8 +128,8 @@ export function ReportTemplateBuilder() {
             <div>
               <Label className="flex items-center gap-2 mb-3"><Image className="w-4 h-4" />Branding</Label>
               <div className="grid md:grid-cols-2 gap-4">
-                <div><Label className="text-xs">Company Name</Label><Input value={selected.branding.company_name} onChange={e => setSelected({...selected, branding: {...selected.branding, company_name: e.target.value}})} /></div>
-                <div><Label className="text-xs">Logo URL</Label><Input value={selected.branding.logo_url || ''} onChange={e => setSelected({...selected, branding: {...selected.branding, logo_url: e.target.value}})} placeholder="https://..." /></div>
+                <div><Label className="text-xs" htmlFor="company-name">Company Name</Label><Input id="company-name" value={selected.branding.company_name} onChange={e => setSelected({...selected, branding: {...selected.branding, company_name: e.target.value}})} /></div>
+                <div><Label className="text-xs" htmlFor="logo-url">Logo URL</Label><Input id="logo-url" value={selected.branding.logo_url || ''} onChange={e => setSelected({...selected, branding: {...selected.branding, logo_url: e.target.value}})} placeholder="https://..." /></div>
               </div>
             </div>
 

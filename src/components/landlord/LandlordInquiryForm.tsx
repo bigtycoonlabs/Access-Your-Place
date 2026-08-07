@@ -138,23 +138,23 @@ export default function LandlordInquiryForm() {
 
           <div className="grid md:grid-cols-2 gap-6">
             <div>
-              <label className="block text-sm font-medium text-gray-700 mb-2">Contact Name *</label>
-              <input type="text" required value={form.contact_name} onChange={e => setForm({...form, contact_name: e.target.value})} className="w-full px-4 py-3 rounded-lg border border-gray-300 focus:ring-2 focus:ring-[#d4a574] focus:border-transparent" />
+              <label className="block text-sm font-medium text-gray-700 mb-2" htmlFor="contact-name">Contact Name *</label>
+              <input id="contact-name" type="text" required value={form.contact_name} onChange={e => setForm({...form, contact_name: e.target.value})} className="w-full px-4 py-3 rounded-lg border border-gray-300 focus:ring-2 focus:ring-[#d4a574] focus:border-transparent" />
             </div>
             <div>
-              <label className="block text-sm font-medium text-gray-700 mb-2">Company/Community Name</label>
-              <input type="text" value={form.company_name} onChange={e => setForm({...form, company_name: e.target.value})} className="w-full px-4 py-3 rounded-lg border border-gray-300 focus:ring-2 focus:ring-[#d4a574] focus:border-transparent" />
+              <label className="block text-sm font-medium text-gray-700 mb-2" htmlFor="company-community-name">Company/Community Name</label>
+              <input id="company-community-name" type="text" value={form.company_name} onChange={e => setForm({...form, company_name: e.target.value})} className="w-full px-4 py-3 rounded-lg border border-gray-300 focus:ring-2 focus:ring-[#d4a574] focus:border-transparent" />
             </div>
           </div>
 
           <div className="grid md:grid-cols-2 gap-6">
             <div>
-              <label className="block text-sm font-medium text-gray-700 mb-2">Email *</label>
-              <input type="email" required value={form.email} onChange={e => setForm({...form, email: e.target.value})} className="w-full px-4 py-3 rounded-lg border border-gray-300 focus:ring-2 focus:ring-[#d4a574] focus:border-transparent" />
+              <label className="block text-sm font-medium text-gray-700 mb-2" htmlFor="email">Email *</label>
+              <input id="email" type="email" required value={form.email} onChange={e => setForm({...form, email: e.target.value})} className="w-full px-4 py-3 rounded-lg border border-gray-300 focus:ring-2 focus:ring-[#d4a574] focus:border-transparent" />
             </div>
             <div>
-              <label className="block text-sm font-medium text-gray-700 mb-2">Phone</label>
-              <input type="tel" value={form.phone} onChange={e => setForm({...form, phone: e.target.value})} className="w-full px-4 py-3 rounded-lg border border-gray-300 focus:ring-2 focus:ring-[#d4a574] focus:border-transparent" />
+              <label className="block text-sm font-medium text-gray-700 mb-2" htmlFor="phone">Phone</label>
+              <input id="phone" type="tel" value={form.phone} onChange={e => setForm({...form, phone: e.target.value})} className="w-full px-4 py-3 rounded-lg border border-gray-300 focus:ring-2 focus:ring-[#d4a574] focus:border-transparent" />
             </div>
           </div>
 
@@ -162,12 +162,12 @@ export default function LandlordInquiryForm() {
             <>
               <div className="grid md:grid-cols-2 gap-6">
                 <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-2">Password *</label>
-                  <input type="password" required value={form.password} onChange={e => setForm({...form, password: e.target.value})} className="w-full px-4 py-3 rounded-lg border border-gray-300 focus:ring-2 focus:ring-[#d4a574] focus:border-transparent" placeholder="Min 8 characters" />
+                  <label className="block text-sm font-medium text-gray-700 mb-2" htmlFor="password">Password *</label>
+                  <input id="password" type="password" required value={form.password} onChange={e => setForm({...form, password: e.target.value})} className="w-full px-4 py-3 rounded-lg border border-gray-300 focus:ring-2 focus:ring-[#d4a574] focus:border-transparent" placeholder="Min 8 characters" />
                 </div>
                 <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-2">Confirm Password *</label>
-                  <input type="password" required value={form.confirm_password} onChange={e => setForm({...form, confirm_password: e.target.value})} className="w-full px-4 py-3 rounded-lg border border-gray-300 focus:ring-2 focus:ring-[#d4a574] focus:border-transparent" />
+                  <label className="block text-sm font-medium text-gray-700 mb-2" htmlFor="confirm-password">Confirm Password *</label>
+                  <input id="confirm-password" type="password" required value={form.confirm_password} onChange={e => setForm({...form, confirm_password: e.target.value})} className="w-full px-4 py-3 rounded-lg border border-gray-300 focus:ring-2 focus:ring-[#d4a574] focus:border-transparent" />
                 </div>
               </div>
 
@@ -193,14 +193,14 @@ export default function LandlordInquiryForm() {
               </select>
             </div>
             <div>
-              <label className="block text-sm font-medium text-gray-700 mb-2">Number of Units</label>
-              <input type="number" value={form.unit_count} onChange={e => setForm({...form, unit_count: e.target.value})} className="w-full px-4 py-3 rounded-lg border border-gray-300 focus:ring-2 focus:ring-[#d4a574] focus:border-transparent" />
+              <label className="block text-sm font-medium text-gray-700 mb-2" htmlFor="number-of-units">Number of Units</label>
+              <input id="number-of-units" type="number" value={form.unit_count} onChange={e => setForm({...form, unit_count: e.target.value})} className="w-full px-4 py-3 rounded-lg border border-gray-300 focus:ring-2 focus:ring-[#d4a574] focus:border-transparent" />
             </div>
           </div>
 
           <div>
-            <label className="block text-sm font-medium text-gray-700 mb-2">Location (City, State)</label>
-            <input type="text" value={form.location} onChange={e => setForm({...form, location: e.target.value})} className="w-full px-4 py-3 rounded-lg border border-gray-300 focus:ring-2 focus:ring-[#d4a574] focus:border-transparent" />
+            <label className="block text-sm font-medium text-gray-700 mb-2" htmlFor="location-city-state">Location (City, State)</label>
+            <input id="location-city-state" type="text" value={form.location} onChange={e => setForm({...form, location: e.target.value})} className="w-full px-4 py-3 rounded-lg border border-gray-300 focus:ring-2 focus:ring-[#d4a574] focus:border-transparent" />
           </div>
 
           {mode === 'inquiry' && (
@@ -215,8 +215,8 @@ export default function LandlordInquiryForm() {
                 </select>
               </div>
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-2">Additional Information</label>
-                <textarea rows={3} value={form.message} onChange={e => setForm({...form, message: e.target.value})} className="w-full px-4 py-3 rounded-lg border border-gray-300 focus:ring-2 focus:ring-[#d4a574] focus:border-transparent" placeholder="Tell us about your property or any specific requirements..." />
+                <label className="block text-sm font-medium text-gray-700 mb-2" htmlFor="additional-information">Additional Information</label>
+                <textarea id="additional-information" rows={3} value={form.message} onChange={e => setForm({...form, message: e.target.value})} className="w-full px-4 py-3 rounded-lg border border-gray-300 focus:ring-2 focus:ring-[#d4a574] focus:border-transparent" placeholder="Tell us about your property or any specific requirements..." />
               </div>
             </>
           )}

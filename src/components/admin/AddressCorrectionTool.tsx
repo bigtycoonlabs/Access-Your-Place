@@ -241,7 +241,7 @@ export function AddressCorrectionTool({ staffId, staffName }: AddressCorrectionT
         {properties.length > 0 && (
           <div className="relative mb-4">
             <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400" />
-            <Input
+            <Input aria-label="Search by title, city, state, or zip"
               placeholder="Search by title, city, state, or zip..."
               value={searchTerm}
               onChange={(e) => setSearchTerm(e.target.value)}
@@ -411,7 +411,7 @@ export function AddressCorrectionTool({ staffId, staffName }: AddressCorrectionT
                             <Label htmlFor={`address-${property.id}`} className="text-xs font-medium text-gray-700">
                               Street Address *
                             </Label>
-                            <Input
+                            <Input aria-label="123 Main St, Apt 4B"
                               id={`address-${property.id}`}
                               placeholder="123 Main St, Apt 4B"
                               value={editForm.address}
@@ -424,7 +424,7 @@ export function AddressCorrectionTool({ staffId, staffName }: AddressCorrectionT
                             <Label htmlFor={`city-${property.id}`} className="text-xs font-medium text-gray-700">
                               City
                             </Label>
-                            <Input
+                            <Input aria-label="City"
                               id={`city-${property.id}`}
                               placeholder="City"
                               value={editForm.city}
@@ -437,7 +437,7 @@ export function AddressCorrectionTool({ staffId, staffName }: AddressCorrectionT
                               <Label htmlFor={`state-${property.id}`} className="text-xs font-medium text-gray-700">
                                 State
                               </Label>
-                              <Input
+                              <Input aria-label="ST"
                                 id={`state-${property.id}`}
                                 placeholder="ST"
                                 value={editForm.state}
@@ -450,7 +450,7 @@ export function AddressCorrectionTool({ staffId, staffName }: AddressCorrectionT
                               <Label htmlFor={`zip-${property.id}`} className="text-xs font-medium text-gray-700">
                                 ZIP
                               </Label>
-                              <Input
+                              <Input aria-label="12345"
                                 id={`zip-${property.id}`}
                                 placeholder="12345"
                                 value={editForm.zip_code}

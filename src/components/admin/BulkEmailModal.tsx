@@ -110,8 +110,8 @@ export function BulkEmailModal({ open, onClose, investorIds, onSent }: Props) {
           </div>
 
           <div>
-            <Label>Subject Line</Label>
-            <Input 
+            <Label htmlFor="subject-line">Subject Line</Label>
+            <Input id="subject-line" 
               value={subject} 
               onChange={e => setSubject(e.target.value)} 
               placeholder="Email subject..."
@@ -119,8 +119,8 @@ export function BulkEmailModal({ open, onClose, investorIds, onSent }: Props) {
           </div>
 
           <div>
-            <Label>Email Content (HTML)</Label>
-            <Textarea 
+            <Label htmlFor="email-content-html">Email Content (HTML)</Label>
+            <Textarea id="email-content-html" 
               value={content} 
               onChange={e => setContent(e.target.value)} 
               placeholder="Email body..."

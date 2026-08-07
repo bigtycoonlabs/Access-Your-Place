@@ -298,8 +298,8 @@ export function SetupIntakeFieldConfigurator({ projectId, currentFields, staffNa
                 <div className="px-3 pb-3 pt-1 border-t space-y-3">
                   <div className="grid grid-cols-2 gap-3">
                     <div>
-                      <Label className="text-xs">Field Label</Label>
-                      <Input
+                      <Label className="text-xs" htmlFor="field-label">Field Label</Label>
+                      <Input id="field-label"
                         value={field.label}
                         onChange={e => updateField(field.id, { label: e.target.value })}
                         className="h-8 text-sm"
@@ -320,8 +320,8 @@ export function SetupIntakeFieldConfigurator({ projectId, currentFields, staffNa
                   </div>
                   <div className="grid grid-cols-2 gap-3">
                     <div>
-                      <Label className="text-xs">Placeholder Text</Label>
-                      <Input
+                      <Label className="text-xs" htmlFor="placeholder-text">Placeholder Text</Label>
+                      <Input id="placeholder-text"
                         value={field.placeholder || ''}
                         onChange={e => updateField(field.id, { placeholder: e.target.value })}
                         className="h-8 text-sm"
@@ -440,12 +440,12 @@ export function SetupIntakeFieldConfigurator({ projectId, currentFields, staffNa
           </DialogHeader>
           <div className="space-y-4">
             <div>
-              <Label>Template Name *</Label>
-              <Input value={templateName} onChange={e => setTemplateName(e.target.value)} placeholder="e.g., Standard Apartment Setup" />
+              <Label htmlFor="template-name">Template Name *</Label>
+              <Input id="template-name" value={templateName} onChange={e => setTemplateName(e.target.value)} placeholder="e.g., Standard Apartment Setup" />
             </div>
             <div>
-              <Label>Description</Label>
-              <Textarea value={templateDesc} onChange={e => setTemplateDesc(e.target.value)} rows={2} placeholder="Optional description..." />
+              <Label htmlFor="description">Description</Label>
+              <Textarea id="description" value={templateDesc} onChange={e => setTemplateDesc(e.target.value)} rows={2} placeholder="Optional description..." />
             </div>
             <div>
               <Label>Property Type (optional filter)</Label>
@@ -484,12 +484,12 @@ export function SetupIntakeFieldConfigurator({ projectId, currentFields, staffNa
             <h3 className="font-semibold text-[#1a365d]">Property Setup Intake Form</h3>
             {fields.map(field => (
               <div key={field.id}>
-                <Label className="text-sm">
+                <Label className="text-sm" htmlFor="field-0">
                   {field.label}
                   {field.required && <span className="text-red-500 ml-1">*</span>}
                 </Label>
                 {field.type === 'text' && (
-                  <Input disabled placeholder={field.placeholder || ''} className="mt-1 bg-white" />
+                  <Input id="field-0" disabled placeholder={field.placeholder || ''} className="mt-1 bg-white" />
                 )}
                 {field.type === 'textarea' && (
                   <Textarea disabled placeholder={field.placeholder || ''} rows={3} className="mt-1 bg-white" />

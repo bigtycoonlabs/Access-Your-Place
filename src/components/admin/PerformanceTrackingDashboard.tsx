@@ -357,8 +357,8 @@ export function PerformanceTrackingDashboard({ staffId }: Props) {
                 </div>
 
                 <div>
-                  <Label>Period Start Date</Label>
-                  <Input
+                  <Label htmlFor="period-start-date">Period Start Date</Label>
+                  <Input id="period-start-date"
                     type="date"
                     value={newRecord.period_start_date}
                     onChange={(e) => setNewRecord({ ...newRecord, period_start_date: e.target.value })}
@@ -366,8 +366,8 @@ export function PerformanceTrackingDashboard({ staffId }: Props) {
                 </div>
 
                 <div>
-                  <Label>Period End Date</Label>
-                  <Input
+                  <Label htmlFor="period-end-date">Period End Date</Label>
+                  <Input id="period-end-date"
                     type="date"
                     value={newRecord.period_end_date}
                     onChange={(e) => setNewRecord({ ...newRecord, period_end_date: e.target.value })}
@@ -379,8 +379,8 @@ export function PerformanceTrackingDashboard({ staffId }: Props) {
                 <h4 className="font-medium mb-3">Actual Performance Metrics</h4>
                 <div className="grid grid-cols-2 gap-4">
                   <div>
-                    <Label>Actual ADR ($) *</Label>
-                    <Input
+                    <Label htmlFor="actual-adr">Actual ADR ($) *</Label>
+                    <Input id="actual-adr"
                       type="number"
                       value={newRecord.actual_adr}
                       onChange={(e) => setNewRecord({ ...newRecord, actual_adr: e.target.value })}
@@ -389,8 +389,8 @@ export function PerformanceTrackingDashboard({ staffId }: Props) {
                   </div>
 
                   <div>
-                    <Label>Actual Occupancy Rate (%) *</Label>
-                    <Input
+                    <Label htmlFor="actual-occupancy-rate">Actual Occupancy Rate (%) *</Label>
+                    <Input id="actual-occupancy-rate"
                       type="number"
                       value={newRecord.actual_occupancy_rate}
                       onChange={(e) => setNewRecord({ ...newRecord, actual_occupancy_rate: e.target.value })}
@@ -399,8 +399,8 @@ export function PerformanceTrackingDashboard({ staffId }: Props) {
                   </div>
 
                   <div>
-                    <Label>Gross Revenue ($)</Label>
-                    <Input
+                    <Label htmlFor="gross-revenue">Gross Revenue ($)</Label>
+                    <Input id="gross-revenue"
                       type="number"
                       value={newRecord.actual_gross_revenue}
                       onChange={(e) => setNewRecord({ ...newRecord, actual_gross_revenue: e.target.value })}
@@ -409,8 +409,8 @@ export function PerformanceTrackingDashboard({ staffId }: Props) {
                   </div>
 
                   <div>
-                    <Label>Net Revenue ($)</Label>
-                    <Input
+                    <Label htmlFor="net-revenue">Net Revenue ($)</Label>
+                    <Input id="net-revenue"
                       type="number"
                       value={newRecord.actual_net_revenue}
                       onChange={(e) => setNewRecord({ ...newRecord, actual_net_revenue: e.target.value })}
@@ -419,8 +419,8 @@ export function PerformanceTrackingDashboard({ staffId }: Props) {
                   </div>
 
                   <div>
-                    <Label>Total Expenses ($)</Label>
-                    <Input
+                    <Label htmlFor="total-expenses">Total Expenses ($)</Label>
+                    <Input id="total-expenses"
                       type="number"
                       value={newRecord.actual_expenses}
                       onChange={(e) => setNewRecord({ ...newRecord, actual_expenses: e.target.value })}
@@ -429,8 +429,8 @@ export function PerformanceTrackingDashboard({ staffId }: Props) {
                   </div>
 
                   <div>
-                    <Label>Booking Count</Label>
-                    <Input
+                    <Label htmlFor="booking-count">Booking Count</Label>
+                    <Input id="booking-count"
                       type="number"
                       value={newRecord.actual_booking_count}
                       onChange={(e) => setNewRecord({ ...newRecord, actual_booking_count: e.target.value })}
@@ -439,8 +439,8 @@ export function PerformanceTrackingDashboard({ staffId }: Props) {
                   </div>
 
                   <div>
-                    <Label>Avg Length of Stay (nights)</Label>
-                    <Input
+                    <Label htmlFor="avg-length-of-stay-nights">Avg Length of Stay (nights)</Label>
+                    <Input id="avg-length-of-stay-nights"
                       type="number"
                       step="0.1"
                       value={newRecord.avg_length_of_stay}
@@ -450,8 +450,8 @@ export function PerformanceTrackingDashboard({ staffId }: Props) {
                   </div>
 
                   <div>
-                    <Label>Market</Label>
-                    <Input
+                    <Label htmlFor="market">Market</Label>
+                    <Input id="market"
                       value={newRecord.market}
                       onChange={(e) => setNewRecord({ ...newRecord, market: e.target.value })}
                       placeholder="e.g., Austin, TX"
@@ -464,8 +464,8 @@ export function PerformanceTrackingDashboard({ staffId }: Props) {
                 <h4 className="font-medium mb-3">Additional Context (for ML training)</h4>
                 <div className="space-y-4">
                   <div>
-                    <Label>Notes</Label>
-                    <Textarea
+                    <Label htmlFor="notes">Notes</Label>
+                    <Textarea id="notes"
                       value={newRecord.notes}
                       onChange={(e) => setNewRecord({ ...newRecord, notes: e.target.value })}
                       placeholder="Any relevant observations about this property's performance..."
@@ -474,8 +474,8 @@ export function PerformanceTrackingDashboard({ staffId }: Props) {
                   </div>
 
                   <div>
-                    <Label>Challenges Faced (comma-separated)</Label>
-                    <Input
+                    <Label htmlFor="challenges-faced-commaseparated">Challenges Faced (comma-separated)</Label>
+                    <Input id="challenges-faced-commaseparated"
                       value={newRecord.challenges_faced}
                       onChange={(e) => setNewRecord({ ...newRecord, challenges_faced: e.target.value })}
                       placeholder="e.g., Slow season, Competition, Maintenance issues"
@@ -483,8 +483,8 @@ export function PerformanceTrackingDashboard({ staffId }: Props) {
                   </div>
 
                   <div>
-                    <Label>Success Factors (comma-separated)</Label>
-                    <Input
+                    <Label htmlFor="success-factors-commaseparated">Success Factors (comma-separated)</Label>
+                    <Input id="success-factors-commaseparated"
                       value={newRecord.success_factors}
                       onChange={(e) => setNewRecord({ ...newRecord, success_factors: e.target.value })}
                       placeholder="e.g., Great location, Premium amenities, Strong reviews"

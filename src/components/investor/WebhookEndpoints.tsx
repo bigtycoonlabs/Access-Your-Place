@@ -263,9 +263,9 @@ export function WebhookEndpoints({ investorId }: Props) {
                     {connection.webhook_url ? (
                       <>
                         <div>
-                          <Label className="text-sm text-gray-500">Webhook URL</Label>
+                          <Label className="text-sm text-gray-500" htmlFor="webhook-url">Webhook URL</Label>
                           <div className="flex items-center gap-2 mt-1">
-                            <Input 
+                            <Input id="webhook-url" 
                               value={connection.webhook_url} 
                               readOnly 
                               className="font-mono text-sm bg-gray-50"
@@ -287,9 +287,9 @@ export function WebhookEndpoints({ investorId }: Props) {
 
                         {connection.webhook_secret && (
                           <div>
-                            <Label className="text-sm text-gray-500">Webhook Secret</Label>
+                            <Label className="text-sm text-gray-500" htmlFor="webhook-secret">Webhook Secret</Label>
                             <div className="flex items-center gap-2 mt-1">
-                              <Input 
+                              <Input id="webhook-secret" 
                                 value={connection.webhook_secret} 
                                 readOnly 
                                 type="password"
@@ -555,8 +555,8 @@ export function WebhookEndpoints({ investorId }: Props) {
 
           <div className="space-y-4">
             <div>
-              <Label>Platform</Label>
-              <Input value={selectedConnection?.platform_name || ''} readOnly className="bg-gray-50" />
+              <Label htmlFor="platform">Platform</Label>
+              <Input id="platform" value={selectedConnection?.platform_name || ''} readOnly className="bg-gray-50" />
             </div>
 
             <div>

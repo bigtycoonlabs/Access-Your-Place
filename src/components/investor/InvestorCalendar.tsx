@@ -527,7 +527,7 @@ export function InvestorCalendar({ investorId, investorName }: Props) {
                   value={eventForm.event_type}
                   onValueChange={(v: CalendarEvent['event_type']) => setEventForm({ ...eventForm, event_type: v })}
                 >
-                  <SelectTrigger>
+                  <SelectTrigger id="event-type">
                     <SelectValue />
                   </SelectTrigger>
                   <SelectContent>

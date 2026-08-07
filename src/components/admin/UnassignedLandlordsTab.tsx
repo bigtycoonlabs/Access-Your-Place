@@ -392,20 +392,20 @@ export function UnassignedLandlordsTab({ staffId, staffName }: Props) {
                       </div>
                       <div className="grid md:grid-cols-2 gap-3 mb-3">
                         <div>
-                          <label className="block text-xs font-medium text-gray-600 mb-1">Client Name *</label>
-                          <input type="text" value={appForm.client_name} onChange={e => setAppForm({...appForm, client_name: e.target.value})} className="w-full px-3 py-2 rounded-lg border border-gray-300 text-sm focus:ring-2 focus:ring-[#d4a574] focus:border-transparent" placeholder="Full name of the client" />
+                          <label className="block text-xs font-medium text-gray-600 mb-1" htmlFor="client-name">Client Name *</label>
+                          <input id="client-name" type="text" value={appForm.client_name} onChange={e => setAppForm({...appForm, client_name: e.target.value})} className="w-full px-3 py-2 rounded-lg border border-gray-300 text-sm focus:ring-2 focus:ring-[#d4a574] focus:border-transparent" placeholder="Full name of the client" />
                         </div>
                         <div>
-                          <label className="block text-xs font-medium text-gray-600 mb-1">Business Name</label>
-                          <input type="text" value={appForm.client_business_name} onChange={e => setAppForm({...appForm, client_business_name: e.target.value})} className="w-full px-3 py-2 rounded-lg border border-gray-300 text-sm focus:ring-2 focus:ring-[#d4a574] focus:border-transparent" placeholder="Client's business entity" />
+                          <label className="block text-xs font-medium text-gray-600 mb-1" htmlFor="business-name">Business Name</label>
+                          <input id="business-name" type="text" value={appForm.client_business_name} onChange={e => setAppForm({...appForm, client_business_name: e.target.value})} className="w-full px-3 py-2 rounded-lg border border-gray-300 text-sm focus:ring-2 focus:ring-[#d4a574] focus:border-transparent" placeholder="Client's business entity" />
                         </div>
                         <div>
-                          <label className="block text-xs font-medium text-gray-600 mb-1">Community Name</label>
-                          <input type="text" value={appForm.community_name} onChange={e => setAppForm({...appForm, community_name: e.target.value})} className="w-full px-3 py-2 rounded-lg border border-gray-300 text-sm focus:ring-2 focus:ring-[#d4a574] focus:border-transparent" placeholder="Apartment community name" />
+                          <label className="block text-xs font-medium text-gray-600 mb-1" htmlFor="community-name">Community Name</label>
+                          <input id="community-name" type="text" value={appForm.community_name} onChange={e => setAppForm({...appForm, community_name: e.target.value})} className="w-full px-3 py-2 rounded-lg border border-gray-300 text-sm focus:ring-2 focus:ring-[#d4a574] focus:border-transparent" placeholder="Apartment community name" />
                         </div>
                         <div>
-                          <label className="block text-xs font-medium text-gray-600 mb-1">Unit Number</label>
-                          <input type="text" value={appForm.unit_number} onChange={e => setAppForm({...appForm, unit_number: e.target.value})} className="w-full px-3 py-2 rounded-lg border border-gray-300 text-sm focus:ring-2 focus:ring-[#d4a574] focus:border-transparent" placeholder="e.g., 204, A-12" />
+                          <label className="block text-xs font-medium text-gray-600 mb-1" htmlFor="unit-number">Unit Number</label>
+                          <input id="unit-number" type="text" value={appForm.unit_number} onChange={e => setAppForm({...appForm, unit_number: e.target.value})} className="w-full px-3 py-2 rounded-lg border border-gray-300 text-sm focus:ring-2 focus:ring-[#d4a574] focus:border-transparent" placeholder="e.g., 204, A-12" />
                         </div>
                       </div>
 

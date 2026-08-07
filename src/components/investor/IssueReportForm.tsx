@@ -62,8 +62,8 @@ export default function IssueReportForm() {
               <SelectItem value="other">Other</SelectItem>
             </SelectContent>
           </Select>
-          <Input placeholder="Which page?" value={page} onChange={(e) => setPage(e.target.value)} />
-          <Textarea placeholder="Describe the issue..." value={description} onChange={(e) => setDescription(e.target.value)} rows={4} />
+          <Input aria-label="Which page?" placeholder="Which page?" value={page} onChange={(e) => setPage(e.target.value)} />
+          <Textarea aria-label="Describe the issue" placeholder="Describe the issue..." value={description} onChange={(e) => setDescription(e.target.value)} rows={4} />
           <Button type="submit" disabled={!issueType || !description || submitting} className="w-full bg-[#d4a574]">
             <Send className="w-4 h-4 mr-2" />{submitting ? 'Submitting...' : 'Submit Report'}
           </Button>

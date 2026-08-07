@@ -398,7 +398,7 @@ export function DealMarketplace({ investorId, investorName, investorEmail }: Pro
             <CardContent className="pt-4 pb-4 md:pt-5 md:pb-5">
               <div className="flex flex-col gap-3">
                 <div className="flex gap-2">
-                  <Input
+                  <Input aria-label="Search by city, state, address"
                     placeholder="Search by city, state, address..."
                     value={browseSearch}
                     onChange={(e) => setBrowseSearch(e.target.value)}
@@ -1124,18 +1124,18 @@ function CreateListingModal({ open, onClose, portfolio, investorId, investorName
               </SelectContent>
             </Select>
             <div className="grid md:grid-cols-2 gap-4">
-              <div><Label>Acquisition Cost (Asking Price) *</Label><Input type="number" min="0" value={formData.acquisition_cost || ''} onChange={(e) => setFormData({ ...formData, acquisition_cost: parseFloat(e.target.value) || 0 })} placeholder="15000" /></div>
-              <div><Label>Monthly Rent *</Label><Input type="number" min="0" value={formData.monthly_rent || ''} onChange={(e) => setFormData({ ...formData, monthly_rent: parseFloat(e.target.value) || 0 })} placeholder="2500" /></div>
-              <div><Label>Projected Monthly Revenue *</Label><Input type="number" min="0" value={formData.projected_monthly_revenue || ''} onChange={(e) => setFormData({ ...formData, projected_monthly_revenue: parseFloat(e.target.value) || 0 })} placeholder="5000" /></div>
-              <div><Label>Lease Months Remaining</Label><Input type="number" min="0" value={formData.lease_months_remaining} onChange={(e) => setFormData({ ...formData, lease_months_remaining: parseInt(e.target.value) || 0 })} /></div>
+              <div><Label htmlFor="acquisition-cost-asking-price">Acquisition Cost (Asking Price) *</Label><Input id="acquisition-cost-asking-price" type="number" min="0" value={formData.acquisition_cost || ''} onChange={(e) => setFormData({ ...formData, acquisition_cost: parseFloat(e.target.value) || 0 })} placeholder="15000" /></div>
+              <div><Label htmlFor="monthly-rent">Monthly Rent *</Label><Input id="monthly-rent" type="number" min="0" value={formData.monthly_rent || ''} onChange={(e) => setFormData({ ...formData, monthly_rent: parseFloat(e.target.value) || 0 })} placeholder="2500" /></div>
+              <div><Label htmlFor="projected-monthly-revenue">Projected Monthly Revenue *</Label><Input id="projected-monthly-revenue" type="number" min="0" value={formData.projected_monthly_revenue || ''} onChange={(e) => setFormData({ ...formData, projected_monthly_revenue: parseFloat(e.target.value) || 0 })} placeholder="5000" /></div>
+              <div><Label htmlFor="lease-months-remaining">Lease Months Remaining</Label><Input id="lease-months-remaining" type="number" min="0" value={formData.lease_months_remaining} onChange={(e) => setFormData({ ...formData, lease_months_remaining: parseInt(e.target.value) || 0 })} /></div>
               {formData.operation_type !== 'coliving' && (
                 <>
-                  <div><Label>ADR *</Label><Input type="number" min="0" value={formData.adr || ''} onChange={(e) => setFormData({ ...formData, adr: parseFloat(e.target.value) || 0 })} placeholder="150" /></div>
-                  <div><Label>Occupancy Rate (%) *</Label><Input type="number" min="0" max="100" value={formData.occupancy_rate || ''} onChange={(e) => setFormData({ ...formData, occupancy_rate: parseFloat(e.target.value) || 0 })} placeholder="75" /></div>
+                  <div><Label htmlFor="adr">ADR *</Label><Input id="adr" type="number" min="0" value={formData.adr || ''} onChange={(e) => setFormData({ ...formData, adr: parseFloat(e.target.value) || 0 })} placeholder="150" /></div>
+                  <div><Label htmlFor="occupancy-rate">Occupancy Rate (%) *</Label><Input id="occupancy-rate" type="number" min="0" max="100" value={formData.occupancy_rate || ''} onChange={(e) => setFormData({ ...formData, occupancy_rate: parseFloat(e.target.value) || 0 })} placeholder="75" /></div>
                 </>
               )}
             </div>
-            <div><Label>Description</Label><Textarea value={formData.description} onChange={(e) => setFormData({ ...formData, description: e.target.value })} placeholder="Describe your operation..." rows={3} /></div>
+            <div><Label htmlFor="description">Description</Label><Textarea id="description" value={formData.description} onChange={(e) => setFormData({ ...formData, description: e.target.value })} placeholder="Describe your operation..." rows={3} /></div>
           </div>
         )}
 
@@ -1143,7 +1143,7 @@ function CreateListingModal({ open, onClose, portfolio, investorId, investorName
         {step === 5 && listingType === 'private' && (
           <div className="space-y-4">
             <div className="flex gap-2">
-              <Input placeholder="Search by name, email, or phone..." value={buyerSearch} onChange={(e) => setBuyerSearch(e.target.value)} onKeyDown={(e) => e.key === 'Enter' && handleSearch()} />
+              <Input aria-label="Search by name, email, or phone" placeholder="Search by name, email, or phone..." value={buyerSearch} onChange={(e) => setBuyerSearch(e.target.value)} onKeyDown={(e) => e.key === 'Enter' && handleSearch()} />
               <Button onClick={handleSearch} disabled={searching}>
                 {searching ? <Loader2 className="w-4 h-4 animate-spin" /> : <Search className="w-4 h-4" />}
               </Button>
@@ -1426,15 +1426,15 @@ function ListingDetailModal({ open, onClose, listing, isOwner, investorId, inves
                   <div className="space-y-3">
                     <h4 className="font-semibold">Submit Your Offer</h4>
                     <div>
-                      <Label>Offer Amount *</Label>
+                      <Label htmlFor="offer-amount">Offer Amount *</Label>
                       <div className="relative">
                         <DollarSign className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400" />
-                        <Input type="number" min="0" value={offerAmount} onChange={(e) => setOfferAmount(e.target.value)} placeholder={listing.asking_price?.toString()} className="pl-10" />
+                        <Input id="offer-amount" type="number" min="0" value={offerAmount} onChange={(e) => setOfferAmount(e.target.value)} placeholder={listing.asking_price?.toString()} className="pl-10" />
                       </div>
                     </div>
                     <div>
-                      <Label>Message (optional)</Label>
-                      <Textarea value={offerMessage} onChange={(e) => setOfferMessage(e.target.value)} placeholder="Tell the seller about yourself and why you're interested..." rows={2} />
+                      <Label htmlFor="message-optional">Message (optional)</Label>
+                      <Textarea id="message-optional" value={offerMessage} onChange={(e) => setOfferMessage(e.target.value)} placeholder="Tell the seller about yourself and why you're interested..." rows={2} />
                     </div>
                     <div className="flex gap-2">
                       <Button onClick={handleMakeOffer} disabled={submittingOffer} className="flex-1 bg-[#d4a574] hover:bg-[#c49464]">

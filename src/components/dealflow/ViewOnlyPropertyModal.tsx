@@ -142,8 +142,8 @@ export function ViewOnlyPropertyModal({ property, analytics, photos, open, onOpe
             <div className="grid grid-cols-2 gap-4">
               <div className="space-y-4">
                 <div>
-                  <Label className="text-xs text-gray-500">Listing Title</Label>
-                  <Input
+                  <Label className="text-xs text-gray-500" htmlFor="listing-title">Listing Title</Label>
+                  <Input id="listing-title"
                     value={property.listing_title || ''}
                     disabled
                     className="bg-gray-50 cursor-not-allowed"
@@ -306,22 +306,22 @@ export function ViewOnlyPropertyModal({ property, analytics, photos, open, onOpe
               <CardContent>
                 <div className="grid grid-cols-2 md:grid-cols-3 gap-4">
                   <div>
-                    <Label className="text-xs text-gray-500 flex items-center gap-1">
+                    <Label className="text-xs text-gray-500 flex items-center gap-1" htmlFor="monthly-property-rent">
                       <DollarSign className="w-3 h-3" aria-hidden="true" /> Monthly Property Rent
                     </Label>
-                    <Input value={property.monthly_rent ? `$${property.monthly_rent.toLocaleString()}` : 'Not set'} disabled className="bg-gray-50 cursor-not-allowed font-medium" />
+                    <Input id="monthly-property-rent" value={property.monthly_rent ? `$${property.monthly_rent.toLocaleString()}` : 'Not set'} disabled className="bg-gray-50 cursor-not-allowed font-medium" />
                   </div>
                   <div>
-                    <Label className="text-xs text-gray-500 flex items-center gap-1">
+                    <Label className="text-xs text-gray-500 flex items-center gap-1" htmlFor="acquisition-fee">
                       <DollarSign className="w-3 h-3" aria-hidden="true" /> Acquisition Fee
                     </Label>
-                    <Input value={property.acquisition_fee ? `$${property.acquisition_fee.toLocaleString()}` : 'Not set'} disabled className="bg-gray-50 cursor-not-allowed font-medium" />
+                    <Input id="acquisition-fee" value={property.acquisition_fee ? `$${property.acquisition_fee.toLocaleString()}` : 'Not set'} disabled className="bg-gray-50 cursor-not-allowed font-medium" />
                   </div>
                   <div>
-                    <Label className="text-xs text-gray-500 flex items-center gap-1">
+                    <Label className="text-xs text-gray-500 flex items-center gap-1" htmlFor="average-occupancy-rate">
                       <Percent className="w-3 h-3" aria-hidden="true" /> Average Occupancy Rate
                     </Label>
-                    <Input value={property.avg_occupancy_rate ? `${property.avg_occupancy_rate}%` : 'Not set'} disabled className="bg-gray-50 cursor-not-allowed font-medium" />
+                    <Input id="average-occupancy-rate" value={property.avg_occupancy_rate ? `${property.avg_occupancy_rate}%` : 'Not set'} disabled className="bg-gray-50 cursor-not-allowed font-medium" />
                   </div>
                 </div>
               </CardContent>
@@ -341,22 +341,22 @@ export function ViewOnlyPropertyModal({ property, analytics, photos, open, onOpe
               <CardContent>
                 <div className="grid grid-cols-2 md:grid-cols-3 gap-4">
                   <div>
-                    <Label className="text-xs text-gray-500">ADR - Peak Season</Label>
-                    <Input value={property.adr_peak_season ? `$${property.adr_peak_season}` : 'Not set'} disabled className="bg-gray-50 cursor-not-allowed font-medium" />
+                    <Label className="text-xs text-gray-500" htmlFor="adr-peak-season">ADR - Peak Season</Label>
+                    <Input id="adr-peak-season" value={property.adr_peak_season ? `$${property.adr_peak_season}` : 'Not set'} disabled className="bg-gray-50 cursor-not-allowed font-medium" />
                   </div>
                   <div>
-                    <Label className="text-xs text-gray-500">ADR - Slow Season</Label>
-                    <Input value={property.adr_slow_season ? `$${property.adr_slow_season}` : 'Not set'} disabled className="bg-gray-50 cursor-not-allowed font-medium" />
+                    <Label className="text-xs text-gray-500" htmlFor="adr-slow-season">ADR - Slow Season</Label>
+                    <Input id="adr-slow-season" value={property.adr_slow_season ? `$${property.adr_slow_season}` : 'Not set'} disabled className="bg-gray-50 cursor-not-allowed font-medium" />
                   </div>
                   <div>
-                    <Label className="text-xs text-gray-500">Average Room Rate ($/month)</Label>
-                    <Input value={property.monthly_room_rate ? `$${property.monthly_room_rate}` : 'Not set'} disabled className="bg-gray-50 cursor-not-allowed font-medium" />
+                    <Label className="text-xs text-gray-500" htmlFor="average-room-rate-month">Average Room Rate ($/month)</Label>
+                    <Input id="average-room-rate-month" value={property.monthly_room_rate ? `$${property.monthly_room_rate}` : 'Not set'} disabled className="bg-gray-50 cursor-not-allowed font-medium" />
                   </div>
                 </div>
                 {property.peak_season_description && (
                   <div className="mt-4">
-                    <Label className="text-xs text-gray-500">Peak Season Description</Label>
-                    <Input value={property.peak_season_description} disabled className="bg-gray-50 cursor-not-allowed" />
+                    <Label className="text-xs text-gray-500" htmlFor="peak-season-description">Peak Season Description</Label>
+                    <Input id="peak-season-description" value={property.peak_season_description} disabled className="bg-gray-50 cursor-not-allowed" />
                   </div>
                 )}
               </CardContent>
@@ -376,22 +376,22 @@ export function ViewOnlyPropertyModal({ property, analytics, photos, open, onOpe
               <CardContent className="space-y-4">
                 <div className="grid grid-cols-3 gap-4">
                   <div>
-                    <Label className="text-xs text-gray-500">Projected Yearly Revenue</Label>
-                    <Input value={property.projected_yearly_revenue ? `$${Number(property.projected_yearly_revenue).toLocaleString()}` : 'Not set'} disabled className="bg-gray-50 cursor-not-allowed font-medium" />
+                    <Label className="text-xs text-gray-500" htmlFor="projected-yearly-revenue">Projected Yearly Revenue</Label>
+                    <Input id="projected-yearly-revenue" value={property.projected_yearly_revenue ? `$${Number(property.projected_yearly_revenue).toLocaleString()}` : 'Not set'} disabled className="bg-gray-50 cursor-not-allowed font-medium" />
                   </div>
                   <div>
-                    <Label className="text-xs text-gray-500">Monthly Revenue - Peak</Label>
-                    <Input value={property.projected_monthly_revenue_peak ? `$${Number(property.projected_monthly_revenue_peak).toLocaleString()}` : 'Not set'} disabled className="bg-gray-50 cursor-not-allowed font-medium" />
+                    <Label className="text-xs text-gray-500" htmlFor="monthly-revenue-peak">Monthly Revenue - Peak</Label>
+                    <Input id="monthly-revenue-peak" value={property.projected_monthly_revenue_peak ? `$${Number(property.projected_monthly_revenue_peak).toLocaleString()}` : 'Not set'} disabled className="bg-gray-50 cursor-not-allowed font-medium" />
                   </div>
                   <div>
-                    <Label className="text-xs text-gray-500">Monthly Revenue - Slow</Label>
-                    <Input value={property.projected_monthly_revenue_slow ? `$${Number(property.projected_monthly_revenue_slow).toLocaleString()}` : 'Not set'} disabled className="bg-gray-50 cursor-not-allowed font-medium" />
+                    <Label className="text-xs text-gray-500" htmlFor="monthly-revenue-slow">Monthly Revenue - Slow</Label>
+                    <Input id="monthly-revenue-slow" value={property.projected_monthly_revenue_slow ? `$${Number(property.projected_monthly_revenue_slow).toLocaleString()}` : 'Not set'} disabled className="bg-gray-50 cursor-not-allowed font-medium" />
                   </div>
                 </div>
                 {property.deposits_concessions_notes && (
                   <div>
-                    <Label className="text-xs text-gray-500">Deposits, Concessions & Notes</Label>
-                    <Textarea
+                    <Label className="text-xs text-gray-500" htmlFor="deposits-concessions-notes">Deposits, Concessions & Notes</Label>
+                    <Textarea id="deposits-concessions-notes"
                       value={property.deposits_concessions_notes}
                       disabled
                       rows={3}

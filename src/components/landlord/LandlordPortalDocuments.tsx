@@ -170,17 +170,17 @@ export default function LandlordPortalDocuments({ landlordId }: Props) {
                 </div>
               </div>
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">Title *</label>
-                <input type="text" required value={title} onChange={e => setTitle(e.target.value)} className="w-full px-3 py-2.5 rounded-lg border border-gray-300 focus:ring-2 focus:ring-[#d4a574] focus:border-transparent text-sm" placeholder="e.g., Building A Parking Map" />
+                <label className="block text-sm font-medium text-gray-700 mb-1" htmlFor="title">Title *</label>
+                <input id="title" type="text" required value={title} onChange={e => setTitle(e.target.value)} className="w-full px-3 py-2.5 rounded-lg border border-gray-300 focus:ring-2 focus:ring-[#d4a574] focus:border-transparent text-sm" placeholder="e.g., Building A Parking Map" />
               </div>
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">Description</label>
-                <textarea rows={2} value={description} onChange={e => setDescription(e.target.value)} className="w-full px-3 py-2.5 rounded-lg border border-gray-300 focus:ring-2 focus:ring-[#d4a574] focus:border-transparent text-sm" placeholder="Optional description..." />
+                <label className="block text-sm font-medium text-gray-700 mb-1" htmlFor="description">Description</label>
+                <textarea id="description" rows={2} value={description} onChange={e => setDescription(e.target.value)} className="w-full px-3 py-2.5 rounded-lg border border-gray-300 focus:ring-2 focus:ring-[#d4a574] focus:border-transparent text-sm" placeholder="Optional description..." />
               </div>
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">File</label>
+                <label className="block text-sm font-medium text-gray-700 mb-1" htmlFor="file">File</label>
                 <div className="border-2 border-dashed border-gray-300 rounded-lg p-6 text-center hover:border-[#d4a574] transition-colors">
-                  <input type="file" onChange={e => setSelectedFile(e.target.files?.[0] || null)} className="hidden" id="doc-upload" />
+                  <input id="file" type="file" onChange={e => setSelectedFile(e.target.files?.[0] || null)} className="hidden" id="doc-upload" />
                   <label htmlFor="doc-upload" className="cursor-pointer">
                     <Upload className="w-8 h-8 text-gray-400 mx-auto mb-2" />
                     <p className="text-sm text-gray-600">{selectedFile ? selectedFile.name : 'Click to select a file'}</p>

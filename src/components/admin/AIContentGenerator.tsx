@@ -145,8 +145,8 @@ export function AIContentGenerator() {
         </CardHeader>
         <CardContent className="p-6 space-y-4">
           <div>
-            <Label>Topic / Title *</Label>
-            <Textarea 
+            <Label htmlFor="topic-title">Topic / Title *</Label>
+            <Textarea id="topic-title" 
               value={topic} 
               onChange={(e) => setTopic(e.target.value)} 
               placeholder="e.g., How to maximize ROI on short-term rentals in Austin, TX"
@@ -257,16 +257,16 @@ export function AIContentGenerator() {
             {/* Title & Meta */}
             <div className="space-y-3">
               <div>
-                <Label className="text-xs text-gray-500">Title</Label>
-                <Input 
+                <Label className="text-xs text-gray-500" htmlFor="title">Title</Label>
+                <Input id="title" 
                   value={generatedArticle.title}
                   onChange={(e) => setGeneratedArticle({...generatedArticle, title: e.target.value})}
                   className="font-semibold text-lg"
                 />
               </div>
               <div>
-                <Label className="text-xs text-gray-500">Excerpt</Label>
-                <Textarea 
+                <Label className="text-xs text-gray-500" htmlFor="excerpt">Excerpt</Label>
+                <Textarea id="excerpt" 
                   value={generatedArticle.excerpt}
                   onChange={(e) => setGeneratedArticle({...generatedArticle, excerpt: e.target.value})}
                   rows={2}
@@ -282,14 +282,14 @@ export function AIContentGenerator() {
 
             {/* Content */}
             <div>
-              <Label className="text-xs text-gray-500">Content</Label>
+              <Label className="text-xs text-gray-500" htmlFor="content">Content</Label>
               {previewMode ? (
                 <div 
                   className="prose prose-sm max-w-none mt-2 p-4 bg-gray-50 rounded-lg"
                   dangerouslySetInnerHTML={{ __html: generatedArticle.content }}
                 />
               ) : (
-                <Textarea 
+                <Textarea id="content" 
                   value={generatedArticle.content}
                   onChange={(e) => setGeneratedArticle({...generatedArticle, content: e.target.value})}
                   rows={15}
@@ -305,16 +305,16 @@ export function AIContentGenerator() {
                 SEO Settings
               </h4>
               <div>
-                <Label className="text-xs text-gray-500">SEO Title ({generatedArticle.seo_title?.length || 0}/60)</Label>
-                <Input 
+                <Label className="text-xs text-gray-500" htmlFor="seo-title-60">SEO Title ({generatedArticle.seo_title?.length || 0}/60)</Label>
+                <Input id="seo-title-60" 
                   value={generatedArticle.seo_title}
                   onChange={(e) => setGeneratedArticle({...generatedArticle, seo_title: e.target.value})}
                   maxLength={60}
                 />
               </div>
               <div>
-                <Label className="text-xs text-gray-500">Meta Description ({generatedArticle.seo_description?.length || 0}/160)</Label>
-                <Textarea 
+                <Label className="text-xs text-gray-500" htmlFor="meta-description-160">Meta Description ({generatedArticle.seo_description?.length || 0}/160)</Label>
+                <Textarea id="meta-description-160" 
                   value={generatedArticle.seo_description}
                   onChange={(e) => setGeneratedArticle({...generatedArticle, seo_description: e.target.value})}
                   maxLength={160}

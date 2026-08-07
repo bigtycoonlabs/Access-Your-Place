@@ -69,7 +69,7 @@ export function ArticleEditorModal({ article, open, onOpenChange, onSave }: Arti
         <div className="flex-1 overflow-y-auto space-y-4 pr-2">
           {activeTab === 'content' && (
             <>
-              <div><Label>Title</Label><Input value={editedArticle.title} onChange={(e) => setEditedArticle({ ...editedArticle, title: e.target.value })} /></div>
+              <div><Label htmlFor="title">Title</Label><Input id="title" value={editedArticle.title} onChange={(e) => setEditedArticle({ ...editedArticle, title: e.target.value })} /></div>
               <div><Label>Category</Label>
                 <Select value={editedArticle.category} onValueChange={(v) => setEditedArticle({ ...editedArticle, category: v })}>
                   <SelectTrigger><SelectValue /></SelectTrigger>
@@ -84,8 +84,8 @@ export function ArticleEditorModal({ article, open, onOpenChange, onSave }: Arti
                   </SelectContent>
                 </Select>
               </div>
-              <div><Label>Excerpt</Label><Textarea value={editedArticle.excerpt} onChange={(e) => setEditedArticle({ ...editedArticle, excerpt: e.target.value })} rows={2} /></div>
-              <div><Label>Tags (comma-separated)</Label><Input value={editedArticle.tags?.join(', ') || ''} onChange={(e) => setEditedArticle({ ...editedArticle, tags: e.target.value.split(',').map(t => t.trim()).filter(Boolean) })} /></div>
+              <div><Label htmlFor="excerpt">Excerpt</Label><Textarea id="excerpt" value={editedArticle.excerpt} onChange={(e) => setEditedArticle({ ...editedArticle, excerpt: e.target.value })} rows={2} /></div>
+              <div><Label htmlFor="tags-commaseparated">Tags (comma-separated)</Label><Input id="tags-commaseparated" value={editedArticle.tags?.join(', ') || ''} onChange={(e) => setEditedArticle({ ...editedArticle, tags: e.target.value.split(',').map(t => t.trim()).filter(Boolean) })} /></div>
               <div><Label>Content</Label>
                 <div className="flex gap-1 mb-2">
                   <Button type="button" size="sm" variant="outline" onClick={() => insertFormat('strong')}><Bold className="w-4 h-4" /></Button>
@@ -99,9 +99,9 @@ export function ArticleEditorModal({ article, open, onOpenChange, onSave }: Arti
           )}
           {activeTab === 'seo' && (
             <>
-              <div><Label>SEO Title</Label><Input value={editedArticle.seo_title || ''} onChange={(e) => setEditedArticle({ ...editedArticle, seo_title: e.target.value })} /><p className="text-xs text-gray-500 mt-1">{(editedArticle.seo_title || '').length}/60</p></div>
-              <div><Label>SEO Description</Label><Textarea value={editedArticle.seo_description || ''} onChange={(e) => setEditedArticle({ ...editedArticle, seo_description: e.target.value })} rows={3} /><p className="text-xs text-gray-500 mt-1">{(editedArticle.seo_description || '').length}/160</p></div>
-              <div><Label>SEO Keywords</Label><Input value={editedArticle.seo_keywords?.join(', ') || ''} onChange={(e) => setEditedArticle({ ...editedArticle, seo_keywords: e.target.value.split(',').map(t => t.trim()).filter(Boolean) })} /></div>
+              <div><Label htmlFor="seo-title">SEO Title</Label><Input id="seo-title" value={editedArticle.seo_title || ''} onChange={(e) => setEditedArticle({ ...editedArticle, seo_title: e.target.value })} /><p className="text-xs text-gray-500 mt-1">{(editedArticle.seo_title || '').length}/60</p></div>
+              <div><Label htmlFor="seo-description">SEO Description</Label><Textarea id="seo-description" value={editedArticle.seo_description || ''} onChange={(e) => setEditedArticle({ ...editedArticle, seo_description: e.target.value })} rows={3} /><p className="text-xs text-gray-500 mt-1">{(editedArticle.seo_description || '').length}/160</p></div>
+              <div><Label htmlFor="seo-keywords">SEO Keywords</Label><Input id="seo-keywords" value={editedArticle.seo_keywords?.join(', ') || ''} onChange={(e) => setEditedArticle({ ...editedArticle, seo_keywords: e.target.value.split(',').map(t => t.trim()).filter(Boolean) })} /></div>
             </>
           )}
           {activeTab === 'schedule' && (
@@ -109,7 +109,7 @@ export function ArticleEditorModal({ article, open, onOpenChange, onSave }: Arti
               <div className="p-4 bg-purple-50 rounded-lg border border-purple-200">
                 <div className="flex items-center gap-2 mb-3"><Clock className="w-5 h-5 text-purple-600" /><h3 className="font-semibold text-purple-800">Schedule Publication</h3></div>
                 <p className="text-sm text-gray-600 mb-4">Set a future date and time for this article to be automatically published.</p>
-                <div><Label>Publish Date & Time</Label><Input type="datetime-local" min={getMinDateTime()} value={editedArticle.scheduled_for ? new Date(editedArticle.scheduled_for).toISOString().slice(0, 16) : ''} onChange={(e) => setEditedArticle({ ...editedArticle, scheduled_for: e.target.value ? new Date(e.target.value).toISOString() : '' })} className="max-w-xs" /></div>
+                <div><Label htmlFor="publish-date-time">Publish Date & Time</Label><Input id="publish-date-time" type="datetime-local" min={getMinDateTime()} value={editedArticle.scheduled_for ? new Date(editedArticle.scheduled_for).toISOString().slice(0, 16) : ''} onChange={(e) => setEditedArticle({ ...editedArticle, scheduled_for: e.target.value ? new Date(e.target.value).toISOString() : '' })} className="max-w-xs" /></div>
                 {editedArticle.scheduled_for && <p className="text-sm text-purple-700 mt-3">Will publish: {new Date(editedArticle.scheduled_for).toLocaleString()}</p>}
               </div>
               <div className="p-4 bg-gray-50 rounded-lg">

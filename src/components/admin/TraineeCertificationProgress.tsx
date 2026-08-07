@@ -1189,7 +1189,7 @@ export function TraineeCertificationProgress({ staffId, staffRole, isSuccessMana
                             Mentor Notes
                           </h5>
                           <div className="flex gap-2">
-                            <Textarea
+                            <Textarea aria-label="Add a note about this trainee"
                               placeholder="Add a note about this trainee's progress, feedback, or next steps..."
                               value={mentorNoteTraineeId === trainee.id ? mentorNote : ''}
                               onChange={(e) => {

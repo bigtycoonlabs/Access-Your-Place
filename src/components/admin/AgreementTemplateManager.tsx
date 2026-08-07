@@ -365,7 +365,7 @@ export function AgreementTemplateManager({ staffId, staffName }: Props) {
       <div className="flex flex-col sm:flex-row gap-3">
         <div className="relative flex-1 max-w-md">
           <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400" />
-          <input type="text" placeholder="Search templates..." value={searchQuery}
+          <input aria-label="Search templates" type="text" placeholder="Search templates..." value={searchQuery}
             onChange={(e) => setSearchQuery(e.target.value)}
             className="w-full pl-10 h-10 rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2"
           />
@@ -506,8 +506,8 @@ export function AgreementTemplateManager({ staffId, staffName }: Props) {
           <div className="flex-1 overflow-y-auto space-y-4 min-h-0 pr-1">
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
               <div>
-                <Label>Template Name *</Label>
-                <input type="text" placeholder="e.g., Standard Acquisition Agreement" value={editorForm.name}
+                <Label htmlFor="template-name">Template Name *</Label>
+                <input id="template-name" type="text" placeholder="e.g., Standard Acquisition Agreement" value={editorForm.name}
                   onChange={(e) => setEditorForm({ ...editorForm, name: e.target.value })}
                   className="w-full h-10 rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2"
                 />
@@ -524,8 +524,8 @@ export function AgreementTemplateManager({ staffId, staffName }: Props) {
             </div>
 
             <div>
-              <Label>Description (optional)</Label>
-              <input type="text" placeholder="Brief description of when to use this template..." value={editorForm.description}
+              <Label htmlFor="description-optional">Description (optional)</Label>
+              <input id="description-optional" type="text" placeholder="Brief description of when to use this template..." value={editorForm.description}
                 onChange={(e) => setEditorForm({ ...editorForm, description: e.target.value })}
                 className="w-full h-10 rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2"
               />
@@ -581,8 +581,8 @@ export function AgreementTemplateManager({ staffId, staffName }: Props) {
             {/* Change Notes (for edits) */}
             {editingTemplate && (
               <div>
-                <Label>Change Notes (optional)</Label>
-                <input type="text" placeholder="What changed in this version?" value={editorForm.change_notes}
+                <Label htmlFor="change-notes-optional">Change Notes (optional)</Label>
+                <input id="change-notes-optional" type="text" placeholder="What changed in this version?" value={editorForm.change_notes}
                   onChange={(e) => setEditorForm({ ...editorForm, change_notes: e.target.value })}
                   className="w-full h-10 rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2"
                 />

@@ -400,7 +400,7 @@ export function PortfolioApprovalsTab() {
         <div className="flex gap-2">
           <div className="relative flex-1 sm:w-80">
             <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400" />
-            <Input
+            <Input aria-label="Search by investor or address"
               placeholder="Search by investor or address..."
               value={searchQuery}
               onChange={(e) => setSearchQuery(e.target.value)}
@@ -712,8 +712,8 @@ export function PortfolioApprovalsTab() {
 
               {reviewForm.publish_to_dealflow && (
                 <div>
-                  <Label>Units Available</Label>
-                  <Input
+                  <Label htmlFor="units-available">Units Available</Label>
+                  <Input id="units-available"
                     type="number"
                     min="0"
                     value={reviewForm.units_available}
@@ -724,8 +724,8 @@ export function PortfolioApprovalsTab() {
 
               {/* Admin Notes */}
               <div>
-                <Label>Admin Notes</Label>
-                <Textarea
+                <Label htmlFor="admin-notes">Admin Notes</Label>
+                <Textarea id="admin-notes"
                   value={reviewForm.admin_notes}
                   onChange={(e) => setReviewForm({ ...reviewForm, admin_notes: e.target.value })}
                   placeholder="Internal notes about this property..."
@@ -735,8 +735,8 @@ export function PortfolioApprovalsTab() {
 
               {/* Rejection Reason */}
               <div>
-                <Label>Rejection Reason (if rejecting)</Label>
-                <Textarea
+                <Label htmlFor="rejection-reason-if-rejecting">Rejection Reason (if rejecting)</Label>
+                <Textarea id="rejection-reason-if-rejecting"
                   value={reviewForm.rejection_reason}
                   onChange={(e) => setReviewForm({ ...reviewForm, rejection_reason: e.target.value })}
                   placeholder="Reason for rejection (will be sent to investor)..."

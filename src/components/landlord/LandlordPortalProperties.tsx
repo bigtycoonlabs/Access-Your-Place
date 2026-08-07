@@ -208,40 +208,40 @@ export default function LandlordPortalProperties({ landlordId }: Props) {
             </div>
             <form onSubmit={handleSubmit} className="p-6 space-y-4">
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">Community/Property Name</label>
-                <input type="text" value={form.community_name} onChange={e => setForm({...form, community_name: e.target.value})} className="w-full px-3 py-2.5 rounded-lg border border-gray-300 focus:ring-2 focus:ring-[#d4a574] focus:border-transparent text-sm" placeholder="e.g., Sunset Ridge Apartments" />
+                <label className="block text-sm font-medium text-gray-700 mb-1" htmlFor="community-property-name">Community/Property Name</label>
+                <input id="community-property-name" type="text" value={form.community_name} onChange={e => setForm({...form, community_name: e.target.value})} className="w-full px-3 py-2.5 rounded-lg border border-gray-300 focus:ring-2 focus:ring-[#d4a574] focus:border-transparent text-sm" placeholder="e.g., Sunset Ridge Apartments" />
               </div>
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">Address *</label>
-                <input type="text" required value={form.address} onChange={e => setForm({...form, address: e.target.value})} className="w-full px-3 py-2.5 rounded-lg border border-gray-300 focus:ring-2 focus:ring-[#d4a574] focus:border-transparent text-sm" placeholder="123 Main St" />
+                <label className="block text-sm font-medium text-gray-700 mb-1" htmlFor="address">Address *</label>
+                <input id="address" type="text" required value={form.address} onChange={e => setForm({...form, address: e.target.value})} className="w-full px-3 py-2.5 rounded-lg border border-gray-300 focus:ring-2 focus:ring-[#d4a574] focus:border-transparent text-sm" placeholder="123 Main St" />
               </div>
               <div className="grid grid-cols-3 gap-3">
                 <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">City</label>
-                  <input type="text" value={form.city} onChange={e => setForm({...form, city: e.target.value})} className="w-full px-3 py-2.5 rounded-lg border border-gray-300 focus:ring-2 focus:ring-[#d4a574] focus:border-transparent text-sm" />
+                  <label className="block text-sm font-medium text-gray-700 mb-1" htmlFor="city">City</label>
+                  <input id="city" type="text" value={form.city} onChange={e => setForm({...form, city: e.target.value})} className="w-full px-3 py-2.5 rounded-lg border border-gray-300 focus:ring-2 focus:ring-[#d4a574] focus:border-transparent text-sm" />
                 </div>
                 <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">State</label>
-                  <input type="text" value={form.state} onChange={e => setForm({...form, state: e.target.value})} className="w-full px-3 py-2.5 rounded-lg border border-gray-300 focus:ring-2 focus:ring-[#d4a574] focus:border-transparent text-sm" />
+                  <label className="block text-sm font-medium text-gray-700 mb-1" htmlFor="state">State</label>
+                  <input id="state" type="text" value={form.state} onChange={e => setForm({...form, state: e.target.value})} className="w-full px-3 py-2.5 rounded-lg border border-gray-300 focus:ring-2 focus:ring-[#d4a574] focus:border-transparent text-sm" />
                 </div>
                 <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">Zip</label>
-                  <input type="text" value={form.zip_code} onChange={e => setForm({...form, zip_code: e.target.value})} className="w-full px-3 py-2.5 rounded-lg border border-gray-300 focus:ring-2 focus:ring-[#d4a574] focus:border-transparent text-sm" />
+                  <label className="block text-sm font-medium text-gray-700 mb-1" htmlFor="zip">Zip</label>
+                  <input id="zip" type="text" value={form.zip_code} onChange={e => setForm({...form, zip_code: e.target.value})} className="w-full px-3 py-2.5 rounded-lg border border-gray-300 focus:ring-2 focus:ring-[#d4a574] focus:border-transparent text-sm" />
                 </div>
               </div>
               <div className="grid grid-cols-2 gap-3">
                 <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">Unit Count</label>
-                  <input type="number" min="1" value={form.unit_count} onChange={e => setForm({...form, unit_count: e.target.value})} className="w-full px-3 py-2.5 rounded-lg border border-gray-300 focus:ring-2 focus:ring-[#d4a574] focus:border-transparent text-sm" />
+                  <label className="block text-sm font-medium text-gray-700 mb-1" htmlFor="unit-count">Unit Count</label>
+                  <input id="unit-count" type="number" min="1" value={form.unit_count} onChange={e => setForm({...form, unit_count: e.target.value})} className="w-full px-3 py-2.5 rounded-lg border border-gray-300 focus:ring-2 focus:ring-[#d4a574] focus:border-transparent text-sm" />
                 </div>
                 <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">Community Website</label>
-                  <input type="url" value={form.community_website} onChange={e => setForm({...form, community_website: e.target.value})} className="w-full px-3 py-2.5 rounded-lg border border-gray-300 focus:ring-2 focus:ring-[#d4a574] focus:border-transparent text-sm" placeholder="https://..." />
+                  <label className="block text-sm font-medium text-gray-700 mb-1" htmlFor="community-website">Community Website</label>
+                  <input id="community-website" type="url" value={form.community_website} onChange={e => setForm({...form, community_website: e.target.value})} className="w-full px-3 py-2.5 rounded-lg border border-gray-300 focus:ring-2 focus:ring-[#d4a574] focus:border-transparent text-sm" placeholder="https://..." />
                 </div>
               </div>
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">Notes</label>
-                <textarea rows={3} value={form.submission_notes} onChange={e => setForm({...form, submission_notes: e.target.value})} className="w-full px-3 py-2.5 rounded-lg border border-gray-300 focus:ring-2 focus:ring-[#d4a574] focus:border-transparent text-sm" placeholder="Any additional details about the property..." />
+                <label className="block text-sm font-medium text-gray-700 mb-1" htmlFor="notes">Notes</label>
+                <textarea id="notes" rows={3} value={form.submission_notes} onChange={e => setForm({...form, submission_notes: e.target.value})} className="w-full px-3 py-2.5 rounded-lg border border-gray-300 focus:ring-2 focus:ring-[#d4a574] focus:border-transparent text-sm" placeholder="Any additional details about the property..." />
               </div>
               <div className="flex gap-3 pt-2">
                 <button type="button" onClick={() => setShowAddForm(false)} className="flex-1 border border-gray-300 text-gray-700 py-2.5 rounded-lg font-medium hover:bg-gray-50 transition-colors text-sm">Cancel</button>

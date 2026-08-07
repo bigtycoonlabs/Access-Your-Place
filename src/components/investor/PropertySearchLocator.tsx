@@ -476,7 +476,7 @@ export function PropertySearchLocator({ investorId, investorName, investorEmail,
 
             <div className="flex items-center justify-between mt-4 pt-3 border-t">
               <div className="flex items-center gap-4">
-                <label className="flex items-center gap-2 text-sm cursor-pointer">
+                <label className="flex items-center gap-2 text-sm cursor-pointer" htmlFor="featured-only">
                   <input
                     type="checkbox"
                     checked={showFeaturedOnly}
@@ -487,7 +487,7 @@ export function PropertySearchLocator({ investorId, investorName, investorEmail,
                   Featured Only
                 </label>
                 <label className="flex items-center gap-2 text-sm cursor-pointer">
-                  <input
+                  <input id="featured-only"
                     type="checkbox"
                     checked={showVerifiedOnly}
                     onChange={(e) => setShowVerifiedOnly(e.target.checked)}

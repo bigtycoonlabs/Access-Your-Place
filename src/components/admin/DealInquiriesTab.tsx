@@ -86,7 +86,7 @@ export function DealInquiriesTab() {
       <CardContent>
         <InquiryStats statistics={statistics} />
         <div className="flex gap-3 mb-4">
-          <Input placeholder="Search by name or email..." value={search} onChange={(e) => setSearch(e.target.value)} className="max-w-xs" />
+          <Input aria-label="Search by name or email" placeholder="Search by name or email..." value={search} onChange={(e) => setSearch(e.target.value)} className="max-w-xs" />
           <Select value={statusFilter} onValueChange={setStatusFilter}>
             <SelectTrigger className="w-[150px]"><SelectValue /></SelectTrigger>
             <SelectContent>
