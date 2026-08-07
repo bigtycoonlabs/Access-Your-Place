@@ -15,6 +15,45 @@ globalThis.fetch = (input: any, init: any = {}) => {
   return originalFetch(input, init);
 };
 
+// PASSWORD HASHING — bcrypt.
+//
+// Landlord passwords were SHA-256 with the fixed salt 'ayp_landlord_salt_2026'. No
+// per-user salt and no work factor, so identical passwords produced identical hashes and
+// the table was one rainbow-table lookup from being readable.
+//
+// Changed NOW because landlord_contacts holds ZERO rows: no passwords to migrate and
+// nobody to lock out. That window closes at the first landlord signup, and
+// /list-your-property now routes landlords to create accounts, so it could close any day.
+//
+// All four sites move together on purpose — two register paths, login, and reset. bcrypt
+// salts each hash, so login can no longer match by hash equality inside the query; it has
+// to fetch by email and compare. Changing one site without the others locks out every
+// landlord.
+//
+// verifyPassword still accepts a legacy SHA-256 hash and upgrades it on successful login,
+// in case a row is created between this commit and the deploy landing.
+import * as bcrypt from 'https://deno.land/x/bcrypt@v0.4.1/mod.ts';
+
+const LEGACY_SALT = 'ayp_landlord_salt_2026';
+
+async function legacyHash(password: string): Promise<string> {
+  const digest = await crypto.subtle.digest('SHA-256', new TextEncoder().encode(password + LEGACY_SALT));
+  return Array.from(new Uint8Array(digest)).map((b) => b.toString(16).padStart(2, '0')).join('');
+}
+
+function hashPassword(password: string): string {
+  return bcrypt.hashSync(password);
+}
+
+async function verifyPassword(password: string, stored: string | null): Promise<{ ok: boolean; legacy: boolean }> {
+  if (!stored) return { ok: false, legacy: false };
+  if (stored.startsWith('$2a$') || stored.startsWith('$2b$') || stored.startsWith('$2y$')) {
+    try { return { ok: bcrypt.compareSync(password, stored), legacy: false }; }
+    catch { return { ok: false, legacy: false }; }
+  }
+  return { ok: (await legacyHash(password)) === stored, legacy: true };
+}
+
 const corsHeaders = {
   'Access-Control-Allow-Origin': '*',
   'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type'
@@ -65,11 +104,7 @@ Deno.serve(async (req) => {
         }
 
         // Upgrade existing contact to portal user
-        const encoder = new TextEncoder();
-        const data = encoder.encode(password + 'ayp_landlord_salt_2026');
-        const hashBuffer = await crypto.subtle.digest('SHA-256', data);
-        const hashArray = Array.from(new Uint8Array(hashBuffer));
-        const hashHex = hashArray.map(b => b.toString(16).padStart(2, '0')).join('');
+        const hashHex = hashPassword(password);
 
         const sessionToken = crypto.randomUUID();
         const expiresAt = new Date(Date.now() + 7 * 24 * 60 * 60 * 1000).toISOString();
@@ -96,12 +131,7 @@ Deno.serve(async (req) => {
         }), { headers: { ...corsHeaders, 'Content-Type': 'application/json' } });
       }
 
-      // Hash password
-      const encoder = new TextEncoder();
-      const data = encoder.encode(password + 'ayp_landlord_salt_2026');
-      const hashBuffer = await crypto.subtle.digest('SHA-256', data);
-      const hashArray = Array.from(new Uint8Array(hashBuffer));
-      const hashHex = hashArray.map(b => b.toString(16).padStart(2, '0')).join('');
+      const hashHex = hashPassword(password);
 
       const sessionToken = crypto.randomUUID();
       const expiresAt = new Date(Date.now() + 7 * 24 * 60 * 60 * 1000).toISOString();
@@ -146,21 +176,29 @@ Deno.serve(async (req) => {
         });
       }
 
-      const encoder = new TextEncoder();
-      const data = encoder.encode(password + 'ayp_landlord_salt_2026');
-      const hashBuffer = await crypto.subtle.digest('SHA-256', data);
-      const hashArray = Array.from(new Uint8Array(hashBuffer));
-      const hashHex = hashArray.map(b => b.toString(16).padStart(2, '0')).join('');
-
+      // Fetch by email, THEN compare. A bcrypt hash is salted per password, so matching
+      // on password_hash inside the query can never work.
       const { data: landlord, error } = await supabase
         .from('landlord_contacts')
         .select('*')
         .eq('email', email.toLowerCase().trim())
-        .eq('password_hash', hashHex)
         .eq('portal_enabled', true)
         .maybeSingle();
 
-      if (!landlord) {
+      const check = await verifyPassword(password, landlord?.password_hash ?? null);
+
+      // Upgrade a legacy SHA-256 hash the first time its owner signs in successfully.
+      if (landlord && check.ok && check.legacy) {
+        const upgraded = hashPassword(password);
+        const { error: upErr } = await supabase
+          .from('landlord_contacts')
+          .update({ password_hash: upgraded })
+          .eq('id', landlord.id);
+        if (upErr) console.error('landlord-auth hash_upgrade_failed', upErr.message);
+        else console.log('landlord-auth hash_upgraded', JSON.stringify({ landlord_id: landlord.id }));
+      }
+
+      if (!landlord || !check.ok) {
         return new Response(JSON.stringify({ error: 'Invalid email or password' }), {
           status: 401, headers: { ...corsHeaders, 'Content-Type': 'application/json' }
         });
@@ -401,14 +439,9 @@ Deno.serve(async (req) => {
         });
       }
 
-      // Same SHA-256 + fixed-salt scheme the login path uses. Deliberately NOT changed
-      // to bcrypt here: login still compares this exact hash, so switching one side
-      // alone would lock every landlord out. The upgrade is worth doing and is cheap
-      // right now (landlord_contacts currently holds zero portal passwords) but it must
-      // change register, login and this path together, in its own commit.
-      const enc = new TextEncoder();
-      const digest = await crypto.subtle.digest('SHA-256', enc.encode(String(new_password) + 'ayp_landlord_salt_2026'));
-      const hashHex = Array.from(new Uint8Array(digest)).map((b) => b.toString(16).padStart(2, '0')).join('');
+      // bcrypt, matching register and login. This is the commit that moved all four
+      // sites together, as the earlier note said it would have to.
+      const hashHex = hashPassword(String(new_password));
 
       const { data: saved, error: saveErr } = await supabase
         .from('landlord_contacts')
