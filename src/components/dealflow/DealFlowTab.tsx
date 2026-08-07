@@ -71,7 +71,6 @@ export function DealFlowTab({ userRole = 'Acquisition_Manager', staffId, staffNa
   const [loading, setLoading] = useState(false);
   const [searching, setSearching] = useState(false);
   const [discovering, setDiscovering] = useState(false);
-  const [clearing, setClearing] = useState(false);
   const [deleting, setDeleting] = useState(false);
   const [zipCode, setZipCode] = useState('');
   const [addressSearch, setAddressSearch] = useState('');
@@ -86,7 +85,6 @@ export function DealFlowTab({ userRole = 'Acquisition_Manager', staffId, staffNa
   const [csvImportOpen, setCSVImportOpen] = useState(false);
   const [photoModalOpen, setPhotoModalOpen] = useState(false);
   const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
-  const [clearAllDialogOpen, setClearAllDialogOpen] = useState(false);
   const [propertyToDelete, setPropertyToDelete] = useState<Property | null>(null);
   const [softDeleteFallbackOpen, setSoftDeleteFallbackOpen] = useState(false);
   const [softDeleteTarget, setSoftDeleteTarget] = useState<Property | null>(null);
@@ -406,77 +404,10 @@ export function DealFlowTab({ userRole = 'Acquisition_Manager', staffId, staffNa
 
 
 
-  // Clear all deals with fallback to direct database
-  const handleClearAllDeals = async () => {
-    setClearing(true);
-    try {
-      // Try edge function first
-      const { data, error } = await supabase.functions.invoke('clear-all-properties', { body: { confirm: 'DELETE_ALL_PROPERTIES' } });
-      
-      if (error || data?.error) {
-        console.log('Edge function failed, using direct database clear:', error?.message || data?.error);
-        
-        // Fallback: Comprehensive cascade delete of all related records, then properties
-        // 1. Find all deal_listings first
-        let allListingIds: string[] = [];
-        try {
-          const { data: listings } = await supabase.from('deal_listings').select('id');
-          allListingIds = (listings || []).map(l => l.id);
-        } catch (e) {
-          console.log('No deal_listings table');
-        }
-
-        // 2. Delete listing-child tables
-        if (allListingIds.length > 0) {
-          for (const table of ['marketplace_verification_alerts', 'deal_verifications', 'deal_transactions', 'marketplace_payments']) {
-            try {
-              await supabase.from(table).delete().neq('id', '00000000-0000-0000-0000-000000000000');
-            } catch (e) {
-              console.log(`Note: Could not clear ${table}`);
-            }
-          }
-          try {
-            await supabase.from('deal_listings').delete().neq('id', '00000000-0000-0000-0000-000000000000');
-          } catch (e) {
-            console.log('Note: Could not clear deal_listings');
-          }
-        }
-
-        // 3. Delete all property-child tables
-        const relatedTables = [
-          'property_photos', 'deal_analytics', 'outreach_tracking', 'outreach_notes',
-          'deal_workflow_stages', 'deal_inquiries', 'deal_activity_log',
-          'property_assignments', 'saved_deals', 'deal_reservations'
-        ];
-        for (const table of relatedTables) {
-          try {
-            await supabase.from(table).delete().neq('id', '00000000-0000-0000-0000-000000000000');
-          } catch (e) {
-            console.log(`Note: Could not clear ${table}`);
-          }
-        }
-        
-        // 4. Delete all properties
-        const { error: deleteError } = await supabase.from('properties').delete().neq('id', '00000000-0000-0000-0000-000000000000');
-        if (deleteError) throw deleteError;
-        
-        toast({ title: 'All deals cleared!', description: 'Successfully removed all properties from the database.' });
-        setProperties([]);
-        setAnalytics({});
-        setLastError(null);
-      } else { 
-        toast({ title: 'All deals cleared!', description: `Successfully removed ${data?.deleted_count || 0} properties from the database.` }); 
-        setProperties([]); 
-        setAnalytics({});
-        setLastError(null);
-      }
-    } catch (err: any) {
-      showError(err, 'clear', { propertyCount: properties.length });
-    }
-    setClearing(false);
-    setClearAllDialogOpen(false);
-  };
-
+  // handleClearAllDeals removed 6 Aug 2026. See the note where its button was.
+  // Deliberately not replaced with a safer version: nothing in this business needs a
+  // one-click "delete every property and every related record" control, and the safest
+  // form of a button like that is its absence.
 
   const openDetailModal = async (property: Property) => {
     setSelectedProperty(property);
@@ -610,7 +541,13 @@ export function DealFlowTab({ userRole = 'Acquisition_Manager', staffId, staffNa
               <Button variant={viewMode === 'kanban' ? 'default' : 'ghost'} size="sm" onClick={() => setViewMode('kanban')} className={viewMode === 'kanban' ? 'bg-[#d4a574] hover:bg-[#c49464]' : ''}><Kanban className="w-4 h-4" /></Button>
             </div>
             {canClearDeals && properties.length > 0 && (
-              <Button variant="destructive" size="sm" onClick={() => setClearAllDialogOpen(true)}><Trash2 className="w-4 h-4 mr-2" />Clear All ({properties.length})</Button>
+              {/* "Clear All Deals" removed 6 Aug 2026 by owner decision.
+                  It invoked clear-all-properties, an edge function that does NOT EXIST, so it
+                  ALWAYS fell through to a browser-side cascade delete: every row of
+                  deal_listings, marketplace_payments, deal_verifications, property_photos,
+                  deal_analytics, deal_inquiries, property_assignments, saved_deals and more,
+                  ending with an unqualified delete of properties itself. One click behind one
+                  confirm dialog would have emptied the business. */}
             )}
           </div>
         </div>
@@ -857,23 +794,6 @@ export function DealFlowTab({ userRole = 'Acquisition_Manager', staffId, staffNa
               <AlertDialogAction onClick={handleSoftDeleteFallback} className="bg-amber-600 hover:bg-amber-700"><Trash2 className="w-4 h-4 mr-2" />Soft-Delete (Mark as Deleted)</AlertDialogAction>
             </AlertDialogFooter>
           )}
-        </AlertDialogContent>
-      </AlertDialog>
-
-      {/* Clear All Dialog */}
-      <AlertDialog open={clearAllDialogOpen} onOpenChange={setClearAllDialogOpen}>
-        <AlertDialogContent>
-          <AlertDialogHeader>
-            <AlertDialogTitle className="flex items-center gap-2 text-red-600"><AlertTriangle className="w-5 h-5" />Clear All Deals</AlertDialogTitle>
-            <AlertDialogDescription className="space-y-2">
-              <p>Are you sure you want to delete <strong>ALL {properties.length} properties</strong> from the deal flow?</p>
-              <p className="text-red-600 font-medium">This will permanently remove all deals, analytics, photos, notes, and outreach records.</p>
-            </AlertDialogDescription>
-          </AlertDialogHeader>
-          <AlertDialogFooter>
-            <AlertDialogCancel>Cancel</AlertDialogCancel>
-            <AlertDialogAction onClick={handleClearAllDeals} className="bg-red-600 hover:bg-red-700" disabled={clearing}>{clearing ? <Loader2 className="w-4 h-4 animate-spin mr-2" /> : <Trash2 className="w-4 h-4 mr-2" />}Yes, Delete All</AlertDialogAction>
-          </AlertDialogFooter>
         </AlertDialogContent>
       </AlertDialog>
 
