@@ -164,16 +164,113 @@ Deno.serve(async (req) => {
       console.error('capture-lead missing RESEND_API_KEY');
     }
 
-    // The lead IS saved either way, so this is a success — but `notified` is returned
-    // honestly rather than assumed, so the team can tell a quiet inbox from a quiet week.
+    // ---- Penny takes it from here ----
+    //
+    // Recognise the person and send them THEIR next step, rather than dumping everyone at
+    // a generic sign-up. Three cases:
+    //
+    //   already a client  -> sign in, or reset the password if they have forgotten it
+    //   new, wants a deal -> create an account (buyers and SELLERS are the same user;
+    //                        a seller is a client who wants out rather than in, so they
+    //                        get the same account and the same dashboard)
+    //   landlord          -> create a landlord account and get the property to the team
+    //
+    // The on-screen reply stays deliberately neutral. The specific next step goes only to
+    // the address itself, so this endpoint cannot be used to discover who is a client.
+    let recognised = false;
+    let routedEmail = false;
+
+    if (email) {
+      const look = await fetch(
+        `${supabaseUrl}/rest/v1/investors?email=eq.${encodeURIComponent(email)}&select=id,full_name&limit=1`,
+        { headers: { apikey: supabaseKey, Authorization: `Bearer ${supabaseKey}` } },
+      );
+      if (look.ok) {
+        const found = await look.json().catch(() => []);
+        recognised = Array.isArray(found) && found.length > 0;
+      } else {
+        console.error('capture-lead recognise_failed', look.status);
+      }
+
+      if (resendKey) {
+        const isLandlord = kind === 'have_property';
+        const first = name.split(' ')[0] || 'there';
+        let subject: string;
+        let lines: string[];
+
+        if (recognised) {
+          subject = 'Picking this up for you — sign in to continue';
+          lines = [
+            `Hi ${first},`, '',
+            'Good to hear from you. You already have an account with us, so the fastest way to keep this moving is to sign in:',
+            '', 'https://accessyourplace.com/investor/login', '',
+            "If you can't remember your password, use the Forgot Password link on that page and it will email you a reset straight away.",
+            '', "I've passed what you sent to the team as well, so nothing is waiting on you.",
+          ];
+        } else if (isLandlord) {
+          subject = 'Getting your property in front of our operators';
+          lines = [
+            `Hi ${first},`, '',
+            'Thanks for reaching out about your property. Set up a landlord account here and you can keep everything in one place:',
+            '', 'https://accessyourplace.com/landlord/login', '',
+            'Once you are in, send over the property details and photos and our team will review them. We speak to every landlord and vet every property personally before it goes to an operator.',
+            '', 'If it is easier to just reply to this email with the details, that works too.',
+          ];
+        } else {
+          subject = 'Your next step with Access Your Place';
+          lines = [
+            `Hi ${first},`, '',
+            'Thanks for reaching out. Create your account here and you will be able to see opportunities and work with us directly:',
+            '', 'https://accessyourplace.com/investor/login', '',
+            kind === 'sell_operation'
+              ? 'That is the same account whether you are buying or selling — you will use it to give us the details of the operation you want to hand over.'
+              : 'It takes a minute, and it is how we keep your deals, documents and numbers in one place.',
+            '', 'The team has what you sent and someone will be in touch.',
+          ];
+        }
+
+        lines.push('', 'Penny', 'Client Success | Access Your Place');
+
+        try {
+          const r = await fetch('https://api.resend.com/emails', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${resendKey}` },
+            body: JSON.stringify({
+              from: 'Penny <penny@accessyourplace.com>',
+              reply_to: [SUCCESS_INBOX],
+              to: [email],
+              subject,
+              text: lines.join('\n'),
+            }),
+          });
+          routedEmail = r.ok;
+          if (!r.ok) console.error('capture-lead route_email_failed', r.status, (await r.text()).slice(0, 200));
+        } catch (e) {
+          console.error('capture-lead route_email_threw', e instanceof Error ? e.message : String(e));
+        }
+      }
+    }
+
+    console.log('capture-lead routed', JSON.stringify({ lead_id: lead.id, recognised, routedEmail }));
+
+    // The lead IS saved either way, so this is a success — but `notified` and `routed` are
+    // returned honestly rather than assumed, so a quiet inbox can be told apart from a
+    // quiet week.
+    const tail = email
+      ? (routedEmail
+          ? " I've also emailed you your next step."
+          : " We could not email you just now, so use success@accessyourplace.com if you'd like to add anything.")
+      : '';
+
     return json({
       success: true,
       lead_id: lead.id,
       notified,
+      routed: routedEmail,
       urgency,
-      message: urgency === 'emergency'
+      message: (urgency === 'emergency'
         ? "Got it — this is flagged as urgent and the team has been alerted. Someone will call you. If it cannot wait, call us directly."
-        : "Got it. We have your details and someone from the team will be in touch.",
+        : "Got it. We have your details and someone from the team will be in touch.") + tail,
     });
   } catch (error) {
     console.error('capture-lead threw', error instanceof Error ? error.message : String(error));
