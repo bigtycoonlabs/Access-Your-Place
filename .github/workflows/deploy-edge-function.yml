@@ -107,10 +107,18 @@ jobs:
           fi
           echo "Token present."
 
+      # NOT supabase/setup-cli@v1. That action targets Node 20, which GitHub deprecated,
+      # and the runner now forces it onto Node 24 -- which broke it and failed a deploy of
+      # penny-staff-chat on 6 Aug 2026. Installing the CLI directly has no Node dependency
+      # at all, so the deploy pipeline stops being hostage to an action's runtime.
       - name: Install the Supabase CLI
-        uses: supabase/setup-cli@v1
-        with:
-          version: latest
+        run: |
+          set -euo pipefail
+          curl -fsSL https://github.com/supabase/cli/releases/latest/download/supabase_linux_amd64.tar.gz \
+            -o /tmp/supabase.tar.gz
+          tar -xzf /tmp/supabase.tar.gz -C /tmp
+          sudo mv /tmp/supabase /usr/local/bin/supabase
+          supabase --version
 
       - name: Deploy
         if: ${{ inputs.verify_only != true }}
