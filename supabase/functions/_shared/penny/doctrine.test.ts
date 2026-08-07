@@ -162,3 +162,44 @@ test("OWNERSHIP: the ambition is stated, and trust is named as the product", () 
   assert.ok(t.includes('undisputed'), 'the ambition is not stated');
   assert.ok(t.includes('trust'), 'trust is not named as the product');
 });
+
+/* ---- the guard must not fire on our own identifiers ---- */
+
+// Regression. An owner asked Penny to take two properties off the marketplace and got a
+// payment refusal instead, because a property UUID collapses to a 30-character run of
+// legal base58 and matched the legacy Bitcoin shape. A guard that fires on the platform's
+// own ids does not protect anyone — it makes her incoherent and teaches people to ignore
+// the one warning that must never be ignored.
+test('GUARD: a property UUID is not mistaken for a bitcoin address', () => {
+  const real = 'ba1cbefb-9de5-4d3c-94f8-ab39316ef4da';
+  const r = containsPaymentDestination(`I have taken ${real} off the marketplace.`);
+  assert.equal(r.leaked, false, `property id flagged as ${r.kinds.join(', ')}`);
+});
+
+test('GUARD: several ids in one reply still do not trip it', () => {
+  const text = [
+    'ba1cbefb-9de5-4d3c-94f8-ab39316ef4da',
+    'eb5ed6f2-e6c8-43c5-94ed-dfb8de3efee3',
+    '313fb5f2-5909-4b29-8a4f-c4d29b8694ad',
+  ].join(' and ');
+  assert.equal(containsPaymentDestination(text).leaked, false);
+});
+
+// The other half. Loosening a guard is only safe if you prove what it still catches.
+test('GUARD: real destinations are still caught after the UUID exemption', () => {
+  const bech32 = containsPaymentDestination('send to bc1qw508d6qejxtdg4y5r3zarvary0c5xw7kv8f3t4');
+  assert.equal(bech32.leaked, true, 'bech32 bitcoin address slipped through');
+
+  const legacy = containsPaymentDestination('pay 1BvBMSEYstWetqTFn5Au4m4GFg7xJaNVN2 today');
+  assert.equal(legacy.leaked, true, 'legacy bitcoin address slipped through');
+
+  const acct = containsPaymentDestination('account 123456789012 routing 021000021');
+  assert.equal(acct.leaked, true, 'account/routing number slipped through');
+});
+
+test('GUARD: an id sitting next to a real destination still trips it', () => {
+  const r = containsPaymentDestination(
+    'property ba1cbefb-9de5-4d3c-94f8-ab39316ef4da, pay bc1qw508d6qejxtdg4y5r3zarvary0c5xw7kv8f3t4',
+  );
+  assert.equal(r.leaked, true, 'a real destination was masked by an id being present');
+});

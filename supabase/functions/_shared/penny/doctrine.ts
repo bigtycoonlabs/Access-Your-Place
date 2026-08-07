@@ -378,9 +378,28 @@ export function containsPaymentDestination(
   //    $1,234,567 stay broken into short runs and never read as an account
   //    number. Spaces, hyphens, underscores, dots and brackets are stripped so a
   //    destination split up for "readability" is still caught.
-  const collapsed = text.replace(/[\s\-_.()]/g, '');
+  //
+  //    UUIDs ARE REMOVED FIRST, and this is not a nicety. A property id such as
+  //    ba1cbefb-9de5-4d3c-94f8-ab39316ef4da collapses to
+  //    ba1cbefb9de54d3c94f8ab39316ef4da, and the 30-character run starting at that
+  //    "1" is entirely legal base58 — so it matched the legacy Bitcoin shape. The
+  //    guard then replaced Penny's whole reply with a payment refusal when an owner
+  //    asked her to take a property down. A guard that fires on the platform's own
+  //    identifiers does not protect anyone; it just makes her incoherent, and it
+  //    trains people to ignore the one warning that must never be ignored.
+  const withoutIds = text.replace(
+    /\b[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}\b/gi,
+    ' ',
+  );
+  const collapsed = withoutIds.replace(/[\s\-_.()]/g, '');
   for (const { name, anchored, loose } of DESTINATION_SHAPES) {
-    if (anchored.test(text) || loose.test(collapsed)) kinds.add(name);
+    // A base58 candidate made ONLY of hex characters is an identifier, not an
+    // address: real Bitcoin addresses essentially always carry letters outside a-f.
+    if (name === 'bitcoin address') {
+      const hit = withoutIds.match(anchored) || collapsed.match(loose);
+      if (hit && /^[0-9a-f]+$/i.test(hit[0])) continue;
+    }
+    if (anchored.test(withoutIds) || loose.test(collapsed)) kinds.add(name);
   }
 
   return { leaked: kinds.size > 0, kinds: [...kinds] };
