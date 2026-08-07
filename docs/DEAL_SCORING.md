@@ -82,3 +82,41 @@ aggregators averaged $172 — they read the market about 4% low. That gap is the
 See `DEAL_VERIFICATION_TIERS.md`. A score with no human confirmation is `penny_scan`.
 Only a human who has spoken to the landlord makes it `ayp_verified`, and only
 `ayp_verified` belongs in the marketplace.
+
+---
+
+## How an acquisition manager uses this
+
+Penny does the research. The AM checks her work and confirms. No data entry form.
+
+1. Penny drafts the research for a market and writes it to `penny_draft` on the
+   `deal_research` row. Every figure carries a source.
+2. The AM reads each figure against its source and confirms the ones that check out,
+   one at a time, via `confirm_research_field(research_id, field, staff_id)`.
+3. Only confirmed fields land in the real columns. `ayp_deal_score` reads only those.
+
+### Why Penny's draft is kept separate
+
+This is the most important design decision in the scoring system.
+
+An LLM asked for a hotel occupancy figure will almost always produce one, with a
+plausible-looking source attached. If Penny wrote straight into the scored columns, an
+invented number would become a score, and that is precisely the failure that put 42
+fabricated scores in front of clients.
+
+So Penny cannot cause a score to exist. She can only propose one. The scorer reads the
+real columns; the real columns are only written by
+`confirm_research_field`; and that function requires a staff id.
+
+Confirmation is deliberately one field at a time. A single "confirm all" button is how a
+human rubber-stamps six numbers they actually checked two of.
+
+### Verified behaviour
+
+- Confirming a drafted number lands it as a number, with its source, and records who
+  confirmed it.
+- Confirming a field Penny has not drafted is refused.
+- Confirming an unknown field name is refused by name rather than silently doing nothing.
+- A regulation status outside allowed / restricted / prohibited / unclear is refused.
+- **A partly-confirmed deal still refuses to score, and lists what remains** — even when
+  Penny has already drafted those fields.
