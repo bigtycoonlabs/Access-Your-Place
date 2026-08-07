@@ -1361,7 +1361,7 @@ moving. Do not say it is done.
 
 COACHING IS YOURS AND NEEDS NO TOOL. An acquisition manager asking what to do next, a
 setup manager working a launch, admin buried in documents — that is you, right now, with
-nothing but what you know. Be specific and be brief: the one next action, not a lecture.\n\nTHE MARKETPLACE. You can see it, add to it, and take things off it:\n- list_marketplace shows every property and its status. Use it before changing anything so you name the right one back.\n- unpublish_property takes a listing OFF the marketplace. It is REVERSIBLE — nothing is deleted — so say that when you ask them to confirm. Ask why, and pass the reason.\n- add_property puts a property on the platform. It does NOT go live: it lands as pending review, because a deal on the marketplace means a human has spoken to the landlord and validated the numbers. Say that plainly rather than letting them think it is listed.\nIf a staff member asks you to take a property down or add one, DO IT. Do not tell them you cannot — you can.
+nothing but what you know. Be specific and be brief: the one next action, not a lecture.
 
 VOICE: warm, brief, and human. Lead with what matters. Short, speakable sentences — the person may be listening with a screen reader. Ask at most one question at a time. Refer to people by name, never by raw IDs.
 
@@ -1478,7 +1478,48 @@ async function finalize(key: string, convo: any[], rawText: string, toolsRun: st
   return first.text;
 }
 
-async function runAgent(messages: Array<{ role: string; content: string }>, first: string, ctx: Ctx) {
+// emit is optional. When present, runAgent reports what it is ACTUALLY doing as it does
+// it. Every event corresponds to something that happened — a tool that really started,
+// really finished, or really failed. A progress signal that cannot say no is worth
+// nothing, so failures are emitted as failures rather than being swallowed to keep the
+// stream looking healthy.
+type Emit = (ev: Record<string, unknown>) => void;
+
+// Spoken labels. A screen reader announcing "list_marketplace" is noise; "Checking the
+// marketplace" is information.
+const TOOL_LABELS: Record<string, string> = {
+  list_leads: 'Checking new leads',
+  set_lead_status: 'Updating that lead',
+  list_marketplace: 'Checking the marketplace',
+  unpublish_property: 'Taking that property off the marketplace',
+  add_property: 'Adding that property',
+  list_opportunities: 'Pulling up the open inquiries',
+  get_opportunity: 'Opening that inquiry',
+  update_opportunity_status: 'Updating that inquiry',
+  add_opportunity_note: 'Saving that note',
+  record_closing: 'Recording the closing',
+  find_client: 'Finding that client',
+  check_account: 'Checking their account',
+  get_client_activity: 'Reading their activity',
+  get_client_portfolio: 'Reading their portfolio',
+  get_client_email: 'Looking up their email',
+  compose_client_email: 'Drafting the email',
+  send_client_email: 'Sending the email',
+  list_pending_emails: 'Checking drafts waiting to send',
+  send_account_invite: 'Sending the invite',
+  suspend_client: 'Suspending that account',
+  reinstate_client: 'Restoring that account',
+  list_communities: 'Checking communities',
+  get_community: 'Opening that community',
+  update_community: 'Updating that community',
+  invite_staff: 'Inviting them to the team',
+  get_activity_report: 'Pulling the activity report',
+  list_escalations: 'Checking escalations',
+  resolve_escalation: 'Resolving that escalation',
+};
+const toolLabel = (n?: string) => (n && TOOL_LABELS[n]) || 'Working on that';
+
+async function runAgent(messages: Array<{ role: string; content: string }>, first: string, ctx: Ctx, emit?: Emit) {
   const key = Deno.env.get('OPENAI_API_KEY');
   if (!key) {
     console.error('penny-staff-chat missing_OPENAI_API_KEY');
@@ -1490,6 +1531,7 @@ async function runAgent(messages: Array<{ role: string; content: string }>, firs
   const toolsRun: string[] = [];
 
   for (let round = 0; round < 5; round++) {
+    emit?.({ type: 'status', phase: 'thinking', text: round === 0 ? 'Thinking' : 'Working through that' });
     const res = await fetch('https://api.openai.com/v1/chat/completions', {
       method: 'POST',
       headers: { Authorization: `Bearer ${key}`, 'Content-Type': 'application/json' },
@@ -1520,7 +1562,17 @@ async function runAgent(messages: Array<{ role: string; content: string }>, firs
         let args: any = {};
         try { args = JSON.parse(tc.function?.arguments || '{}'); } catch { /* keep {} */ }
         const toolName = tc.function?.name;
+        emit?.({ type: 'tool', state: 'running', tool: toolName, label: toolLabel(toolName) });
         const result = await execTool(toolName, args, ctx);
+        const rr: any = result;
+        // Three honest outcomes, never one optimistic one.
+        emit?.({
+          type: 'tool',
+          state: rr?.error ? 'failed' : rr?.needs_confirmation ? 'needs_confirmation' : 'done',
+          tool: toolName,
+          label: toolLabel(toolName),
+          detail: rr?.error ? String(rr.error) : undefined,
+        });
         // Only a genuinely-COMPLETED write backs a completion claim. A needs_confirmation
         // return or an error backs nothing, so Penny can't claim an action she only offered.
         const r: any = result;
@@ -1609,10 +1661,61 @@ Deno.serve(async (req) => {
       name_source: ownerCheck.name ? 'staff_users' : (staffName ? 'request_body' : 'none'),
     }));
 
-    const out = await runAgent(messages, first, {
+    const agentCtx = {
       url, key, staffId, staffName, isOwner: ownerCheck.owner,
       identified, fullName, docText, docName,
-    });
+    };
+
+    // ---- STREAMING ----
+    //
+    // Penny used to return one block after a silent wait. On a screen reader that is
+    // indistinguishable from being broken: nothing happens, then everything happens.
+    //
+    // With stream:true she reports what she is ACTUALLY doing while she does it. Every
+    // event is tied to something real — a tool that started, finished, or failed. A
+    // progress signal that cannot say no is worth nothing, so a failed tool is emitted as
+    // failed rather than being hidden to keep the stream looking healthy.
+    //
+    // The client decides what to ANNOUNCE. Everything is on screen; only milestones are
+    // spoken, and not more than one every few seconds.
+    if (body?.stream === true) {
+      const encoder = new TextEncoder();
+      const stream = new ReadableStream({
+        async start(controller) {
+          const send = (ev: Record<string, unknown>) => {
+            try { controller.enqueue(encoder.encode(`data: ${JSON.stringify(ev)}\n\n`)); }
+            catch { /* client went away; the turn still completes below */ }
+          };
+          try {
+            send({ type: 'start' });
+            const out = await runAgent(messages, first, agentCtx, send);
+            // The final text arrives as one event. It is NOT chunked into fake tokens:
+            // the reply is already complete by then, and pretending otherwise would be
+            // theatre rather than progress.
+            send({ type: 'message', text: out.message });
+            send({ type: 'done' });
+          } catch (e) {
+            console.error('penny-staff-chat stream_threw', e instanceof Error ? e.message : String(e));
+            // Told, not swallowed. A stream that dies quietly looks identical to one that
+            // is still thinking.
+            send({ type: 'error', text: 'I hit a snag part-way through that. Nothing was left half-done — try again.' });
+            send({ type: 'done' });
+          } finally {
+            try { controller.close(); } catch { /* already closed */ }
+          }
+        },
+      });
+      return new Response(stream, {
+        headers: {
+          ...corsHeaders,
+          'Content-Type': 'text/event-stream',
+          'Cache-Control': 'no-cache',
+          Connection: 'keep-alive',
+        },
+      });
+    }
+
+    const out = await runAgent(messages, first, agentCtx);
     return json({ success: true, message: out.message });
   } catch (e) {
     return json({ success: false, error: e instanceof Error ? e.message : 'Unknown error' }, 500);

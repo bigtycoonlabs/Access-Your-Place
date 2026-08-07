@@ -298,4 +298,10 @@ export async function safeDeleteRowsBatch(
   }
 }
 
+// Exported so a component that must use raw fetch — Server-Sent Events, which
+// supabase-js cannot do — uses THESE credentials rather than re-deriving its own. Two
+// copies of a URL is how one of them quietly points at the wrong project.
+export const SUPABASE_URL = supabaseUrl;
+export const SUPABASE_ANON_KEY = supabaseKey;
+
 export { supabase };

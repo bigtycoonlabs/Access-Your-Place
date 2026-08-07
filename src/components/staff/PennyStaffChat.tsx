@@ -1,5 +1,5 @@
 import React, { useState, useRef, useEffect } from 'react';
-import { supabase } from '@/lib/supabase';
+import { supabase, SUPABASE_URL, SUPABASE_ANON_KEY } from '@/lib/supabase';
 import { playPennyChime } from '@/lib/pennyChime';
 
 interface StaffLite {
@@ -40,6 +40,8 @@ export function PennyStaffChat({ staffSession }: { staffSession: StaffLite | nul
   const [input, setInput] = useState('');
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState('');
+  const [progress, setProgress] = useState('');
+  const [spoken, setSpoken] = useState('');
   const logRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
@@ -52,6 +54,39 @@ export function PennyStaffChat({ staffSession }: { staffSession: StaffLite | nul
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [messages.length]);
 
+  // STREAMING.
+  //
+  // Penny used to go silent and then return everything at once. On a screen reader that
+  // is indistinguishable from being broken.
+  //
+  // Now she reports what she is actually doing while she does it. Two separate channels,
+  // deliberately:
+  //
+  //   progress  — everything, on screen, updating freely. aria-hidden.
+  //   announced — only milestones, spoken, at most one every 4 seconds.
+  //
+  // Announcing every event would turn a screen reader into a firehose and is worse than
+  // silence. Announcing nothing leaves a blind user with no idea whether anything is
+  // happening. So: show everything, speak the meaningful parts, and never more often than
+  // a person can absorb.
+  const announceAt = useRef(0);
+  const abortRef = useRef<AbortController | null>(null);
+
+  function announce(text: string, force = false) {
+    const now = Date.now();
+    if (!force && now - announceAt.current < 4000) return;
+    announceAt.current = now;
+    setSpoken(text);
+  }
+
+  function stop() {
+    abortRef.current?.abort();
+    abortRef.current = null;
+    setBusy(false);
+    setProgress('');
+    announce('Stopped.', true);
+  }
+
   async function send() {
     const text = input.trim();
     if (!text || busy) return;
@@ -60,21 +95,80 @@ export function PennyStaffChat({ staffSession }: { staffSession: StaffLite | nul
     setMessages(next);
     setInput('');
     setBusy(true);
+    setProgress('');
+    setSpoken('');
+    announceAt.current = 0;
+
+    const controller = new AbortController();
+    abortRef.current = controller;
+
     try {
-      const { data, error: fnErr } = await supabase.functions.invoke('penny-staff-chat', {
-        body: { messages: next, staff_id: staffId, staff_name: staffName },
+      const res = await fetch(`${SUPABASE_URL}/functions/v1/penny-staff-chat`, {
+        method: 'POST',
+        signal: controller.signal,
+        headers: { 'Content-Type': 'application/json', apikey: SUPABASE_ANON_KEY, Authorization: `Bearer ${SUPABASE_ANON_KEY}` },
+        body: JSON.stringify({ messages: next, staff_id: staffId, staff_name: staffName, stream: true }),
       });
-      if (fnErr) throw fnErr;
-      const reply =
-        data && typeof data.message === 'string' && data.message
-          ? data.message
-          : "I didn't catch that — can you say it again?";
-      setMessages((m) => [...m, { role: 'assistant', content: reply }]);
-    } catch {
+      if (!res.ok || !res.body) throw new Error(`stream ${res.status}`);
+
+      const reader = res.body.getReader();
+      const decoder = new TextDecoder();
+      let buf = '';
+      let replied = false;
+
+      while (true) {
+        const { done, value } = await reader.read();
+        if (done) break;
+        buf += decoder.decode(value, { stream: true });
+        const parts = buf.split('\n\n');
+        buf = parts.pop() || '';
+        for (const part of parts) {
+          const line = part.trim();
+          if (!line.startsWith('data:')) continue;
+          let ev: any;
+          try { ev = JSON.parse(line.slice(5).trim()); } catch { continue; }
+
+          if (ev.type === 'status') {
+            setProgress(ev.text || 'Working');
+          } else if (ev.type === 'tool') {
+            const label = ev.label || 'Working on that';
+            if (ev.state === 'running') {
+              setProgress(label);
+              announce(label);
+            } else if (ev.state === 'failed') {
+              // A failure is a milestone. Forced past the throttle, because a tool that
+              // did not work is exactly what a person must not miss.
+              setProgress(`${label} — failed`);
+              announce(`${label} failed.`, true);
+            } else if (ev.state === 'needs_confirmation') {
+              setProgress(`${label} — waiting for your confirmation`);
+              announce('Penny needs you to confirm before she does that.', true);
+            } else {
+              setProgress(`${label} — done`);
+            }
+          } else if (ev.type === 'message') {
+            replied = true;
+            setMessages((m) => [...m, { role: 'assistant', content: ev.text || "I didn't catch that — can you say it again?" }]);
+          } else if (ev.type === 'error') {
+            replied = true;
+            setMessages((m) => [...m, { role: 'assistant', content: ev.text }]);
+            announce('Penny hit a problem.', true);
+          }
+        }
+      }
+      // Reaching the end of the stream without a reply is a failure, and it is reported
+      // as one rather than leaving an empty turn that looks like nothing was asked.
+      if (!replied) {
+        setMessages((m) => [...m, { role: 'assistant', content: 'That did not come back properly. Nothing was left half-done — try again.' }]);
+      }
+    } catch (err: any) {
+      if (err?.name === 'AbortError') return;
       setError('Something went wrong reaching Penny. Try again in a moment.');
       setMessages((m) => [...m, { role: 'assistant', content: 'I hit a snag just now — give me a moment and try again.' }]);
     } finally {
+      abortRef.current = null;
       setBusy(false);
+      setProgress('');
     }
   }
 
@@ -87,6 +181,29 @@ export function PennyStaffChat({ staffSession }: { staffSession: StaffLite | nul
 
   return (
     <section aria-label="Chat with Penny" className="rounded-xl border border-slate-200 bg-white p-4">
+      {/* PROGRESS — everything, on screen, updating freely. aria-hidden because a region
+          that changes this often would flood a screen reader. */}
+      {busy && (
+        <div className="mb-2 flex items-center justify-between gap-3">
+          <p aria-hidden="true" className="text-sm text-slate-600">
+            {progress ? `${progress}…` : 'Thinking…'}
+          </p>
+          {/* A Stop control is always present while she is working. Being unable to
+              interrupt is its own kind of trap. */}
+          <button
+            type="button"
+            onClick={stop}
+            className="min-h-[44px] shrink-0 rounded-md border border-slate-300 px-3 text-sm font-medium text-slate-800"
+          >
+            Stop
+          </button>
+        </div>
+      )}
+
+      {/* ANNOUNCED — milestones only, at most one every 4 seconds, politely. This is the
+          channel a screen reader actually reads. Failures bypass the throttle. */}
+      <p role="status" aria-live="polite" className="sr-only">{spoken}</p>
+
       {/* Announced politely rather than assertively: informative, not an emergency. */}
       <p role="status" aria-live="polite" className="mb-3 text-sm">
         {identityMissing ? (
