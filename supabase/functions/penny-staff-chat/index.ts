@@ -110,6 +110,70 @@ async function listOpportunities(url: string, key: string) {
   };
 }
 
+// ---- marketplace ----
+//
+// Penny had NO reach into properties at all. Her "opportunities" are deal INQUIRIES, so
+// she could discuss interest in a listing while being unable to see, add or remove one.
+// The owner needed exactly those two things to start operating, so these exist.
+//
+// Everything goes through an RPC, as with every other tool here, so the rules live in the
+// database rather than in her prompt where a rewording could lose them.
+
+async function listMarketplace(url: string, key: string) {
+  const { ok, status, data } = await rpc(url, key, 'penny_marketplace_listings');
+  if (!ok) {
+    console.error('penny-staff-chat rpc_marketplace', status, JSON.stringify(data).slice(0, 200));
+    return { count: 0, listings: [], error: `read_failed_${status}` };
+  }
+  const rows = Array.isArray(data) ? data : [];
+  return {
+    count: rows.length,
+    listings: rows.map((r: any) => ({
+      property_id: r.id,
+      address: r.address,
+      where: [r.city, r.state].filter(Boolean).join(', '),
+      title: r.listing_title || null,
+      status: r.status,
+      live: r.is_published === true,
+      monthly_rent: r.monthly_rent,
+      bedrooms: r.bedrooms,
+      verification_tier: r.verification_tier || 'penny_scan',
+    })),
+  };
+}
+
+async function unpublishProperty(url: string, key: string, propertyId: string, reason: string, staffId: string) {
+  const { ok, status, data } = await rpc(url, key, 'penny_unpublish_property', {
+    p_property_id: propertyId, p_reason: reason || null, p_staff_id: staffId || null,
+  });
+  if (!ok) {
+    console.error('penny-staff-chat rpc_unpublish', status, JSON.stringify(data).slice(0, 200));
+    return { error: 'unpublish_failed', http: status };
+  }
+  // The RPC reports its own refusals - already down, no such property - and they are
+  // passed straight through rather than being flattened into a generic failure.
+  return data;
+}
+
+async function addProperty(url: string, key: string, a: any, staffId: string) {
+  const { ok, status, data } = await rpc(url, key, 'penny_add_property', {
+    p_address: String(a.address || ''),
+    p_city: String(a.city || ''),
+    p_state: String(a.state || ''),
+    p_monthly_rent: a.monthly_rent != null ? Number(a.monthly_rent) : null,
+    p_bedrooms: a.bedrooms != null ? Number(a.bedrooms) : null,
+    p_landlord_name: a.landlord_name ? String(a.landlord_name) : null,
+    p_landlord_phone: a.landlord_phone ? String(a.landlord_phone) : null,
+    p_notes: a.notes ? String(a.notes) : null,
+    p_staff_id: staffId || null,
+  });
+  if (!ok) {
+    console.error('penny-staff-chat rpc_add_property', status, JSON.stringify(data).slice(0, 200));
+    return { error: 'add_failed', http: status };
+  }
+  return data;
+}
+
 async function getOpportunity(url: string, key: string, inquiryId: string) {
   const { ok, status, data } = await rpc(url, key, 'penny_inquiry', { p_id: inquiryId });
   if (!ok) {
@@ -604,6 +668,32 @@ async function execTool(name: string, args: any, ctx: Ctx): Promise<unknown> {
       }
       return await recordClosing(url, key, args, staffId, staffName);
     }
+    if (name === 'list_marketplace') return await listMarketplace(url, key);
+    if (name === 'unpublish_property') {
+      if (!args?.property_id) return { error: 'property_id required' };
+      // Confirmation-gated: this removes a live listing that clients can see.
+      if (args.confirmed !== true) {
+        return {
+          needs_confirmation: true,
+          action: 'take this property off the marketplace',
+          instruction: 'Name the property and the reason back to the staff member, get a clear yes, then call again with confirmed true. It is reversible, so say that too.',
+        };
+      }
+      return await unpublishProperty(url, key, String(args.property_id), String(args.reason || ''), staffId);
+    }
+    if (name === 'add_property') {
+      if (!args?.address || !args?.city || !args?.state) {
+        return { error: 'address, city and state are all required' };
+      }
+      if (args.confirmed !== true) {
+        return {
+          needs_confirmation: true,
+          action: `add ${args.address}, ${args.city} ${args.state} as a property`,
+          instruction: 'Read the address, rent and landlord details back, get a yes, then call again with confirmed true. Say plainly that it will NOT be live - it lands as pending review because a marketplace listing means a human has spoken to the landlord.',
+        };
+      }
+      return await addProperty(url, key, args, staffId);
+    }
     if (name === 'list_opportunities') return await listOpportunities(url, key);
     if (name === 'get_opportunity') {
       if (!args?.inquiry_id) return { error: 'inquiry_id required' };
@@ -758,6 +848,43 @@ const TOOLS = [
   {
     type: 'function',
     function: {
+      name: 'list_marketplace',
+      description: "Show every property on the deal marketplace and its status. Read-only. Use this before changing anything so you can name the property back accurately.",
+      parameters: { type: 'object', properties: {}, required: [] },
+    },
+    {
+      name: 'unpublish_property',
+      description: "Take a property OFF the deal marketplace. This is a WRITE and clients can see the marketplace, so only call with confirmed:true after the staff member has clearly said yes. It is REVERSIBLE — nothing is deleted, the listing can be put back — and you should say so when asking. Ask for a reason and pass it.",
+      parameters: {
+        type: 'object',
+        properties: {
+          property_id: { type: 'string', description: 'From list_marketplace.' },
+          reason: { type: 'string', description: 'Why it is coming down. Recorded on the property.' },
+          confirmed: { type: 'boolean', description: 'True only after the staff member confirmed.' },
+        },
+        required: ['property_id'],
+      },
+    },
+    {
+      name: 'add_property',
+      description: "Add a property to the platform. This is a WRITE — only call with confirmed:true after the staff member has said yes. IT DOES NOT GO LIVE: it lands as pending review, because a deal on the marketplace means a human has spoken to the landlord and validated the numbers. Say that plainly rather than implying it is listed.",
+      parameters: {
+        type: 'object',
+        properties: {
+          address: { type: 'string' },
+          city: { type: 'string' },
+          state: { type: 'string' },
+          monthly_rent: { type: 'number' },
+          bedrooms: { type: 'number' },
+          landlord_name: { type: 'string' },
+          landlord_phone: { type: 'string' },
+          notes: { type: 'string' },
+          confirmed: { type: 'boolean' },
+        },
+        required: ['address', 'city', 'state'],
+      },
+    },
+    {
       name: 'update_opportunity_status',
       description: "Change an inquiry's status. This is a WRITE — only call with confirmed:true after the staff member has clearly said yes to this exact change.",
       parameters: {
