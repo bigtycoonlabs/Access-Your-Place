@@ -32,6 +32,8 @@ import LandlordLogin from "./pages/LandlordLogin";
 import LandlordResetPassword from '@/pages/LandlordResetPassword';
 import StartPage from '@/pages/StartPage';
 import ListYourProperty from '@/pages/ListYourProperty';
+import PropertyForge from '@/pages/PropertyForge';
+import ResearchReview from '@/pages/ResearchReview';
 import LandlordPortal from "./pages/LandlordPortal";
 import AdminComments from "./pages/AdminComments";
 import OAuthCallback from "./pages/OAuthCallback";
@@ -126,6 +128,8 @@ const App = () => (
                   <Route path="/careers" element={<Careers />} />
                   <Route path="/start" element={<StartPage />} />
                   <Route path="/list-your-property" element={<ListYourProperty />} />
+                  <Route path="/property-forge" element={<PropertyForge />} />
+                  <Route path="/staff/research-review" element={<ResearchReview />} />
                   <Route path="/landlord/login" element={<LandlordLogin />} />
                   <Route path="/landlord/reset-password" element={<LandlordResetPassword />} />
                   <Route path="/landlord/portal" element={<LandlordPortal />} />
