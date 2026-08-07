@@ -1532,10 +1532,27 @@ async function runAgent(messages: Array<{ role: string; content: string }>, firs
 
   for (let round = 0; round < 5; round++) {
     emit?.({ type: 'status', phase: 'thinking', text: round === 0 ? 'Thinking' : 'Working through that' });
+
+    // TRUE TEXT STREAMING when someone is watching.
+    //
+    // Progress events alone still left a wait and then a wall of text. This streams the
+    // words as they are generated, which is what Arbo and Clay do.
+    //
+    // The reason it was not done first is real and had to be solved rather than ignored:
+    // guardReply and the payment-destination guard can REPLACE a finished reply. Streaming
+    // raw tokens and then retracting them would be worse than waiting.
+    //
+    // So the guard runs on the ACCUMULATED text as it grows. The moment it trips, the
+    // stream stops, a retract event is emitted, and the refusal replaces it. A reader
+    // never sees a destination even briefly, and in the normal case the text simply flows.
+    const streaming = !!emit;
     const res = await fetch('https://api.openai.com/v1/chat/completions', {
       method: 'POST',
       headers: { Authorization: `Bearer ${key}`, 'Content-Type': 'application/json' },
-      body: JSON.stringify({ model: 'gpt-4o', messages: convo, tools: TOOLS, tool_choice: 'auto', temperature: 0.4 }),
+      body: JSON.stringify({
+        model: 'gpt-4o', messages: convo, tools: TOOLS, tool_choice: 'auto', temperature: 0.4,
+        ...(streaming ? { stream: true } : {}),
+      }),
     });
     if (!res.ok) {
       const t = await res.text();
@@ -1552,8 +1569,58 @@ async function runAgent(messages: Array<{ role: string; content: string }>, firs
       }
       return { message: `I hit a snag reasoning about that. Try again in a moment.`, error: `openai ${res.status}: ${t.slice(0, 200)}` };
     }
-    const data = await res.json();
-    const msg = data.choices?.[0]?.message;
+    let msg: any;
+    if (streaming && res.body) {
+      // Reassemble the streamed chunks into the same message shape the non-streaming
+      // path produces, so everything downstream is identical.
+      const reader = res.body.getReader();
+      const dec = new TextDecoder();
+      let buf = '';
+      let content = '';
+      let blocked = false;
+      const calls: any[] = [];
+      while (true) {
+        const { done, value } = await reader.read();
+        if (done) break;
+        buf += dec.decode(value, { stream: true });
+        const lines = buf.split('\n');
+        buf = lines.pop() || '';
+        for (const line of lines) {
+          const t = line.trim();
+          if (!t.startsWith('data:')) continue;
+          const payload = t.slice(5).trim();
+          if (payload === '[DONE]') continue;
+          let ev: any;
+          try { ev = JSON.parse(payload); } catch { continue; }
+          const delta = ev.choices?.[0]?.delta;
+          if (!delta) continue;
+
+          if (typeof delta.content === 'string' && delta.content) {
+            content += delta.content;
+            if (!blocked) {
+              // Checked on every chunk, on the whole reply so far.
+              if (containsPaymentDestination(content).leaked) {
+                blocked = true;
+                emit?.({ type: 'retract' });
+              } else {
+                emit?.({ type: 'delta', text: delta.content });
+              }
+            }
+          }
+          for (const tc of delta.tool_calls || []) {
+            const i = tc.index ?? 0;
+            calls[i] = calls[i] || { id: '', type: 'function', function: { name: '', arguments: '' } };
+            if (tc.id) calls[i].id = tc.id;
+            if (tc.function?.name) calls[i].function.name += tc.function.name;
+            if (tc.function?.arguments) calls[i].function.arguments += tc.function.arguments;
+          }
+        }
+      }
+      msg = { role: 'assistant', content, ...(calls.length ? { tool_calls: calls.filter(Boolean) } : {}) };
+    } else {
+      const data = await res.json();
+      msg = data.choices?.[0]?.message;
+    }
     if (!msg) return { message: "I didn't catch that — can you say it again?" };
 
     if (msg.tool_calls && msg.tool_calls.length) {

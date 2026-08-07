@@ -42,6 +42,7 @@ export function PennyStaffChat({ staffSession }: { staffSession: StaffLite | nul
   const [error, setError] = useState('');
   const [progress, setProgress] = useState('');
   const [spoken, setSpoken] = useState('');
+  const [live, setLive] = useState('');
   const logRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
@@ -84,6 +85,7 @@ export function PennyStaffChat({ staffSession }: { staffSession: StaffLite | nul
     abortRef.current = null;
     setBusy(false);
     setProgress('');
+    setLive('');
     announce('Stopped.', true);
   }
 
@@ -97,6 +99,7 @@ export function PennyStaffChat({ staffSession }: { staffSession: StaffLite | nul
     setBusy(true);
     setProgress('');
     setSpoken('');
+    setLive('');
     announceAt.current = 0;
 
     const controller = new AbortController();
@@ -146,8 +149,18 @@ export function PennyStaffChat({ staffSession }: { staffSession: StaffLite | nul
             } else {
               setProgress(`${label} — done`);
             }
+          } else if (ev.type === 'delta') {
+            // Text as it is generated. Shown immediately, NOT announced — announcing
+            // every token turns a screen reader into a firehose. The finished reply is
+            // announced once, at the end.
+            setLive((t) => t + ev.text);
+          } else if (ev.type === 'retract') {
+            // The guard tripped mid-stream. Pull the partial text off screen at once.
+            setLive('');
+            announce('Penny stopped that reply.', true);
           } else if (ev.type === 'message') {
             replied = true;
+            setLive('');
             setMessages((m) => [...m, { role: 'assistant', content: ev.text || "I didn't catch that — can you say it again?" }]);
           } else if (ev.type === 'error') {
             replied = true;
@@ -169,6 +182,7 @@ export function PennyStaffChat({ staffSession }: { staffSession: StaffLite | nul
       abortRef.current = null;
       setBusy(false);
       setProgress('');
+      setLive('');
     }
   }
 
@@ -181,6 +195,14 @@ export function PennyStaffChat({ staffSession }: { staffSession: StaffLite | nul
 
   return (
     <section aria-label="Chat with Penny" className="rounded-xl border border-slate-200 bg-white p-4">
+      {/* Penny's words as they arrive. aria-hidden: the finished reply is announced once
+          when it lands, so a screen reader is not read every token twice over. */}
+      {live && (
+        <p aria-hidden="true" className="mb-2 whitespace-pre-wrap rounded-lg bg-slate-50 px-3 py-2 text-slate-900">
+          {live}
+        </p>
+      )}
+
       {/* PROGRESS — everything, on screen, updating freely. aria-hidden because a region
           that changes this often would flood a screen reader. */}
       {busy && (
