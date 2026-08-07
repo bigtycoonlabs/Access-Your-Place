@@ -63,9 +63,18 @@ export default function StartPage() {
 
     if (!kind) { setStatus('error'); setNote('Please choose what you need help with.'); return; }
     if (!name.trim()) { setStatus('error'); setNote('Please tell us your name.'); return; }
-    if (!email.trim() && !phone.trim()) {
+    // Email is required because it is the only channel that actually works: there is no
+    // SMS on this platform, and Penny's reply, the sign-in link and the account
+    // invitation all go by email. Phone is required because an acquisition manager rings
+    // clients, and a lead with no number is one the team cannot work.
+    if (!email.trim()) {
       setStatus('error');
-      setNote('Please leave an email address or a phone number so we can reach you.');
+      setNote('Please add your email address — that is how we reply and send your sign-in link.');
+      return;
+    }
+    if (!phone.trim()) {
+      setStatus('error');
+      setNote('Please add a phone number so the team can call you.');
       return;
     }
 
@@ -123,7 +132,7 @@ export default function StartPage() {
       <div className="mx-auto max-w-xl">
         <h1 className="text-2xl font-semibold text-slate-900">Let's get you to the right person</h1>
         <p className="mt-2 text-slate-700">
-          Tell us what you need and how to reach you. That's all we need to start — no account required.
+          Tell us what you need and how to reach you. That's all we need to start — no account required. We reply by email, and someone from the team may call.
         </p>
 
         <form onSubmit={submit} className="mt-6 space-y-6">
@@ -168,21 +177,22 @@ export default function StartPage() {
           </div>
 
           <div>
-            <label htmlFor="email" className="block font-medium text-slate-900">
-              Email <span className="font-normal text-slate-600">(email or phone — either is fine)</span>
-            </label>
+            <label htmlFor="email" className="block font-medium text-slate-900">Email address</label>
+            <p id="email-help" className="text-sm text-slate-600">We reply here and send your sign-in link to this address.</p>
             <input
               id="email" type="email" value={email} onChange={(e) => setEmail(e.target.value)}
               autoComplete="email" autoCapitalize="none" autoCorrect="off" spellCheck={false}
+              required aria-describedby="email-help"
               className="mt-1 w-full min-h-[44px] rounded-md border border-slate-300 px-3 py-2"
             />
           </div>
 
           <div>
-            <label htmlFor="phone" className="block font-medium text-slate-900">Phone</label>
+            <label htmlFor="phone" className="block font-medium text-slate-900">Phone number</label>
+            <p id="phone-help" className="text-sm text-slate-600">So someone from the team can call you. We do not send text messages.</p>
             <input
               id="phone" type="tel" value={phone} onChange={(e) => setPhone(e.target.value)}
-              autoComplete="tel"
+              autoComplete="tel" required aria-describedby="phone-help"
               className="mt-1 w-full min-h-[44px] rounded-md border border-slate-300 px-3 py-2"
             />
           </div>

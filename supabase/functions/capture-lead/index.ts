@@ -69,8 +69,19 @@ Deno.serve(async (req) => {
 
     if (!KINDS.has(kind)) return json({ success: false, error: 'Please choose what you need help with.' }, 400);
     if (!name) return json({ success: false, error: 'Please tell us your name.' }, 400);
-    // One contact method is enough. Requiring both loses people.
-    if (!email && !phone) return json({ success: false, error: 'Please leave an email address or a phone number so we can reach you.' }, 400);
+
+    // EMAIL IS REQUIRED, and it is the only channel we actually reply on.
+    //
+    // This previously accepted "email OR phone". That was a promise the platform cannot
+    // keep: there is no SMS anywhere in this system -- zero texts have ever been sent and
+    // the delivery callback points at a dead host. Someone who left only a phone number
+    // would have been told we had their details and then heard nothing, because Penny's
+    // reply, the sign-in link and the account invitation all go by email.
+    //
+    // PHONE IS ALSO REQUIRED, but for a different reason: an acquisition manager rings
+    // clients, and a lead with no number is a lead the team cannot work.
+    if (!email) return json({ success: false, error: 'Please add your email address — that is how we reply and send your sign-in link.' }, 400);
+    if (!phone) return json({ success: false, error: 'Please add a phone number so the team can call you.' }, 400);
 
     const urgency = kind === 'live_operation_help' ? 'emergency' : 'normal';
 
@@ -87,16 +98,15 @@ Deno.serve(async (req) => {
       body: JSON.stringify({
         form_type: kind,
         name,
-        // email is NOT NULL on this table, so a phone-only lead still needs a value here.
-        email: email || `no-email+${crypto.randomUUID().slice(0, 8)}@accessyourplace.com`,
-        phone: phone || null,
+        email,
+        phone,
         city: city || null,
         property_address: propertyAddress || null,
         message: message || null,
         urgency,
         status: 'new',
         source: String(body.source || 'start_page').slice(0, 60),
-        form_data: { kind, gave_email: !!email, gave_phone: !!phone, user_agent: req.headers.get('user-agent') || null },
+        form_data: { kind, user_agent: req.headers.get('user-agent') || null },
       }),
     });
 
@@ -133,8 +143,8 @@ Deno.serve(async (req) => {
         `${LABELS[kind]}`,
         ``,
         `Name: ${name}`,
-        email ? `Email: ${email}` : `Email: not given`,
-        phone ? `Phone: ${phone}` : `Phone: not given`,
+        `Email: ${email}`,
+        `Phone: ${phone}`,
         city ? `City: ${city}` : null,
         propertyAddress ? `Property: ${propertyAddress}` : null,
         ``,
@@ -149,7 +159,7 @@ Deno.serve(async (req) => {
           headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${resendKey}` },
           body: JSON.stringify({
             from: 'Penny <penny@accessyourplace.com>',
-            reply_to: [email || SUCCESS_INBOX],
+            reply_to: [email],
             to: [SUCCESS_INBOX],
             subject,
             text: lines,
@@ -256,11 +266,9 @@ Deno.serve(async (req) => {
     // The lead IS saved either way, so this is a success — but `notified` and `routed` are
     // returned honestly rather than assumed, so a quiet inbox can be told apart from a
     // quiet week.
-    const tail = email
-      ? (routedEmail
-          ? " I've also emailed you your next step."
-          : " We could not email you just now, so use success@accessyourplace.com if you'd like to add anything.")
-      : '';
+    const tail = routedEmail
+      ? " I've also emailed you your next step — check your inbox."
+      : " We could not email you just now, so use success@accessyourplace.com if you'd like to add anything.";
 
     return json({
       success: true,
