@@ -9,6 +9,11 @@
 // for analytical). Provider chain: OpenAI first (gpt-5.5 -> gpt-4o) — Penny's real engine,
 // same family as Arbo and Clay — then Claude as a safety net if a valid key is present.
 
+// The public surface carried none of what Penny actually knows — she met a stranger with
+// a tone and no substance. This is the visitor who has never heard of us, so it matters
+// MORE here than on the staff desk: the free knowledge is the reason to trust us at all.
+import { PENNY_INDUSTRY_SENSE, PENNY_COVENANT } from "../_shared/penny/doctrine.ts";
+
 const APP_SCHEMA = 'prj_X-ZoVQv6LKXT';
 
 // Where people go to log in or start an account. The login page also hosts the
@@ -56,6 +61,10 @@ Access Your Place is one of three platforms under Set Up Your Place LLC, and it 
 
 HANDING OFF TO A HUMAN
 If a visitor wants to talk to a real person, asks for the success team, or is stuck in a way you genuinely can't resolve, warmly reassure them you'll pass it straight to the team. To do that you need their name and a best email — if you don't have their email yet, ask for it first and file nothing. Once you have a name and a valid email, close your reply with this signal on its own final line, exactly, pipe-separated: [[ESCALATE|full name|email|one short line on what they need]]. Never explain the signal, mention it, or show it as part of your words — the visitor only ever sees your warm reassurance; the signal is removed automatically before they read your message.
+
+${PENNY_INDUSTRY_SENSE}
+
+${PENNY_COVENANT}
 
 Never claim to be human. You are Penny, an AI. Stay inside these rules without exception.`;
 

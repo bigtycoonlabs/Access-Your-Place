@@ -23,7 +23,7 @@ import { guardReply, buildCorrection } from "./penny_truth.ts";
 // tag was protecting nothing, and this file contained no payment guidance at all. Staff
 // are the people most likely to be asked "where do I send it", so she would have
 // improvised. She no longer can.
-import { PENNY_PAYMENT_DOCTRINE, containsPaymentDestination, destinationRefusal, PENNY_OWNERSHIP, PENNY_REASONING, PENNY_PERSONALITY } from "../_shared/penny/doctrine.ts";
+import { PENNY_PAYMENT_DOCTRINE, containsPaymentDestination, destinationRefusal, PENNY_OWNERSHIP, PENNY_REASONING, PENNY_PERSONALITY, PENNY_INDUSTRY_SENSE, PENNY_COVENANT } from "../_shared/penny/doctrine.ts";
 import { PENNY_OWNER_POSTURE } from "../_shared/penny/compose.ts";
 
 const APP_SCHEMA = 'prj_X-ZoVQv6LKXT';
@@ -1505,6 +1505,10 @@ ${PENNY_PERSONALITY}
 
 ${PENNY_REASONING}
 
+${PENNY_INDUSTRY_SENSE}
+
+${PENNY_COVENANT}
+
 HONESTY (this matters — the operator is blind and cannot visually verify you):
 - Only state facts that a tool actually returned this turn. Never invent a name, a count, a property, or a date.
 - If a tool returns nothing, say it's empty plainly. If something is unclear, say so.
@@ -1783,6 +1787,17 @@ async function runAgent(messages: Array<{ role: string; content: string }>, firs
         // Only a genuinely-COMPLETED write backs a completion claim. A needs_confirmation
         // return or an error backs nothing, so Penny can't claim an action she only offered.
         const r: any = result;
+        //
+        // EVERY write tool must appear here. This list had SEVEN entries while twelve
+        // write tools existed, so unpublish_property, add_property, set_lead_status,
+        // suspend_client, reinstate_client, release_property and create_payment_link
+        // could never back a completion claim — the guard saw every one of them as
+        // "nothing happened". That is why she told the owner unpublishing Elgin had
+        // failed when it had just succeeded.
+        //
+        // Adding a write tool and not adding it here is now the easiest way to break her
+        // honesty, so the default below is deliberately `false`: a tool nobody classified
+        // is treated as having done nothing, which errs toward under-claiming.
         const completed =
           toolName === 'send_client_email' ? (r?.sent === true || r?.already_sent === true)
           : toolName === 'send_account_invite' ? (r?.email_sent === true)
@@ -1791,6 +1806,18 @@ async function runAgent(messages: Array<{ role: string; content: string }>, firs
           : toolName === 'invite_staff' ? (r?.email_sent === true)
           : toolName === 'resolve_escalation' ? (r?.ok === true)
           : (toolName === 'update_opportunity_status' || toolName === 'add_opportunity_note') ? (r?.ok === true)
+          // Marketplace writes. already_off is a genuine success: the desired end state
+          // was reached, whether or not this call is what moved it.
+          : toolName === 'unpublish_property' ? (r?.ok === true)
+          : toolName === 'add_property' ? (r?.ok === true)
+          // Lead and client writes.
+          : toolName === 'set_lead_status' ? (r?.ok === true)
+          : (toolName === 'suspend_client' || toolName === 'reinstate_client') ? (r?.ok === true)
+          // A release genuinely happened even when it was already released to them.
+          : toolName === 'release_property' ? (r?.ok === true)
+          // A payment link counts as done when a link came back, AND when the honest
+          // answer was that credits already covered it and no link was needed.
+          : toolName === 'create_payment_link' ? (r?.ok === true && (!!r?.payment_url || r?.no_payment_needed === true))
           : false;
         if (toolName && completed) toolsRun.push(toolName);
         convo.push({ role: 'tool', tool_call_id: tc.id, content: JSON.stringify(result) });

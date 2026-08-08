@@ -7,6 +7,8 @@ import {
   PENNY_OWNERSHIP,
   PENNY_REASONING,
   PENNY_PERSONALITY,
+  PENNY_INDUSTRY_SENSE,
+  PENNY_COVENANT,
 } from './doctrine.ts';
 
 /* ---------------------------------------------------------------------------
@@ -299,4 +301,60 @@ test('PERSONALITY: she is told to have a view and still do what was asked', () =
 
 test('PERSONALITY: she is told to match the moment, emergencies included', () => {
   assert.ok(PENNY_PERSONALITY.toLowerCase().includes('emergency'));
+});
+
+/* ---- soul: what she knows in her bones ---- */
+
+// Soul is specificity. A prompt saying "be insightful" produces a caricature; knowing that
+// a new listing does not fill for 60-90 days is what makes her sound like she has actually
+// been here. These pin the specifics rather than the adjectives.
+test('SOUL: she knows the unglamorous specifics of a launch', () => {
+  const t = PENNY_INDUSTRY_SENSE.toLowerCase();
+  assert.ok(t.includes('60 to 90 days'), 'does not know the ramp period');
+  assert.ok(t.includes('furnishing'), 'does not know where budgets die');
+  assert.ok(t.includes('cleaner'), 'does not know about operations failures');
+});
+
+test('SOUL: she knows how landlords actually behave', () => {
+  const t = PENNY_INDUSTRY_SENSE.toLowerCase();
+  assert.ok(t.includes('most say no'), 'does not know the base rate of rejection');
+  assert.ok(t.includes('goes quiet'), 'does not know what silence after a yes means');
+  assert.ok(t.includes('master lease'), 'does not distinguish lease types');
+});
+
+test('SOUL: she knows why our data beats an aggregator', () => {
+  const t = PENNY_INDUSTRY_SENSE.toLowerCase();
+  assert.ok(t.includes('direct booking'), 'does not know what aggregators miss');
+  assert.ok(t.includes('lodging tax'), 'does not know where the real answer lives');
+});
+
+test('SOUL: she knows the lodging-tax thresholds differ by state', () => {
+  const t = PENNY_INDUSTRY_SENSE;
+  for (const s of ['30 days in\nVirginia', '31 in Massachusetts', '90 in New Jersey']) {
+    assert.ok(t.replace(/\s+/g, ' ').includes(s.replace(/\s+/g, ' ')), `missing threshold: ${s}`);
+  }
+});
+
+/* ---- the covenant ---- */
+
+// The load-bearing commercial rule. Knowledge free, properties paid. If this ever softens,
+// the platform becomes the thing it was built to replace.
+test('COVENANT: knowledge is free and she may never gate it', () => {
+  const t = PENNY_COVENANT.toLowerCase();
+  assert.ok(t.includes('knowledge is free'), 'the free-knowledge promise is missing');
+  assert.ok(t.includes('never gate it'), 'she is not forbidden from gating knowledge');
+  assert.ok(t.includes('we charge for properties'), 'what we DO charge for is not stated');
+});
+
+test('COVENANT: she coaches and does not take over the operation', () => {
+  const t = PENNY_COVENANT.toLowerCase();
+  assert.ok(t.includes('coach, do not take over'), 'the coaching stance is missing');
+  assert.ok(t.includes('not their property manager'), 'the boundary is not stated');
+});
+
+test('COVENANT: she is told never to side with the company against a customer', () => {
+  assert.ok(
+    PENNY_COVENANT.toLowerCase().includes('protecting the company from a customer'),
+    'missing the line about whose side she is on',
+  );
 });
