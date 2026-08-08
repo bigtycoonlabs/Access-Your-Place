@@ -110,6 +110,54 @@ async function listOpportunities(url: string, key: string) {
   };
 }
 
+// ---- memory ----
+//
+// She had none. Every conversation started cold, which quietly contradicts the claim that
+// she is the colleague who has been here since the beginning.
+//
+// Memory can be about the STAFF MEMBER or about a CLIENT. The client kind is the valuable
+// one: "this landlord went quiet once already" belongs to the file, not to whoever
+// happened to hear it, so it surfaces for whoever picks it up next.
+
+async function recallMemory(url: string, key: string, staffId: string, subjectId?: string) {
+  if (!staffId) return [];
+  const { ok, data } = await rpc(url, key, 'penny_recall', {
+    p_staff_id: staffId, p_subject_id: subjectId || null,
+  });
+  if (!ok) return [];
+  return Array.isArray(data) ? data : [];
+}
+
+async function rememberFact(url: string, key: string, staffId: string, a: any) {
+  const { ok, status, data } = await rpc(url, key, 'penny_remember', {
+    p_staff_id: staffId,
+    p_key: String(a.key || ''),
+    p_value: String(a.value || ''),
+    p_subject_type: String(a.about_type || 'staff'),
+    p_subject_id: a.about_id ? String(a.about_id) : null,
+    p_subject_label: a.about_name ? String(a.about_name) : null,
+    p_source: a.source ? String(a.source) : null,
+  });
+  if (!ok) {
+    console.error('penny-staff-chat rpc_remember', status, JSON.stringify(data).slice(0, 200));
+    return { error: 'remember_failed' };
+  }
+  return data;
+}
+
+async function forgetFact(url: string, key: string, staffId: string, a: any) {
+  const { ok, status, data } = await rpc(url, key, 'penny_forget', {
+    p_staff_id: staffId, p_key: String(a.key || ''),
+    p_subject_id: a.about_id ? String(a.about_id) : null,
+    p_subject_type: String(a.about_type || 'staff'),
+  });
+  if (!ok) {
+    console.error('penny-staff-chat rpc_forget', status, JSON.stringify(data).slice(0, 200));
+    return { error: 'forget_failed' };
+  }
+  return data;
+}
+
 // ---- money: quote a deal, check forge status, create a payment link ----
 //
 // Penny never does money maths in her head and never recites a destination. She calls
@@ -794,6 +842,14 @@ async function execTool(name: string, args: any, ctx: Ctx): Promise<unknown> {
       }
       return await recordClosing(url, key, args, staffId, staffName);
     }
+    if (name === 'remember') {
+      if (!args?.key || !args?.value) return { error: 'key and value required' };
+      return await rememberFact(url, key, staffId, args);
+    }
+    if (name === 'forget') {
+      if (!args?.key) return { error: 'key required' };
+      return await forgetFact(url, key, staffId, args);
+    }
     if (name === 'quote_deal') {
       if (!args?.property_id || !args?.investor_id) return { error: 'property_id and investor_id required' };
       return await dealQuote(url, key, String(args.property_id), String(args.investor_id));
@@ -1013,6 +1069,41 @@ const TOOLS = [
         type: 'object',
         properties: { inquiry_id: { type: 'string', description: 'The inquiry_id from list_opportunities.' } },
         required: ['inquiry_id'], additionalProperties: false,
+      },
+    },
+  },
+  {
+    type: 'function',
+    function: {
+      name: 'remember',
+      description: "Keep something worth keeping across conversations. Use it when you learn a durable fact — how someone prefers to work, a constraint, something about a client or a landlord that whoever picks the file up next would want to know. about_type is staff (the person you are talking to) or investor / landlord / property / market, in which case pass about_id and about_name. Do NOT remember chatter, one-off details, or anything the person would be surprised you kept.",
+      parameters: {
+        type: 'object',
+        properties: {
+          key: { type: 'string', description: 'Short label, e.g. "call window" or "went quiet once".' },
+          value: { type: 'string', description: 'The fact itself, in a sentence.' },
+          about_type: { type: 'string', enum: ['staff', 'investor', 'landlord', 'property', 'market'] },
+          about_id: { type: 'string' },
+          about_name: { type: 'string' },
+          source: { type: 'string', description: 'How you know it, e.g. "said on a call".' },
+        },
+        required: ['key', 'value'],
+      },
+    },
+  },
+  {
+    type: 'function',
+    function: {
+      name: 'forget',
+      description: "Drop something you were remembering, when asked or when it stops being true.",
+      parameters: {
+        type: 'object',
+        properties: {
+          key: { type: 'string' },
+          about_type: { type: 'string', enum: ['staff', 'investor', 'landlord', 'property', 'market'] },
+          about_id: { type: 'string' },
+        },
+        required: ['key'],
       },
     },
   },
@@ -1394,7 +1485,17 @@ const TOOLS = [
   },
 ];
 
-function systemPrompt(first: string, isOwner: boolean, identified: boolean, fullName: string, docText?: string, docName?: string): string {
+function systemPrompt(first: string, isOwner: boolean, identified: boolean, fullName: string, docText?: string, docName?: string, memories?: any[]): string {
+  // What she already knows, folded into the prompt rather than fetched on demand.
+  // Framed as things she KNOWS, not as a data dump — a colleague does not announce that
+  // they are consulting a record before recognising you.
+  const memoryBlock = (memories && memories.length)
+    ? `\n\nWHAT YOU ALREADY KNOW, from previous conversations. Use it naturally — never announce that you are recalling something, and never read this list back:\n` +
+      memories.map((m: any) =>
+        `- ${m.about && m.about !== 'staff' ? `${m.about}: ` : ''}${m.memory_key} — ${m.memory_value}${m.source ? ` (${m.source})` : ''}`
+      ).join('\n') +
+      `\nIf something here is contradicted by what they say now, believe them and update it with remember.`
+    : '';
   // IDENTITY, STATED OUTRIGHT.
   //
   // v25 already put the staff member's name in the prompt, and Penny STILL answered
@@ -1507,7 +1608,7 @@ ${PENNY_REASONING}
 
 ${PENNY_INDUSTRY_SENSE}
 
-${PENNY_COVENANT}
+${PENNY_COVENANT}${memoryBlock}
 
 HONESTY (this matters — the operator is blind and cannot visually verify you):
 - Only state facts that a tool actually returned this turn. Never invent a name, a count, a property, or a date.
@@ -1669,7 +1770,7 @@ async function runAgent(messages: Array<{ role: string; content: string }>, firs
     console.error('penny-staff-chat missing_OPENAI_API_KEY');
     return { message: "I can't reach my reasoning service right now — give me a moment and try again." };
   }
-  const sys = systemPrompt(first, ctx.isOwner === true, ctx.identified === true, ctx.fullName || first, ctx.docText, ctx.docName);
+  const sys = systemPrompt(first, ctx.isOwner === true, ctx.identified === true, ctx.fullName || first, ctx.docText, ctx.docName, (ctx as any).memories);
   const convo: any[] = [{ role: 'system', content: sys }, ...messages];
   // Tools whose action truly COMPLETED this turn — the backing the truth spine trusts.
   const toolsRun: string[] = [];
@@ -1895,9 +1996,18 @@ Deno.serve(async (req) => {
       name_source: ownerCheck.name ? 'staff_users' : (staffName ? 'request_body' : 'none'),
     }));
 
+    // Memory is loaded BEFORE the turn, not left as a tool she has to remember to call.
+    // A colleague does not consult a notebook before recognising you — they simply know.
+    // If she had to choose to look, she would mostly not look, and memory that is usually
+    // unread is the same as no memory.
+    const memories = await recallMemory(url, key, staffId);
+    if (memories.length) {
+      console.log('penny-staff-chat memory_loaded', JSON.stringify({ count: memories.length }));
+    }
+
     const agentCtx = {
       url, key, staffId, staffName, isOwner: ownerCheck.owner,
-      identified, fullName, docText, docName,
+      identified, fullName, docText, docName, memories,
     };
 
     // ---- STREAMING ----
