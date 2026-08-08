@@ -110,6 +110,18 @@ async function listOpportunities(url: string, key: string) {
   };
 }
 
+// ---- what she notices without being asked ----
+//
+// She had knowledge, memory, tools and judgement, and still walked in blind — every
+// conversation opened with her asking what was needed. That is the gap between a
+// competent assistant and a colleague. A colleague already knows, and leads with the
+// thing that is wrong.
+async function loadAttention(url: string, key: string) {
+  const { ok, data } = await rpc(url, key, 'penny_attention');
+  if (!ok) return null;
+  return data;
+}
+
 // ---- memory ----
 //
 // She had none. Every conversation started cold, which quietly contradicts the claim that
@@ -1485,10 +1497,24 @@ const TOOLS = [
   },
 ];
 
-function systemPrompt(first: string, isOwner: boolean, identified: boolean, fullName: string, docText?: string, docName?: string, memories?: any[]): string {
+function systemPrompt(first: string, isOwner: boolean, identified: boolean, fullName: string, docText?: string, docName?: string, memories?: any[], attention?: any): string {
   // What she already knows, folded into the prompt rather than fetched on demand.
   // Framed as things she KNOWS, not as a data dump — a colleague does not announce that
   // they are consulting a record before recognising you.
+  // What is actually wrong on the platform right now, with ages. She opens with this
+  // when it matters and stays quiet about it when it does not — the instruction below is
+  // as much about restraint as awareness, because a colleague who recites the whole list
+  // every morning becomes someone you avoid.
+  const items: any[] = attention?.items || [];
+  const emergencies = items.filter((i: any) => i.severity === 'emergency');
+  const attentionBlock = items.length
+    ? `\n\nWHAT IS ACTUALLY HAPPENING RIGHT NOW — you already know this, nobody had to tell you:\n` +
+      items.map((i: any) => `- [${i.severity}] ${i.what}${i.contact ? ` Reach them on ${i.contact}.` : ''}`).join('\n') +
+      (emergencies.length
+        ? `\n\nLEAD WITH THE EMERGENCY. Name them, give the number, say it has been waiting. Everything else comes after.`
+        : `\n\nHOW TO USE THIS: if something here is urgent or genuinely time-sensitive, open with it in ONE sentence. Otherwise do not recite it — answer what they asked, and mention at most one of these if it fits naturally. A colleague who reads the whole list every morning becomes someone people avoid. Never claim to have acted on any of it; these are observations, not actions.`)
+    : '';
+
   const memoryBlock = (memories && memories.length)
     ? `\n\nWHAT YOU ALREADY KNOW, from previous conversations. Use it naturally — never announce that you are recalling something, and never read this list back:\n` +
       memories.map((m: any) =>
@@ -1608,7 +1634,7 @@ ${PENNY_REASONING}
 
 ${PENNY_INDUSTRY_SENSE}
 
-${PENNY_COVENANT}${memoryBlock}
+${PENNY_COVENANT}${attentionBlock}${memoryBlock}
 
 HONESTY (this matters — the operator is blind and cannot visually verify you):
 - Only state facts that a tool actually returned this turn. Never invent a name, a count, a property, or a date.
@@ -1770,7 +1796,7 @@ async function runAgent(messages: Array<{ role: string; content: string }>, firs
     console.error('penny-staff-chat missing_OPENAI_API_KEY');
     return { message: "I can't reach my reasoning service right now — give me a moment and try again." };
   }
-  const sys = systemPrompt(first, ctx.isOwner === true, ctx.identified === true, ctx.fullName || first, ctx.docText, ctx.docName, (ctx as any).memories);
+  const sys = systemPrompt(first, ctx.isOwner === true, ctx.identified === true, ctx.fullName || first, ctx.docText, ctx.docName, (ctx as any).memories, (ctx as any).attention);
   const convo: any[] = [{ role: 'system', content: sys }, ...messages];
   // Tools whose action truly COMPLETED this turn — the backing the truth spine trusts.
   const toolsRun: string[] = [];
@@ -2000,14 +2026,19 @@ Deno.serve(async (req) => {
     // A colleague does not consult a notebook before recognising you — they simply know.
     // If she had to choose to look, she would mostly not look, and memory that is usually
     // unread is the same as no memory.
-    const memories = await recallMemory(url, key, staffId);
-    if (memories.length) {
-      console.log('penny-staff-chat memory_loaded', JSON.stringify({ count: memories.length }));
-    }
+    // Both loaded before the turn, in parallel. Neither is a tool she has to choose to
+    // call: awareness she has to opt into is awareness she will mostly skip.
+    const [memories, attention] = await Promise.all([
+      recallMemory(url, key, staffId),
+      loadAttention(url, key),
+    ]);
+    console.log('penny-staff-chat context_loaded', JSON.stringify({
+      memories: memories.length, attention: (attention as any)?.count ?? 0,
+    }));
 
     const agentCtx = {
       url, key, staffId, staffName, isOwner: ownerCheck.owner,
-      identified, fullName, docText, docName, memories,
+      identified, fullName, docText, docName, memories, attention,
     };
 
     // ---- STREAMING ----
