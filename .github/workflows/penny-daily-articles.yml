@@ -1,0 +1,94 @@
+# Penny drafts for the knowledge library, twice a day.
+#
+# GitHub Actions IS the scheduler on this project. pg_cron is not installed and there are
+# no scheduled Postgres jobs, so this is the mechanism, and it is free and proven.
+#
+# WHAT THIS DOES NOT DO: publish anything. penny-write-article always saves a draft with
+# review_state = needs_review. A human approves through Penny's decide_article tool. That
+# gate is what makes autonomous generation safe here, and it exists because this library
+# has already published an invented permit fee and an invented residency rule.
+#
+# Two runs rather than one job writing two articles, deliberately: if the first fails the
+# second still happens, and each failure is visible on its own rather than hidden inside a
+# loop that reported success.
+
+name: Penny — daily library articles
+
+on:
+  schedule:
+    # 13:00 and 21:00 UTC — mid-morning and late afternoon US.
+    - cron: '0 13 * * *'
+    - cron: '0 21 * * *'
+  workflow_dispatch:
+    inputs:
+      topic:
+        description: 'Optional topic. Leave blank to let Penny choose what the library is missing.'
+        required: false
+      city:
+        description: 'Optional city'
+        required: false
+      state:
+        description: 'Optional two-letter state'
+        required: false
+
+concurrency:
+  group: penny-articles
+  cancel-in-progress: false
+
+jobs:
+  draft:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Confirm the secrets are present
+        env:
+          PROJECT_REF: adcbrclppmnguzkzwiys
+          SERVICE_KEY: ${{ secrets.SUPABASE_SERVICE_ROLE_KEY }}
+        run: |
+          set -euo pipefail
+          if [ -z "${SERVICE_KEY:-}" ]; then
+            echo "SUPABASE_SERVICE_ROLE_KEY is not set."
+            echo "Add it under Settings > Secrets and variables > Actions."
+            exit 1
+          fi
+          echo "Secret present."
+
+      - name: Ask Penny to draft one
+        env:
+          PROJECT_REF: adcbrclppmnguzkzwiys
+          SERVICE_KEY: ${{ secrets.SUPABASE_SERVICE_ROLE_KEY }}
+          TOPIC: ${{ inputs.topic }}
+          CITY: ${{ inputs.city }}
+          STATE: ${{ inputs.state }}
+        run: |
+          set -euo pipefail
+          BODY=$(jq -nc \
+            --arg topic "${TOPIC:-}" --arg city "${CITY:-}" --arg state "${STATE:-}" \
+            '{mode:"new"} + (if $topic == "" then {} else {topic:$topic} end)
+                          + (if $city  == "" then {} else {city:$city}   end)
+                          + (if $state == "" then {} else {state:$state} end)')
+
+          echo "Requesting a draft..."
+          HTTP=$(curl -sS -o /tmp/out.json -w '%{http_code}' \
+            -X POST "https://${PROJECT_REF}.supabase.co/functions/v1/penny-write-article" \
+            -H "Authorization: Bearer ${SERVICE_KEY}" \
+            -H "Content-Type: application/json" \
+            -d "$BODY")
+
+          echo "HTTP $HTTP"
+          cat /tmp/out.json | jq . || cat /tmp/out.json
+
+          # A REFUSAL IS NOT A FAILURE. penny-write-article returns 422 when a draft would
+          # have stated rules or rates with no sources. That is the guard working, and it
+          # must not turn the run red or people will start ignoring red runs.
+          if [ "$HTTP" = "422" ]; then
+            echo "Penny refused to write an unsourced article. That is correct behaviour."
+            exit 0
+          fi
+
+          if [ "$HTTP" != "200" ]; then
+            echo "Draft failed."
+            exit 1
+          fi
+
+          jq -r '"Drafted: " + .title + " (" + (.source_count|tostring) + " sources, "
+                 + ((.unsourced_claims|length)|tostring) + " unsourced claims). Waiting for review."' /tmp/out.json

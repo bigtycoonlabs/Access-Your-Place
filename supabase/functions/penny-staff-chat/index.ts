@@ -110,6 +110,64 @@ async function listOpportunities(url: string, key: string) {
   };
 }
 
+// ---- the knowledge library ----
+//
+// The library shipped invented permit fees. So Penny can DRAFT and she can ROUTE, but she
+// cannot publish: penny-write-article always lands a draft as needs_review, and only
+// penny_decide_article publishes, which requires a staff id.
+
+async function articlesNeedingWork(url: string, key: string, limit?: number) {
+  const { ok, status, data } = await rpc(url, key, 'penny_articles_needing_work', { p_limit: limit ?? 10 });
+  if (!ok) {
+    console.error('penny-staff-chat rpc_articles_work', status, JSON.stringify(data).slice(0, 200));
+    return { error: `read_failed_${status}` };
+  }
+  const rows = Array.isArray(data) ? data : [];
+  return { count: rows.length, articles: rows };
+}
+
+async function articlesAwaitingReview(url: string, key: string) {
+  const { ok, status, data } = await rpc(url, key, 'penny_articles_awaiting_review');
+  if (!ok) {
+    console.error('penny-staff-chat rpc_articles_review', status, JSON.stringify(data).slice(0, 200));
+    return { error: `read_failed_${status}` };
+  }
+  const rows = Array.isArray(data) ? data : [];
+  return {
+    count: rows.length,
+    // Surfaced first because it is the thing a reviewer must not skim past.
+    with_unsourced_claims: rows.filter((r: any) => (r.unsourced_claim_count || 0) > 0).length,
+    articles: rows,
+  };
+}
+
+async function decideArticle(url: string, key: string, id: string, approve: boolean, staffId: string, notes?: string) {
+  const { ok, status, data } = await rpc(url, key, 'penny_decide_article', {
+    p_article_id: id, p_approve: approve, p_staff_id: staffId || null, p_notes: notes || null,
+  });
+  if (!ok) {
+    console.error('penny-staff-chat rpc_decide_article', status, JSON.stringify(data).slice(0, 200));
+    return { error: 'decision_failed', http: status };
+  }
+  return data;
+}
+
+async function writeArticle(url: string, key: string, a: any, staffId: string) {
+  const res = await fetch(`${url}/functions/v1/penny-write-article`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${key}` },
+    body: JSON.stringify({
+      mode: a.article_id ? 'rewrite' : 'new',
+      article_id: a.article_id || null,
+      topic: a.topic || null, city: a.city || null, state: a.state || null,
+      staff_id: staffId || null,
+    }),
+  });
+  const out = await res.json().catch(() => null);
+  if (!out) return { error: 'The writer did not return anything. Nothing was saved.' };
+  return out;
+}
+
 // ---- what she notices without being asked ----
 //
 // She had knowledge, memory, tools and judgement, and still walked in blind — every
@@ -854,6 +912,33 @@ async function execTool(name: string, args: any, ctx: Ctx): Promise<unknown> {
       }
       return await recordClosing(url, key, args, staffId, staffName);
     }
+    if (name === 'articles_needing_work') {
+      return await articlesNeedingWork(url, key, args?.limit ? Number(args.limit) : undefined);
+    }
+    if (name === 'articles_awaiting_review') return await articlesAwaitingReview(url, key);
+    if (name === 'write_article') {
+      if (args?.confirmed !== true) {
+        return {
+          needs_confirmation: true,
+          action: args?.article_id ? 'rewrite that article' : `write a new article${args?.topic ? ` on ${args.topic}` : ''}`,
+          instruction: 'Say what you are about to write and that it will NOT publish — it lands as a draft for a human. Get a yes, then call again with confirmed true.',
+        };
+      }
+      return await writeArticle(url, key, args, staffId);
+    }
+    if (name === 'decide_article') {
+      if (!args?.article_id || typeof args?.approve !== 'boolean') {
+        return { error: 'article_id and approve (true or false) are required' };
+      }
+      if (args.confirmed !== true) {
+        return {
+          needs_confirmation: true,
+          action: args.approve ? 'publish this article' : 'send this article back as a draft',
+          instruction: 'Approving PUBLISHES it publicly. If it carries unsourced claims, say how many and what they are BEFORE asking. Then get a clear yes and call again with confirmed true.',
+        };
+      }
+      return await decideArticle(url, key, String(args.article_id), args.approve === true, staffId, args.notes);
+    }
     if (name === 'remember') {
       if (!args?.key || !args?.value) return { error: 'key and value required' };
       return await rememberFact(url, key, staffId, args);
@@ -1085,6 +1170,60 @@ const TOOLS = [
     },
   },
   {
+    type: 'function',
+    function: {
+      name: 'articles_needing_work',
+      description: "Which library articles need rewriting, worst first. Top priority is any guide stating fees or rates that has never been checked against a primary source — someone can act on those and lose money. Read-only.",
+      parameters: { type: 'object', properties: { limit: { type: 'number' } }, required: [] },
+    },
+  },
+  {
+    type: 'function',
+    function: {
+      name: 'articles_awaiting_review',
+      description: "Articles you have drafted that are waiting for a human. Shows how long each has waited and how many claims you could NOT source. Use this when a staff member asks what needs reviewing, and ALWAYS lead with the ones carrying unsourced claims.",
+      parameters: { type: 'object', properties: {}, required: [] },
+    },
+  },
+  {
+    type: 'function',
+    function: {
+      name: 'write_article',
+      description: "Write a new library article, or rewrite an existing one by passing article_id. It does NOT publish — it saves as a draft needing human review, and it refuses outright if it would state rules or rates with no sources. Say that plainly rather than implying something went live.",
+      parameters: {
+        type: 'object',
+        properties: {
+          article_id: { type: 'string', description: 'Rewrite this one. Omit to write something new.' },
+          topic: { type: 'string' },
+          city: { type: 'string' },
+          state: { type: 'string' },
+          confirmed: { type: 'boolean' },
+        },
+        required: [],
+      },
+    },
+  },
+  {
+    type: 'function',
+    function: {
+      name: 'decide_article',
+      description: "Approve an article (which PUBLISHES it publicly) or send it back as a draft. Only a staff member decides this — never on your own initiative. If the article carries claims you could not source, say how many and what they are before you ask.",
+      parameters: {
+        type: 'object',
+        properties: {
+          article_id: { type: 'string' },
+          approve: { type: 'boolean' },
+          notes: { type: 'string' },
+          confirmed: { type: 'boolean' },
+        },
+        required: ['article_id', 'approve'],
+      },
+    },
+  },
+  {
+    type: 'function',
+    function: {
+      name: 'remember',  {
     type: 'function',
     function: {
       name: 'remember',
@@ -1581,6 +1720,25 @@ contacted, working, closed or not_a_fit once someone has actually been reached.
 THE DESK — buyer inquiries:
 list_opportunities, get_opportunity, update_opportunity_status, add_opportunity_note,
 record_closing.
+
+THE KNOWLEDGE LIBRARY IS YOURS, and it is the part of this company that reaches strangers.
+Free knowledge is the whole strategy, so a wrong article does more damage here than
+anywhere else on the platform.
+
+articles_needing_work shows what to fix, worst first. Top of that list is always a guide
+that states a fee or a rate and has never been checked against a primary source — someone
+can act on that and lose money.
+write_article drafts a new one, or rewrites an existing one if you pass article_id. IT DOES
+NOT PUBLISH. It saves as a draft for a human, and it refuses outright rather than writing
+rules or rates with no sources. Say that plainly; never imply something went live.
+articles_awaiting_review is what is sitting with a human. When a staff member asks what
+needs reviewing, LEAD WITH ANYTHING CARRYING UNSOURCED CLAIMS and say how many.
+decide_article approves — which publishes publicly — or sends it back. That is a staff
+member's call, never yours. If there are unsourced claims, name them before you ask.
+
+We have already published an invented permit fee and an invented residency rule. Hold that.
+When you are not certain of a number, the honest article says the reader must confirm it
+with the city, and we offer to check it with them for free.
 
 MONEY, CREDITS AND PAYMENT — you never do this arithmetic yourself:
 quote_deal tells you what a deal costs this client and how much their credits cover. On a
