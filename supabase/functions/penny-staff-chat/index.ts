@@ -110,6 +110,55 @@ async function listOpportunities(url: string, key: string) {
   };
 }
 
+// ---- company client files ----
+//
+// 475 relationships that lived in a spreadsheet. 461 of them have NO platform account, and
+// they are not strangers — every one has been spoken to and many took a property. The
+// distinction Penny must never blur: a client FILE is what we know about someone; an
+// ACCOUNT is something they can sign into.
+
+async function findClientFile(url: string, key: string, q: string, limit?: number) {
+  const { ok, status, data } = await rpc(url, key, 'penny_find_client_file', {
+    p_query: q || '', p_limit: limit ?? 10,
+  });
+  if (!ok) {
+    console.error('penny-staff-chat rpc_find_file', status, JSON.stringify(data).slice(0, 200));
+    return { error: `read_failed_${status}` };
+  }
+  const rows = Array.isArray(data) ? data : [];
+  return {
+    count: rows.length,
+    on_platform: rows.filter((r: any) => r.on_platform).length,
+    files: rows.map((r: any) => ({
+      ...r,
+      standing: r.on_platform
+        ? (r.platform_last_login ? 'has an account and uses it' : 'has an account but has NEVER signed in')
+        : 'in our records only — no platform account',
+    })),
+  };
+}
+
+async function clientFileOverview(url: string, key: string) {
+  const { ok, status, data } = await rpc(url, key, 'penny_client_file_overview');
+  if (!ok) {
+    console.error('penny-staff-chat rpc_file_overview', status, JSON.stringify(data).slice(0, 200));
+    return { error: `read_failed_${status}` };
+  }
+  return data;
+}
+
+async function updateClientFile(url: string, key: string, a: any, staffId: string) {
+  const { ok, status, data } = await rpc(url, key, 'penny_update_client_file', {
+    p_file_id: String(a.file_id), p_field: String(a.field), p_value: String(a.value ?? ''),
+    p_staff_id: staffId || null,
+  });
+  if (!ok) {
+    console.error('penny-staff-chat rpc_update_file', status, JSON.stringify(data).slice(0, 200));
+    return { error: 'update_failed', http: status };
+  }
+  return data;
+}
+
 // ---- the knowledge library ----
 //
 // The library shipped invented permit fees. So Penny can DRAFT and she can ROUTE, but she
@@ -936,6 +985,21 @@ async function execTool(name: string, args: any, ctx: Ctx): Promise<unknown> {
       }
       return await republishArticle(url, key, String(args.draft_id), staffId);
     }
+    if (name === 'find_client_file') {
+      return await findClientFile(url, key, String(args?.query || ''), args?.limit ? Number(args.limit) : undefined);
+    }
+    if (name === 'client_file_overview') return await clientFileOverview(url, key);
+    if (name === 'update_client_file') {
+      if (!args?.file_id || !args?.field) return { error: 'file_id and field required' };
+      if (args.confirmed !== true) {
+        return {
+          needs_confirmation: true,
+          action: `change ${args.field} on that client file`,
+          instruction: 'Say whose file, what it says now, and what it will say. Get a yes, then call again with confirmed true.',
+        };
+      }
+      return await updateClientFile(url, key, args, staffId);
+    }
     if (name === 'articles_needing_work') {
       return await articlesNeedingWork(url, key, args?.limit ? Number(args.limit) : undefined);
     }
@@ -1205,6 +1269,43 @@ const TOOLS = [
           confirmed: { type: 'boolean' },
         },
         required: ['draft_id'],
+      },
+    },
+  },
+  {
+    type: 'function',
+    function: {
+      name: 'find_client_file',
+      description: "Search the company's client files — clients, landlords and intake leads going back years. Tells you for each whether they are ON THE PLATFORM, have an account they have never used, or exist only in our records. Search by name, company, email, market or property. Use this before find_client: most of these people have no account, and find_client will not see them.",
+      parameters: {
+        type: 'object',
+        properties: { query: { type: 'string' }, limit: { type: 'number' } },
+        required: ['query'],
+      },
+    },
+  },
+  {
+    type: 'function',
+    function: {
+      name: 'client_file_overview',
+      description: "Where the book of business stands: how many client files, how many are on the platform, how many have an account they never used, how many have been invited.",
+      parameters: { type: 'object', properties: {}, required: [] },
+    },
+  },
+  {
+    type: 'function',
+    function: {
+      name: 'update_client_file',
+      description: "Update our internal record of someone — status, notes, market, property, phone, company, name or last_contact. This changes OUR file, not their account. Confirm before writing.",
+      parameters: {
+        type: 'object',
+        properties: {
+          file_id: { type: 'string' },
+          field: { type: 'string', enum: ['status','notes','market','property','phone','company','name','last_contact'] },
+          value: { type: 'string' },
+          confirmed: { type: 'boolean' },
+        },
+        required: ['file_id', 'field'],
       },
     },
   },
@@ -1756,6 +1857,26 @@ contacted, working, closed or not_a_fit once someone has actually been reached.
 THE DESK — buyer inquiries:
 list_opportunities, get_opportunity, update_opportunity_status, add_opportunity_note,
 record_closing.
+
+THE COMPANY CLIENT FILES — 475 relationships, and most are NOT platform accounts.
+
+This is our record of everyone we have dealt with: clients, landlords, and years of intake
+leads. 461 of the 475 have no account at all. THEY ARE NOT STRANGERS. Every one has been
+spoken to, many took a property, and some simply never signed in.
+
+find_client_file searches them and tells you the standing of each: on the platform, has an
+account they have never used, or in our records only. USE IT BEFORE find_client — find_client
+only sees accounts, so for most of these people it will come back empty and that empty
+result would be badly misleading.
+
+Always be clear which you are talking about. "In our records" and "on the platform" are
+different things, and a staff member acting on the wrong one wastes a call.
+
+update_client_file changes OUR file. It does not touch their account.
+
+When someone has no account and should have one, say so and offer to send them an
+invitation — then use send_account_invite. Treat them as the established relationship they
+are, not as a cold lead.
 
 PHOTOS AND FILES A STAFF MEMBER SENDS YOU:
 
