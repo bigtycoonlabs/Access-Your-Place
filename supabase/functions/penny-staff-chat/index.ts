@@ -110,6 +110,30 @@ async function listOpportunities(url: string, key: string) {
   };
 }
 
+// ---- the third-party sale flow and the landlord portal ----
+//
+// Both were half-built: the UI offered them and the handlers did not exist. Now that they
+// work, Penny needs to see them. Read-only — approving a listing, completing a
+// verification and releasing funds are staff decisions with money attached.
+
+async function sellerFlow(url: string, key: string) {
+  const { ok, status, data } = await rpc(url, key, 'penny_seller_flow');
+  if (!ok) {
+    console.error('penny-staff-chat rpc_seller_flow', status, JSON.stringify(data).slice(0, 200));
+    return { error: `read_failed_${status}` };
+  }
+  return data;
+}
+
+async function landlordPortal(url: string, key: string) {
+  const { ok, status, data } = await rpc(url, key, 'penny_landlord_portal');
+  if (!ok) {
+    console.error('penny-staff-chat rpc_landlord_portal', status, JSON.stringify(data).slice(0, 200));
+    return { error: `read_failed_${status}` };
+  }
+  return data;
+}
+
 // ---- company client files ----
 //
 // 475 relationships that lived in a spreadsheet. 461 of them have NO platform account, and
@@ -985,6 +1009,8 @@ async function execTool(name: string, args: any, ctx: Ctx): Promise<unknown> {
       }
       return await republishArticle(url, key, String(args.draft_id), staffId);
     }
+    if (name === 'seller_flow') return await sellerFlow(url, key);
+    if (name === 'landlord_portal') return await landlordPortal(url, key);
     if (name === 'find_client_file') {
       return await findClientFile(url, key, String(args?.query || ''), args?.limit ? Number(args.limit) : undefined);
     }
@@ -1270,6 +1296,22 @@ const TOOLS = [
         },
         required: ['draft_id'],
       },
+    },
+  },
+  {
+    type: 'function',
+    function: {
+      name: 'seller_flow',
+      description: "The third-party sale pipeline: listings waiting for approval, offers nobody has answered, verifications with outstanding checks, and transactions in flight. Read-only — approving, verifying and releasing funds are staff decisions. Lead with whatever has waited longest.",
+      parameters: { type: 'object', properties: {}, required: [] },
+    },
+  },
+  {
+    type: 'function',
+    function: {
+      name: 'landlord_portal',
+      description: "The supply side: properties landlords have submitted and nobody has reviewed, unread messages FROM landlords, corporate applications still open, and how many landlords have no acquisition manager. Read-only.",
+      parameters: { type: 'object', properties: {}, required: [] },
     },
   },
   {
@@ -1857,6 +1899,21 @@ contacted, working, closed or not_a_fit once someone has actually been reached.
 THE DESK — buyer inquiries:
 list_opportunities, get_opportunity, update_opportunity_status, add_opportunity_note,
 record_closing.
+
+THE THIRD-PARTY SALE FLOW AND THE LANDLORD PORTAL are yours to watch.
+
+seller_flow shows listings waiting for approval, offers nobody has answered, verifications
+with checks still outstanding, and transactions in flight. A seller whose listing has sat
+unapproved for days is someone losing faith in us quietly.
+
+landlord_portal shows properties landlords submitted that nobody reviewed, unread messages
+FROM landlords, open corporate applications, and landlords with no acquisition manager. The
+supply side is the constraint on this business — a landlord waiting is worse than a client
+waiting, because there are fewer of them and they have other options.
+
+Both are read-only for you. Approving a listing, completing a verification and releasing
+funds are staff decisions with money attached. Surface them, say how long they have waited,
+and route them.
 
 THE COMPANY CLIENT FILES — 475 relationships, and most are NOT platform accounts.
 
