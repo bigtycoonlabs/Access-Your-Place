@@ -2,13 +2,13 @@ import { CheckCircle } from 'lucide-react';
 import { Link } from 'react-router-dom';
 
 // The deal no longer comes together one fixed way. You choose how much to carry
-// and how much to hand our team — find it yourself with Penny + LeadForge or take
+// and how much to hand our team — find it yourself with Penny and Property Forge, or take
 // it from the marketplace; negotiate it yourself or let a certified AM close it.
 const steps = [
   {
     num: '01',
     title: 'Find the deal — your way',
-    body: "Take a landlord-approved deal straight from the marketplace, or point Penny and LeadForge at any market — by city, ZIP code, and property type — to surface off-market opportunities that aren't listed anywhere yet.",
+    body: "Take a landlord-approved deal straight from the marketplace, or point Penny and Property Forge at any market — by city, ZIP code, and property type — to surface off-market opportunities that aren't listed anywhere yet.",
   },
   {
     num: '02',
@@ -49,7 +49,7 @@ export default function HowWeWork() {
             <p className="text-gray-400 leading-relaxed mb-8">
               For years we ran every deal for you, human-first — landlord outreach, negotiation,
               launch, all of it. That team hasn't gone anywhere. What's new is that Penny and
-              LeadForge put real deal-finding in your hands: source your own deals, vet them free,
+              Property Forge puts real deal-finding in your hands: source your own deals, vet them free,
               even negotiate them yourself — and lean on our team for as much or as little as you
               want. The expertise didn't shrink; it moved from doing it <span className="italic">for</span> you
               to doing it <span className="italic">with</span> you.

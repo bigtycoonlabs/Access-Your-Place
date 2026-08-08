@@ -57,8 +57,8 @@ const AppLayout: React.FC = () => {
       </a>
 
       <SEO
-        title="Access Your Place — Corporate Lease Acquisition Platform"
-        description="Certified Acquisition Managers source and close furnished rental deals across 30+ markets. Landlord-approved deals, real market projections, no cold outreach."
+        title="Access Your Place — The Rental Arbitrage Acquisition Marketplace"
+        description="Landlord-approved rental arbitrage deals in 30+ markets. Every deal on our marketplace has had a human speak to the landlord and check the numbers. Free market research from Penny, whether you buy anything or not."
         keywords="rental arbitrage, corporate leasing, furnished rentals, acquisition manager, short-term rental investment"
         canonicalUrl="/"
         ogType="website"

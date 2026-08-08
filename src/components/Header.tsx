@@ -94,6 +94,13 @@ export default function Header() {
             aria-label="Access Your Place - Go to homepage"
           >
             <AypLogo />
+            {/* A stranger can land on any page, not just the homepage. Without this the
+                header is a logo and some links and says nothing about what this is.
+                Hidden below lg so it never crowds a phone. */}
+            <span className="hidden lg:block border-l border-white/20 pl-2 text-xs leading-tight text-slate-300">
+              Rental arbitrage acquisition
+              <span className="block text-slate-400">Landlord-approved deals, verified numbers</span>
+            </span>
           </Link>
           
           {/* Desktop Navigation */}

@@ -26,6 +26,23 @@ const corsHeaders = {
 }
 
 // Penny's honest, grounded system prompt for a LOGGED-IN investor.
+// THE CLIENT-FACING PENNY SHARED NOTHING WITH THE OTHER TWO.
+//
+// penny-staff-chat and penny-public-chat both draw on ../_shared/penny. This one — the
+// Penny an actual paying client talks to inside their account — had its own prompt and
+// none of it: no industry knowledge, no covenant, no reasoning, no personality, and
+// CRUCIALLY no payment-destination guard.
+//
+// So the surface with the most at stake was the least protected. That is backwards.
+import {
+  PENNY_INDUSTRY_SENSE,
+  PENNY_COVENANT,
+  PENNY_PERSONALITY,
+  PENNY_REASONING,
+  containsPaymentDestination,
+  destinationRefusal,
+} from "../_shared/penny/doctrine.ts";
+
 const PENNY_SYSTEM_PROMPT = `You are Penny, the in-account guide at Access Your Place (AYP), by Set Up Your Place LLC. You help operators and investors build a furnished, flexible-rental business across every modality — short-term (STR), mid-term, corporate and employee housing, and shared / co-living arbitrage. You are warm, direct, and honest: a sharp operator talking to another operator, an AI who never claims to be human.
 
 ## What AYP is (frame things correctly)
@@ -112,6 +129,14 @@ AYP transactions run on Zelle, Cash App, wire transfer, and Bitcoin — not card
 - When you are handed library articles below, point to them by title; never invent others.
 - When a client asks about a specific community or property by name — a place where they have belongings, a pending or stalled setup, or an ongoing move — you may be handed its CURRENT client-safe status below. If it's there, share that note warmly and accurately as the latest word from the team, and don't speculate past it. If it isn't there, don't guess the status — tell them you'll check with the team and make sure someone follows up. You only ever see the client-safe note here, never internal operational detail.
 - You do NOT confirm payments, credit accounts, unlock deals, or send emails from this chat — the success team and the platform do that. Never say one of those happened unless it truly did; say what the next step is and who does it.
+
+${PENNY_PERSONALITY}
+
+${PENNY_REASONING}
+
+${PENNY_INDUSTRY_SENSE}
+
+${PENNY_COVENANT}
 
 Never claim to be human. You are Penny, an AI. Be helpful, be honest, be encouraging, and genuinely useful.`
 
@@ -637,6 +662,21 @@ ${deal}`
       // The guard appends an honest correction rather than let a false completion stand.
       assistantMessage = guardReply(assistantMessage, []).text
       if (!assistantMessage) assistantMessage = "I'm sorry, I couldn't generate a response. Please try again."
+
+      // THE DESTINATION GUARD, which this surface did not have.
+      //
+      // One wrong character in a payment destination sends a client's money somewhere
+      // unrecoverable, and both owners are blind and cannot catch it by looking. The staff
+      // and public surfaces have had this guard for a long time; the surface where an
+      // actual paying client asks "where do I send it" did not.
+      //
+      // It REPLACES the reply rather than appending to it — appending would leave the
+      // destination on screen with a warning underneath, which is worse than useless.
+      const leak = containsPaymentDestination(assistantMessage)
+      if (leak.leaked) {
+        console.error('ai-investor-chat destination_blocked', JSON.stringify(leak.kinds))
+        assistantMessage = destinationRefusal()
+      }
 
       // MEMORY (write): if the operator disclosed durable facts, enrich their memory in the
       // background so it never adds reply latency and never changes this answer. Records only real,

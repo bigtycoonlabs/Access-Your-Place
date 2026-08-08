@@ -40,7 +40,7 @@ export default function StaffLeadForge() {
       <div className="min-h-screen bg-[#080D18] flex items-center justify-center text-slate-300">
         <div className="text-center">
           <div className="w-8 h-8 border-4 border-blue-500 border-t-transparent rounded-full animate-spin mx-auto mb-3" />
-          <p className="text-sm">Loading LeadForge…</p>
+          <p className="text-sm">Loading Property Forge…</p>
         </div>
       </div>
     );
@@ -56,7 +56,7 @@ export default function StaffLeadForge() {
         <div className="mx-auto flex max-w-7xl items-center justify-between gap-3 px-4 py-3">
           <div className="min-w-0">
             <p className="text-xs font-semibold uppercase tracking-[0.18em] text-blue-300">Access Your Place Back Office</p>
-            <h1 className="truncate text-lg font-bold text-white">LeadForge Apollo CRM</h1>
+            <h1 className="truncate text-lg font-bold text-white">Property Forge</h1>
             <p className="truncate text-xs text-slate-400">Signed in as {displayName}</p>
           </div>
           <Button asChild variant="outline" size="sm" className="border-white/15 bg-white/5 text-white hover:bg-white/10 hover:text-white">
