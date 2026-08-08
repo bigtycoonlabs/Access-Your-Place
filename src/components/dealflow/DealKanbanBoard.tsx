@@ -173,7 +173,7 @@ function KanbanQuickAssign({
       // Try edge function
       try {
         await supabase.functions.invoke('manage-property-assignments', {
-          body: { action: 'assign', property_id: property.id, investor_id: selected.id, assigned_by: staffId, notes: `Quick-assigned from kanban by ${staffName || 'staff'}` }
+          body: { action: 'assign', staff_id: staffId, property_id: property.id, investor_id: selected.id, assigned_by: staffId, notes: `Quick-assigned from kanban by ${staffName || 'staff'}` }
         });
       } catch {
         // Fallback: direct insert

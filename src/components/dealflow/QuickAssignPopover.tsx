@@ -205,6 +205,7 @@ export function QuickAssignPopover({
       const { data, error } = await supabase.functions.invoke('manage-property-assignments', {
         body: {
           action: 'create',
+          staff_id: staffId,
           property_id: property.id,
           investor_id: selectedInvestor.id,
           assigned_by: staffName || 'Staff',

@@ -382,6 +382,7 @@ export function StaffPortfolioManager({ investorId, investorName, staffId, staff
       const { data, error } = await supabase.functions.invoke('manage-property-assignments', {
         body: {
           action: 'create',
+          staff_id: staffId,
           property_id: selectedDeal.id,
           investor_id: investorId,
           assigned_by: staffName || 'Staff',

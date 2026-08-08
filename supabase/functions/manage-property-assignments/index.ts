@@ -32,6 +32,48 @@ Deno.serve(async (req) => {
     const body = await req.json();
     const { action } = body;
 
+    // STAFF CHECK. This function had NONE.
+    //
+    // verify_jwt: true only means a valid key was presented, and the publishable key is a
+    // valid key that ships inside the front-end JavaScript. So every action here was
+    // reachable by anyone who opened the website:
+    //   create  - assign any property into any investor's portfolio, and send them email
+    //   update  - set status 'paid', which writes acquisition_fee_paid = true on the
+    //             property. Marking a deal PAID with a public key is a financial control
+    //             gap, not a permissions nicety.
+    //   delete  - remove an assignment and reset the property to available
+    //
+    // Mutating actions now require a staff_id that resolves to an ACTIVE staff member,
+    // checked server-side. Reads are left open because the front end lists assignments on
+    // staff screens that authenticate through a custom session, and tightening those needs
+    // the session work rather than a guess here.
+    const MUTATING = ['create', 'update', 'delete'];
+    if (MUTATING.includes(String(action))) {
+      const staffId = String(body.staff_id || body.assigned_by_id || '').trim();
+      if (!staffId) {
+        return new Response(JSON.stringify({
+          success: false,
+          error: 'A staff id is required for this action. If you are signed in and seeing this, sign out and back in — your session is not sending an id.',
+        }), { status: 401, headers: { 'Content-Type': 'application/json', ...corsHeaders } });
+      }
+      const who = await fetch(
+        `${supabaseUrl}/rest/v1/staff_users?id=eq.${encodeURIComponent(staffId)}&select=id,is_active&limit=1`,
+        { headers: { apikey: supabaseKey, Authorization: `Bearer ${supabaseKey}` } },
+      );
+      if (!who.ok) {
+        console.error('manage-property-assignments staff_lookup_failed', who.status);
+        return new Response(JSON.stringify({ success: false, error: 'Could not verify your account. Please try again.' }),
+          { status: 502, headers: { 'Content-Type': 'application/json', ...corsHeaders } });
+      }
+      const rows = await who.json().catch(() => []);
+      const staff = Array.isArray(rows) ? rows[0] : null;
+      if (!staff || staff.is_active === false) {
+        console.warn('manage-property-assignments rejected_non_staff', JSON.stringify({ staffId }));
+        return new Response(JSON.stringify({ success: false, error: 'Staff access required.' }),
+          { status: 403, headers: { 'Content-Type': 'application/json', ...corsHeaders } });
+      }
+    }
+
     const headers = {
       'Content-Type': 'application/json',
       'apikey': supabaseKey,

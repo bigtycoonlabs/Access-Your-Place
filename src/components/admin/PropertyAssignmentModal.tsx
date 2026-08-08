@@ -1,4 +1,5 @@
 import { useState, useEffect } from 'react';
+import { currentStaffId } from '@/lib/staffSession';
 
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter, DialogDescription } from '@/components/ui/dialog';
 import { Button } from '@/components/ui/button';
@@ -288,6 +289,7 @@ export function PropertyAssignmentModal({
       const { data, error } = await supabase.functions.invoke('manage-property-assignments', {
         body: {
           action: 'create',
+          staff_id: currentStaffId(),
           property_id: selectedProperty.id,
           investor_id: selectedInvestor.id,
           assigned_by: 'Staff',
@@ -305,6 +307,7 @@ export function PropertyAssignmentModal({
           await supabase.functions.invoke('manage-property-assignments', {
             body: {
               action: 'update',
+              staff_id: currentStaffId(),
               assignment_id: data.assignment.id,
               status: 'paid',
               payment_date: new Date().toISOString(),
