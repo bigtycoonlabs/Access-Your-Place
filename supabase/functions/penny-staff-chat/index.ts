@@ -1223,9 +1223,6 @@ const TOOLS = [
   {
     type: 'function',
     function: {
-      name: 'remember',  {
-    type: 'function',
-    function: {
       name: 'remember',
       description: "Keep something worth keeping across conversations. Use it when you learn a durable fact — how someone prefers to work, a constraint, something about a client or a landlord that whoever picks the file up next would want to know. about_type is staff (the person you are talking to) or investor / landlord / property / market, in which case pass about_id and about_name. Do NOT remember chatter, one-off details, or anything the person would be surprised you kept.",
       parameters: {
