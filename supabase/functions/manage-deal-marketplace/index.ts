@@ -443,13 +443,24 @@ serve(async (req) => {
       }
 
       case 'approve_listing': {
-        const { listing_id, staff_id, staff_name } = params
+        const { listing_id, staff_id, staff_name, force } = params
         if (!staff_id) throw new Error('A staff id is required to approve a listing.')
+        // THE BUYER IS TRUSTING US, so a listing cannot go live with the verification
+        // outstanding. The refusal names exactly what is missing rather than saying no.
+        // force exists for a staff member who knows something the checklist does not, and
+        // it is recorded in the note so the override is visible afterwards.
+        const { data: ready } = await supabase.rpc('ayp_listing_readiness', { p_listing_id: listing_id })
+        if (ready?.ready_to_sell !== true && force !== true) {
+          throw new Error(`Not ready to approve. ${ready?.explain || 'Verification is incomplete.'}`)
+        }
         const { data, error } = await supabase
           .from('deal_listings')
           .update({
             status: 'active', approved_at: new Date().toISOString(),
             last_updated_by_staff_id: staff_id, last_updated_by_staff_name: staff_name || null,
+            verification_notes: force === true
+              ? `APPROVED WITH VERIFICATION OUTSTANDING by ${staff_name || staff_id}: ${ready?.explain || ''}`
+              : undefined,
             updated_at: new Date().toISOString(),
           })
           .eq('id', listing_id).select().single()
@@ -734,10 +745,138 @@ serve(async (req) => {
       }
 
       case 'counter_offer': {
-        // Deliberately NOT implemented as a silent no-op. private_deal_offers has no
-        // amount or counter column, so a counter cannot be recorded without a schema
-        // change, and pretending otherwise would lose a real negotiation.
-        throw new Error('Counter offers are not supported yet — there is nowhere to record the counter amount. Use a note and contact the buyer directly.')
+        // Now real. private_deal_offers carries offer_amount, counter_amount, countered_by
+        // and a round number, so the history of a negotiation survives the conversation.
+        // STAFF ARE THE NEGOTIATOR — a counter records who handled it.
+        const { offer_id, amount, message, by, staff_id } = params
+        if (!staff_id) throw new Error('A staff id is required. Our team handles the negotiation.')
+        const { data, error } = await supabase.rpc('ayp_counter_offer', {
+          p_offer_id: offer_id, p_amount: amount, p_message: message ?? null,
+          p_by: by, p_staff_id: staff_id,
+        })
+        if (error) throw error
+        if (data?.ok === false) throw new Error(data.error)
+        return new Response(JSON.stringify(data),
+          { headers: { ...corsHeaders, 'Content-Type': 'application/json' } })
+      }
+
+      case 'get_listing_readiness': {
+        // One answer to "can this be sold yet", so the seller, the staff screen and Penny
+        // never disagree about what is outstanding.
+        const { listing_id } = params
+        const { data, error } = await supabase.rpc('ayp_listing_readiness', { p_listing_id: listing_id })
+        if (error) throw error
+        return new Response(JSON.stringify(data),
+          { headers: { ...corsHeaders, 'Content-Type': 'application/json' } })
+      }
+
+      case 'set_landlord_contact': {
+        // WE STILL SPEAK TO THE LANDLORD on a third-party sale. The seller tells us who to
+        // contact and how; without it we cannot verify, and a listing we cannot verify is
+        // one we cannot honestly sell.
+        const { listing_id, investor_id, name, phone, email, role, instructions, came_from_ayp } = params
+        if (!name || (!phone && !email) || !role) {
+          throw new Error('We need a name, a phone or email, and whether they are the owner, a property manager or a leasing office.')
+        }
+        const { data: l } = await supabase.from('deal_listings').select('seller_id').eq('id', listing_id).single()
+        if (!l || l.seller_id !== investor_id) throw new Error('That is not your listing.')
+        const { error } = await supabase.from('deal_listings').update({
+          landlord_contact_name: name, landlord_contact_phone: phone ?? null,
+          landlord_contact_email: email ?? null, landlord_contact_role: role,
+          landlord_contact_instructions: instructions ?? null,
+          came_from_ayp: came_from_ayp === true, updated_at: new Date().toISOString(),
+        }).eq('id', listing_id)
+        if (error) throw error
+        return new Response(JSON.stringify({
+          success: true,
+          note: came_from_ayp === true
+            ? 'Saved. We already know this landlord.'
+            : 'Saved. Because this operation did not come from us, we have never spoken to this landlord — the next step is a call between them and our acquisition team.',
+        }), { headers: { ...corsHeaders, 'Content-Type': 'application/json' } })
+      }
+
+      case 'request_landlord_meeting': {
+        // The seller sets up the introduction. Our acquisition team takes the call.
+        const { listing_id, investor_id, proposed_for, notes } = params
+        const { data: l } = await supabase.from('deal_listings')
+          .select('seller_id, landlord_contact_name, address:property_id').eq('id', listing_id).single()
+        if (!l || l.seller_id !== investor_id) throw new Error('That is not your listing.')
+        if (!l.landlord_contact_name) {
+          throw new Error('Tell us who to contact at the property first — we cannot arrange a call with nobody.')
+        }
+        const { error } = await supabase.from('deal_listings').update({
+          landlord_meeting_scheduled_for: proposed_for ?? null,
+          landlord_meeting_notes: notes ?? null,
+          updated_at: new Date().toISOString(),
+        }).eq('id', listing_id)
+        if (error) throw error
+        await supabase.from('staff_notifications').insert({
+          type: 'landlord_meeting_requested',
+          title: 'A seller has proposed a landlord call',
+          message: `Listing ${listing_id}${proposed_for ? ` — proposed for ${proposed_for}` : ''}. Acquisition team needs to attend.`,
+          data: { listing_id },
+        })
+        return new Response(JSON.stringify({ success: true,
+          note: 'Our acquisition team has been told. They will confirm the time with you.' }),
+          { headers: { ...corsHeaders, 'Content-Type': 'application/json' } })
+      }
+
+      case 'record_landlord_meeting': {
+        const { listing_id, staff_id, notes, landlord_confirmed } = params
+        if (!staff_id) throw new Error('A staff id is required — our team records this, not the seller.')
+        const { error } = await supabase.from('deal_listings').update({
+          landlord_meeting_completed_at: new Date().toISOString(),
+          landlord_meeting_notes: notes ?? null,
+          landlord_call_completed: landlord_confirmed === true,
+          landlord_call_date: new Date().toISOString(),
+          updated_at: new Date().toISOString(),
+        }).eq('id', listing_id)
+        if (error) throw error
+        return new Response(JSON.stringify({ success: true }),
+          { headers: { ...corsHeaders, 'Content-Type': 'application/json' } })
+      }
+
+      case 'confirm_documents_signed': {
+        // THE SUCCESS TEAM CONFIRMS DOCUMENTS ARE ACTUALLY SIGNED. Not the seller, not the
+        // buyer, and never inferred from a status change. Funds release depends on this,
+        // so it is a person putting their name to it.
+        const { listing_id, transaction_id, staff_id } = params
+        if (!staff_id) throw new Error('A staff id is required. The success team confirms this, nobody else.')
+        if (listing_id) {
+          await supabase.from('deal_listings').update({
+            verification_documents_signed: true,
+            verification_documents_signed_by: staff_id,
+            verification_documents_signed_at: new Date().toISOString(),
+          }).eq('id', listing_id)
+        }
+        if (transaction_id) {
+          await supabase.from('deal_transactions').update({
+            documents_signed_at: new Date().toISOString(),
+            status: 'documents_signed', updated_at: new Date().toISOString(),
+          }).eq('id', transaction_id)
+        }
+        return new Response(JSON.stringify({ success: true,
+          note: 'Recorded against your name. Funds can now be released.' }),
+          { headers: { ...corsHeaders, 'Content-Type': 'application/json' } })
+      }
+
+      case 'save_full_verification': {
+        // Everything the buyer is trusting us to check, in one place.
+        const { listing_id, staff_id, checks, notes } = params
+        if (!staff_id) throw new Error('A staff id is required.')
+        const { error } = await supabase.from('deal_listings').update({
+          verification_inventory: checks?.inventory ?? null,
+          verification_condition: checks?.condition ?? null,
+          verification_vendors: checks?.vendors ?? null,
+          verification_technology: checks?.technology ?? null,
+          verification_operating_data: checks?.operating_data ?? null,
+          verification_notes: notes ?? null,
+          last_updated_by_staff_id: staff_id, updated_at: new Date().toISOString(),
+        }).eq('id', listing_id)
+        if (error) throw error
+        const { data: readiness } = await supabase.rpc('ayp_listing_readiness', { p_listing_id: listing_id })
+        return new Response(JSON.stringify({ success: true, readiness }),
+          { headers: { ...corsHeaders, 'Content-Type': 'application/json' } })
       }
 
       default:
