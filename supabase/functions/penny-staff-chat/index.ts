@@ -110,6 +110,53 @@ async function listOpportunities(url: string, key: string) {
   };
 }
 
+// ---- money: quote a deal, check forge status, create a payment link ----
+//
+// Penny never does money maths in her head and never recites a destination. She calls
+// these, reads back what they return, and hands over a link.
+
+async function dealQuote(url: string, key: string, propertyId: string, investorId: string) {
+  const { ok, status, data } = await rpc(url, key, 'ayp_acquisition_quote', {
+    p_property_id: propertyId, p_investor_id: investorId,
+  });
+  if (!ok) {
+    console.error('penny-staff-chat rpc_quote', status, JSON.stringify(data).slice(0, 200));
+    return { error: `quote_failed_${status}` };
+  }
+  return data;
+}
+
+async function forgeStatus(url: string, key: string, investorId: string) {
+  const { ok, status, data } = await rpc(url, key, 'ayp_forge_status', { p_investor_id: investorId });
+  if (!ok) {
+    console.error('penny-staff-chat rpc_forge_status', status, JSON.stringify(data).slice(0, 200));
+    return { error: `read_failed_${status}` };
+  }
+  return data;
+}
+
+async function releaseProperty(url: string, key: string, investorId: string, propertyId: string, staffId: string) {
+  const { ok, status, data } = await rpc(url, key, 'ayp_release_property', {
+    p_investor_id: investorId, p_property_id: propertyId, p_staff_id: staffId || null, p_idempotency_key: null,
+  });
+  if (!ok) {
+    console.error('penny-staff-chat rpc_release', status, JSON.stringify(data).slice(0, 200));
+    return { error: `release_failed_${status}` };
+  }
+  return data;
+}
+
+async function paymentLink(url: string, key: string, investorId: string, purpose: string, propertyId: string | null, staffId: string) {
+  const { ok, status, data } = await rpc(url, key, 'penny_create_payment_request', {
+    p_investor_id: investorId, p_purpose: purpose, p_property_id: propertyId, p_staff_id: staffId || null,
+  });
+  if (!ok) {
+    console.error('penny-staff-chat rpc_payment_request', status, JSON.stringify(data).slice(0, 200));
+    return { error: `payment_link_failed_${status}` };
+  }
+  return data;
+}
+
 // ---- leads, moderation, portfolio ----
 //
 // The leads gap was the urgent one. /start and /list-your-property write to `leads`, and
@@ -747,6 +794,30 @@ async function execTool(name: string, args: any, ctx: Ctx): Promise<unknown> {
       }
       return await recordClosing(url, key, args, staffId, staffName);
     }
+    if (name === 'quote_deal') {
+      if (!args?.property_id || !args?.investor_id) return { error: 'property_id and investor_id required' };
+      return await dealQuote(url, key, String(args.property_id), String(args.investor_id));
+    }
+    if (name === 'forge_status') {
+      if (!args?.investor_id) return { error: 'investor_id required' };
+      return await forgeStatus(url, key, String(args.investor_id));
+    }
+    if (name === 'release_property') {
+      if (!args?.investor_id || !args?.property_id) return { error: 'investor_id and property_id required' };
+      if (args.confirmed !== true) {
+        return {
+          needs_confirmation: true,
+          action: 'release this property to them, using one of their 20',
+          instruction: 'Say which property, say it uses one of their releases and how many remain, and that they can negotiate it themselves at no further cost. Get a yes, then call again with confirmed true.',
+        };
+      }
+      return await releaseProperty(url, key, String(args.investor_id), String(args.property_id), staffId);
+    }
+    if (name === 'create_payment_link') {
+      if (!args?.investor_id || !args?.purpose) return { error: 'investor_id and purpose required' };
+      return await paymentLink(url, key, String(args.investor_id), String(args.purpose),
+        args.property_id ? String(args.property_id) : null, staffId);
+    }
     if (name === 'list_leads') return await listLeads(url, key, args?.limit ? Number(args.limit) : undefined);
     if (name === 'set_lead_status') {
       if (!args?.lead_id || !args?.status) return { error: 'lead_id and status required' };
@@ -942,6 +1013,54 @@ const TOOLS = [
         type: 'object',
         properties: { inquiry_id: { type: 'string', description: 'The inquiry_id from list_opportunities.' } },
         required: ['inquiry_id'], additionalProperties: false,
+      },
+    },
+  },
+  {
+    type: 'function',
+    function: {
+      name: 'quote_deal',
+      description: "What a deal costs this client and how much of it their credits can cover. ALWAYS use this instead of working it out yourself — you must never do money maths in your head. On a third-party sale credits only apply to our 20%; the seller's 80% is cash. Read the 'explain' sentence back.",
+      parameters: {
+        type: 'object',
+        properties: { property_id: { type: 'string' }, investor_id: { type: 'string' } },
+        required: ['property_id', 'investor_id'],
+      },
+    },
+  },
+  {
+    type: 'function',
+    function: {
+      name: 'forge_status',
+      description: "Whether a client has funded Property Forge, and how many of their 20 property releases are left.",
+      parameters: { type: 'object', properties: { investor_id: { type: 'string' } }, required: ['investor_id'] },
+    },
+  },
+  {
+    type: 'function',
+    function: {
+      name: 'release_property',
+      description: "Release a property to a funded client: full details AND the landlord's contact. Uses one of their 20. Confirm first, and tell them how many remain and that they can negotiate it themselves at no further cost.",
+      parameters: {
+        type: 'object',
+        properties: { investor_id: { type: 'string' }, property_id: { type: 'string' }, confirmed: { type: 'boolean' } },
+        required: ['investor_id', 'property_id'],
+      },
+    },
+  },
+  {
+    type: 'function',
+    function: {
+      name: 'create_payment_link',
+      description: "Create a payment page for THIS client and THIS reason, and give them the link in chat. purpose is forge_funding (the 1,250 that opens 20 releases), acquisition (needs property_id; credits are applied automatically), or negotiation_balance (the second 1,250, due only AFTER an acquisition manager has negotiated and the landlord has agreed to sign). If credits cover it entirely the tool says so and creates nothing. NEVER read out a payment destination — hand over the link; the page carries the rails and a copy button.",
+      parameters: {
+        type: 'object',
+        properties: {
+          investor_id: { type: 'string' },
+          purpose: { type: 'string', enum: ['forge_funding', 'acquisition', 'negotiation_balance'] },
+          property_id: { type: 'string' },
+        },
+        required: ['investor_id', 'purpose'],
       },
     },
   },
@@ -1335,6 +1454,19 @@ contacted, working, closed or not_a_fit once someone has actually been reached.
 THE DESK — buyer inquiries:
 list_opportunities, get_opportunity, update_opportunity_status, add_opportunity_note,
 record_closing.
+
+MONEY, CREDITS AND PAYMENT — you never do this arithmetic yourself:
+quote_deal tells you what a deal costs this client and how much their credits cover. On a
+third-party sale credits only apply to OUR 20%; the seller's 80% must be cash. Read the
+explanation it gives you back, do not recompute it.
+forge_status shows whether they have funded Property Forge and how many of their 20
+releases remain. release_property opens a property's full details AND the landlord's
+contact and uses one release — they can then negotiate it themselves at no further cost.
+create_payment_link makes a payment page for THIS person and THIS reason and gives them
+the link right here in the chat. Purposes: forge_funding, acquisition, negotiation_balance.
+The second 1,250 is due ONLY after an acquisition manager has negotiated and the landlord
+has agreed to sign — never before.
+If credits cover a deal entirely, the tool says so and creates no link. Say that plainly.
 
 CLIENT PORTFOLIO AND ACCESS:
 get_client_portfolio reads what a client actually holds — units, rent, monthly earnings.

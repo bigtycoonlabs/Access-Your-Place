@@ -203,3 +203,54 @@ test('GUARD: an id sitting next to a real destination still trips it', () => {
   );
   assert.equal(r.leaked, true, 'a real destination was masked by an id being present');
 });
+
+/* ---- a phone number is not a payment destination ---- */
+
+// Regression, reported repeatedly by the owner. A phone number is TEN DIGITS and the
+// digit-run rule flagged every one of them, so "what leads came in" returned a payment
+// refusal instead of the lead. Reading a staff member a client's phone number is Penny's
+// job; a guard that blocks it is broken, not cautious.
+test('GUARD: a client phone number does not trip it', () => {
+  const r = containsPaymentDestination('Rel came in through the website. Her number is 8304914125.');
+  assert.equal(r.leaked, false, `phone flagged as ${r.kinds.join(', ')}`);
+});
+
+test('GUARD: formatted and international phone numbers do not trip it', () => {
+  for (const n of ['(830) 491-4125', '830-491-4125', '+1 830 491 4125', '18304914125']) {
+    const r = containsPaymentDestination(`Call them on ${n} today.`);
+    assert.equal(r.leaked, false, `${n} flagged as ${r.kinds.join(', ')}`);
+  }
+});
+
+test('GUARD: a lead list with several phone numbers stays clean', () => {
+  const r = containsPaymentDestination(
+    'Three leads: Rel 8304914125, Dana 5125550143, Marcus 9195550188. All want a property.',
+  );
+  assert.equal(r.leaked, false);
+});
+
+// The other half — proving the gate did not open too far.
+test('GUARD: a digit run WITH payment language is still caught', () => {
+  for (const t of [
+    'the account number is 123456789012',
+    'routing 021000021 for the wire',
+    'send the money to 987654321098',
+    'deposit into 4400123456789',
+  ]) {
+    assert.equal(containsPaymentDestination(t).leaked, true, `missed: ${t}`);
+  }
+});
+
+test('GUARD: bitcoin is still caught with no payment words at all', () => {
+  assert.equal(
+    containsPaymentDestination('bc1qw508d6qejxtdg4y5r3zarvary0c5xw7kv8f3t4').leaked,
+    true,
+  );
+});
+
+test('GUARD: a phone in one sentence and a wire destination in another still trips', () => {
+  const r = containsPaymentDestination(
+    'Call Rel on 8304914125. Then wire it to account 123456789012.',
+  );
+  assert.equal(r.leaked, true, 'a real destination was masked by a phone being present');
+});

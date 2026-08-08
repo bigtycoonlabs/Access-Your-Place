@@ -319,7 +319,7 @@ does not run through us for those things.
 // stripped copy, where boundaries no longer exist — collapsing "bc1q exam ple"
 // into surrounding prose deletes the very \b the anchored pattern needs, so a
 // boundary-free variant is required or split destinations sail straight through.
-const DESTINATION_SHAPES: { name: string; anchored: RegExp; loose: RegExp }[] = [
+const DESTINATION_SHAPES: { name: string; anchored: RegExp; loose: RegExp; needsPaymentContext?: boolean }[] = [
   {
     // Bech32 BTC (bc1...). Deliberately loose on length: a truncated or
     // corrupted address is exactly what we are trying to catch.
@@ -336,11 +336,31 @@ const DESTINATION_SHAPES: { name: string; anchored: RegExp; loose: RegExp }[] = 
   },
   {
     // A run of 9+ digits: routing (9) and account (12) numbers.
+    //
+    // CONTEXT-GATED, and this is not a softening. A PHONE NUMBER IS TEN DIGITS. Penny's
+    // whole job includes reading a staff member a client's phone number, and this rule
+    // fired on every one of them — so asking "what leads came in" got a payment refusal
+    // instead of the lead. It happened repeatedly to the owner before it was traced.
+    //
+    // A bare digit run is not a payment destination. A digit run NEXT TO payment words is.
+    // Bitcoin shapes above stay unconditional because they identify themselves.
     name: 'account or routing number',
     anchored: /\b\d{9,}\b/,
     loose: /\d{9,}/,
+    needsPaymentContext: true,
   },
 ];
+
+// Words that turn a number into a destination. Checked within a window around the match,
+// not across the whole message: a reply that mentions Zelle in one paragraph and a phone
+// number in another is not reciting a destination.
+const PAYMENT_CONTEXT = /(account|routing|aba|swift|iban|wire|zelle|cash\s*app|cashtag|venmo|paypal|bitcoin|btc|wallet|send\s+(?:the\s+)?(?:money|funds|payment)|pay\s+(?:to|at)|deposit\s+(?:to|into)|transfer\s+to)/i;
+
+function hasPaymentContext(text: string, index: number, length: number): boolean {
+  const from = Math.max(0, index - 60);
+  const to = Math.min(text.length, index + length + 60);
+  return PAYMENT_CONTEXT.test(text.slice(from, to));
+}
 
 export interface DestinationLeak {
   leaked: boolean;
@@ -392,7 +412,21 @@ export function containsPaymentDestination(
     ' ',
   );
   const collapsed = withoutIds.replace(/[\s\-_.()]/g, '');
-  for (const { name, anchored, loose } of DESTINATION_SHAPES) {
+  for (const { name, anchored, loose, needsPaymentContext } of DESTINATION_SHAPES) {
+    if (needsPaymentContext) {
+      // Only a digit run sitting near payment language counts.
+      let hit = false;
+      for (const src of [withoutIds, collapsed]) {
+        const re = new RegExp(loose.source, 'g');
+        let m: RegExpExecArray | null;
+        while ((m = re.exec(src)) !== null) {
+          if (hasPaymentContext(src, m.index, m[0].length)) { hit = true; break; }
+        }
+        if (hit) break;
+      }
+      if (hit) kinds.add(name);
+      continue;
+    }
     // A base58 candidate made ONLY of hex characters is an identifier, not an
     // address: real Bitcoin addresses essentially always carry letters outside a-f.
     if (name === 'bitcoin address') {
