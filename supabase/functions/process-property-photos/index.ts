@@ -1,3 +1,13 @@
+// Repointed 6 August 2026 from ai.gateway.fastrouter.io to OpenAI directly.
+//
+// That gateway is NOT this company's — the owner confirmed it is leftover code — and it
+// carried the same GATEWAY_API_KEY as the payment gateway that was tombstoned the same
+// day. Every deal search, article and photo description sent through it went to a third
+// party nobody here controls.
+//
+// The gateway spoke the OpenAI chat-completions shape, so this is a base URL, an auth
+// header and a model swap. google/gemini-2.5-flash becomes gpt-4o, which is the model the
+// rest of this platform already runs on.
 const DATA_SCHEMA = 'prj_X-ZoVQv6LKXT';
 const originalFetch = globalThis.fetch;
 globalThis.fetch = (input: any, init: any = {}) => {
@@ -30,7 +40,7 @@ Deno.serve(async (req) => {
   try {
     const supabaseUrl = Deno.env.get('SUPABASE_URL')!;
     const supabaseKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!;
-    const gatewayKey = Deno.env.get('GATEWAY_API_KEY');
+    const gatewayKey = Deno.env.get('OPENAI_API_KEY');
     const supabase = createClient(supabaseUrl, supabaseKey);
 
     const { property_id, listing_url, photo_urls, auto_process } = await req.json();
@@ -97,11 +107,11 @@ async function scrapePhotos(url: string): Promise<string[]> {
 async function detectIdentifyingText(imageUrl: string, apiKey?: string): Promise<{hasText: boolean}> {
   if (!apiKey) return { hasText: false };
   try {
-    const response = await fetch('https://ai.gateway.fastrouter.io/api/v1/chat/completions', {
+    const response = await fetch('https://api.openai.com/v1/chat/completions', {
       method: 'POST',
-      headers: { 'Content-Type': 'application/json', 'X-API-Key': apiKey },
+      headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${apiKey}` },
       body: JSON.stringify({
-        model: 'google/gemini-2.5-flash',
+        model: 'gpt-4o',
         messages: [{ role: 'user', content: [
           { type: 'text', text: 'Does this property image contain visible: street address, house number, community name sign, apartment complex name, or identifying text? Reply YES or NO only.' },
           { type: 'image_url', image_url: { url: imageUrl } }

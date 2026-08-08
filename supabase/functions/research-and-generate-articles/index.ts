@@ -1,3 +1,13 @@
+// Repointed 6 August 2026 from ai.gateway.fastrouter.io to OpenAI directly.
+//
+// That gateway is NOT this company's — the owner confirmed it is leftover code — and it
+// carried the same GATEWAY_API_KEY as the payment gateway that was tombstoned the same
+// day. Every deal search, article and photo description sent through it went to a third
+// party nobody here controls.
+//
+// The gateway spoke the OpenAI chat-completions shape, so this is a base URL, an auth
+// header and a model swap. google/gemini-2.5-flash becomes gpt-4o, which is the model the
+// rest of this platform already runs on.
 const DATA_SCHEMA = 'prj_X-ZoVQv6LKXT';
 const originalFetch = globalThis.fetch;
 globalThis.fetch = (input: any, init: any = {}) => {
@@ -25,7 +35,7 @@ const corsHeaders = {
 const supabase = createClient(Deno.env.get('SUPABASE_URL')!, Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!);
 
 async function generateArticle(topic: any, retries = 3): Promise<any> {
-  const gatewayKey = Deno.env.get('GATEWAY_API_KEY');
+  const gatewayKey = Deno.env.get('OPENAI_API_KEY');
   if (!gatewayKey) throw new Error('Gateway API key not configured');
 
   const prompt = `Write a comprehensive, SEO-optimized blog article about: "${topic.title}"
@@ -46,11 +56,11 @@ Return ONLY the HTML content, no markdown.`;
 
   for (let attempt = 1; attempt <= retries; attempt++) {
     try {
-      const response = await fetch('https://ai.gateway.fastrouter.io/api/v1/chat/completions', {
+      const response = await fetch('https://api.openai.com/v1/chat/completions', {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json', 'X-API-Key': gatewayKey },
+        headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${gatewayKey}` },
         body: JSON.stringify({
-          model: 'google/gemini-2.5-flash',
+          model: 'gpt-4o',
           messages: [{ role: 'user', content: prompt }],
           temperature: 0.7,
           max_tokens: 4000

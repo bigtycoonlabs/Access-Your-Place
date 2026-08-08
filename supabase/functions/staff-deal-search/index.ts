@@ -1,3 +1,13 @@
+// Repointed 6 August 2026 from ai.gateway.fastrouter.io to OpenAI directly.
+//
+// That gateway is NOT this company's — the owner confirmed it is leftover code — and it
+// carried the same GATEWAY_API_KEY as the payment gateway that was tombstoned the same
+// day. Every deal search, article and photo description sent through it went to a third
+// party nobody here controls.
+//
+// The gateway spoke the OpenAI chat-completions shape, so this is a base URL, an auth
+// header and a model swap. google/gemini-2.5-flash becomes gpt-4o, which is the model the
+// rest of this platform already runs on.
 const DATA_SCHEMA = 'prj_X-ZoVQv6LKXT';
 const originalFetch = globalThis.fetch;
 globalThis.fetch = (input: any, init: any = {}) => {
@@ -38,7 +48,7 @@ Deno.serve(async (req) => {
 
     const supabaseUrl = Deno.env.get('SUPABASE_URL') || '';
     const supabaseKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY') || '';
-    const gatewayApiKey = Deno.env.get('GATEWAY_API_KEY') || '';
+    const gatewayApiKey = Deno.env.get('OPENAI_API_KEY') || '';
     const googleApiKey = Deno.env.get('GOOGLE_API_KEY') || '';
     const googleCx = Deno.env.get('GOOGLE_CX') || '';
 
@@ -132,14 +142,14 @@ Deno.serve(async (req) => {
         const locationParts = [city, state, zip_code].filter(function(x) { return x; });
         const location = locationParts.join(', ') || 'this area';
         
-        const aiRes = await fetch('https://ai.gateway.fastrouter.io/api/v1/chat/completions', {
+        const aiRes = await fetch('https://api.openai.com/v1/chat/completions', {
           method: 'POST',
           headers: { 
             'Content-Type': 'application/json', 
-            'X-API-Key': gatewayApiKey 
+            Authorization: `Bearer ${gatewayApiKey}` 
           },
           body: JSON.stringify({
-            model: 'google/gemini-2.5-flash',
+            model: 'gpt-4o',
             messages: [{
               role: 'user',
               content: 'Analyze ' + location + ' for short-term rental and co-living investment. Return ONLY valid JSON (no markdown code blocks): {"estimated_adr": number, "occupancy_rate": number (0-100), "coliving_rate": number (monthly per room), "competition_level": "low"|"medium"|"high", "market_score": number (1-10), "insights": ["insight1", "insight2", "insight3"], "best_strategy": "str"|"coliving"|"ltr", "risk_factors": ["risk1", "risk2"]}'
