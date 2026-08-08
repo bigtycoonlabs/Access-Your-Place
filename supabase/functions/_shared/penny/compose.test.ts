@@ -14,7 +14,7 @@ const landlord: ViewerContext = { surface: 'landlord', role: 'landlord' };
 test('every prompt carries identity, mission, values, and family', () => {
   for (const ctx of [visitor, unfunded, funded, staff, landlord]) {
     const p = composeSystemPrompt(ctx);
-    assert.match(p, /Penny 10\.3/);
+    assert.match(p, /Penny 11/);
     assert.match(p, /WHY THIS WORK MATTERS/);
     assert.match(p, /THE VALUES YOU HOLD/);
     assert.match(p, /THE FAMILY/);
@@ -99,7 +99,7 @@ test('public surface: fully aware of herself, executes nothing', () => {
 
   assert.match(p, /HOW YOU WORK ON THIS PAGE/);
   assert.match(p, /never invent an article/);
-  assert.match(p, /Penny 10\.3/); // identity still present
+  assert.match(p, /Penny 11/); // identity still present
   assert.match(p, /THE FAMILY/); // doctrine still present
 });
 

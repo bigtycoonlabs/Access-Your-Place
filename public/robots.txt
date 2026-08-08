@@ -79,9 +79,10 @@ Allow: /*.svg$
 Allow: /*.webp$
 
 # Sitemap location
+# sitemap.xml is an INDEX pointing at the two below. sitemap-deals.xml was listed here
+# and never existed - a robots.txt advertising a sitemap that 404s (or worse, returns the
+# SPA shell as this one did) wastes crawl budget and teaches Google the site is unreliable.
 Sitemap: https://accessyourplace.com/sitemap.xml
-Sitemap: https://accessyourplace.com/sitemap-articles.xml
-Sitemap: https://accessyourplace.com/sitemap-deals.xml
 
 # Host directive (for Yandex)
 Host: https://accessyourplace.com

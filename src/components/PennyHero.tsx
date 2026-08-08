@@ -21,7 +21,7 @@ const CAPABILITIES = [
 
 /**
  * PennyHero — the flagship crown at the top of Access Your Place.
- * Penny 10.3, our most intelligent model, framed as the acquisition guide.
+ * Penny 11, our most intelligent model, framed as the acquisition guide.
  * Self-contained; touches no auth or routing logic beyond a link into the portal.
  */
 export default function PennyHero() {
@@ -59,7 +59,7 @@ export default function PennyHero() {
           className="inline-flex items-center gap-2 rounded-full border border-[#d4a574]/40 bg-[#d4a574]/10 px-4 py-1.5 text-sm font-semibold tracking-wide text-[#e7c9a0]"
         >
           <Sparkles className="h-4 w-4" aria-hidden="true" />
-          Penny&nbsp;10.3
+          Penny&nbsp;11
           <span className="ml-1 inline-block h-2 w-2 animate-pulse rounded-full bg-[#7CFFB2]" aria-hidden="true" />
           <span className="sr-only">— live, our most intelligent model</span>
         </span>
@@ -68,14 +68,14 @@ export default function PennyHero() {
           id="penny-hero-heading"
           className="mt-6 text-4xl font-bold leading-tight text-white sm:text-5xl"
         >
-          Meet Penny — your <span className="text-[#d4a574]">acquisition guide.</span>
+          Find a rental arbitrage deal that <span className="text-[#d4a574]">actually pencils.</span>
         </h1>
 
         <p className="mx-auto mt-4 max-w-2xl text-lg leading-relaxed text-slate-300">
-          Our most intelligent model — coach, acquisition specialist, and research desk in one.
-          Hand her an address and she runs the real numbers. Tell her your idea and she builds the
-          operation, then finds the units that fit it. A human team negotiates and closes, so you
-          never cold-call a landlord — and she will tell you the truth when a deal does not pencil.
+          Give Penny an address and she runs the real numbers — hotel rates, occupancy, lodging
+          tax, local rules. Free, every time, whether you buy anything or not. Every deal on our
+          marketplace has had a human speak to the landlord first, so you are never cold-calling.
+          And when a deal does not work, she says so.
         </p>
 
         <div className="mx-auto mt-8 max-w-xl">
