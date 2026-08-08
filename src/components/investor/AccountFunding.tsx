@@ -13,9 +13,12 @@ import {
   Building2, TrendingUp, Gift
 } from 'lucide-react';
 
-const stripePromise = loadStripe('pk_live_51OJhJBHdGQpsHqInIzu7c6PzGPSH0yImD4xfpofvxvFZs0VFhPRXZCyEgYkkhOtBOXFWvssYASs851mflwQvjnrl00T6DbUwWZ', {
-  stripeAccount: 'acct_1SkzQdHCHxA6NXwy'
-});
+// Stripe retired 6 Aug 2026. The gateway these payments routed through
+// (stripe.gateway.fastrouter.io) is NOT this company's, confirmed by the owner, so a
+// card form here could have sent a client's money to a third party. Rails are Zelle,
+// wire transfer, Cash App and Bitcoin — Penny issues a payment link.
+// null means <Elements> never mounts a card field.
+const stripePromise = null;
 
 interface Props {
   investorId: string;
