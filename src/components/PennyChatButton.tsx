@@ -347,7 +347,7 @@ export function PennyChatButton({ userId, userName, userType }: PennyChatButtonP
         <button
           ref={floatingButtonRef}
           onClick={handleOpenChat}
-          className="fixed bottom-6 right-6 z-50 w-16 h-16 rounded-full shadow-lg hover:shadow-xl transition-all duration-300 flex items-center justify-center group focus:outline-none focus:ring-4 focus:ring-[#d4a574] focus:ring-offset-2"
+          className="min-h-[44px] fixed bottom-6 right-6 z-50 w-16 h-16 rounded-full shadow-lg hover:shadow-xl transition-all duration-300 flex items-center justify-center group focus:outline-none focus:ring-4 focus:ring-[#d4a574] focus:ring-offset-2"
           aria-label="Open Penny AI Chat Assistant. Penny is your AI-powered success manager who can help with property searches, investment questions, and acquisition support."
           aria-haspopup="dialog"
           aria-expanded={isOpen}
@@ -380,7 +380,7 @@ export function PennyChatButton({ userId, userName, userType }: PennyChatButtonP
             setIsMinimized(false);
             announceToScreenReader('Penny AI chat expanded');
           }}
-          className="w-full p-3 flex items-center justify-between bg-gradient-to-r from-[#1a365d] to-[#2d4a7c] text-white hover:opacity-90 transition-opacity focus:outline-none focus:ring-2 focus:ring-inset focus:ring-white"
+          className="min-h-[44px] w-full p-3 flex items-center justify-between bg-gradient-to-r from-[#1a365d] to-[#2d4a7c] text-white hover:opacity-90 transition-opacity focus:outline-none focus:ring-2 focus:ring-inset focus:ring-white"
           aria-label="Expand Penny AI chat window"
           aria-expanded="false"
           type="button"
@@ -448,7 +448,7 @@ export function PennyChatButton({ userId, userName, userType }: PennyChatButtonP
                 setShowHistory(!showHistory);
                 announceToScreenReader(showHistory ? 'Chat history hidden' : 'Showing chat history');
               }}
-              className="p-2 hover:bg-white/10 rounded-lg transition-colors focus:outline-none focus:ring-2 focus:ring-white/50"
+              className="min-h-[44px] p-2 hover:bg-white/10 rounded-lg transition-colors focus:outline-none focus:ring-2 focus:ring-white/50"
               aria-label={showHistory ? 'Hide chat history' : 'Show chat history'}
               aria-pressed={showHistory}
               type="button"
@@ -457,7 +457,7 @@ export function PennyChatButton({ userId, userName, userType }: PennyChatButtonP
             </button>
             <button
               onClick={startNewConversation}
-              className="p-2 hover:bg-white/10 rounded-lg transition-colors focus:outline-none focus:ring-2 focus:ring-white/50"
+              className="min-h-[44px] p-2 hover:bg-white/10 rounded-lg transition-colors focus:outline-none focus:ring-2 focus:ring-white/50"
               aria-label="Start new conversation"
               type="button"
             >
@@ -468,7 +468,7 @@ export function PennyChatButton({ userId, userName, userType }: PennyChatButtonP
                 setIsMinimized(true);
                 announceToScreenReader('Penny AI chat minimized');
               }}
-              className="p-2 hover:bg-white/10 rounded-lg transition-colors focus:outline-none focus:ring-2 focus:ring-white/50"
+              className="min-h-[44px] p-2 hover:bg-white/10 rounded-lg transition-colors focus:outline-none focus:ring-2 focus:ring-white/50"
               aria-label="Minimize chat window"
               type="button"
             >
@@ -480,7 +480,7 @@ export function PennyChatButton({ userId, userName, userType }: PennyChatButtonP
                 announceToScreenReader('Penny AI chat closed', 'assertive');
                 setTimeout(() => floatingButtonRef.current?.focus(), 100);
               }}
-              className="p-2 hover:bg-white/10 rounded-lg transition-colors focus:outline-none focus:ring-2 focus:ring-white/50"
+              className="min-h-[44px] p-2 hover:bg-white/10 rounded-lg transition-colors focus:outline-none focus:ring-2 focus:ring-white/50"
               aria-label="Close chat window"
               type="button"
             >
@@ -505,7 +505,7 @@ export function PennyChatButton({ userId, userName, userType }: PennyChatButtonP
                     <button
                       key={session.id}
                       onClick={() => loadSession(session)}
-                      className="w-full text-left p-3 rounded-lg border border-gray-200 hover:border-[#d4a574] hover:bg-[#d4a574]/5 transition-all focus:outline-none focus:ring-2 focus:ring-[#d4a574]"
+                      className="min-h-[44px] w-full text-left p-3 rounded-lg border border-gray-200 hover:border-[#d4a574] hover:bg-[#d4a574]/5 transition-all focus:outline-none focus:ring-2 focus:ring-[#d4a574]"
                       type="button"
                       aria-label={`Load conversation from ${new Date(session.updated_at).toLocaleDateString()} with ${session.messages?.length || 0} messages. First message: ${session.messages?.[0]?.content?.substring(0, 50) || 'New conversation'}`}
                     >
@@ -579,7 +579,7 @@ export function PennyChatButton({ userId, userName, userType }: PennyChatButtonP
                   <button
                     key={idx}
                     onClick={() => sendMessage(question)}
-                    className="w-full text-left p-3 rounded-lg border border-gray-200 hover:border-[#d4a574] hover:bg-[#d4a574]/5 transition-all text-sm text-gray-700 focus:outline-none focus:ring-2 focus:ring-[#d4a574]"
+                    className="min-h-[44px] w-full text-left p-3 rounded-lg border border-gray-200 hover:border-[#d4a574] hover:bg-[#d4a574]/5 transition-all text-sm text-gray-700 focus:outline-none focus:ring-2 focus:ring-[#d4a574]"
                     type="button"
                     aria-label={`Ask Penny: ${question}`}
                   >
