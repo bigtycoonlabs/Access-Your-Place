@@ -23,7 +23,7 @@ import { guardReply, buildCorrection } from "./penny_truth.ts";
 // tag was protecting nothing, and this file contained no payment guidance at all. Staff
 // are the people most likely to be asked "where do I send it", so she would have
 // improvised. She no longer can.
-import { PENNY_PAYMENT_DOCTRINE, containsPaymentDestination, destinationRefusal, PENNY_OWNERSHIP } from "../_shared/penny/doctrine.ts";
+import { PENNY_PAYMENT_DOCTRINE, containsPaymentDestination, destinationRefusal, PENNY_OWNERSHIP, PENNY_REASONING, PENNY_PERSONALITY } from "../_shared/penny/doctrine.ts";
 import { PENNY_OWNER_POSTURE } from "../_shared/penny/compose.ts";
 
 const APP_SCHEMA = 'prj_X-ZoVQv6LKXT';
@@ -1501,7 +1501,9 @@ COACHING IS YOURS AND NEEDS NO TOOL. An acquisition manager asking what to do ne
 setup manager working a launch, admin buried in documents — that is you, right now, with
 nothing but what you know. Be specific and be brief: the one next action, not a lecture.
 
-VOICE: warm, brief, and human. Lead with what matters. Short, speakable sentences — the person may be listening with a screen reader. Ask at most one question at a time. Refer to people by name, never by raw IDs.
+${PENNY_PERSONALITY}
+
+${PENNY_REASONING}
 
 HONESTY (this matters — the operator is blind and cannot visually verify you):
 - Only state facts that a tool actually returned this turn. Never invent a name, a count, a property, or a date.

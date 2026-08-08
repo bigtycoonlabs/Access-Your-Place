@@ -37,28 +37,26 @@ interface Brief {
 }
 
 // One briefing section, rendered only when it has something in it.
-function BriefBlock({
-  title, section, render,
-}: {
-  title: string;
-  section?: BriefSection;
-  render: (i: BriefItem) => string;
-}) {
-  if (!section || section.count === 0) return null;
+// The briefing used to render four stacked full-width cards, each listing raw strings.
+// On a phone that was a wall of text that pushed the chat off screen entirely, and the
+// owner called it messy. He was right, and it was worse than untidy: it competed with
+// Penny instead of feeding her.
+//
+// Now it is one scannable row of counts. Each is a BUTTON that asks Penny about it, so the
+// panel becomes a way IN to the conversation rather than a second, worse version of it.
+// The detail lives where it belongs — with the person who can reason about it.
+function CountChip({
+  label, count, onAsk,
+}: { label: string; count: number; onAsk: () => void }) {
+  if (!count) return null;
   return (
-    <section aria-label={title} className="mt-4 rounded-xl border border-slate-200 bg-white p-4">
-      <h3 className="font-bold text-slate-800">
-        {title} <span className="text-slate-400 font-normal">({section.count})</span>
-      </h3>
-      <ul className="mt-2 space-y-2">
-        {section.items.map((i, idx) => (
-          <li key={i.id || idx} className="text-sm text-slate-700">
-            {render(i)}
-            {i.when ? <span className="text-slate-400"> · {i.when}</span> : null}
-          </li>
-        ))}
-      </ul>
-    </section>
+    <button
+      type="button"
+      onClick={onAsk}
+      className="min-h-[44px] rounded-full border border-slate-300 bg-white px-4 text-sm text-slate-800 hover:border-slate-500"
+    >
+      <span className="font-semibold">{count}</span> {label}
+    </button>
   );
 }
 
@@ -75,6 +73,8 @@ export function PennyConsole({ staffSession, onOpenDashboard }: { staffSession: 
 
   const [brief, setBrief] = useState<Brief | null>(null);
   const [loading, setLoading] = useState(true);
+  // A question queued by tapping a count chip. Handed to the chat, which sends it.
+  const [ask, setAsk] = useState('');
 
   useEffect(() => {
     let alive = true;
@@ -111,32 +111,20 @@ export function PennyConsole({ staffSession, onOpenDashboard }: { staffSession: 
       </section>
 
       {!loading && (
-        <>
-          <BriefBlock
-            title="Where I need you"
-            section={s.waiting_on_you}
-            render={(i) => `${i.who}${i.user_type ? ` (${i.user_type})` : ''} — ${i.summary}`}
-          />
-          <BriefBlock
-            title="New opportunities"
-            section={s.opportunities}
-            render={(i) => `${i.who} — ${i.kind}${i.detail ? `: ${i.detail}` : ''}`}
-          />
-          <BriefBlock
-            title="New landlord alerts"
-            section={s.landlord_alerts}
-            render={(i) => `${i.who}${i.detail ? ` — ${i.detail}` : ''}`}
-          />
-          <BriefBlock
-            title="Pending"
-            section={s.pending}
-            render={(i) => `${i.title}${i.message ? ` — ${i.message}` : ''}`}
-          />
-        </>
+        <nav aria-label="What is waiting" className="mt-3 flex flex-wrap gap-2">
+          <CountChip label="waiting on you" count={s.waiting_on_you?.count || 0}
+            onAsk={() => setAsk('What is waiting on me right now?')} />
+          <CountChip label="opportunities" count={s.opportunities?.count || 0}
+            onAsk={() => setAsk('Show me the open opportunities.')} />
+          <CountChip label="landlord alerts" count={s.landlord_alerts?.count || 0}
+            onAsk={() => setAsk('What are the new landlord alerts?')} />
+          <CountChip label="pending" count={s.pending?.count || 0}
+            onAsk={() => setAsk('What is pending?')} />
+        </nav>
       )}
 
-      <div className="mt-6">
-        <PennyStaffChat staffSession={staffSession} />
+      <div className="mt-4">
+        <PennyStaffChat staffSession={staffSession} ask={ask} onAsked={() => setAsk('')} />
       </div>
 
       {onOpenDashboard && (

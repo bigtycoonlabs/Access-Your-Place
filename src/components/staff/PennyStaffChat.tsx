@@ -11,8 +11,32 @@ interface StaffLite {
 
 type Msg = { role: 'user' | 'assistant'; content: string };
 
-const OPENER =
-  'I\'m right here. Tell me what you\'d like to do — or say "show my opportunities" and I\'ll pull them up.';
+// Penny opened with the same sentence every single time. A colleague who greets you with
+// an identical scripted line every morning stops reading as a person and starts reading as
+// a kiosk — and the owner said so.
+//
+// These vary, and more importantly they OPEN DIFFERENTLY: some offer, some ask, some just
+// get out of the way. Nothing here claims to know anything — the honest version of variety
+// is tone, never invented facts.
+const OPENERS = [
+  "Morning. What are we doing first?",
+  "Right — where do you want to start?",
+  "I'm here. What's on your mind?",
+  "Ready when you are.",
+  "What do you need?",
+  "Go ahead — I'm listening.",
+  "What's first today?",
+  "Tell me where you want to dig in.",
+];
+
+// Seeded on the hour so it stays stable across a re-render but changes through the day.
+// Random per render would make the greeting flicker, which is worse than repetition.
+function pickOpener(seed: string): string {
+  let h = 0;
+  const key = seed + new Date().toISOString().slice(0, 13);
+  for (let i = 0; i < key.length; i++) h = (h * 31 + key.charCodeAt(i)) >>> 0;
+  return OPENERS[h % OPENERS.length];
+}
 
 /**
  * Penny's staff agent chat. Posts the running conversation to the
@@ -21,7 +45,16 @@ const OPENER =
  * accessible-first: the log is a polite live region, every turn is labelled for
  * screen readers, Enter sends, and the send target meets 44px.
  */
-export function PennyStaffChat({ staffSession }: { staffSession: StaffLite | null }) {
+export function PennyStaffChat({
+  staffSession,
+  ask,
+  onAsked,
+}: {
+  staffSession: StaffLite | null;
+  /** A question queued from the briefing chips. Sent as if the person typed it. */
+  ask?: string;
+  onAsked?: () => void;
+}) {
   const staffId = staffSession?.id || '';
   const staffName = staffSession?.name || staffSession?.first_name || staffSession?.email || 'Staff';
 
@@ -36,7 +69,9 @@ export function PennyStaffChat({ staffSession }: { staffSession: StaffLite | nul
   const identityMissing = !staffId;
   const idTail = staffId ? staffId.slice(-6) : '';
 
-  const [messages, setMessages] = useState<Msg[]>([{ role: 'assistant', content: OPENER }]);
+  const [messages, setMessages] = useState<Msg[]>(
+    () => [{ role: 'assistant', content: pickOpener(staffSession?.id || 'anon') }],
+  );
   const [input, setInput] = useState('');
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState('');
@@ -89,13 +124,28 @@ export function PennyStaffChat({ staffSession }: { staffSession: StaffLite | nul
     announce('Stopped.', true);
   }
 
+  // Fires when the briefing hands over a question. Guarded on busy so a tap during a
+  // turn queues rather than colliding with it.
+  useEffect(() => {
+    if (ask && !busy) {
+      void sendText(ask);
+      onAsked?.();
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [ask]);
+
   async function send() {
     const text = input.trim();
+    if (!text || busy) return;
+    setInput('');
+    await sendText(text);
+  }
+
+  async function sendText(text: string) {
     if (!text || busy) return;
     setError('');
     const next: Msg[] = [...messages, { role: 'user', content: text }];
     setMessages(next);
-    setInput('');
     setBusy(true);
     setProgress('');
     setSpoken('');

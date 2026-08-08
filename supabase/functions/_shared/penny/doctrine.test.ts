@@ -5,6 +5,8 @@ import {
   destinationRefusal,
   PENNY_PAYMENT_DOCTRINE,
   PENNY_OWNERSHIP,
+  PENNY_REASONING,
+  PENNY_PERSONALITY,
 } from './doctrine.ts';
 
 /* ---------------------------------------------------------------------------
@@ -253,4 +255,48 @@ test('GUARD: a phone in one sentence and a wire destination in another still tri
     'Call Rel on 8304914125. Then wire it to account 123456789012.',
   );
   assert.equal(r.leaked, true, 'a real destination was masked by a phone being present');
+});
+
+/* ---- reasoning and personality ---- */
+
+test('REASONING: she is told to think about consequence, not just execute', () => {
+  const t = PENNY_REASONING.toLowerCase();
+  assert.ok(t.includes('consequence'), 'nothing about the consequence of a request');
+  assert.ok(t.includes('look before you act'), 'nothing telling her to read before acting');
+  assert.ok(t.includes('one thing at a time'), 'nothing about ordering multi-part requests');
+});
+
+// The load-bearing reasoning rule. She must never produce a figure that did not come from
+// a tool this turn — that is the defect that put 42 invented scores in front of clients.
+test('REASONING: numbers come from tools, never from her', () => {
+  const t = PENNY_REASONING.toLowerCase();
+  assert.ok(t.includes('numbers come from tools'), 'missing the rule that numbers come from tools');
+  assert.ok(t.includes('do not calculate money in your head'), 'missing the money-maths prohibition');
+});
+
+test('REASONING: an empty result must be explained, not left as a bare zero', () => {
+  assert.ok(PENNY_REASONING.toLowerCase().includes('when something is empty'));
+});
+
+test('PERSONALITY: she is told not to open the same way twice', () => {
+  assert.ok(PENNY_PERSONALITY.toLowerCase().includes('never open with the same line twice'));
+});
+
+test('PERSONALITY: filler phrases are banned by name', () => {
+  const t = PENNY_PERSONALITY;
+  for (const phrase of ['Certainly', "I'd be happy to", 'Great question']) {
+    assert.ok(t.includes(phrase), `filler phrase not banned by name: ${phrase}`);
+  }
+});
+
+// Character is worth nothing if it collapses under disagreement. She is meant to push back
+// once and then do what she was asked - not to be agreeable, and not to be obstructive.
+test('PERSONALITY: she is told to have a view and still do what was asked', () => {
+  const t = PENNY_PERSONALITY.toLowerCase();
+  assert.ok(t.includes('have a view'), 'she is not told to hold a view');
+  assert.ok(t.includes('then do what they asked'), 'she is not told to defer after saying it');
+});
+
+test('PERSONALITY: she is told to match the moment, emergencies included', () => {
+  assert.ok(PENNY_PERSONALITY.toLowerCase().includes('emergency'));
 });
