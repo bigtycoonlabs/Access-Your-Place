@@ -152,6 +152,19 @@ async function decideArticle(url: string, key: string, id: string, approve: bool
   return data;
 }
 
+async function republishArticle(url: string, key: string, draftId: string, staffId: string) {
+  const { ok, status, data } = await rpc(url, key, 'penny_republish_article', {
+    p_draft_id: draftId, p_staff_id: staffId || null, p_force: false,
+  });
+  if (!ok) {
+    console.error('penny-staff-chat rpc_republish', status, JSON.stringify(data).slice(0, 200));
+    return { error: 'republish_failed', http: status };
+  }
+  // The RPC refuses when the rewrite carries unsourced claims and names them. Pass that
+  // straight through — it is the whole point of the guard.
+  return data;
+}
+
 async function writeArticle(url: string, key: string, a: any, staffId: string) {
   const res = await fetch(`${url}/functions/v1/penny-write-article`, {
     method: 'POST',
@@ -912,6 +925,17 @@ async function execTool(name: string, args: any, ctx: Ctx): Promise<unknown> {
       }
       return await recordClosing(url, key, args, staffId, staffName);
     }
+    if (name === 'republish_article') {
+      if (!args?.draft_id) return { error: 'draft_id required' };
+      if (args.confirmed !== true) {
+        return {
+          needs_confirmation: true,
+          action: 'replace the live article with the rewrite',
+          instruction: 'Say which article, that it keeps the same web address, and that the old text is archived and can be restored. Get a yes, then call again with confirmed true.',
+        };
+      }
+      return await republishArticle(url, key, String(args.draft_id), staffId);
+    }
     if (name === 'articles_needing_work') {
       return await articlesNeedingWork(url, key, args?.limit ? Number(args.limit) : undefined);
     }
@@ -1166,6 +1190,21 @@ const TOOLS = [
         type: 'object',
         properties: { inquiry_id: { type: 'string', description: 'The inquiry_id from list_opportunities.' } },
         required: ['inquiry_id'], additionalProperties: false,
+      },
+    },
+  },
+  {
+    type: 'function',
+    function: {
+      name: 'republish_article',
+      description: "Replace a live article with your rewrite of it. Keeps the SAME web address, so its search ranking and any links to it survive, and archives the old text so it can be restored. REFUSES if the rewrite carries claims you could not source — those go to a person instead, and it tells you which claims. Confirm with the staff member first.",
+      parameters: {
+        type: 'object',
+        properties: {
+          draft_id: { type: 'string', description: 'The rewrite draft, from articles_awaiting_review.' },
+          confirmed: { type: 'boolean' },
+        },
+        required: ['draft_id'],
       },
     },
   },
@@ -1728,6 +1767,18 @@ can act on that and lose money.
 write_article drafts a new one, or rewrites an existing one if you pass article_id. IT DOES
 NOT PUBLISH. It saves as a draft for a human, and it refuses outright rather than writing
 rules or rates with no sources. Say that plainly; never imply something went live.
+republish_article replaces a live article with your rewrite, at the SAME web address so
+its search position and inbound links survive, archiving the old text so it can be put
+back. It REFUSES when the rewrite carries anything you could not source, and names the
+claim. That refusal is not an obstacle to work around — it is the guard that stops us
+republishing another invented permit fee.
+
+THE AUDIT LOOP, when someone asks you to go through the library: call
+articles_needing_work, take the worst, write_article with its article_id to rewrite it,
+then republish_article. Clean ones go straight back up. Ones with unsourced claims stop and
+wait for a person, and you say which claims and why. Work through them one at a time and
+report what you actually did, never a total you did not verify.
+
 articles_awaiting_review is what is sitting with a human. When a staff member asks what
 needs reviewing, LEAD WITH ANYTHING CARRYING UNSOURCED CLAIMS and say how many.
 decide_article approves — which publishes publicly — or sends it back. That is a staff
