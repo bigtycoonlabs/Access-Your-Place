@@ -1,5 +1,6 @@
 import React, { useState, useRef, useEffect } from 'react';
 import { supabase, SUPABASE_URL, SUPABASE_ANON_KEY } from '@/lib/supabase';
+import * as XLSX from 'xlsx';
 import { playPennyChime } from '@/lib/pennyChime';
 
 interface StaffLite {
@@ -78,6 +79,12 @@ export function PennyStaffChat({
   const [progress, setProgress] = useState('');
   const [spoken, setSpoken] = useState('');
   const [live, setLive] = useState('');
+  // Attachments staged for the next message. Photos go to Penny as images; documents are
+  // read to text in the browser so nothing is uploaded anywhere just to be read.
+  const [photos, setPhotos] = useState<{ name: string; dataUrl: string }[]>([]);
+  const [docs, setDocs] = useState<{ name: string; text: string }[]>([]);
+  const [reading, setReading] = useState('');
+  const fileRef = useRef<HTMLInputElement>(null);
   const logRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
@@ -134,6 +141,62 @@ export function PennyStaffChat({
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [ask]);
 
+  // Reads a file to text IN THE BROWSER. Nothing is uploaded to storage just so Penny can
+  // read it — a spreadsheet of client records should not be sitting in a bucket because
+  // someone wanted a summary.
+  async function readDocument(file: File): Promise<string> {
+    const name = file.name.toLowerCase();
+    if (name.endsWith('.xlsx') || name.endsWith('.xls')) {
+      const buf = await file.arrayBuffer();
+      const wb = XLSX.read(buf, { type: 'array' });
+      // Every sheet, named, with its row count — Penny is told to say what she received,
+      // and she cannot do that from a wall of undifferentiated cells.
+      return wb.SheetNames.map((sheet) => {
+        const rows = XLSX.utils.sheet_to_json(wb.Sheets[sheet], { header: 1, blankrows: false }) as unknown[][];
+        const body = rows.slice(0, 200).map((r) => r.join(' | ')).join('\n');
+        return `### SHEET: ${sheet} (${rows.length} rows)\n${body}${rows.length > 200 ? `\n… ${rows.length - 200} more rows not shown` : ''}`;
+      }).join('\n\n');
+    }
+    if (name.endsWith('.csv') || name.endsWith('.txt') || name.endsWith('.md') || name.endsWith('.json')) {
+      return await file.text();
+    }
+    // Honest refusal beats a broken parse that produces confident nonsense.
+    return `[${file.name} could not be read here. Penny can read spreadsheets (.xlsx, .xls), CSV, text, markdown and JSON. For a PDF or Word file, export or paste the text.]`;
+  }
+
+  async function onFiles(list: FileList | null) {
+    if (!list || !list.length) return;
+    setError('');
+    const files = Array.from(list).slice(0, 10);
+    setReading(`Reading ${files.length} file${files.length === 1 ? '' : 's'}…`);
+    try {
+      for (const f of files) {
+        if (f.type.startsWith('image/')) {
+          if (f.size > 8 * 1024 * 1024) {
+            setError(`${f.name} is larger than 8MB and was skipped.`);
+            continue;
+          }
+          const dataUrl: string = await new Promise((res, rej) => {
+            const r = new FileReader();
+            r.onload = () => res(String(r.result));
+            r.onerror = () => rej(new Error('read failed'));
+            r.readAsDataURL(f);
+          });
+          setPhotos((p) => [...p, { name: f.name, dataUrl }].slice(0, 8));
+        } else {
+          const text = await readDocument(f);
+          setDocs((d) => [...d, { name: f.name, text }]);
+        }
+      }
+      announce('Attached. Say what you want done with them.', true);
+    } catch {
+      setError('One of those files could not be read. Nothing was attached from it.');
+    } finally {
+      setReading('');
+      if (fileRef.current) fileRef.current.value = '';
+    }
+  }
+
   async function send() {
     const text = input.trim();
     if (!text || busy) return;
@@ -152,6 +215,11 @@ export function PennyStaffChat({
     setLive('');
     announceAt.current = 0;
 
+    // Cleared as soon as they are sent, so the next message does not silently resend the
+    // same photos - which would cost money and confuse her.
+    const sentPhotos = photos.length;
+    const sentDocs = docs.length;
+
     const controller = new AbortController();
     abortRef.current = controller;
 
@@ -160,7 +228,15 @@ export function PennyStaffChat({
         method: 'POST',
         signal: controller.signal,
         headers: { 'Content-Type': 'application/json', apikey: SUPABASE_ANON_KEY, Authorization: `Bearer ${SUPABASE_ANON_KEY}` },
-        body: JSON.stringify({ messages: next, staff_id: staffId, staff_name: staffName, stream: true }),
+        body: JSON.stringify({
+          messages: next,
+          staff_id: staffId,
+          staff_name: staffName,
+          stream: true,
+          images: photos.map((p) => p.dataUrl),
+          document_text: docs.map((d) => `--- ${d.name} ---\n${d.text}`).join('\n\n') || undefined,
+          document_name: docs.map((d) => d.name).join(', ') || undefined,
+        }),
       });
       if (!res.ok || !res.body) throw new Error(`stream ${res.status}`);
 
@@ -233,6 +309,7 @@ export function PennyStaffChat({
       setBusy(false);
       setProgress('');
       setLive('');
+      if (sentPhotos || sentDocs) { setPhotos([]); setDocs([]); }
     }
   }
 
@@ -304,6 +381,46 @@ export function PennyStaffChat({
         )}
       </div>
 
+      {/* ATTACHMENTS, above the composer where the person is looking. Announced as a list
+          so a screen reader gives the count before the contents. */}
+      {(photos.length > 0 || docs.length > 0 || reading) && (
+        <div className="mt-3 rounded-md border border-slate-200 bg-slate-50 px-3 py-2">
+          <p role="status" aria-live="polite" className="text-sm font-medium text-slate-800">
+            {reading
+              ? reading
+              : `Attached: ${photos.length} photo${photos.length === 1 ? '' : 's'}, ${docs.length} file${docs.length === 1 ? '' : 's'}. Say what you want done with them.`}
+          </p>
+          {(photos.length > 0 || docs.length > 0) && (
+            <ul className="mt-1 space-y-1">
+              {photos.map((f, i) => (
+                <li key={`p${i}`} className="flex items-center justify-between gap-2 text-sm text-slate-700">
+                  <span className="truncate">Photo {i + 1}: {f.name}</span>
+                  <button
+                    type="button"
+                    onClick={() => setPhotos((x) => x.filter((_, j) => j !== i))}
+                    className="min-h-[44px] shrink-0 px-2 text-sm text-slate-600 underline"
+                  >
+                    Remove photo {i + 1}
+                  </button>
+                </li>
+              ))}
+              {docs.map((f, i) => (
+                <li key={`d${i}`} className="flex items-center justify-between gap-2 text-sm text-slate-700">
+                  <span className="truncate">File: {f.name}</span>
+                  <button
+                    type="button"
+                    onClick={() => setDocs((x) => x.filter((_, j) => j !== i))}
+                    className="min-h-[44px] shrink-0 px-2 text-sm text-slate-600 underline"
+                  >
+                    Remove {f.name}
+                  </button>
+                </li>
+              ))}
+            </ul>
+          )}
+        </div>
+      )}
+
       {/* PROGRESS AND STOP, directly above the composer.
           These used to render at the TOP of the panel, above a max-h-[50vh] scrolling
           log — so on a phone they were off-screen and the owner reported there was no
@@ -328,6 +445,24 @@ export function PennyStaffChat({
         <label htmlFor="penny-staff-input" className="sr-only">
           Message Penny
         </label>
+        {/* A real labelled input, not an icon with a click handler. Staff could not send
+            Penny a photo at all before this, which made her no use to the person standing
+            in the unit holding a phone. */}
+        <label
+          htmlFor="penny-attach"
+          className="flex min-h-[44px] cursor-pointer items-center rounded-md border border-slate-300 px-3 text-sm font-medium text-slate-800"
+        >
+          Attach
+        </label>
+        <input
+          ref={fileRef}
+          id="penny-attach"
+          type="file"
+          multiple
+          accept="image/*,.csv,.txt,.md,.json,.xlsx,.xls"
+          className="sr-only"
+          onChange={(e) => onFiles(e.target.files)}
+        />
         <textarea
           id="penny-staff-input"
           value={input}

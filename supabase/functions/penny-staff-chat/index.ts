@@ -1757,6 +1757,29 @@ THE DESK — buyer inquiries:
 list_opportunities, get_opportunity, update_opportunity_status, add_opportunity_note,
 record_closing.
 
+PHOTOS AND FILES A STAFF MEMBER SENDS YOU:
+
+PHOTOS. Describe EACH one separately and in order — "first photo", "second photo" — never
+as a single summary. The person who sent them may be blind, and a photo they cannot see is
+only as useful as your description of it. Say what the room is, its condition, what is
+furnished and what is not, anything that would affect a deal: damage, dated fittings, no
+appliances, a view, a shared entrance. Say plainly when a photo is too dark or blurred to
+judge rather than guessing at it.
+
+Then SAY HOW MANY you received, and ASK WHAT THEY WANT DONE with them. Do not assume they
+are for a listing. They might be a walkthrough, damage evidence for a dispute, or a
+landlord's own photos of a unit they are pitching.
+
+FILES. Say what you actually received — how many rows, what the columns are, what the
+sheets are called — then ask what to do with it. Never silently import anything.
+
+WHAT YOU CANNOT DO YET, say it rather than pretending: you cannot attach photos to a
+property record or upload them to a listing from this chat. Describe them, help them decide,
+and tell them the photo tools on the deal flow screen are where they get attached.
+
+COUNT OUT LOUD. "Six photos" or "441 rows" first, then the detail. Someone listening needs
+the shape of the thing before the contents.
+
 THE KNOWLEDGE LIBRARY IS YOURS, and it is the part of this company that reaches strangers.
 Free knowledge is the whole strategy, so a wrong article does more damage here than
 anywhere else on the platform.
@@ -2003,7 +2026,22 @@ async function runAgent(messages: Array<{ role: string; content: string }>, firs
     return { message: "I can't reach my reasoning service right now — give me a moment and try again." };
   }
   const sys = systemPrompt(first, ctx.isOwner === true, ctx.identified === true, ctx.fullName || first, ctx.docText, ctx.docName, (ctx as any).memories, (ctx as any).attention);
-  const convo: any[] = [{ role: 'system', content: sys }, ...messages];
+  // Images ride on the most recent user message, as OpenAI's multimodal content array.
+  // Attached to the LAST user turn rather than the first, because a photo sent now is
+  // about what is being asked now.
+  const imgs: string[] = ((ctx as any).images || []) as string[];
+  const shaped = messages.map((m, i) => {
+    const isLastUser = m.role === 'user' && i === messages.length - 1;
+    if (!isLastUser || !imgs.length) return m;
+    return {
+      role: 'user',
+      content: [
+        { type: 'text', text: m.content || 'Look at these and tell me what you see.' },
+        ...imgs.map((url) => ({ type: 'image_url', image_url: { url, detail: 'auto' } })),
+      ],
+    } as any;
+  });
+  const convo: any[] = [{ role: 'system', content: sys }, ...shaped];
   // Tools whose action truly COMPLETED this turn — the backing the truth spine trusts.
   const toolsRun: string[] = [];
 
@@ -2209,6 +2247,20 @@ Deno.serve(async (req) => {
     const docText = typeof body.document_text === 'string' ? body.document_text : '';
     const docName = typeof body.document_name === 'string' ? body.document_name : '';
 
+    // IMAGES. Staff could not send Penny a photo at all, which made her useless for the
+    // thing deal flow actually runs on: someone standing in a unit with their phone.
+    //
+    // Capped at 8 per turn and validated as data URLs. An uncapped array is a way to send
+    // a very expensive request by accident.
+    const images: string[] = Array.isArray(body.images)
+      ? body.images
+          .filter((i: unknown) => typeof i === 'string' && /^data:image\/(png|jpe?g|webp|gif);base64,/.test(i))
+          .slice(0, 8)
+      : [];
+    if (images.length) {
+      console.log('penny-staff-chat images_received', JSON.stringify({ count: images.length }));
+    }
+
     // Owner status is resolved SERVER-SIDE from staff_users.is_owner before the
     // prompt is composed. It is never accepted from the request body, so no
     // caller can claim ownership by asserting it. A lookup failure returns
@@ -2244,7 +2296,7 @@ Deno.serve(async (req) => {
 
     const agentCtx = {
       url, key, staffId, staffName, isOwner: ownerCheck.owner,
-      identified, fullName, docText, docName, memories, attention,
+      identified, fullName, docText, docName, memories, attention, images,
     };
 
     // ---- STREAMING ----
