@@ -687,24 +687,27 @@ export default function StaffDashboard() {
     }
   };
 
+  const [leadsError, setLeadsError] = useState('');
+
   const fetchLeads = async () => {
     setLoading(true);
+    setLeadsError('');
     try {
       const { data, error } = await supabase.functions.invoke('get-leads');
       if (data?.leads) {
         setLeads(data.leads);
       } else if (error || data?.error) {
-        // Edge function failed (likely auth error) - try direct DB query as fallback
-        console.warn('[fetchLeads] Edge function failed, trying DB fallback:', error?.message || data?.error);
-        try {
-          const { data: dbLeads } = await supabase
-            .from('leads')
-            .select('*')
-            .order('created_at', { ascending: false });
-          if (dbLeads) setLeads(dbLeads as Lead[]);
-        } catch (dbErr) {
-          console.warn('[fetchLeads] DB fallback also failed:', dbErr);
-        }
+        // The direct-DB fallback that used to sit here has been removed.
+        //
+        // It read every row of `leads` with the publishable key, which meant the anon role
+        // needed SELECT on that table - and `leads` holds the name, email and phone of
+        // every inbound prospect. Anyone who opened the site could have dumped the list.
+        //
+        // A fallback that costs the privacy of every lead is not worth the resilience it
+        // buys, especially for a fallback that only fires when the edge function is
+        // already failing. Surfacing the failure is the honest behaviour.
+        console.warn('[fetchLeads] get-leads failed:', error?.message || data?.error);
+        setLeadsError('Could not load leads just now. This is a problem with the server, not with your account - try again in a moment.');
       }
     } catch (err) {
       console.warn('[fetchLeads] Error:', err);
