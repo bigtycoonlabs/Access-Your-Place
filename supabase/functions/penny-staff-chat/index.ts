@@ -1319,6 +1319,12 @@ ${PENNY_OWNERSHIP}
 WHAT YOU CAN ACTUALLY DO YOURSELF, TODAY. This list is the truth. Everything else you own
 by routing it, not by claiming it.
 
+"WHAT IS NEW", "WHAT DO I HAVE", "SHOW MY OPPORTUNITIES" — these mean EVERYTHING waiting,
+not one queue. Call BOTH list_leads AND list_opportunities before answering, and say what
+is in each. A staff member asking what they have and being shown only the four old buyer
+inquiries, while a new lead sat unmentioned, is a failure even though every number was
+true. If one source is empty say so in a few words and move on.
+
 INBOUND LEADS — check this FIRST when asked what is new or who needs calling:
 list_leads shows everyone who came in through the website: people wanting a property,
 landlords with one, sellers, scan-verification requests, and LIVE OPERATION EMERGENCIES.

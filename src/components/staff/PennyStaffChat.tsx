@@ -195,33 +195,6 @@ export function PennyStaffChat({ staffSession }: { staffSession: StaffLite | nul
 
   return (
     <section aria-label="Chat with Penny" className="rounded-xl border border-slate-200 bg-white p-4">
-      {/* Penny's words as they arrive. aria-hidden: the finished reply is announced once
-          when it lands, so a screen reader is not read every token twice over. */}
-      {live && (
-        <p aria-hidden="true" className="mb-2 whitespace-pre-wrap rounded-lg bg-slate-50 px-3 py-2 text-slate-900">
-          {live}
-        </p>
-      )}
-
-      {/* PROGRESS — everything, on screen, updating freely. aria-hidden because a region
-          that changes this often would flood a screen reader. */}
-      {busy && (
-        <div className="mb-2 flex items-center justify-between gap-3">
-          <p aria-hidden="true" className="text-sm text-slate-600">
-            {progress ? `${progress}…` : 'Thinking…'}
-          </p>
-          {/* A Stop control is always present while she is working. Being unable to
-              interrupt is its own kind of trap. */}
-          <button
-            type="button"
-            onClick={stop}
-            className="min-h-[44px] shrink-0 rounded-md border border-slate-300 px-3 text-sm font-medium text-slate-800"
-          >
-            Stop
-          </button>
-        </div>
-      )}
-
       {/* ANNOUNCED — milestones only, at most one every 4 seconds, politely. This is the
           channel a screen reader actually reads. Failures bypass the throttle. */}
       <p role="status" aria-live="polite" className="sr-only">{spoken}</p>
@@ -261,12 +234,45 @@ export function PennyStaffChat({ staffSession }: { staffSession: StaffLite | nul
             </div>
           </div>
         ))}
-        {busy && (
-          <div className="text-left text-sm text-slate-500" role="status">
+        {/* Penny's words as they arrive, in the conversation where she is speaking —
+            not above a scrolling panel where a phone never shows them. aria-hidden
+            because the finished reply is announced once when it lands. */}
+        {live && (
+          <div className="text-left">
+            <span className="sr-only">Penny said: </span>
+            <div aria-hidden="true" className="inline-block rounded-2xl bg-slate-100 text-slate-800 px-4 py-2 text-sm max-w-[85%] whitespace-pre-wrap">
+              {live}
+            </div>
+          </div>
+        )}
+        {busy && !live && (
+          // NO role="status" here. This sits inside a role="log" that is already
+          // aria-live, and a live region nested in a live region gets announced twice.
+          <div aria-hidden="true" className="text-left text-sm text-slate-500">
             Penny is thinking…
           </div>
         )}
       </div>
+
+      {/* PROGRESS AND STOP, directly above the composer.
+          These used to render at the TOP of the panel, above a max-h-[50vh] scrolling
+          log — so on a phone they were off-screen and the owner reported there was no
+          Stop button at all. It was there; it was just somewhere he could never see it.
+          Controls belong next to the thing the person is looking at. */}
+      {busy && (
+        <div className="mt-3 flex items-center justify-between gap-3 rounded-md bg-slate-50 px-3 py-2">
+          <p aria-hidden="true" className="text-sm text-slate-600">
+            {progress ? `${progress}…` : 'Thinking…'}
+          </p>
+          <button
+            type="button"
+            onClick={stop}
+            className="min-h-[44px] shrink-0 rounded-md border border-slate-400 bg-white px-4 text-sm font-medium text-slate-900"
+          >
+            Stop
+          </button>
+        </div>
+      )}
 
       <div className="mt-3 flex items-end gap-2">
         <label htmlFor="penny-staff-input" className="sr-only">
