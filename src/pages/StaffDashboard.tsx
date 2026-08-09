@@ -1198,13 +1198,15 @@ export default function StaffDashboard() {
                     className="flex flex-nowrap gap-1 bg-transparent min-w-max p-1" 
                     aria-label="Dashboard sections"
                   >
-                    {/* ===== SUCCESS TEAM TABS ===== */}
-                    {activeDashboard === 'success' && (
-                      <>
-                        <TabsTrigger value="analytics" className="data-[state=active]:bg-amber-100 whitespace-nowrap">
-                          <BarChart3 className="w-4 h-4 mr-1" aria-hidden="true" /><span>Analytics</span>
-                        </TabsTrigger>
-                        <TabsTrigger value="acq-dashboard" className="data-[state=active]:bg-amber-100 whitespace-nowrap relative">
+                                            {/* ===== SUCCESS TEAM TABS ===== */}
+                        {activeDashboard === 'success' && (
+                          <>
+                            {/* ---- Pipeline ---- */}
+                            <span role="presentation" className="flex items-center gap-2 pl-2 pr-1 first:pl-0">
+                              <span aria-hidden="true" className="h-4 w-px bg-slate-300" />
+                              <span className="text-[10px] font-semibold uppercase tracking-wider text-slate-500">Pipeline</span>
+                            </span>
+                            <TabsTrigger value="acq-dashboard" className="data-[state=active]:bg-amber-100 whitespace-nowrap relative">
                           <Target className="w-4 h-4 mr-1" aria-hidden="true" /><span>Acquisitions</span>
                           {acqBadgeTotal > 0 && (
                             <span 
@@ -1215,63 +1217,83 @@ export default function StaffDashboard() {
                             </span>
                           )}
                         </TabsTrigger>
-
-                        <TabsTrigger value="dealflow" className="data-[state=active]:bg-amber-100 whitespace-nowrap">
+                            <TabsTrigger value="dealflow" className="data-[state=active]:bg-amber-100 whitespace-nowrap">
                           <Building className="w-4 h-4 mr-1" aria-hidden="true" /><span>Deal Flow</span>
                         </TabsTrigger>
-                        <TabsTrigger value="investors" className="data-[state=active]:bg-amber-100 whitespace-nowrap relative">
-                          <UserCog className="w-4 h-4 mr-1" aria-hidden="true" /><span>Investors</span>
-                          {unassignedInvestorCount > 0 && (
-                            <span className="ml-1.5 inline-flex items-center justify-center min-w-[20px] h-5 px-1.5 text-[10px] font-bold rounded-full bg-red-500 text-white animate-pulse">{unassignedInvestorCount}</span>
-                          )}
-                        </TabsTrigger>
-                        <TabsTrigger value="landlord-ops" className="data-[state=active]:bg-amber-100 whitespace-nowrap relative">
+                            <TabsTrigger value="landlord-ops" className="data-[state=active]:bg-amber-100 whitespace-nowrap relative">
 
                           <Landmark className="w-4 h-4 mr-1" aria-hidden="true" /><span>Landlord Ops</span>
                           {landlordOpsCount > 0 && (
                             <span className="ml-1.5 inline-flex items-center justify-center min-w-[20px] h-5 px-1.5 text-[10px] font-bold rounded-full bg-orange-500 text-white animate-pulse">{landlordOpsCount}</span>
                           )}
                         </TabsTrigger>
-
-                        <TabsTrigger value="content" className="data-[state=active]:bg-amber-100 whitespace-nowrap">
+                            {/* ---- Clients ---- */}
+                            <span role="presentation" className="flex items-center gap-2 pl-2 pr-1 first:pl-0">
+                              <span aria-hidden="true" className="h-4 w-px bg-slate-300" />
+                              <span className="text-[10px] font-semibold uppercase tracking-wider text-slate-500">Clients</span>
+                            </span>
+                            <TabsTrigger value="investors" className="data-[state=active]:bg-amber-100 whitespace-nowrap relative">
+                          <UserCog className="w-4 h-4 mr-1" aria-hidden="true" /><span>Investors</span>
+                          {unassignedInvestorCount > 0 && (
+                            <span className="ml-1.5 inline-flex items-center justify-center min-w-[20px] h-5 px-1.5 text-[10px] font-bold rounded-full bg-red-500 text-white animate-pulse">{unassignedInvestorCount}</span>
+                          )}
+                        </TabsTrigger>
+                            <TabsTrigger value="setups" className="data-[state=active]:bg-amber-100 whitespace-nowrap">
+                          <Wrench className="w-4 h-4 mr-1" aria-hidden="true" /><span>Setups</span>
+                        </TabsTrigger>
+                            <TabsTrigger value="disputes" className="data-[state=active]:bg-amber-100 whitespace-nowrap">
+                          <Scale className="w-4 h-4 mr-1" aria-hidden="true" /><span>Disputes</span>
+                        </TabsTrigger>
+                            <TabsTrigger value="support" className="data-[state=active]:bg-amber-100 whitespace-nowrap">
+                          <HeadphonesIcon className="w-4 h-4 mr-1" aria-hidden="true" /><span>Support</span>
+                        </TabsTrigger>
+                            {/* ---- Content ---- */}
+                            <span role="presentation" className="flex items-center gap-2 pl-2 pr-1 first:pl-0">
+                              <span aria-hidden="true" className="h-4 w-px bg-slate-300" />
+                              <span className="text-[10px] font-semibold uppercase tracking-wider text-slate-500">Content</span>
+                            </span>
+                            <TabsTrigger value="content" className="data-[state=active]:bg-amber-100 whitespace-nowrap">
 
                           <PenTool className="w-4 h-4 mr-1" aria-hidden="true" /><span>Content</span>
                         </TabsTrigger>
-                        <TabsTrigger value="communications" className="data-[state=active]:bg-amber-100 whitespace-nowrap">
+                            <TabsTrigger value="communications" className="data-[state=active]:bg-amber-100 whitespace-nowrap">
                           <Mail className="w-4 h-4 mr-1" aria-hidden="true" /><span>Communications</span>
                         </TabsTrigger>
-                        <TabsTrigger value="documents" className="data-[state=active]:bg-amber-100 whitespace-nowrap">
+                            <TabsTrigger value="documents" className="data-[state=active]:bg-amber-100 whitespace-nowrap">
                           <FileText className="w-4 h-4 mr-1" aria-hidden="true" /><span>Documents</span>
                         </TabsTrigger>
-                        <TabsTrigger value="staff" className="data-[state=active]:bg-amber-100 whitespace-nowrap">
-                          <UsersRound className="w-4 h-4 mr-1" aria-hidden="true" /><span>Staff</span>
-                        </TabsTrigger>
-                        <TabsTrigger value="hr-commissions" className="data-[state=active]:bg-amber-100 whitespace-nowrap">
-                          <Briefcase className="w-4 h-4 mr-1" aria-hidden="true" /><span>HR & Pay</span>
-                        </TabsTrigger>
-
-                        <TabsTrigger value="setups" className="data-[state=active]:bg-amber-100 whitespace-nowrap">
-                          <Wrench className="w-4 h-4 mr-1" aria-hidden="true" /><span>Setups</span>
-                        </TabsTrigger>
-                        <TabsTrigger value="disputes" className="data-[state=active]:bg-amber-100 whitespace-nowrap">
-                          <Scale className="w-4 h-4 mr-1" aria-hidden="true" /><span>Disputes</span>
-                        </TabsTrigger>
-                        <TabsTrigger value="support" className="data-[state=active]:bg-amber-100 whitespace-nowrap">
-                          <HeadphonesIcon className="w-4 h-4 mr-1" aria-hidden="true" /><span>Support</span>
-                        </TabsTrigger>
-                        <TabsTrigger value="sops" className="data-[state=active]:bg-amber-100 whitespace-nowrap">
+                            <TabsTrigger value="sops" className="data-[state=active]:bg-amber-100 whitespace-nowrap">
                           <BookOpen className="w-4 h-4 mr-1" aria-hidden="true" /><span>SOPs</span>
                         </TabsTrigger>
-                        <TabsTrigger value="settings" className="data-[state=active]:bg-amber-100 whitespace-nowrap">
+                            {/* ---- Team ---- */}
+                            <span role="presentation" className="flex items-center gap-2 pl-2 pr-1 first:pl-0">
+                              <span aria-hidden="true" className="h-4 w-px bg-slate-300" />
+                              <span className="text-[10px] font-semibold uppercase tracking-wider text-slate-500">Team</span>
+                            </span>
+                            <TabsTrigger value="staff" className="data-[state=active]:bg-amber-100 whitespace-nowrap">
+                          <UsersRound className="w-4 h-4 mr-1" aria-hidden="true" /><span>Staff</span>
+                        </TabsTrigger>
+                            <TabsTrigger value="hr-commissions" className="data-[state=active]:bg-amber-100 whitespace-nowrap">
+                          <Briefcase className="w-4 h-4 mr-1" aria-hidden="true" /><span>HR & Pay</span>
+                        </TabsTrigger>
+                            {/* ---- Admin ---- */}
+                            <span role="presentation" className="flex items-center gap-2 pl-2 pr-1 first:pl-0">
+                              <span aria-hidden="true" className="h-4 w-px bg-slate-300" />
+                              <span className="text-[10px] font-semibold uppercase tracking-wider text-slate-500">Admin</span>
+                            </span>
+                            <TabsTrigger value="analytics" className="data-[state=active]:bg-amber-100 whitespace-nowrap">
+                          <BarChart3 className="w-4 h-4 mr-1" aria-hidden="true" /><span>Analytics</span>
+                        </TabsTrigger>
+                            <TabsTrigger value="settings" className="data-[state=active]:bg-amber-100 whitespace-nowrap">
                           <Settings className="w-4 h-4 mr-1" aria-hidden="true" /><span>Settings</span>
                         </TabsTrigger>
-                      </>
-                    )}
+                          </>
+                        )}
 
-                    {/* ===== ACQUISITION MANAGER TABS ===== */}
-                    {activeDashboard === 'acquisitions' && (
-                      <>
-                        <TabsTrigger value="acq-dashboard" className="data-[state=active]:bg-indigo-100 whitespace-nowrap">
+                        {/* ===== ACQUISITION MANAGER TABS ===== */}
+                        {activeDashboard === 'acquisitions' && (
+                          <>
+                            <TabsTrigger value="acq-dashboard" className="data-[state=active]:bg-indigo-100 whitespace-nowrap">
                           <Target className="w-4 h-4 mr-1" aria-hidden="true" /><span>Dashboard</span>
                         </TabsTrigger>
                         <TabsTrigger value="my-investors" className="data-[state=active]:bg-indigo-100 whitespace-nowrap">
