@@ -119,6 +119,24 @@ serve(async (req: Request) => {
         })
       })
 
+      // RECOGNITION RUNS FIRST, BEFORE last_login IS OVERWRITTEN.
+      //
+      // The whole decision rests on how long they have been away, and that figure lives in
+      // last_login. Stamping the new time first destroys the only evidence that this was a
+      // return — every client would look like they signed in seconds ago.
+      //
+      // Best-effort: a client must never fail to sign in because a notification did not
+      // fire. The failure is logged, not swallowed silently and not raised to them.
+      try {
+        const rec = await fetch(`${supabaseUrl}/rest/v1/rpc/ayp_client_signed_in`, {
+          method: 'POST', headers,
+          body: JSON.stringify({ p_investor_id: investor.id }),
+        })
+        if (!rec.ok) console.error('investor-login recognition_failed', rec.status)
+      } catch (e) {
+        console.error('investor-login recognition_threw', e instanceof Error ? e.message : String(e))
+      }
+
       // Update last login
       await fetch(`${supabaseUrl}/rest/v1/investors?id=eq.${investor.id}`, {
         method: 'PATCH',
