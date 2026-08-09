@@ -250,7 +250,13 @@ async function writeArticle(url: string, key: string, a: any, staffId: string) {
     }),
   });
   const out = await res.json().catch(() => null);
-  if (!out) return { error: 'The writer did not return anything. Nothing was saved.' };
+  if (!out) return { error: `The writer returned ${res.status} with no readable body. Nothing was saved.` };
+  // A rate limit is not a retry. It means the writer was called in a burst, and calling it
+  // again immediately makes it worse. Passed through so Penny stops rather than hammering.
+  if (out.rate_limited) {
+    return { ...out, stop_batching: true,
+      note: 'Rate limited. Do NOT call this again this turn — tell them what you finished and offer to continue in a moment.' };
+  }
   return out;
 }
 

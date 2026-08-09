@@ -170,7 +170,23 @@ Deno.serve(async (req) => {
     if (!res.ok) {
       const t = await res.text();
       console.error('penny-write-article openai_http', res.status, t.slice(0, 300));
-      return json({ ok: false, error: `Could not reach the writing model (${res.status}). Nothing was written.` }, 502);
+      // FOUR different failures used to return the same 502 with a message that did not
+      // say which. Production logged five of these in two seconds, each under 900ms —
+      // far too fast to be a real generation, so they were rejections, not timeouts.
+      //
+      // A rate limit is the one that matters here: it means somebody asked for every
+      // article at once and the writer was called in a burst. That needs "slow down and
+      // do a few", not "try again", so it says so.
+      if (res.status === 429) {
+        return json({
+          ok: false, rate_limited: true,
+          error: 'The writing model is rate limiting us — too many articles requested at once. Do a few at a time rather than all of them.',
+        }, 429);
+      }
+      return json({
+        ok: false,
+        error: `The writing model returned ${res.status} and nothing was written. Detail: ${t.slice(0, 200)}`,
+      }, 502);
     }
 
     const data = await res.json();
@@ -180,11 +196,15 @@ Deno.serve(async (req) => {
       draft = JSON.parse(raw.replace(/```json|```/g, '').trim());
     } catch {
       console.error('penny-write-article unparseable', raw.slice(0, 300));
-      return json({ ok: false, error: 'The draft came back malformed. Nothing was written.' }, 502);
+      return json({ ok: false,
+        error: `The draft came back as something other than JSON, so nothing was written. It started: ${raw.slice(0, 120)}`,
+      }, 502);
     }
 
     if (!draft?.title || !draft?.content || !draft?.slug) {
-      return json({ ok: false, error: 'The draft was missing a title, slug or body. Nothing was written.' }, 502);
+      return json({ ok: false,
+        error: `The draft was missing ${[!draft?.title && 'a title', !draft?.slug && 'a slug', !draft?.content && 'a body'].filter(Boolean).join(' and ')}. Nothing was written.`,
+      }, 502);
     }
 
     // RULE 3: an unsourced regulatory article is worse than no article.
@@ -230,7 +250,9 @@ Deno.serve(async (req) => {
     const ins = await rest(url, key, 'blog_articles', { method: 'POST', body: JSON.stringify(row) });
     if (!ins.ok) {
       console.error('penny-write-article insert_failed', ins.status, JSON.stringify(ins.data).slice(0, 300));
-      return json({ ok: false, error: `The draft could not be saved (${ins.status}). Nothing was written.` }, 502);
+      return json({ ok: false,
+        error: `The draft could not be saved (${ins.status}). Detail: ${JSON.stringify(ins.data).slice(0, 200)}`,
+      }, 502);
     }
     const saved = Array.isArray(ins.data) ? ins.data[0] : ins.data;
 
