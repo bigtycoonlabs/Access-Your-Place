@@ -125,7 +125,7 @@ function PaymentForm({ paymentType, listingId, investorId, salePrice, onSuccess,
         return 'Report released! You can now view the full verification details.';
       case 'full_transaction':
       case 'escrow':
-        return 'Transaction initiated. A Success Manager will be assigned shortly.';
+        return 'Transaction initiated. Someone from the Success Team will be assigned shortly.';
       default:
         return 'Payment completed successfully.';
     }
@@ -428,7 +428,7 @@ export function MarketplacePaymentCheckout({
                 <ul className="space-y-1">
                   <li className="flex items-center gap-2">
                     <CheckCircle className="w-4 h-4 text-green-500" />
-                    Dedicated Success Manager
+                    Dedicated Success Team support
                   </li>
                   <li className="flex items-center gap-2">
                     <CheckCircle className="w-4 h-4 text-green-500" />

@@ -68,7 +68,7 @@ export function OperatorHQ({ investor, onNavigate, onOpenDashboard, onBookCall }
           Hi {firstName} — I'm Penny.
         </h1>
         <p className="mt-1 text-slate-600" role="status" aria-live="polite">
-          I'm your Success Manager. Tell me what you're working on and I'll take it from there —
+          I'm Penny. Tell me what you're working on and I'll take it from there —
           deals, your portfolio, messages, or getting you in front of the right property.
           Ask me anything below.
         </p>

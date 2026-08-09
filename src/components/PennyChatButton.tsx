@@ -348,7 +348,7 @@ export function PennyChatButton({ userId, userName, userType }: PennyChatButtonP
           ref={floatingButtonRef}
           onClick={handleOpenChat}
           className="min-h-[44px] fixed bottom-6 right-6 z-50 w-16 h-16 rounded-full shadow-lg hover:shadow-xl transition-all duration-300 flex items-center justify-center group focus:outline-none focus:ring-4 focus:ring-[#d4a574] focus:ring-offset-2"
-          aria-label="Open Penny AI Chat Assistant. Penny is your AI-powered success manager who can help with property searches, investment questions, and acquisition support."
+          aria-label="Open Penny AI Chat Assistant. Penny is your AI partner who can help with property searches, investment questions, and acquisition support."
           aria-haspopup="dialog"
           aria-expanded={isOpen}
           type="button"
@@ -418,7 +418,7 @@ export function PennyChatButton({ userId, userName, userType }: PennyChatButtonP
       >
         {/* Screen reader only description */}
         <div id="penny-chat-description" className="sr-only">
-          Penny is your AI Success Manager at Access Your Place, powered by Set Up Your Place LLC. 
+          Penny is your AI partner at Access Your Place, built by Set Up Your Place LLC. 
           {userType === 'staff' 
             ? 'As a staff member, you can use Penny to search properties, generate listings, pull photos, and manage acquisitions.'
             : 'As an investor, Penny can help you search for deals, analyze your portfolio, answer questions about rental arbitrage, and connect you with acquisition managers.'
@@ -438,7 +438,7 @@ export function PennyChatButton({ userId, userName, userType }: PennyChatButtonP
                 <Sparkles className="w-4 h-4 text-[#d4a574]" aria-hidden="true" />
               </h2>
               <p className="text-xs text-white/70">
-                {userType === 'staff' ? 'Staff Assistant' : 'Your Place Success Manager'}
+                {userType === 'staff' ? 'Staff Assistant' : 'Your AI partner'}
               </p>
             </div>
           </div>
@@ -559,7 +559,7 @@ export function PennyChatButton({ userId, userName, userType }: PennyChatButtonP
                 Hi {firstName}! I'm Penny
               </h3>
               <p className="text-sm text-gray-500 mb-1">
-                Your AI Success Manager at Access Your Place
+                Your AI partner at Access Your Place
               </p>
               <p className="text-xs text-gray-400 mb-4">
                 Powered by Set Up Your Place LLC

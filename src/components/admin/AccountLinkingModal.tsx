@@ -230,7 +230,7 @@ export function AccountLinkingModal({
 
   const getDepartmentLabel = (dept: string) => {
     const labels: Record<string, string> = {
-      success_managers: 'Success Manager',
+      success_managers: 'Success Team',
       acquisition_managers: 'Acquisition Manager',
       setup_managers: 'Setup Manager'
     };

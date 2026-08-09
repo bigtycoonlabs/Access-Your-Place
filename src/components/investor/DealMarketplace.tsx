@@ -1485,7 +1485,7 @@ function ReceivedDealDetailModal({ open, onClose, deal, investorId, investorEmai
       title: 'Payment Successful',
       description: paymentType === 'verification' ? 'Verification requested. Our team will begin within 24-48 hours.'
         : paymentType === 'report' ? 'Report released!'
-        : 'Transaction initiated. A Success Manager will be assigned shortly.'
+        : 'Transaction initiated. Someone from the Success Team will be assigned shortly.'
     });
     onUpdate(); setShowPaymentCheckout(false);
   };

@@ -141,6 +141,23 @@ async function landlordPortal(url: string, key: string) {
 // distinction Penny must never blur: a client FILE is what we know about someone; an
 // ACCOUNT is something they can sign into.
 
+async function mySop(url: string, key: string, staffId: string) {
+  const { ok, status, data } = await rpc(url, key, 'penny_my_sop', { p_staff_id: staffId });
+  if (!ok) return { error: `read_failed_${status}` };
+  return data;
+}
+
+async function listThirdPartyDeal(url: string, key: string, a: any, staffId: string) {
+  const { ok, status, data } = await rpc(url, key, 'penny_list_third_party_deal', {
+    p_seller_name: String(a.seller_name), p_seller_email: String(a.seller_email),
+    p_asking_price: a.asking_price ?? null, p_by_staff_id: staffId || null,
+    p_seller_phone: a.seller_phone ? String(a.seller_phone) : null,
+    p_notes: a.notes ? String(a.notes) : null,
+  });
+  if (!ok) return { error: 'list_failed', http: status };
+  return data;
+}
+
 async function payoutStatus(url: string, key: string, staffId: string) {
   const { ok, status, data } = await rpc(url, key, 'penny_staff_payout_status', { p_staff_id: staffId });
   if (!ok) return { error: `read_failed_${status}` };
@@ -1193,6 +1210,18 @@ async function execTool(name: string, args: any, ctx: Ctx): Promise<unknown> {
     if (name === 'seller_flow') return await sellerFlow(url, key);
     if (name === 'landlord_portal') return await landlordPortal(url, key);
     if (name === 'my_alerts') return await myAlerts(url, key, staffId);
+    if (name === 'my_sop') return await mySop(url, key, staffId);
+    if (name === 'list_third_party_deal') {
+      if (!args?.seller_name || !args?.seller_email) {
+        return { error: 'seller_name and seller_email are required' };
+      }
+      if (args.confirmed !== true) {
+        return { needs_confirmation: true,
+          action: `create a draft listing for ${args.seller_name}`,
+          instruction: 'Say the seller, the asking price, and that it starts as a draft. Get a yes, then call again with confirmed true.' };
+      }
+      return await listThirdPartyDeal(url, key, args, staffId);
+    }
     if (name === 'payout_status') return await payoutStatus(url, key, staffId);
     if (name === 'save_payout') {
       if (!args?.method || !args?.destination) return { error: 'method and destination required' };
@@ -1539,6 +1568,33 @@ const TOOLS = [
       name: 'landlord_portal',
       description: "The supply side: properties landlords have submitted and nobody has reviewed, unread messages FROM landlords, corporate applications still open, and how many landlords have no acquisition manager. Read-only.",
       parameters: { type: 'object', properties: {}, required: [] },
+    },
+  },
+  {
+    type: 'function',
+    function: {
+      name: 'my_sop',
+      description: "The standard operating procedure for whoever you are talking to — what their role is responsible for, written from how the platform actually works. Owners see every role's. Use it when somebody asks what they should be doing, or when onboarding.",
+      parameters: { type: 'object', properties: {}, required: [] },
+    },
+  },
+  {
+    type: 'function',
+    function: {
+      name: 'list_third_party_deal',
+      description: "List an operation somebody else is selling. THE SELLER DOES NOT NEED AN ACCOUNT — the listing is created as a draft either way and they can be invited afterwards so they can track the sale. Links automatically if they already have an account or a client file. Confirm first.",
+      parameters: {
+        type: 'object',
+        properties: {
+          seller_name: { type: 'string' },
+          seller_email: { type: 'string' },
+          asking_price: { type: 'number' },
+          seller_phone: { type: 'string' },
+          notes: { type: 'string' },
+          confirmed: { type: 'boolean' },
+        },
+        required: ['seller_name', 'seller_email'],
+      },
     },
   },
   {
@@ -2352,6 +2408,16 @@ landlords with no portal, then people never engaged at all.
 
 Give names, reasons and contact details. It is a call list, not a report.
 
+EVERY ROLE HAS A WRITTEN PROCEDURE, and my_sop returns the one for whoever you are talking
+to. Use it when somebody asks what they should be doing, and when onboarding. It is written
+from how the platform actually works, so if somebody asks for something it does not cover,
+say so rather than inventing a step.
+
+A THIRD-PARTY SELLER DOES NOT NEED AN ACCOUNT TO BE LISTED. An acquisition manager meets an
+operator who wants to sell; take the name, email and asking price and list it as a draft.
+Then invite them so they can track their own sale. Holding the listing hostage to a signup
+loses the deal.
+
 ONBOARDING A SUCCESS TEAM MEMBER. When somebody signs in and has never been through this,
 two things need doing before anything else:
 
@@ -2756,7 +2822,7 @@ const TOOL_GROUPS: Record<string, { words: RegExp; tools: string[] }> = {
   },
   seller: {
     words: /seller|sale|offer|counter|buyer|verification|transaction|resale/i,
-    tools: ['seller_flow','landlord_portal'],
+    tools: ['seller_flow','landlord_portal','list_third_party_deal','send_account_invite'],
   },
   staff: {
     words: /staff|team|success team|hire|onboard|commission|escalat|dispute|legal|complaint/i,
@@ -2769,7 +2835,11 @@ const TOOL_GROUPS: Record<string, { words: RegExp; tools: string[] }> = {
   },
   agreements: {
     words: /agreement|contract|sign|document|paperwork|onboard/i,
-    tools: ['my_agreements','send_agreement','sign_agreement','list_staff','invite_staff'],
+    tools: ['my_agreements','send_agreement','sign_agreement','list_staff','invite_staff','my_sop'],
+  },
+  procedure: {
+    words: /sop|procedure|responsib|what should i|my role|my job|how do i/i,
+    tools: ['my_sop','my_book','my_alerts'],
   },
 };
 
