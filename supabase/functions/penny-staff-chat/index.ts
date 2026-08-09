@@ -2058,8 +2058,18 @@ republishing another invented permit fee.
 THE AUDIT LOOP, when someone asks you to go through the library: call
 articles_needing_work, take the worst, write_article with its article_id to rewrite it,
 then republish_article. Clean ones go straight back up. Ones with unsourced claims stop and
-wait for a person, and you say which claims and why. Work through them one at a time and
-report what you actually did, never a total you did not verify.
+wait for a person, and you say which claims and why.
+
+"FIX THEM ALL" IS NOT ONE TURN. Rewriting an article takes a real research pass, and there
+are 44 that have never been verified. Attempting them all in one turn runs out of steps and
+you end up reporting nothing at all — which is what happened when an owner asked exactly
+that.
+
+So when someone says fix them all, do not refuse and do not pretend. Say plainly that each
+one is a proper research pass, offer to start with the most dangerous few — the guides
+stating fees and rates — and DO THOSE NOW, in this turn, one at a time. Then say which you
+finished, which are waiting for a human because you could not source a claim, and how many
+are left. Never report a total you did not verify.
 
 articles_awaiting_review is what is sitting with a human. When a staff member asks what
 needs reviewing, LEAD WITH ANYTHING CARRYING UNSOURCED CLAIMS and say how many.
@@ -2292,7 +2302,7 @@ async function runAgent(messages: Array<{ role: string; content: string }>, firs
   const key = Deno.env.get('OPENAI_API_KEY');
   if (!key) {
     console.error('penny-staff-chat missing_OPENAI_API_KEY');
-    return { message: "I can't reach my reasoning service right now — give me a moment and try again." };
+    return { message: "My reasoning service is not configured — OPENAI_API_KEY is missing on the server. That is a platform problem, not something you did." };
   }
   const sys = systemPrompt(first, ctx.isOwner === true, ctx.identified === true, ctx.fullName || first, ctx.docText, ctx.docName, (ctx as any).memories, (ctx as any).attention);
   // Images ride on the most recent user message, as OpenAI's multimodal content array.
@@ -2354,7 +2364,15 @@ async function runAgent(messages: Array<{ role: string; content: string }>, firs
         }
         return { message: guardReply(plain, toolsRun).text };
       }
-      return { message: `I hit a snag reasoning about that. Try again in a moment.`, error: `openai ${res.status}: ${t.slice(0, 200)}` };
+      // THE REASON GOES IN THE MESSAGE, not into an `error` field the client never reads.
+      // This exact line produced "I hit a snag reasoning about that" for an owner while
+      // the actual cause — an HTTP status and body from the reasoning service — sat in a
+      // property nothing displayed. That is the third generic error message in this file
+      // to hide its own cause, and the pattern is now fixed rather than the instance.
+      return {
+        message: `My reasoning service returned ${res.status} and I could not finish that. The detail, so it can be fixed: ${t.slice(0, 240)}`,
+        error: `openai ${res.status}: ${t.slice(0, 200)}`,
+      };
     }
     let msg: any;
     if (streaming && res.body) {
@@ -2487,7 +2505,14 @@ async function runAgent(messages: Array<{ role: string; content: string }>, firs
     }
     return { message: await finalize(key, convo, msg.content || '', toolsRun) };
   }
-  return { message: "That took more steps than I expected — can you rephrase what you'd like me to do?" };
+  // Out of rounds. Usually a request covering many items at once — "fix them all" across
+  // 46 articles cannot finish in one turn. Say what actually happened and what to do
+  // instead, rather than asking someone to rephrase a request that was perfectly clear.
+  return {
+    message: `That needs more steps than I can take in one turn${
+      toolsRun.length ? `, though I did complete: ${toolsRun.join(', ')}` : ''
+    }. If you asked me to do something across many items, give me a few at a time — name them or say "the first three" — and I will work through them.`,
+  };
 }
 
 Deno.serve(async (req) => {
