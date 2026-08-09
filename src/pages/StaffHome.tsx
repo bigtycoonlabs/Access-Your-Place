@@ -47,13 +47,12 @@ type Snapshot = {
 type Metric = { label: string; value: number; ask: string; alert?: boolean };
 
 function Area({
-  title, blurb, metrics, onAsk,
-}: { title: string; blurb: string; metrics: Metric[]; onAsk: (q: string) => void }) {
+  title, metrics, onAsk,
+}: { title: string; metrics: Metric[]; onAsk: (q: string) => void }) {
   const id = `area-${title.toLowerCase().replace(/\s+/g, '-')}`;
   return (
     <section aria-labelledby={id} className="rounded-lg border border-slate-200 bg-white p-4">
       <h2 id={id} className="text-sm font-semibold uppercase tracking-wide text-slate-500">{title}</h2>
-      <p className="mt-0.5 text-xs text-slate-500">{blurb}</p>
       <ul className="mt-3 grid grid-cols-2 gap-2 sm:grid-cols-3">
         {metrics.map((m) => (
           <li key={m.label}>
@@ -123,7 +122,7 @@ export default function StaffHome({ staffSession }: { staffSession: StaffLite | 
   const n = (o: Record<string, number> | undefined, k: string) => (o?.[k] ?? 0);
 
   return (
-    <div className="mx-auto w-full max-w-[1200px] px-4 py-6">
+    <div className="mx-auto w-full max-w-[1600px] px-4 py-6 xl:pr-[412px]">
       <header className="mb-5">
         <p className="text-xs font-semibold uppercase tracking-wide text-slate-500">Success Team — Operations</p>
         <h1 className="mt-1 text-2xl font-bold text-slate-900">{first}</h1>
@@ -176,10 +175,6 @@ export default function StaffHome({ staffSession }: { staffSession: StaffLite | 
         </section>
       )}
 
-      {/* Penny sits high because she is how you act on any number below. */}
-      <section aria-label="Ask Penny" className="rounded-lg border border-slate-300 bg-white p-4">
-        <PennyStaffChat staffSession={staffSession} ask={ask} onAsked={() => setAsk('')} />
-      </section>
 
       {/* THE BOOK FIRST — full width, because it IS the business.
           The console used to lead with "34 accounts" while five years of work sat in a
@@ -190,9 +185,6 @@ export default function StaffHome({ staffSession }: { staffSession: StaffLite | 
         <h2 id="book-heading" className="text-sm font-semibold uppercase tracking-wide text-slate-500">
           The book — five years of relationships
         </h2>
-        <p className="mt-0.5 text-xs text-slate-500">
-          Getting these people onto the platform is the job. The platform has to be worth showing up to.
-        </p>
         <ul className="mt-3 grid grid-cols-2 gap-2 sm:grid-cols-3 lg:grid-cols-6">
           {[
             { label: 'relationships', value: n(snap?.book,'relationships'), ask: 'Give me an overview of our client book.' },
@@ -223,15 +215,15 @@ export default function StaffHome({ staffSession }: { staffSession: StaffLite | 
         </p>
       </section>
 
-      <div className="mt-4 grid gap-4 lg:grid-cols-2">
-        <Area title="Demand" blurb="New people coming in" onAsk={setAsk} metrics={[
+      <div className="mt-4 grid gap-4 md:grid-cols-2 xl:grid-cols-3">
+        <Area title="Demand" onAsk={setAsk} metrics={[
           { label: 'new leads', value: n(snap?.demand,'new_leads'), ask: 'What leads came in and who should I call first?', alert: n(snap?.demand,'new_leads') > 0 },
           { label: 'emergencies', value: n(snap?.demand,'emergencies'), ask: 'Show me the live operation emergencies.', alert: n(snap?.demand,'emergencies') > 0 },
           { label: 'open inquiries', value: n(snap?.demand,'open_inquiries'), ask: 'Show me the open buyer inquiries.', alert: n(snap?.demand,'open_inquiries') > 0 },
           { label: 'being worked', value: n(snap?.demand,'leads_working'), ask: 'Which leads are being worked right now?' },
         ]} />
 
-        <Area title="Supply" blurb="The constraint on this business" onAsk={setAsk} metrics={[
+        <Area title="Supply" onAsk={setAsk} metrics={[
           { label: 'live listings', value: n(snap?.supply,'live_listings'), ask: "What's on the marketplace right now?" },
           { label: 'no price set', value: n(snap?.supply,'no_price'), ask: 'Which live listings have no acquisition cost recorded?', alert: n(snap?.supply,'no_price') > 0 },
           { label: 'pending review', value: n(snap?.supply,'pending_review'), ask: 'Which properties are waiting for review?', alert: n(snap?.supply,'pending_review') > 0 },
@@ -240,7 +232,7 @@ export default function StaffHome({ staffSession }: { staffSession: StaffLite | 
           { label: 'unpublished', value: n(snap?.supply,'unpublished'), ask: 'Which properties are off the marketplace, and why?' },
         ]} />
 
-        <Area title="Resale" blurb="Third-party sale pipeline" onAsk={setAsk} metrics={[
+        <Area title="Resale" onAsk={setAsk} metrics={[
           { label: 'listings pending', value: n(snap?.resale,'listings_pending'), ask: 'Which seller listings are waiting for approval?', alert: n(snap?.resale,'listings_pending') > 0 },
           { label: 'for sale now', value: n(snap?.resale,'listings_active'), ask: 'What operations are for sale right now?' },
           { label: 'open offers', value: n(snap?.resale,'offers_open'), ask: 'Which offers are waiting on an answer?', alert: n(snap?.resale,'offers_open') > 0 },
@@ -248,25 +240,41 @@ export default function StaffHome({ staffSession }: { staffSession: StaffLite | 
           { label: 'transactions live', value: n(snap?.resale,'transactions_live'), ask: 'Where do the live transactions stand?' },
         ]} />
 
-        <Area title="Platform accounts" blurb="Of the book, who has signed up" onAsk={setAsk} metrics={[
+        <Area title="Platform accounts" onAsk={setAsk} metrics={[
           { label: 'accounts', value: n(snap?.clients,'accounts'), ask: 'How many accounts exist, and how many are real clients rather than staff or test rows?' },
           { label: 'ever signed in', value: n(snap?.clients,'ever_signed_in'), ask: 'Which clients have never signed in?' },
           { label: 'portfolio units', value: n(snap?.clients,'portfolio_units'), ask: 'What is in client portfolios right now?' },
           { label: 'open escalations', value: n(snap?.clients,'open_escalations'), ask: 'What escalations are open?', alert: n(snap?.clients,'open_escalations') > 0 },
         ]} />
 
-        <Area title="Content" blurb="The only thing that reaches strangers" onAsk={setAsk} metrics={[
+        <Area title="Content" onAsk={setAsk} metrics={[
           { label: 'published', value: n(snap?.content,'published'), ask: 'How is the knowledge library doing?' },
           { label: 'never verified', value: n(snap?.content,'never_verified'), ask: 'Which articles have never been checked against a primary source?', alert: n(snap?.content,'never_verified') > 0 },
           { label: 'awaiting review', value: n(snap?.content,'awaiting_review'), ask: 'What articles are waiting for me to review?', alert: n(snap?.content,'awaiting_review') > 0 },
           { label: 'verified', value: n(snap?.content,'legally_verified'), ask: 'Which articles have been verified, and when?' },
         ]} />
 
-        <Area title="Team" blurb="The Success Team" onAsk={setAsk} metrics={[
+        <Area title="Team" onAsk={setAsk} metrics={[
           { label: 'active', value: n(snap?.team,'active'), ask: 'Who is on the Success Team?' },
           { label: 'owners', value: n(snap?.team,'owners'), ask: 'Who has owner access?' },
         ]} />
       </div>
+
+      {/* Penny is DOCKED, not dropped in the middle of the page. She is a persistent tool
+          on the right where a console keeps its assistant, so scanning the numbers and
+          asking about one are not the same motion interrupted by each other.
+          On narrow screens she moves below rather than shrinking into uselessness. */}
+      <aside
+        aria-label="Ask Penny"
+        className="mt-4 rounded-lg border border-slate-300 bg-white xl:fixed xl:right-4 xl:top-20 xl:mt-0 xl:w-[380px] xl:max-h-[calc(100vh-6rem)] xl:overflow-hidden"
+      >
+        <h2 className="border-b border-slate-200 px-3 py-2 text-xs font-semibold uppercase tracking-wider text-slate-600">
+          Penny
+        </h2>
+        <div className="p-3">
+          <PennyStaffChat staffSession={staffSession} ask={ask} onAsked={() => setAsk('')} />
+        </div>
+      </aside>
 
       <p className="mt-6 text-sm">
         <Link to="/staff/dashboard" className="text-slate-600 underline underline-offset-2">
