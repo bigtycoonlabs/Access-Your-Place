@@ -38,6 +38,7 @@ type StaffLite = {
 };
 
 type Snapshot = {
+  book: Record<string, number>;
   demand: Record<string, number>; supply: Record<string, number>;
   resale: Record<string, number>; clients: Record<string, number>;
   content: Record<string, number>; team: Record<string, number>;
@@ -180,13 +181,53 @@ export default function StaffHome({ staffSession }: { staffSession: StaffLite | 
         <PennyStaffChat staffSession={staffSession} ask={ask} onAsked={() => setAsk('')} />
       </section>
 
-      <div className="mt-5 grid gap-4 lg:grid-cols-2">
-        <Area title="Demand" blurb="People who want a deal" onAsk={setAsk} metrics={[
+      {/* THE BOOK FIRST — full width, because it IS the business.
+          The console used to lead with "34 accounts" while five years of work sat in a
+          475-relationship book. That framing makes a real company look like it has no
+          customers, and points the Success Team at the wrong job: not "we have 34
+          accounts" but "461 people we already know are not on the platform yet". */}
+      <section aria-labelledby="book-heading" className="mt-5 rounded-lg border border-slate-300 bg-white p-4">
+        <h2 id="book-heading" className="text-sm font-semibold uppercase tracking-wide text-slate-500">
+          The book — five years of relationships
+        </h2>
+        <p className="mt-0.5 text-xs text-slate-500">
+          Getting these people onto the platform is the job. The platform has to be worth showing up to.
+        </p>
+        <ul className="mt-3 grid grid-cols-2 gap-2 sm:grid-cols-3 lg:grid-cols-6">
+          {[
+            { label: 'relationships', value: n(snap?.book,'relationships'), ask: 'Give me an overview of our client book.' },
+            { label: 'clients', value: n(snap?.book,'clients'), ask: 'Show me our clients and where each one stands.' },
+            { label: 'landlords', value: n(snap?.book,'landlords'), ask: 'Show me the landlords in our book.' },
+            { label: 'on the platform', value: n(snap?.book,'on_platform'), ask: 'Which of our people are on the platform?' },
+            { label: 'not on it yet', value: n(snap?.book,'off_platform'), ask: 'Who should I contact today to get them onto the platform?', alert: n(snap?.book,'off_platform') > 0 },
+            { label: 'nobody assigned', value: n(snap?.book,'unassigned'), ask: 'Which relationships have nobody assigned to them?', alert: n(snap?.book,'unassigned') > 0 },
+          ].map((m) => (
+            <li key={m.label}>
+              <button type="button" onClick={() => setAsk(m.ask)}
+                className={`min-h-[44px] w-full rounded-md border px-3 py-2 text-left ${
+                  m.alert ? 'border-amber-300 bg-amber-50 hover:border-amber-500'
+                          : 'border-slate-200 bg-slate-50 hover:border-slate-400'}`}>
+                <span className="sr-only">{m.value} {m.label}{m.alert ? ', needs attention' : ''}. Ask Penny.</span>
+                <span aria-hidden="true" className="block text-xl font-semibold text-slate-900">{m.value}</span>
+                <span aria-hidden="true" className="block text-xs leading-tight text-slate-600">{m.label}</span>
+              </button>
+            </li>
+          ))}
+        </ul>
+        <p className="mt-3">
+          <button type="button"
+            onClick={() => setAsk('Who should I contact today, and why each one?')}
+            className="min-h-[44px] rounded-md bg-[#1a365d] px-4 text-sm font-medium text-white">
+            Who should I contact today?
+          </button>
+        </p>
+      </section>
+
+      <div className="mt-4 grid gap-4 lg:grid-cols-2">
+        <Area title="Demand" blurb="New people coming in" onAsk={setAsk} metrics={[
           { label: 'new leads', value: n(snap?.demand,'new_leads'), ask: 'What leads came in and who should I call first?', alert: n(snap?.demand,'new_leads') > 0 },
           { label: 'emergencies', value: n(snap?.demand,'emergencies'), ask: 'Show me the live operation emergencies.', alert: n(snap?.demand,'emergencies') > 0 },
           { label: 'open inquiries', value: n(snap?.demand,'open_inquiries'), ask: 'Show me the open buyer inquiries.', alert: n(snap?.demand,'open_inquiries') > 0 },
-          { label: 'client files', value: n(snap?.demand,'client_files'), ask: 'Give me an overview of our client files.' },
-          { label: 'not on platform', value: n(snap?.demand,'files_off_platform'), ask: 'Which client files have no platform account?' },
           { label: 'being worked', value: n(snap?.demand,'leads_working'), ask: 'Which leads are being worked right now?' },
         ]} />
 
@@ -207,8 +248,8 @@ export default function StaffHome({ staffSession }: { staffSession: StaffLite | 
           { label: 'transactions live', value: n(snap?.resale,'transactions_live'), ask: 'Where do the live transactions stand?' },
         ]} />
 
-        <Area title="Clients" blurb="On the platform" onAsk={setAsk} metrics={[
-          { label: 'accounts', value: n(snap?.clients,'accounts'), ask: 'How many clients do we have, and how many are real?' },
+        <Area title="Platform accounts" blurb="Of the book, who has signed up" onAsk={setAsk} metrics={[
+          { label: 'accounts', value: n(snap?.clients,'accounts'), ask: 'How many accounts exist, and how many are real clients rather than staff or test rows?' },
           { label: 'ever signed in', value: n(snap?.clients,'ever_signed_in'), ask: 'Which clients have never signed in?' },
           { label: 'portfolio units', value: n(snap?.clients,'portfolio_units'), ask: 'What is in client portfolios right now?' },
           { label: 'open escalations', value: n(snap?.clients,'open_escalations'), ask: 'What escalations are open?', alert: n(snap?.clients,'open_escalations') > 0 },

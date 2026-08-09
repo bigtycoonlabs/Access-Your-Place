@@ -141,6 +141,27 @@ async function landlordPortal(url: string, key: string) {
 // distinction Penny must never blur: a client FILE is what we know about someone; an
 // ACCOUNT is something they can sign into.
 
+async function whoToContact(url: string, key: string, staffId: string, limit?: number) {
+  const { ok, status, data } = await rpc(url, key, 'penny_who_to_contact', {
+    p_staff_id: staffId || null, p_limit: limit ?? 12,
+  });
+  if (!ok) {
+    console.error('penny-staff-chat rpc_who_to_contact', status, JSON.stringify(data).slice(0, 200));
+    return { error: `read_failed_${status}` };
+  }
+  const rows = Array.isArray(data) ? data : [];
+  return { count: rows.length, people: rows };
+}
+
+async function clientBook(url: string, key: string) {
+  const { ok, status, data } = await rpc(url, key, 'penny_client_book');
+  if (!ok) {
+    console.error('penny-staff-chat rpc_client_book', status, JSON.stringify(data).slice(0, 200));
+    return { error: `read_failed_${status}` };
+  }
+  return data;
+}
+
 async function findClientFile(url: string, key: string, q: string, limit?: number) {
   const { ok, status, data } = await rpc(url, key, 'penny_find_client_file', {
     p_query: q || '', p_limit: limit ?? 10,
@@ -1055,6 +1076,10 @@ async function execTool(name: string, args: any, ctx: Ctx): Promise<unknown> {
     }
     if (name === 'seller_flow') return await sellerFlow(url, key);
     if (name === 'landlord_portal') return await landlordPortal(url, key);
+    if (name === 'who_to_contact') {
+      return await whoToContact(url, key, staffId, args?.limit ? Number(args.limit) : undefined);
+    }
+    if (name === 'client_book') return await clientBook(url, key);
     if (name === 'find_client_file') {
       return await findClientFile(url, key, String(args?.query || ''), args?.limit ? Number(args.limit) : undefined);
     }
@@ -1355,6 +1380,22 @@ const TOOLS = [
     function: {
       name: 'landlord_portal',
       description: "The supply side: properties landlords have submitted and nobody has reviewed, unread messages FROM landlords, corporate applications still open, and how many landlords have no acquisition manager. Read-only.",
+      parameters: { type: 'object', properties: {}, required: [] },
+    },
+  },
+  {
+    type: 'function',
+    function: {
+      name: 'who_to_contact',
+      description: "Who to reach today, ranked, with the reason for each. Ordered by what costs us most: someone with an account who has never signed in, then clients we have worked with who are not on the platform, then landlords with no portal access, then people never engaged at all. Give the name, the reason and the contact detail — this is a call list, so make it usable.",
+      parameters: { type: 'object', properties: { limit: { type: 'number' } }, required: [] },
+    },
+  },
+  {
+    type: 'function',
+    function: {
+      name: 'client_book',
+      description: "The whole book at a glance: how many relationships, how many are clients, landlords and leads, how many are on the platform, and how many have nobody assigned.",
       parameters: { type: 'object', properties: {}, required: [] },
     },
   },
@@ -2001,6 +2042,17 @@ waiting, because there are fewer of them and they have other options.
 Both are read-only for you. Approving a listing, completing a verification and releasing
 funds are staff decisions with money attached. Surface them, say how long they have waited,
 and route them.
+
+THE BOOK IS THE BUSINESS. This company is five years old and the platform is new. 475
+relationships exist because somebody spoke to every one of them; 461 have no account yet.
+
+That is not a failure to report — IT IS THE WORK. The job is getting those people onto the
+platform, and that only happens if we give them a reason. When a staff member asks what to
+do, "who should I contact today" is usually the honest answer, and who_to_contact ranks it
+by what costs us most: an account never signed into, then clients not on the platform, then
+landlords with no portal, then people never engaged at all.
+
+Give names, reasons and contact details. It is a call list, not a report.
 
 THE COMPANY CLIENT FILES — 475 relationships, and most are NOT platform accounts.
 
