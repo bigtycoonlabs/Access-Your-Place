@@ -181,8 +181,25 @@ Deno.serve(async (req) => {
       parts.push(`It's genuinely quiet — nothing needs you this second. Good time to get ahead: want to list a deal?`);
     }
 
+    // What actually needs somebody, with ages, from the one function that computes it.
+    // The staff home leads with this, so if it cannot be read the screen says so rather
+    // than showing a reassuring blank.
+    let attention: unknown = null;
+    try {
+      const r = await fetch(`${url}/rest/v1/rpc/penny_attention`, {
+        method: 'POST',
+        headers: { apikey: key, Authorization: `Bearer ${key}`, 'Content-Type': 'application/json' },
+        body: '{}',
+      });
+      if (r.ok) attention = await r.json();
+      else console.error('penny-staff-brief attention_failed', r.status);
+    } catch (e) {
+      console.error('penny-staff-brief attention_threw', e instanceof Error ? e.message : String(e));
+    }
+
     return json({
       success: true,
+      attention,
       staff_name: staffName || null,
       greeting: `Hi ${first} —`,
       message: parts.join(' '),

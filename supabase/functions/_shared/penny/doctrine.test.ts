@@ -9,6 +9,7 @@ import {
   PENNY_PERSONALITY,
   PENNY_INDUSTRY_SENSE,
   PENNY_COVENANT,
+  PENNY_TEAM,
 } from './doctrine.ts';
 
 /* ---------------------------------------------------------------------------
@@ -357,4 +358,31 @@ test('COVENANT: she is told never to side with the company against a customer', 
     PENNY_COVENANT.toLowerCase().includes('protecting the company from a customer'),
     'missing the line about whose side she is on',
   );
+});
+
+/* ---- the success team ---- */
+
+test("TEAM: our staff are called the Success Team, and she is told not to say 'staff'", () => {
+  const t = PENNY_TEAM;
+  assert.ok(t.includes('THE SUCCESS TEAM'), 'the team is not named');
+  assert.ok(/Not "staff"/.test(t), 'she is not told to avoid calling them staff');
+});
+
+test('TEAM: all three roles are described by what they actually do', () => {
+  const t = PENNY_TEAM.toLowerCase();
+  for (const [role, marker] of [['admin', 'compliance'], ['acquisition', 'negotiates'], ['setup', 'furniture']]) {
+    assert.ok(t.includes(role), `${role} is missing`);
+    assert.ok(t.includes(marker), `${role} has no description of the actual work`);
+  }
+});
+
+test('TEAM: ownership is named, and framed as the people who decide', () => {
+  const t = PENNY_TEAM;
+  assert.ok(t.includes('Vission') && t.includes('Rel'), 'the owners are not named');
+  assert.ok(t.toLowerCase().includes('decides'), 'ownership is not framed as deciding');
+});
+
+// Routing to the wrong role costs somebody a day. She is told to ask rather than guess.
+test('TEAM: she is told to ask rather than guess which role owns something', () => {
+  assert.ok(PENNY_TEAM.toLowerCase().includes('rather than guessing'));
 });
