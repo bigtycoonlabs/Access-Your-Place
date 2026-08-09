@@ -1293,55 +1293,88 @@ export default function StaffDashboard() {
                         {/* ===== ACQUISITION MANAGER TABS ===== */}
                         {activeDashboard === 'acquisitions' && (
                           <>
-                            <TabsTrigger value="acq-dashboard" className="data-[state=active]:bg-indigo-100 whitespace-nowrap">
+                          {/* ---- Pipeline ---- */}
+                          <span role="presentation" className="flex items-center gap-2 pl-2 pr-1 first:pl-0">
+                            <span aria-hidden="true" className="h-4 w-px bg-slate-300" />
+                            <span className="text-[10px] font-semibold uppercase tracking-wider text-slate-500">Pipeline</span>
+                          </span>
+                          <TabsTrigger value="acq-dashboard" className="data-[state=active]:bg-indigo-100 whitespace-nowrap">
                           <Target className="w-4 h-4 mr-1" aria-hidden="true" /><span>Dashboard</span>
                         </TabsTrigger>
-                        <TabsTrigger value="my-investors" className="data-[state=active]:bg-indigo-100 whitespace-nowrap">
-                          <UserCheck className="w-4 h-4 mr-1" aria-hidden="true" /><span>My Investors</span>
-                        </TabsTrigger>
-                        <TabsTrigger value="dealflow" className="data-[state=active]:bg-indigo-100 whitespace-nowrap">
+                          <TabsTrigger value="dealflow" className="data-[state=active]:bg-indigo-100 whitespace-nowrap">
                           <Building className="w-4 h-4 mr-1" aria-hidden="true" /><span>Deal Flow</span>
                         </TabsTrigger>
-                        <TabsTrigger value="landlord-ops" className="data-[state=active]:bg-indigo-100 whitespace-nowrap relative">
+                          <TabsTrigger value="landlord-ops" className="data-[state=active]:bg-indigo-100 whitespace-nowrap relative">
                           <Landmark className="w-4 h-4 mr-1" aria-hidden="true" /><span>Landlord Ops</span>
                           {landlordOpsCount > 0 && (
                             <span className="ml-1.5 inline-flex items-center justify-center min-w-[20px] h-5 px-1.5 text-[10px] font-bold rounded-full bg-orange-500 text-white animate-pulse">{landlordOpsCount}</span>
                           )}
                         </TabsTrigger>
-
-                        <TabsTrigger value="hr-commissions" className="data-[state=active]:bg-indigo-100 whitespace-nowrap">
+                          {/* ---- Clients ---- */}
+                          <span role="presentation" className="flex items-center gap-2 pl-2 pr-1 first:pl-0">
+                            <span aria-hidden="true" className="h-4 w-px bg-slate-300" />
+                            <span className="text-[10px] font-semibold uppercase tracking-wider text-slate-500">Clients</span>
+                          </span>
+                          <TabsTrigger value="my-investors" className="data-[state=active]:bg-indigo-100 whitespace-nowrap">
+                          <UserCheck className="w-4 h-4 mr-1" aria-hidden="true" /><span>My Investors</span>
+                        </TabsTrigger>
+                          {/* ---- Team ---- */}
+                          <span role="presentation" className="flex items-center gap-2 pl-2 pr-1 first:pl-0">
+                            <span aria-hidden="true" className="h-4 w-px bg-slate-300" />
+                            <span className="text-[10px] font-semibold uppercase tracking-wider text-slate-500">Team</span>
+                          </span>
+                          <TabsTrigger value="hr-commissions" className="data-[state=active]:bg-indigo-100 whitespace-nowrap">
                           <Briefcase className="w-4 h-4 mr-1" aria-hidden="true" /><span>HR & Pay</span>
                         </TabsTrigger>
-                        <TabsTrigger value="sops" className="data-[state=active]:bg-indigo-100 whitespace-nowrap">
+                          {/* ---- Admin ---- */}
+                          <span role="presentation" className="flex items-center gap-2 pl-2 pr-1 first:pl-0">
+                            <span aria-hidden="true" className="h-4 w-px bg-slate-300" />
+                            <span className="text-[10px] font-semibold uppercase tracking-wider text-slate-500">Admin</span>
+                          </span>
+                          <TabsTrigger value="sops" className="data-[state=active]:bg-indigo-100 whitespace-nowrap">
                           <BookOpen className="w-4 h-4 mr-1" aria-hidden="true" /><span>SOPs</span>
                         </TabsTrigger>
-                        <TabsTrigger value="settings" className="data-[state=active]:bg-indigo-100 whitespace-nowrap">
+                          <TabsTrigger value="settings" className="data-[state=active]:bg-indigo-100 whitespace-nowrap">
                           <Settings className="w-4 h-4 mr-1" aria-hidden="true" /><span>Settings</span>
                         </TabsTrigger>
-                      </>
+                        </>
                     )}
 
 
                     {/* ===== SETUP MANAGER TABS ===== */}
                     {activeDashboard === 'setups' && (
                       <>
-                        <TabsTrigger value="setups" className="data-[state=active]:bg-emerald-100 whitespace-nowrap">
+                          {/* ---- Launches ---- */}
+                          <span role="presentation" className="flex items-center gap-2 pl-2 pr-1 first:pl-0">
+                            <span aria-hidden="true" className="h-4 w-px bg-slate-300" />
+                            <span className="text-[10px] font-semibold uppercase tracking-wider text-slate-500">Launches</span>
+                          </span>
+                          <TabsTrigger value="setups" className="data-[state=active]:bg-emerald-100 whitespace-nowrap">
                           <Wrench className="w-4 h-4 mr-1" aria-hidden="true" /><span>Setup Dashboard</span>
                         </TabsTrigger>
-                        <TabsTrigger value="my-setups" className="data-[state=active]:bg-emerald-100 whitespace-nowrap">
+                          <TabsTrigger value="my-setups" className="data-[state=active]:bg-emerald-100 whitespace-nowrap">
                           <ClipboardCheck className="w-4 h-4 mr-1" aria-hidden="true" /><span>My Projects</span>
                         </TabsTrigger>
-                        <TabsTrigger value="hr-commissions" className="data-[state=active]:bg-emerald-100 whitespace-nowrap">
+                          {/* ---- Team ---- */}
+                          <span role="presentation" className="flex items-center gap-2 pl-2 pr-1 first:pl-0">
+                            <span aria-hidden="true" className="h-4 w-px bg-slate-300" />
+                            <span className="text-[10px] font-semibold uppercase tracking-wider text-slate-500">Team</span>
+                          </span>
+                          <TabsTrigger value="hr-commissions" className="data-[state=active]:bg-emerald-100 whitespace-nowrap">
                           <Briefcase className="w-4 h-4 mr-1" aria-hidden="true" /><span>HR & Pay</span>
                         </TabsTrigger>
-                        <TabsTrigger value="sops" className="data-[state=active]:bg-emerald-100 whitespace-nowrap">
+                          {/* ---- Admin ---- */}
+                          <span role="presentation" className="flex items-center gap-2 pl-2 pr-1 first:pl-0">
+                            <span aria-hidden="true" className="h-4 w-px bg-slate-300" />
+                            <span className="text-[10px] font-semibold uppercase tracking-wider text-slate-500">Admin</span>
+                          </span>
+                          <TabsTrigger value="sops" className="data-[state=active]:bg-emerald-100 whitespace-nowrap">
                           <BookOpen className="w-4 h-4 mr-1" aria-hidden="true" /><span>SOPs</span>
                         </TabsTrigger>
-                        <TabsTrigger value="settings" className="data-[state=active]:bg-emerald-100 whitespace-nowrap">
+                          <TabsTrigger value="settings" className="data-[state=active]:bg-emerald-100 whitespace-nowrap">
                           <Settings className="w-4 h-4 mr-1" aria-hidden="true" /><span>Settings</span>
                         </TabsTrigger>
-
-                      </>
+                        </>
                     )}
                   </TabsList>
                 </div>
