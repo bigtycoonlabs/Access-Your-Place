@@ -902,6 +902,14 @@ export default function StaffDashboard() {
 
   return (
     <div className="min-h-screen bg-gray-50">
+      {/* The new Success Team home, linked from here so it is findable without removing
+          anything. The old dashboard keeps working until the new one has been judged. */}
+      <a
+        href="/staff/home"
+        className="block min-h-[44px] bg-[#1a365d] px-4 py-3 text-center text-sm font-medium text-white underline underline-offset-2"
+      >
+        Try the new Success Team home
+      </a>
       {/* Skip to main content link - WCAG 2.1 Level A: Bypass Blocks (2.4.1) */}
       <a 
         href="#main-content" 

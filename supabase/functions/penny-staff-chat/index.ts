@@ -584,6 +584,31 @@ const SUCCESS_INBOX = 'success@accessyourplace.com';
 
 // Send a composed draft to the client now, from Penny. Reply-to and a bcc copy
 // go to the success team (penny@ is send-only), then we mark the draft sent.
+// ONE INTENT, ONE CONFIRMATION.
+//
+// Sending an email used to take TWO confirmations: compose asked, the staff member said
+// yes, then send asked essentially the same question again. If the email_id was lost
+// between turns she started over — which is exactly what happened when an owner confirmed
+// three times and no email was ever sent. The last draft in the table predated the
+// attempt by a week, so compose never even ran.
+//
+// "Send Elizabeth an email saying X", confirmed once, IS the confirmation. This composes
+// and sends in one step and reports what actually happened at each stage.
+async function emailClientNow(url: string, key: string, a: any, staffId: string, staffName: string) {
+  const composed: any = await composeClientEmail(url, key, a, staffId, staffName);
+  if (!composed?.ok || !composed.email_id) {
+    return { error: composed?.error || 'compose_failed', sent: false,
+             note: 'The draft could not be saved, so nothing was sent.' };
+  }
+  const sent: any = await sendClientEmail(url, key, String(composed.email_id), staffId, staffName);
+  if (sent?.error) {
+    // The draft survives so it can be retried rather than rewritten.
+    return { ...sent, sent: false, email_id: composed.email_id,
+             note: 'The draft was saved but the send failed. It is kept and can be retried.' };
+  }
+  return { ...sent, email_id: composed.email_id };
+}
+
 async function sendClientEmail(url: string, key: string, id: string, staffId: string, staffName: string) {
   const email = await getClientEmail(url, key, id);
   if (!email || (email as any).error) return { error: (email as any)?.error || 'load_failed', email_id: id };
@@ -967,6 +992,19 @@ async function execTool(name: string, args: any, ctx: Ctx): Promise<unknown> {
     if (name === 'get_client_email') {
       if (!args?.email_id) return { error: 'email_id required' };
       return await getClientEmail(url, key, String(args.email_id));
+    }
+    if (name === 'email_client') {
+      if (!args?.to_email || !args?.subject || !args?.body) {
+        return { error: 'to_email, subject and body are all required' };
+      }
+      if (args.confirmed !== true) {
+        return {
+          needs_confirmation: true,
+          action: `send this email to ${args.to_email} now`,
+          instruction: 'Read the recipient, the subject and the FULL body back, then ask once. When they say yes, call this again with confirmed true — do not ask a second time.',
+        };
+      }
+      return await emailClientNow(url, key, args, staffId, staffName);
     }
     if (name === 'compose_client_email') {
       if (!args?.to_email || !args?.subject || !args?.body) return { error: 'to_email, subject and body required' };
@@ -1657,6 +1695,25 @@ const TOOLS = [
   {
     type: 'function',
     function: {
+      name: 'email_client',
+      description: "Write AND SEND an email to a client in one step. USE THIS whenever someone asks you to email a client — it is one action and takes ONE confirmation. Read the recipient, subject and full body back, get a yes, then call again with confirmed true. Only use compose_client_email instead when they explicitly want a draft saved WITHOUT sending.",
+      parameters: {
+        type: 'object',
+        properties: {
+          to_email: { type: 'string' },
+          to_name: { type: 'string' },
+          subject: { type: 'string' },
+          body: { type: 'string' },
+          context: { type: 'string', description: 'Why this is being sent. Saved on the record.' },
+          confirmed: { type: 'boolean' },
+        },
+        required: ['to_email', 'subject', 'body'],
+      },
+    },
+  },
+  {
+    type: 'function',
+    function: {
       name: 'compose_client_email',
       description: "Save a client email you've written together with the staff member as a draft, so it waits in the dashboard to be sent. This is a WRITE — only call with confirmed:true after you've read the full draft back and the staff member has clearly approved it. Always write the body in Penny's warm voice and always include a line telling the client they can respond right in their Access Your Place dashboard (log in at https://accessyourplace.com/investor/login).",
       parameters: {
@@ -2077,7 +2134,15 @@ REASON, DON'T RECITE: when you list opportunities, don't just read rows back. Gr
 
 TAKING ACTION (writes): changing a status or saving a note changes live records. Before any write, say plainly what you're about to do and wait for a clear yes. Only then call the tool with confirmed:true. If a tool tells you it needs confirmation, ask — do not assume.
 
-CLIENT EMAILS: you can write emails to clients together with the staff member, and — with their permission — send them yourself. If they ask what's pending or waiting to go out, use list_pending_emails; open a specific one with get_client_email. To write a new one, draft it right here in your own warm voice, refine it with them, and include the right link for the situation: for an existing client, invite them to respond in their Access Your Place dashboard (log in at https://accessyourplace.com/investor/login); for someone NEW you're bringing onto the platform, include the correct create-account link from check_account instead — never tell someone who has no account yet to log in. Replies to our emails route to the success team either way. Save it with compose_client_email (confirmed:true) after you've read the full draft back and they've approved it. Then you can send it yourself: once they give you the go-ahead, call send_client_email (confirmed:true) and it goes out from Penny right away — you do NOT need the dashboard to send. If they'd rather hold it and review later, that's fine — it stays a draft in the list. Sending is immediate and can't be undone, so always read the email back and get a clear yes first. Never invent a client's details — if you don't know an address or the facts of their situation, ask.
+CLIENT EMAILS: use email_client. It writes and sends in ONE step and takes ONE
+confirmation. Read the recipient, the subject and the full body back, ask once, and when
+they say yes call it again with confirmed true. Do NOT ask a second time — an owner
+confirmed three times once and no email was ever sent, because the old flow asked twice for
+the same decision. compose_client_email is only for when someone explicitly wants a draft
+saved WITHOUT sending.
+
+If a send fails, say so plainly and say the draft was kept. Never say an email went out
+unless the tool told you it did. If they ask what's pending or waiting to go out, use list_pending_emails; open a specific one with get_client_email. To write a new one, draft it right here in your own warm voice, refine it with them, and include the right link for the situation: for an existing client, invite them to respond in their Access Your Place dashboard (log in at https://accessyourplace.com/investor/login); for someone NEW you're bringing onto the platform, include the correct create-account link from check_account instead — never tell someone who has no account yet to log in. Replies to our emails route to the success team either way. Save it with compose_client_email (confirmed:true) after you've read the full draft back and they've approved it. Then you can send it yourself: once they give you the go-ahead, call send_client_email (confirmed:true) and it goes out from Penny right away — you do NOT need the dashboard to send. If they'd rather hold it and review later, that's fine — it stays a draft in the list. Sending is immediate and can't be undone, so always read the email back and get a clear yes first. Never invent a client's details — if you don't know an address or the facts of their situation, ask.
 
 REPORTING: you can tell them how the platform is doing with get_activity_report — website traffic (visits, sessions, top pages) and the new clients who have joined, by name, over the last stretch of days. Lead with the headline (how many visits, how many new clients), then the useful detail. Be honest about the edges: this covers traffic and new signups. If they ask what you and they have discussed in this staff console, be honest that this staff conversation itself isn't logged yet — but you CAN see what a client has been doing on the platform (below).
 

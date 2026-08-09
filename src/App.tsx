@@ -19,6 +19,7 @@ import InvestorVerifyEmail from "./pages/InvestorVerifyEmail";
 import InvestorUnsubscribe from "./pages/InvestorUnsubscribe";
 import StaffLogin from "./pages/StaffLogin";
 import StaffDashboard from "./pages/StaffDashboard";
+import StaffHomeRoute from "./pages/StaffHomeRoute";
 import StaffLeadForge from "./pages/StaffLeadForge";
 import StaffResetPassword from "./pages/StaffResetPassword";
 import StaffQuickAddContact from "./pages/StaffQuickAddContact";
@@ -111,6 +112,9 @@ const App = () => (
                   <Route path="/investor/unsubscribe" element={<InvestorUnsubscribe />} />
                   <Route path="/staff/login" element={<StaffLogin />} />
                   <Route path="/staff-login" element={<Navigate to="/staff/login" replace />} />
+                  {/* The new Success Team home. The full dashboard is still one link away at
+                      ?view=full, so nothing is taken away before this has been judged. */}
+                  <Route path="/staff/home" element={<StaffHomeRoute />} />
                   <Route path="/staff/dashboard" element={<StaffDashboard />} />
                   <Route path="/staff/leadforge" element={<StaffLeadForge />} />
                   <Route path="/staff/reset-password" element={<StaffResetPassword />} />
