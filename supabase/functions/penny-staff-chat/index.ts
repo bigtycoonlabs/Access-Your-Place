@@ -141,6 +141,39 @@ async function landlordPortal(url: string, key: string) {
 // distinction Penny must never blur: a client FILE is what we know about someone; an
 // ACCOUNT is something they can sign into.
 
+async function assignClientFile(url: string, key: string, fileId: string, toStaffId: string, byStaffId: string) {
+  const { ok, status, data } = await rpc(url, key, 'penny_assign_client_file', {
+    p_file_id: fileId, p_to_staff_id: toStaffId, p_by_staff_id: byStaffId || null,
+  });
+  if (!ok) {
+    console.error('penny-staff-chat rpc_assign_file', status, JSON.stringify(data).slice(0, 200));
+    return { error: 'assign_failed', http: status };
+  }
+  return data;
+}
+
+async function logTouch(url: string, key: string, a: any, staffId: string) {
+  const { ok, status, data } = await rpc(url, key, 'penny_log_touch', {
+    p_file_id: String(a.file_id), p_note: String(a.note || ''), p_staff_id: staffId || null,
+    p_next_step: a.next_step ? String(a.next_step) : null,
+    p_next_step_due: a.next_step_due ? String(a.next_step_due) : null,
+  });
+  if (!ok) {
+    console.error('penny-staff-chat rpc_log_touch', status, JSON.stringify(data).slice(0, 200));
+    return { error: 'log_failed', http: status };
+  }
+  return data;
+}
+
+async function myBook(url: string, key: string, staffId: string) {
+  const { ok, status, data } = await rpc(url, key, 'penny_my_book', { p_staff_id: staffId });
+  if (!ok) {
+    console.error('penny-staff-chat rpc_my_book', status, JSON.stringify(data).slice(0, 200));
+    return { error: `read_failed_${status}` };
+  }
+  return data;
+}
+
 async function whoToContact(url: string, key: string, staffId: string, limit?: number) {
   const { ok, status, data } = await rpc(url, key, 'penny_who_to_contact', {
     p_staff_id: staffId || null, p_limit: limit ?? 12,
@@ -1076,6 +1109,15 @@ async function execTool(name: string, args: any, ctx: Ctx): Promise<unknown> {
     }
     if (name === 'seller_flow') return await sellerFlow(url, key);
     if (name === 'landlord_portal') return await landlordPortal(url, key);
+    if (name === 'my_book') return await myBook(url, key, staffId);
+    if (name === 'assign_client_file') {
+      if (!args?.file_id || !args?.to_staff_id) return { error: 'file_id and to_staff_id required' };
+      return await assignClientFile(url, key, String(args.file_id), String(args.to_staff_id), staffId);
+    }
+    if (name === 'log_touch') {
+      if (!args?.file_id || !args?.note) return { error: 'file_id and a note are required' };
+      return await logTouch(url, key, args, staffId);
+    }
     if (name === 'who_to_contact') {
       return await whoToContact(url, key, staffId, args?.limit ? Number(args.limit) : undefined);
     }
@@ -1381,6 +1423,43 @@ const TOOLS = [
       name: 'landlord_portal',
       description: "The supply side: properties landlords have submitted and nobody has reviewed, unread messages FROM landlords, corporate applications still open, and how many landlords have no acquisition manager. Read-only.",
       parameters: { type: 'object', properties: {}, required: [] },
+    },
+  },
+  {
+    type: 'function',
+    function: {
+      name: 'my_book',
+      description: "What the person you are talking to is carrying: how many relationships are assigned to them, how many they have never touched, what is overdue and what is due today.",
+      parameters: { type: 'object', properties: {}, required: [] },
+    },
+  },
+  {
+    type: 'function',
+    function: {
+      name: 'assign_client_file',
+      description: "Give a relationship an owner on the Success Team. An unowned relationship is one nobody calls. Use invite_staff or the team list to get the staff id.",
+      parameters: {
+        type: 'object',
+        properties: { file_id: { type: 'string' }, to_staff_id: { type: 'string' } },
+        required: ['file_id', 'to_staff_id'],
+      },
+    },
+  },
+  {
+    type: 'function',
+    function: {
+      name: 'log_touch',
+      description: "Record that somebody actually reached out, and what happened. The note must say the OUTCOME, not just that a call was made. Set a next step and a due date when there is one — this is what moves a person out of 'never engaged'. Whoever logs it takes ownership if nobody had it.",
+      parameters: {
+        type: 'object',
+        properties: {
+          file_id: { type: 'string' },
+          note: { type: 'string', description: 'What actually happened. Not "called them".' },
+          next_step: { type: 'string' },
+          next_step_due: { type: 'string', description: 'YYYY-MM-DD' },
+        },
+        required: ['file_id', 'note'],
+      },
     },
   },
   {
@@ -2053,6 +2132,15 @@ by what costs us most: an account never signed into, then clients not on the pla
 landlords with no portal, then people never engaged at all.
 
 Give names, reasons and contact details. It is a call list, not a report.
+
+AND CLOSE THE LOOP. After somebody makes contact, log_touch records what happened — the
+note must say the OUTCOME, because "called them" tells the next person nothing. Set a next
+step and a date when there is one. That is what moves a person out of "never engaged", and
+it is the difference between a book that gets worked and a list that gets looked at.
+
+assign_client_file gives a relationship an owner. my_book shows what someone is carrying,
+including what is overdue. If a staff member asks what they should be doing, my_book and
+who_to_contact together are usually the answer.
 
 THE COMPANY CLIENT FILES — 475 relationships, and most are NOT platform accounts.
 
