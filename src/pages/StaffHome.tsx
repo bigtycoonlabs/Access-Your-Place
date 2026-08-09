@@ -80,6 +80,7 @@ function Area({
 export default function StaffHome({ staffSession }: { staffSession: StaffLite | null }) {
   const [snap, setSnap] = useState<Snapshot | null>(null);
   const [headline, setHeadline] = useState('Checking where things stand…');
+  const [queue, setQueue] = useState<any[]>([]);
   const [urgent, setUrgent] = useState(false);
   const [ask, setAsk] = useState('');
   const first = staffSession?.first_name || (staffSession?.name || '').split(' ')[0] || 'there';
@@ -98,6 +99,10 @@ export default function StaffHome({ staffSession }: { staffSession: StaffLite | 
         }
         setSnap(data.operations || null);
         const items = data.attention?.items || [];
+        // Ordered worst-first so the DOM order IS the priority order — which is the order
+        // a screen reader speaks it.
+        const rank: Record<string, number> = { emergency: 0, high: 1, normal: 2, low: 3 };
+        setQueue([...items].sort((a: any, b: any) => (rank[a.severity] ?? 9) - (rank[b.severity] ?? 9)));
         const em = items.filter((i: any) => i.severity === 'emergency');
         const hi = items.filter((i: any) => i.severity === 'high');
         setUrgent(em.length > 0);
@@ -126,6 +131,49 @@ export default function StaffHome({ staffSession }: { staffSession: StaffLite | 
           {headline}
         </p>
       </header>
+
+      {/* THE WORK QUEUE — everything that needs somebody, worst first.
+          The headline names the top item; this is the rest, because an operator running a
+          marketplace needs the whole list, not a teaser of it. Each row says WHAT and HOW
+          LONG, and hands off to Penny for the detail and the action. */}
+      {queue.length > 0 && (
+        <section aria-labelledby="queue-heading" className="mb-5 rounded-lg border border-slate-300 bg-white">
+          <h2 id="queue-heading" className="border-b border-slate-200 px-4 py-2 text-sm font-semibold uppercase tracking-wide text-slate-600">
+            Needs someone — {queue.length} {queue.length === 1 ? 'item' : 'items'}
+          </h2>
+          <ul>
+            {queue.map((item, i) => (
+              <li key={i} className="border-b border-slate-100 last:border-0">
+                <button
+                  type="button"
+                  onClick={() => setAsk(
+                    item.who ? `Tell me about ${item.who} and what I should do next.`
+                             : `Tell me more about this: ${item.what}`,
+                  )}
+                  className="flex min-h-[44px] w-full items-start gap-3 px-4 py-3 text-left hover:bg-slate-50"
+                >
+                  {/* Severity is WORDS, not a colour. Colour alone carries nothing here. */}
+                  <span className={`mt-0.5 shrink-0 rounded px-2 py-0.5 text-xs font-semibold ${
+                    item.severity === 'emergency' ? 'bg-red-100 text-red-800'
+                    : item.severity === 'high' ? 'bg-amber-100 text-amber-900'
+                    : 'bg-slate-100 text-slate-700'}`}>
+                    {item.severity === 'emergency' ? 'Emergency'
+                     : item.severity === 'high' ? 'Urgent' : 'Waiting'}
+                  </span>
+                  <span className="flex-1 text-sm leading-relaxed text-slate-800">
+                    {item.what}
+                    {item.contact && (
+                      <span className="mt-0.5 block font-medium text-slate-900">
+                        Reach them on {item.contact}
+                      </span>
+                    )}
+                  </span>
+                </button>
+              </li>
+            ))}
+          </ul>
+        </section>
+      )}
 
       {/* Penny sits high because she is how you act on any number below. */}
       <section aria-label="Ask Penny" className="rounded-lg border border-slate-300 bg-white p-4">
