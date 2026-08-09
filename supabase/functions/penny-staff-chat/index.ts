@@ -2557,6 +2557,75 @@ const TOOL_LABELS: Record<string, string> = {
 };
 const toolLabel = (n?: string) => (n && TOOL_LABELS[n]) || 'Working on that';
 
+
+// ---- TOOL GATING ----
+//
+// Penny carries 53 tools. Their schemas are ~9,800 tokens, and with her doctrine that is
+// ~14,000 tokens on EVERY call against an organisation limit of 30,000 tokens per minute.
+// Two messages in a minute exhausted it, which is what produced the 429 an owner hit —
+// and, before the error messages were fixed, the mysterious "I hit a snag".
+//
+// Sending every tool on every turn was never necessary. A core set is always available;
+// the rest are matched to what the person actually asked for. She keeps full AWARENESS of
+// everything through her prompt, so she can still say "I can do that" and then do it on
+// the next turn when the group loads.
+const CORE_TOOLS = new Set([
+  'my_alerts', 'my_book', 'who_to_contact', 'client_book', 'find_client_file',
+  'find_client', 'log_touch', 'attention', 'remember', 'forget',
+]);
+
+const TOOL_GROUPS: Record<string, { words: RegExp; tools: string[] }> = {
+  deals: {
+    words: /deal|propert|listing|marketplace|unpublish|publish|address|release|quote|forge|price|rent|market/i,
+    tools: ['list_marketplace','unpublish_property','add_property','quote_deal','forge_status',
+            'release_property','present_deal','property_detail','search_properties'],
+  },
+  clients: {
+    words: /client|investor|portfolio|credit|account|suspend|reinstate|assign|manager|book|contact/i,
+    tools: ['get_client_portfolio','suspend_client','reinstate_client','assign_manager',
+            'assign_client_file','update_client_file','check_account','client_activity'],
+  },
+  leads: {
+    words: /lead|inquir|interest|new person|came in|signed up|joined/i,
+    tools: ['list_leads','set_lead_status','list_inquiries','set_inquiry_status','add_inquiry_note'],
+  },
+  email: {
+    words: /email|write|send|message|reach out|follow up|invite|notify/i,
+    tools: ['email_client','compose_client_email','send_client_email','send_account_invite','notify_staff'],
+  },
+  content: {
+    words: /article|library|content|write|blog|publish|review|verif/i,
+    tools: ['articles_needing_work','write_article','articles_awaiting_review','decide_article',
+            'republish_article'],
+  },
+  seller: {
+    words: /seller|sale|offer|counter|buyer|verification|transaction|resale/i,
+    tools: ['seller_flow','landlord_portal'],
+  },
+  staff: {
+    words: /staff|team|success team|hire|onboard|commission|escalat|dispute|legal|complaint/i,
+    tools: ['list_staff','invite_staff','list_escalations','resolve_escalation','raise_alert'],
+  },
+  payments: {
+    words: /payment|pay|invoice|wire|zelle|cash app|bitcoin|deposit|balance/i,
+    tools: ['get_payment_methods','create_payment_link','list_payment_requests'],
+  },
+};
+
+// Everything the model may call this turn. Core always, plus any group whose words appear
+// in what was actually said. Nothing is hidden permanently — a group loads the moment the
+// subject comes up.
+function toolsForTurn(userText: string) {
+  const wanted = new Set(CORE_TOOLS);
+  for (const g of Object.values(TOOL_GROUPS)) {
+    if (g.words.test(userText)) for (const t of g.tools) wanted.add(t);
+  }
+  const picked = TOOLS.filter((t: any) => wanted.has(t?.function?.name));
+  // If matching produced almost nothing, send everything rather than leave her unable to
+  // act. A smaller payload is not worth a refusal on a request we simply failed to classify.
+  return picked.length >= 8 ? picked : TOOLS;
+}
+
 async function runAgent(messages: Array<{ role: string; content: string }>, first: string, ctx: Ctx, emit?: Emit) {
   const key = Deno.env.get('OPENAI_API_KEY');
   if (!key) {
@@ -2564,6 +2633,13 @@ async function runAgent(messages: Array<{ role: string; content: string }>, firs
     return { message: "My reasoning service is not configured — OPENAI_API_KEY is missing on the server. That is a platform problem, not something you did." };
   }
   const sys = systemPrompt(first, ctx.isOwner === true, ctx.identified === true, ctx.fullName || first, ctx.docText, ctx.docName, (ctx as any).memories, (ctx as any).attention);
+
+  // Which tools this turn actually needs. Matched against the last few things said rather
+  // than only the latest message, so "do that for Elizabeth too" still loads client tools.
+  const recentText = messages.slice(-4).map((m) => String(m?.content || '')).join(' ');
+  const turnTools = toolsForTurn(recentText);
+  console.log('penny-staff-chat tools_this_turn', turnTools.length, 'of', TOOLS.length);
+  let didRetry = false;
   // Images ride on the most recent user message, as OpenAI's multimodal content array.
   // Attached to the LAST user turn rather than the first, because a photo sent now is
   // about what is being asked now.
@@ -2603,13 +2679,29 @@ async function runAgent(messages: Array<{ role: string; content: string }>, firs
       method: 'POST',
       headers: { Authorization: `Bearer ${key}`, 'Content-Type': 'application/json' },
       body: JSON.stringify({
-        model: 'gpt-4o', messages: convo, tools: TOOLS, tool_choice: 'auto', temperature: 0.4,
+        model: 'gpt-4o', messages: convo, tools: turnTools, tool_choice: 'auto', temperature: 0.4,
         ...(streaming ? { stream: true } : {}),
       }),
     });
     if (!res.ok) {
       const t = await res.text();
       console.error('penny-staff-chat openai_http', res.status, t.slice(0, 300));
+
+      // A 429 TELLS US HOW LONG TO WAIT, and we were throwing that away. The body carries
+      // "Please try again in 17.786s". Waiting once and retrying turns a dead turn into a
+      // slightly slow one, which is what a person actually wants.
+      //
+      // Only once, and only for a rate limit. Retrying a 400 just fails twice.
+      if (res.status === 429 && !didRetry) {
+        const m = t.match(/try again in ([0-9.]+)s/i);
+        const waitMs = Math.min(25000, Math.ceil(((m ? parseFloat(m[1]) : 8) + 0.5) * 1000));
+        console.log('penny-staff-chat rate_limited_waiting', waitMs);
+        emit?.({ type: 'status', phase: 'waiting',
+                 text: `Rate limited — waiting ${Math.ceil(waitMs / 1000)}s and trying again.` });
+        await new Promise((r) => setTimeout(r, waitMs));
+        didRetry = true;
+        continue;
+      }
       // Surfaced rather than collapsed into a generic failure — a 400 from the tools
       // payload and a 429 rate limit need completely different responses from a person.
       emit?.({ type: 'status', phase: 'error', text: `Reasoning service returned ${res.status}` });
