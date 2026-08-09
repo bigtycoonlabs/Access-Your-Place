@@ -302,8 +302,17 @@ export function PennyStaffChat({
       }
     } catch (err: any) {
       if (err?.name === 'AbortError') return;
-      setError('Something went wrong reaching Penny. Try again in a moment.');
-      setMessages((m) => [...m, { role: 'assistant', content: 'I hit a snag just now — give me a moment and try again.' }]);
+      // The reason, not a shrug. "I hit a snag" told an owner nothing, and the server was
+      // returning HTTP 200 the whole time because an SSE response sends its headers before
+      // anything goes wrong. On a staff-only surface the actual error is worth far more
+      // than a tidy sentence.
+      const reason = err?.message ? String(err.message).slice(0, 200) : 'the connection dropped';
+      console.error('[PennyStaffChat] turn failed:', err);
+      setError(`Could not finish that: ${reason}`);
+      setMessages((m) => [...m, {
+        role: 'assistant',
+        content: `Something went wrong at my end and I did not finish that. The reason was: ${reason}. Nothing was left half-done — try again, and if it keeps happening tell whoever is working on the platform exactly what that said.`,
+      }]);
     } finally {
       abortRef.current = null;
       setBusy(false);

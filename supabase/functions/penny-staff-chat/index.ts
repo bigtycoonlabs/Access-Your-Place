@@ -2341,6 +2341,9 @@ async function runAgent(messages: Array<{ role: string; content: string }>, firs
     if (!res.ok) {
       const t = await res.text();
       console.error('penny-staff-chat openai_http', res.status, t.slice(0, 300));
+      // Surfaced rather than collapsed into a generic failure — a 400 from the tools
+      // payload and a 429 rate limit need completely different responses from a person.
+      emit?.({ type: 'status', phase: 'error', text: `Reasoning service returned ${res.status}` });
       const plain = await plainReply(key, sys, messages);
       // The no-tools fallback bypasses finalize(), so it needs the same guard.
       if (plain) {
@@ -2400,7 +2403,25 @@ async function runAgent(messages: Array<{ role: string; content: string }>, firs
           }
         }
       }
-      msg = { role: 'assistant', content, ...(calls.length ? { tool_calls: calls.filter(Boolean) } : {}) };
+      const toolCalls = calls.filter(Boolean);
+
+      // AN EMPTY ASSISTANT TURN IS NOT A VALID TURN.
+      //
+      // If the stream yields no text AND no tool calls — a filtered response, a dropped
+      // connection, a provider hiccup — this used to build { content: '' } and push it
+      // into the conversation. The next round then sends an assistant message with empty
+      // content, which the API rejects, and the whole turn throws.
+      //
+      // From the outside that looked like "I hit a snag" with an HTTP 200, because an SSE
+      // response sends its headers long before anything goes wrong.
+      if (!content && toolCalls.length === 0) {
+        console.error('penny-staff-chat empty_stream', JSON.stringify({ round }));
+        return {
+          message: "That came back empty from my reasoning service — nothing was lost, ask me again.",
+        };
+      }
+
+      msg = { role: 'assistant', content, ...(toolCalls.length ? { tool_calls: toolCalls } : {}) };
     } else {
       const data = await res.json();
       msg = data.choices?.[0]?.message;
@@ -2597,10 +2618,23 @@ Deno.serve(async (req) => {
             send({ type: 'message', text: out.message });
             send({ type: 'done' });
           } catch (e) {
-            console.error('penny-staff-chat stream_threw', e instanceof Error ? e.message : String(e));
-            // Told, not swallowed. A stream that dies quietly looks identical to one that
-            // is still thinking.
-            send({ type: 'error', text: 'I hit a snag part-way through that. Nothing was left half-done — try again.' });
+            const detail = e instanceof Error ? (e.stack || e.message) : String(e);
+            console.error('penny-staff-chat stream_threw', detail);
+            // THE REASON IS NOW IN THE MESSAGE.
+            //
+            // This used to say "I hit a snag part-way through that" and nothing else. An
+            // owner saw that repeatedly and there was no way to tell what had failed —
+            // the HTTP status was 200 every time, because an SSE response returns its
+            // headers before anything goes wrong.
+            //
+            // A generic error message on a staff-only surface buys nothing and costs the
+            // ability to diagnose. Staff get the actual reason.
+            send({
+              type: 'error',
+              text: `Something broke while I was working on that, and here is the actual reason so it can be fixed: ${
+                (e instanceof Error ? e.message : String(e)).slice(0, 300)
+              }`,
+            });
             send({ type: 'done' });
           } finally {
             try { controller.close(); } catch { /* already closed */ }
