@@ -260,7 +260,10 @@ export default function StaffDashboard() {
   const [generatingArticles, setGeneratingArticles] = useState(false);
   const [syncingArticles, setSyncingArticles] = useState(false);
   const [staffSession, setStaffSession] = useState<StaffSession | null>(null);
-  const [unreadMessages, setUnreadMessages] = useState(0);
+  // null = we could not check, which is NOT the same as zero. The badge shows nothing for
+  // null, and the aria-label says so, rather than telling somebody they have no messages
+  // when we simply failed to look.
+  const [unreadMessages, setUnreadMessages] = useState<number | null>(0);
   const [hasInvestorBackup, setHasInvestorBackup] = useState(false);
   const [activeTab, setActiveTab] = useState('penny-home');
   const [activeDashboard, setActiveDashboard] = useState<DashboardType>('success');
@@ -512,13 +515,18 @@ export default function StaffDashboard() {
             .eq('read', false);
           setUnreadMessages(messages?.length || 0);
         } catch (dbErr) {
+          // A FAILED READ IS NOT ZERO. Setting the badge to 0 here made "we could not
+          // check your messages" look identical to "you have no messages" — and on a
+          // commission business, an unread message is somebody's client waiting.
+          //
+          // null means unknown, and the badge renders nothing rather than a confident 0.
           console.warn('[loadUnreadCount] DB fallback also failed:', dbErr);
-          setUnreadMessages(0);
+          setUnreadMessages(null);
         }
       }
     } catch (err) {
       console.error('Failed to load unread count:', err);
-      setUnreadMessages(0);
+      setUnreadMessages(null);
     }
   };
 
@@ -976,10 +984,14 @@ export default function StaffDashboard() {
               size="sm"
               onClick={() => setMessagesOpen(true)}
               className="relative"
-              aria-label={`Messages${unreadMessages > 0 ? `, ${unreadMessages} unread` : ''}`}
+              aria-label={
+                unreadMessages === null
+                  ? 'Messages, unread count unavailable'
+                  : `Messages${unreadMessages > 0 ? `, ${unreadMessages} unread` : ''}`
+              }
             >
               <MessageSquare className="w-4 h-4" aria-hidden="true" />
-              {unreadMessages > 0 && (
+              {unreadMessages !== null && unreadMessages > 0 && (
                 <span 
                   className="absolute -top-1 -right-1 w-5 h-5 bg-red-500 text-white text-xs rounded-full flex items-center justify-center"
                   aria-hidden="true"
@@ -1201,6 +1213,27 @@ export default function StaffDashboard() {
                                             {/* ===== SUCCESS TEAM TABS ===== */}
                         {activeDashboard === 'success' && (
                           <>
+                        {/* ---- Penny ----
+                             These four panels existed with NO visible trigger anywhere. The dashboard opens
+                             on penny-home, so clicking any other tab stranded a staff member away from
+                             Penny's console with no way back except reloading. Deal intake could not be
+                             reached at all. */}
+                        <span role="presentation" className="flex items-center gap-2 pr-1">
+                          <span className="text-[10px] font-semibold uppercase tracking-wider text-slate-500">Penny</span>
+                        </span>
+                        <TabsTrigger value="penny-home" className="data-[state=active]:bg-amber-100 whitespace-nowrap">
+                          <span>Penny</span>
+                        </TabsTrigger>
+                        <TabsTrigger value="list-a-deal" className="data-[state=active]:bg-amber-100 whitespace-nowrap">
+                          <span>List a Deal</span>
+                        </TabsTrigger>
+                        <TabsTrigger value="request-center" className="data-[state=active]:bg-amber-100 whitespace-nowrap">
+                          <span>Requests</span>
+                        </TabsTrigger>
+                        <TabsTrigger value="weekly-digest" className="data-[state=active]:bg-amber-100 whitespace-nowrap">
+                          <span>Weekly Digest</span>
+                        </TabsTrigger>
+
                             {/* ---- Pipeline ---- */}
                             <span role="presentation" className="flex items-center gap-2 pl-2 pr-1 first:pl-0">
                               <span aria-hidden="true" className="h-4 w-px bg-slate-300" />
@@ -1293,6 +1326,27 @@ export default function StaffDashboard() {
                         {/* ===== ACQUISITION MANAGER TABS ===== */}
                         {activeDashboard === 'acquisitions' && (
                           <>
+                        {/* ---- Penny ----
+                             These four panels existed with NO visible trigger anywhere. The dashboard opens
+                             on penny-home, so clicking any other tab stranded a staff member away from
+                             Penny's console with no way back except reloading. Deal intake could not be
+                             reached at all. */}
+                        <span role="presentation" className="flex items-center gap-2 pr-1">
+                          <span className="text-[10px] font-semibold uppercase tracking-wider text-slate-500">Penny</span>
+                        </span>
+                        <TabsTrigger value="penny-home" className="data-[state=active]:bg-amber-100 whitespace-nowrap">
+                          <span>Penny</span>
+                        </TabsTrigger>
+                        <TabsTrigger value="list-a-deal" className="data-[state=active]:bg-amber-100 whitespace-nowrap">
+                          <span>List a Deal</span>
+                        </TabsTrigger>
+                        <TabsTrigger value="request-center" className="data-[state=active]:bg-amber-100 whitespace-nowrap">
+                          <span>Requests</span>
+                        </TabsTrigger>
+                        <TabsTrigger value="weekly-digest" className="data-[state=active]:bg-amber-100 whitespace-nowrap">
+                          <span>Weekly Digest</span>
+                        </TabsTrigger>
+
                           {/* ---- Pipeline ---- */}
                           <span role="presentation" className="flex items-center gap-2 pl-2 pr-1 first:pl-0">
                             <span aria-hidden="true" className="h-4 w-px bg-slate-300" />
@@ -1344,6 +1398,27 @@ export default function StaffDashboard() {
                     {/* ===== SETUP MANAGER TABS ===== */}
                     {activeDashboard === 'setups' && (
                       <>
+                        {/* ---- Penny ----
+                             These four panels existed with NO visible trigger anywhere. The dashboard opens
+                             on penny-home, so clicking any other tab stranded a staff member away from
+                             Penny's console with no way back except reloading. Deal intake could not be
+                             reached at all. */}
+                        <span role="presentation" className="flex items-center gap-2 pr-1">
+                          <span className="text-[10px] font-semibold uppercase tracking-wider text-slate-500">Penny</span>
+                        </span>
+                        <TabsTrigger value="penny-home" className="data-[state=active]:bg-amber-100 whitespace-nowrap">
+                          <span>Penny</span>
+                        </TabsTrigger>
+                        <TabsTrigger value="list-a-deal" className="data-[state=active]:bg-amber-100 whitespace-nowrap">
+                          <span>List a Deal</span>
+                        </TabsTrigger>
+                        <TabsTrigger value="request-center" className="data-[state=active]:bg-amber-100 whitespace-nowrap">
+                          <span>Requests</span>
+                        </TabsTrigger>
+                        <TabsTrigger value="weekly-digest" className="data-[state=active]:bg-amber-100 whitespace-nowrap">
+                          <span>Weekly Digest</span>
+                        </TabsTrigger>
+
                           {/* ---- Launches ---- */}
                           <span role="presentation" className="flex items-center gap-2 pl-2 pr-1 first:pl-0">
                             <span aria-hidden="true" className="h-4 w-px bg-slate-300" />
