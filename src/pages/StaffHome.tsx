@@ -4,26 +4,32 @@ import { supabase } from '@/lib/supabase';
 import { PennyStaffChat } from '@/components/staff/PennyStaffChat';
 
 /**
- * The Success Team home.
+ * Success Team — operations console.
  *
- * WHAT WAS WRONG WITH THE OLD ONE
+ * WHAT MY FIRST ATTEMPT GOT WRONG
  *
- * StaffDashboard is 2,222 lines, around sixty tab values and twenty-one cards on one
- * screen. It grew by accretion — every feature added a card and nothing was ever removed —
- * so a Success Team member opens a wall and has to find the one thing that matters today.
- * On a screen reader that wall is something you have to listen through.
+ * I read "the dashboard is messy" as "show less" and built something minimal. The
+ * correction was right: the answer is not fewer features, it is the SAME information
+ * ORGANISED. A marketplace operator needs the whole operation at once — they just should
+ * not have to assemble it in their head from twenty-one unrelated cards.
  *
- * This is the same information, ordered by what somebody actually needs:
+ * ORGANISED BY HOW THE BUSINESS RUNS, not by the order features were built:
  *
- *   1. The single most important thing right now, in a sentence. If nothing is wrong it
- *      says so, rather than showing twelve zeroes.
- *   2. Penny, because she can answer the follow-up. A count tells you there are four
- *      inquiries; she tells you which one to call.
- *   3. Counts as buttons that ASK HER. The panel is a way into the conversation, not a
- *      worse copy of it.
- *   4. Everything else behind one link, not spread across sixty tabs.
+ *   DEMAND    people who want a deal
+ *   SUPPLY    the constraint — listings, landlord submissions, unassigned landlords
+ *   RESALE    the third-party sale pipeline
+ *   CLIENTS   who is on the platform and what they hold
+ *   CONTENT   the only thing that reaches strangers
+ *   TEAM      the Success Team
  *
- * DOM ORDER IS SPEAKING ORDER. Most important first, always, regardless of layout.
+ * Every number is live, and every number is a BUTTON that asks Penny about it. A count says
+ * there are four inquiries; she says which one to call. That is the difference between a
+ * dashboard and an operations console.
+ *
+ * ACCESSIBILITY: one section per area with a real heading, so a screen reader user can jump
+ * between areas instead of walking a grid. Each tile is read as one phrase — "4 open
+ * inquiries, needs attention" — never as a bare number. Anything needing attention says so
+ * in WORDS as well as colour.
  */
 
 type StaffLite = {
@@ -31,133 +37,150 @@ type StaffLite = {
   role?: string; team?: string; is_owner?: boolean;
 };
 
-type Attention = {
-  count: number;
-  emergencies: number;
-  items: { severity: string; kind: string; what: string; who?: string; contact?: string }[];
+type Snapshot = {
+  demand: Record<string, number>; supply: Record<string, number>;
+  resale: Record<string, number>; clients: Record<string, number>;
+  content: Record<string, number>; team: Record<string, number>;
 };
 
-/** What each role should be looking at first. Routing someone to the wrong thing wastes their day. */
-const ROLE_FOCUS: Record<string, { label: string; ask: string }[]> = {
-  acquisition: [
-    { label: 'new leads', ask: 'What leads came in and who should I call first?' },
-    { label: 'landlords waiting', ask: 'What is waiting in the landlord portal?' },
-    { label: 'the marketplace', ask: "What's on the marketplace right now?" },
-  ],
-  admin: [
-    { label: 'escalations', ask: 'What escalations are open?' },
-    { label: 'disputes and issues', ask: 'What issues need resolving today?' },
-    { label: 'documents out', ask: 'What documents are waiting to go out?' },
-  ],
-  setup: [
-    { label: 'launches in flight', ask: 'Which setups are in progress and where are they stuck?' },
-    { label: 'client files', ask: 'Which client files need updating?' },
-  ],
-  owner: [
-    { label: 'everything waiting', ask: 'What needs my attention right now?' },
-    { label: 'the seller flow', ask: 'Where does the third-party sale pipeline stand?' },
-    { label: 'the library', ask: 'What library articles need reviewing?' },
-  ],
-};
+type Metric = { label: string; value: number; ask: string; alert?: boolean };
 
-function focusFor(staff: StaffLite | null) {
-  if (staff?.is_owner) return ROLE_FOCUS.owner;
-  const r = `${staff?.role || ''} ${staff?.team || ''}`.toLowerCase();
-  if (r.includes('acquisition')) return ROLE_FOCUS.acquisition;
-  if (r.includes('admin') || r.includes('management')) return ROLE_FOCUS.admin;
-  if (r.includes('setup')) return ROLE_FOCUS.setup;
-  // success_managers and anything unrecognised. Deliberately NOT guessed into a role —
-  // showing the general view is honest; inventing a specialism is not.
-  return ROLE_FOCUS.owner;
+function Area({
+  title, blurb, metrics, onAsk,
+}: { title: string; blurb: string; metrics: Metric[]; onAsk: (q: string) => void }) {
+  const id = `area-${title.toLowerCase().replace(/\s+/g, '-')}`;
+  return (
+    <section aria-labelledby={id} className="rounded-lg border border-slate-200 bg-white p-4">
+      <h2 id={id} className="text-sm font-semibold uppercase tracking-wide text-slate-500">{title}</h2>
+      <p className="mt-0.5 text-xs text-slate-500">{blurb}</p>
+      <ul className="mt-3 grid grid-cols-2 gap-2 sm:grid-cols-3">
+        {metrics.map((m) => (
+          <li key={m.label}>
+            <button
+              type="button"
+              onClick={() => onAsk(m.ask)}
+              className={`min-h-[44px] w-full rounded-md border px-3 py-2 text-left ${
+                m.alert ? 'border-amber-300 bg-amber-50 hover:border-amber-500'
+                        : 'border-slate-200 bg-slate-50 hover:border-slate-400'}`}
+            >
+              {/* Read as one phrase, and "needs attention" is WORDS, not just a colour. */}
+              <span className="sr-only">
+                {m.value} {m.label}{m.alert ? ', needs attention' : ''}. Ask Penny.
+              </span>
+              <span aria-hidden="true" className="block text-xl font-semibold text-slate-900">{m.value}</span>
+              <span aria-hidden="true" className="block text-xs leading-tight text-slate-600">{m.label}</span>
+            </button>
+          </li>
+        ))}
+      </ul>
+    </section>
+  );
 }
 
 export default function StaffHome({ staffSession }: { staffSession: StaffLite | null }) {
-  const [attention, setAttention] = useState<Attention | null>(null);
-  const [loadError, setLoadError] = useState('');
+  const [snap, setSnap] = useState<Snapshot | null>(null);
+  const [headline, setHeadline] = useState('Checking where things stand…');
+  const [urgent, setUrgent] = useState(false);
   const [ask, setAsk] = useState('');
   const first = staffSession?.first_name || (staffSession?.name || '').split(' ')[0] || 'there';
 
   useEffect(() => {
-    let cancelled = false;
+    let dead = false;
     (async () => {
       try {
         const { data, error } = await supabase.functions.invoke('penny-staff-brief', {
-          body: { staff_id: staffSession?.id, attention_only: true },
+          body: { staff_id: staffSession?.id },
         });
-        if (cancelled) return;
-        if (error || !data) {
-          // Said, not swallowed. "Nothing needs attention" and "we could not check" are
-          // different things and must never look the same.
-          setLoadError('Could not check what needs attention. Ask Penny directly below.');
+        if (dead) return;
+        if (error || !data?.success) {
+          setHeadline('Could not load the operating picture. Ask Penny below — she reads it directly.');
           return;
         }
-        setAttention(data.attention || null);
+        setSnap(data.operations || null);
+        const items = data.attention?.items || [];
+        const em = items.filter((i: any) => i.severity === 'emergency');
+        const hi = items.filter((i: any) => i.severity === 'high');
+        setUrgent(em.length > 0);
+        setHeadline(
+          em.length ? em[0].what
+          : hi.length ? hi[0].what
+          : items.length ? `${items.length} thing${items.length === 1 ? '' : 's'} need you today. Nothing urgent.`
+          : 'Nothing is waiting on you right now.',
+        );
       } catch {
-        if (!cancelled) setLoadError('Could not check what needs attention. Ask Penny directly below.');
+        if (!dead) setHeadline('Could not load the operating picture. Ask Penny below.');
       }
     })();
-    return () => { cancelled = true; };
+    return () => { dead = true; };
   }, [staffSession?.id]);
 
-  const emergencies = attention?.items?.filter((i) => i.severity === 'emergency') || [];
-  const urgent = attention?.items?.filter((i) => i.severity === 'high') || [];
-
-  // The one sentence. This is the whole point of the screen.
-  let headline: string;
-  if (loadError) headline = loadError;
-  else if (!attention) headline = 'Checking what needs you…';
-  else if (emergencies.length) headline = emergencies[0].what;
-  else if (urgent.length) headline = urgent[0].what;
-  else if (attention.count) headline = `${attention.count} thing${attention.count === 1 ? '' : 's'} need you today. Nothing urgent.`;
-  else headline = 'Nothing is waiting on you right now.';
+  const n = (o: Record<string, number> | undefined, k: string) => (o?.[k] ?? 0);
 
   return (
     <div className="mx-auto w-full max-w-[1200px] px-4 py-6">
-      {/* 1. THE ANSWER. First in the DOM because it is first in importance. */}
-      <header className="mb-6">
-        <p className="text-sm text-slate-500">Success Team</p>
-        <h1 className="mt-1 text-2xl font-bold text-slate-900">
-          {first}, {emergencies.length ? 'this needs you now' : "here's where things stand"}
-        </h1>
-        <p
-          role="status"
-          aria-live="polite"
-          className={`mt-2 text-lg leading-relaxed ${emergencies.length ? 'font-semibold text-red-700' : 'text-slate-700'}`}
-        >
+      <header className="mb-5">
+        <p className="text-xs font-semibold uppercase tracking-wide text-slate-500">Success Team — Operations</p>
+        <h1 className="mt-1 text-2xl font-bold text-slate-900">{first}</h1>
+        <p role="status" aria-live="polite"
+           className={`mt-2 text-lg leading-relaxed ${urgent ? 'font-semibold text-red-700' : 'text-slate-700'}`}>
           {headline}
         </p>
-        {emergencies.length > 0 && emergencies[0].contact && (
-          <p className="mt-1 text-lg font-semibold text-red-700">
-            Reach them on {emergencies[0].contact}.
-          </p>
-        )}
       </header>
 
-      {/* 2. PENNY. She answers the follow-up a count cannot. */}
-      <section aria-label="Ask Penny" className="rounded-lg border border-slate-200 bg-white p-4">
+      {/* Penny sits high because she is how you act on any number below. */}
+      <section aria-label="Ask Penny" className="rounded-lg border border-slate-300 bg-white p-4">
         <PennyStaffChat staffSession={staffSession} ask={ask} onAsked={() => setAsk('')} />
       </section>
 
-      {/* 3. WHAT THIS ROLE SHOULD LOOK AT. Buttons that ask her, not tabs that navigate away. */}
-      <nav aria-label="Start here" className="mt-6">
-        <h2 className="text-sm font-semibold uppercase tracking-wide text-slate-500">Start here</h2>
-        <div className="mt-2 flex flex-wrap gap-2">
-          {focusFor(staffSession).map((f) => (
-            <button
-              key={f.label}
-              type="button"
-              onClick={() => setAsk(f.ask)}
-              className="min-h-[44px] rounded-full border border-slate-300 bg-white px-4 text-sm text-slate-800 hover:border-slate-500"
-            >
-              {f.label}
-            </button>
-          ))}
-        </div>
-      </nav>
+      <div className="mt-5 grid gap-4 lg:grid-cols-2">
+        <Area title="Demand" blurb="People who want a deal" onAsk={setAsk} metrics={[
+          { label: 'new leads', value: n(snap?.demand,'new_leads'), ask: 'What leads came in and who should I call first?', alert: n(snap?.demand,'new_leads') > 0 },
+          { label: 'emergencies', value: n(snap?.demand,'emergencies'), ask: 'Show me the live operation emergencies.', alert: n(snap?.demand,'emergencies') > 0 },
+          { label: 'open inquiries', value: n(snap?.demand,'open_inquiries'), ask: 'Show me the open buyer inquiries.', alert: n(snap?.demand,'open_inquiries') > 0 },
+          { label: 'client files', value: n(snap?.demand,'client_files'), ask: 'Give me an overview of our client files.' },
+          { label: 'not on platform', value: n(snap?.demand,'files_off_platform'), ask: 'Which client files have no platform account?' },
+          { label: 'being worked', value: n(snap?.demand,'leads_working'), ask: 'Which leads are being worked right now?' },
+        ]} />
 
-      {/* 4. EVERYTHING ELSE, behind one link rather than sixty tabs. */}
-      <p className="mt-8 text-sm">
-        <Link to="/staff/dashboard?view=full" className="text-slate-600 underline underline-offset-2">
+        <Area title="Supply" blurb="The constraint on this business" onAsk={setAsk} metrics={[
+          { label: 'live listings', value: n(snap?.supply,'live_listings'), ask: "What's on the marketplace right now?" },
+          { label: 'no price set', value: n(snap?.supply,'no_price'), ask: 'Which live listings have no acquisition cost recorded?', alert: n(snap?.supply,'no_price') > 0 },
+          { label: 'pending review', value: n(snap?.supply,'pending_review'), ask: 'Which properties are waiting for review?', alert: n(snap?.supply,'pending_review') > 0 },
+          { label: 'landlord submissions', value: n(snap?.supply,'landlord_submissions'), ask: 'What has come in through the landlord portal?', alert: n(snap?.supply,'landlord_submissions') > 0 },
+          { label: 'landlords unassigned', value: n(snap?.supply,'landlords_unassigned'), ask: 'Which landlords have no acquisition manager?', alert: n(snap?.supply,'landlords_unassigned') > 0 },
+          { label: 'unpublished', value: n(snap?.supply,'unpublished'), ask: 'Which properties are off the marketplace, and why?' },
+        ]} />
+
+        <Area title="Resale" blurb="Third-party sale pipeline" onAsk={setAsk} metrics={[
+          { label: 'listings pending', value: n(snap?.resale,'listings_pending'), ask: 'Which seller listings are waiting for approval?', alert: n(snap?.resale,'listings_pending') > 0 },
+          { label: 'for sale now', value: n(snap?.resale,'listings_active'), ask: 'What operations are for sale right now?' },
+          { label: 'open offers', value: n(snap?.resale,'offers_open'), ask: 'Which offers are waiting on an answer?', alert: n(snap?.resale,'offers_open') > 0 },
+          { label: 'verifications open', value: n(snap?.resale,'verifications_open'), ask: 'Which verifications still have outstanding checks?', alert: n(snap?.resale,'verifications_open') > 0 },
+          { label: 'transactions live', value: n(snap?.resale,'transactions_live'), ask: 'Where do the live transactions stand?' },
+        ]} />
+
+        <Area title="Clients" blurb="On the platform" onAsk={setAsk} metrics={[
+          { label: 'accounts', value: n(snap?.clients,'accounts'), ask: 'How many clients do we have, and how many are real?' },
+          { label: 'ever signed in', value: n(snap?.clients,'ever_signed_in'), ask: 'Which clients have never signed in?' },
+          { label: 'portfolio units', value: n(snap?.clients,'portfolio_units'), ask: 'What is in client portfolios right now?' },
+          { label: 'open escalations', value: n(snap?.clients,'open_escalations'), ask: 'What escalations are open?', alert: n(snap?.clients,'open_escalations') > 0 },
+        ]} />
+
+        <Area title="Content" blurb="The only thing that reaches strangers" onAsk={setAsk} metrics={[
+          { label: 'published', value: n(snap?.content,'published'), ask: 'How is the knowledge library doing?' },
+          { label: 'never verified', value: n(snap?.content,'never_verified'), ask: 'Which articles have never been checked against a primary source?', alert: n(snap?.content,'never_verified') > 0 },
+          { label: 'awaiting review', value: n(snap?.content,'awaiting_review'), ask: 'What articles are waiting for me to review?', alert: n(snap?.content,'awaiting_review') > 0 },
+          { label: 'verified', value: n(snap?.content,'legally_verified'), ask: 'Which articles have been verified, and when?' },
+        ]} />
+
+        <Area title="Team" blurb="The Success Team" onAsk={setAsk} metrics={[
+          { label: 'active', value: n(snap?.team,'active'), ask: 'Who is on the Success Team?' },
+          { label: 'owners', value: n(snap?.team,'owners'), ask: 'Who has owner access?' },
+        ]} />
+      </div>
+
+      <p className="mt-6 text-sm">
+        <Link to="/staff/dashboard" className="text-slate-600 underline underline-offset-2">
           Open the full dashboard
         </Link>
       </p>

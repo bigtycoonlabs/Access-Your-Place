@@ -197,9 +197,27 @@ Deno.serve(async (req) => {
       console.error('penny-staff-brief attention_threw', e instanceof Error ? e.message : String(e));
     }
 
+    // The operating picture in one read. The console leads with these numbers, so if this
+    // is not returned every tile shows zero — which reads as "the business is empty"
+    // rather than "we could not load it". That is the exact failure I shipped last round
+    // by adding a screen that consumed a field the endpoint never sent.
+    let operations: unknown = null;
+    try {
+      const r = await fetch(`${url}/rest/v1/rpc/penny_operations_snapshot`, {
+        method: 'POST',
+        headers: { apikey: key, Authorization: `Bearer ${key}`, 'Content-Type': 'application/json' },
+        body: '{}',
+      });
+      if (r.ok) operations = await r.json();
+      else console.error('penny-staff-brief operations_failed', r.status);
+    } catch (e) {
+      console.error('penny-staff-brief operations_threw', e instanceof Error ? e.message : String(e));
+    }
+
     return json({
       success: true,
       attention,
+      operations,
       staff_name: staffName || null,
       greeting: `Hi ${first} —`,
       message: parts.join(' '),
