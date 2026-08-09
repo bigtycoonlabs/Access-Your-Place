@@ -39,6 +39,8 @@ import {
   PENNY_COVENANT,
   PENNY_PERSONALITY,
   PENNY_REASONING,
+  PENNY_TEAM,
+  PENNY_ROUTING,
   containsPaymentDestination,
   destinationRefusal,
 } from "../_shared/penny/doctrine.ts";
@@ -135,6 +137,8 @@ ${PENNY_PERSONALITY}
 ${PENNY_REASONING}
 
 ${PENNY_TEAM}
+
+${PENNY_ROUTING}
 
 ${PENNY_INDUSTRY_SENSE}
 

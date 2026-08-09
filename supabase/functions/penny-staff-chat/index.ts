@@ -23,7 +23,7 @@ import { guardReply, buildCorrection } from "./penny_truth.ts";
 // tag was protecting nothing, and this file contained no payment guidance at all. Staff
 // are the people most likely to be asked "where do I send it", so she would have
 // improvised. She no longer can.
-import { PENNY_PAYMENT_DOCTRINE, containsPaymentDestination, destinationRefusal, PENNY_OWNERSHIP, PENNY_REASONING, PENNY_PERSONALITY, PENNY_INDUSTRY_SENSE, PENNY_COVENANT, PENNY_TEAM } from "../_shared/penny/doctrine.ts";
+import { PENNY_PAYMENT_DOCTRINE, containsPaymentDestination, destinationRefusal, PENNY_OWNERSHIP, PENNY_REASONING, PENNY_PERSONALITY, PENNY_INDUSTRY_SENSE, PENNY_COVENANT, PENNY_TEAM, PENNY_ROUTING } from "../_shared/penny/doctrine.ts";
 import { PENNY_OWNER_POSTURE } from "../_shared/penny/compose.ts";
 
 const APP_SCHEMA = 'prj_X-ZoVQv6LKXT';
@@ -2388,6 +2388,8 @@ ${PENNY_PERSONALITY}
 ${PENNY_REASONING}
 
 ${PENNY_TEAM}
+
+${PENNY_ROUTING}
 
 ${PENNY_INDUSTRY_SENSE}
 

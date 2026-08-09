@@ -10,6 +10,7 @@ import {
   PENNY_INDUSTRY_SENSE,
   PENNY_COVENANT,
   PENNY_TEAM,
+  PENNY_ROUTING,
 } from './doctrine.ts';
 
 /* ---------------------------------------------------------------------------
@@ -385,4 +386,29 @@ test('TEAM: ownership is named, and framed as the people who decide', () => {
 // Routing to the wrong role costs somebody a day. She is told to ask rather than guess.
 test('TEAM: she is told to ask rather than guess which role owns something', () => {
   assert.ok(PENNY_TEAM.toLowerCase().includes('rather than guessing'));
+});
+
+/* ---- routing across one united team ---- */
+
+test('ROUTING: admin owns disputes, legal and anything unclassified', () => {
+  const t = PENNY_ROUTING.toLowerCase();
+  for (const w of ['disputes', 'legal', 'compliance', 'refunds', 'chargebacks']) {
+    assert.ok(t.includes(w), `admin scope missing: ${w}`);
+  }
+  assert.ok(t.includes('it belongs to admin'), 'no default route for unclear items');
+});
+
+test('ROUTING: owners see everything, and she is told not to withhold', () => {
+  assert.ok(/sees ALL of it/i.test(PENNY_ROUTING));
+  assert.ok(/never hide something from an owner/i.test(PENNY_ROUTING));
+});
+
+// The team is a front, not a ladder. This is the owner's framing and it must survive edits.
+test('ROUTING: no role is described as senior to another', () => {
+  assert.ok(/each equally important/i.test(PENNY_ROUTING));
+  assert.ok(/never speak about one role as senior/i.test(PENNY_ROUTING));
+});
+
+test('ROUTING: she is told to write differently to different roles', () => {
+  assert.ok(/Do not send all three the same paragraph/i.test(PENNY_ROUTING));
 });
