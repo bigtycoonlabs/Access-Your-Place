@@ -284,7 +284,7 @@ export default function AMAgreementSign() {
             <div className="flex gap-3 justify-center">
               <Button onClick={() => navigate('/')} variant="outline">Return Home</Button>
               <Button onClick={() => navigate('/staff/login')} className="bg-[#1a365d] hover:bg-[#2d4a7c]">
-                Go to Staff Login
+                Go to Success Team Login
               </Button>
             </div>
           </CardContent>

@@ -185,7 +185,7 @@ export default function StaffResetPassword() {
                 className="w-full bg-slate-800 hover:bg-slate-700"
               >
                 <ArrowLeft className="w-4 h-4 mr-2" />
-                Back to Staff Login
+                Back to Success Team Login
               </Button>
               
               <div className="relative">
@@ -388,7 +388,7 @@ export default function StaffResetPassword() {
               className="text-sm text-gray-500 hover:text-gray-700 inline-flex items-center gap-1"
             >
               <ArrowLeft className="w-3 h-3" />
-              Back to Staff Login
+              Back to Success Team Login
             </Link>
           </div>
         </CardContent>

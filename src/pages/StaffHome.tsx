@@ -278,7 +278,7 @@ export default function StaffHome({ staffSession }: { staffSession: StaffLite | 
 
       <p className="mt-6 text-sm">
         <Link to="/staff/dashboard" className="text-slate-600 underline underline-offset-2">
-          Open the full dashboard
+          All tools and tabs
         </Link>
       </p>
     </div>

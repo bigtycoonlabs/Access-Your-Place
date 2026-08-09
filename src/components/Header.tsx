@@ -130,7 +130,7 @@ export default function Header() {
             <Link 
               to="/staff/login" 
               className="hover:text-[#d4a574] transition-colors text-xs opacity-70 focus:outline-none focus:ring-2 focus:ring-[#d4a574] focus:ring-offset-2 focus:ring-offset-[#0a0f1a] rounded px-2 py-1"
-              aria-label="Staff Login"
+              aria-label="Success Team Login"
             >
               Staff
             </Link>
@@ -188,7 +188,7 @@ export default function Header() {
               onClick={() => handleNavClick('/staff/login')}
               className="block w-full text-left hover:text-[#d4a574] transition-colors text-sm opacity-70 py-2 px-2 focus:outline-none focus:ring-2 focus:ring-[#d4a574] rounded"
             >
-              Staff Login
+              Success Team Login
             </button>
             <button 
               onClick={() => handleNavClick('/investor/login')}

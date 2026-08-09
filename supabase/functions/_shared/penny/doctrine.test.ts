@@ -412,3 +412,26 @@ test('ROUTING: no role is described as senior to another', () => {
 test('ROUTING: she is told to write differently to different roles', () => {
   assert.ok(/Do not send all three the same paragraph/i.test(PENNY_ROUTING));
 });
+
+/* ---- the doctrine must not hand the model a script ---- */
+
+// An owner asked "which articles have never been checked against a primary source?" and got
+// the payment refusal verbatim. The guard had not fired — the DOCTRINE contained the
+// refusal sentence in first person, so the model could simply copy it out.
+//
+// A prompt that contains a ready-made first-person sentence is a loaded gun: the model will
+// eventually emit it in the wrong place.
+test('PAYMENT: the doctrine does not contain a quotable first-person refusal', () => {
+  assert.ok(
+    !/I won't type|I will not type/i.test(PENNY_PAYMENT_DOCTRINE),
+    'the doctrine hands the model a verbatim refusal it can emit at any time',
+  );
+});
+
+test('PAYMENT: she is told this applies only when money destinations are asked about', () => {
+  // Whitespace-tolerant: the doctrine is a wrapped template literal, so a phrase can break
+  // across a line. A test that only matches single spaces fails on formatting, not meaning.
+  const flat = PENNY_PAYMENT_DOCTRINE.replace(/\s+/g, ' ');
+  assert.ok(/only applies when somebody is actually asking where to send money/i.test(flat));
+  assert.ok(/never fall back on this/i.test(flat));
+});

@@ -120,7 +120,11 @@ const App = () => (
                   <Route path="/staff/reset-password" element={<StaffResetPassword />} />
                   <Route path="/staff/quick-add" element={<StaffQuickAddContact />} />
                   {/* Redirect /staff to /staff/dashboard */}
-                  <Route path="/staff" element={<Navigate to="/staff/dashboard" replace />} />
+                  {/* ONE LANDING, NOT TWO. Signing in used to drop a Success Team member on the old
+                      dashboard's Penny tab; then /staff/home was a second, different home. That is
+                      two front doors to the same building. /staff now goes to the console, and the
+                      full dashboard is one link away from it. */}
+                  <Route path="/staff" element={<Navigate to="/staff/home" replace />} />
                   <Route path="/knowledge" element={<KnowledgeLibrary />} />
                   <Route path="/knowledge-library" element={<KnowledgeLibrary />} />
                   <Route path="/article-demo" element={<Navigate to="/knowledge-library" replace />} />

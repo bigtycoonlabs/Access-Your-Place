@@ -226,7 +226,7 @@ export default function StaffQuickAddContact() {
               onClick={() => navigate('/staff/login')}
               className="w-full bg-[#1e3a5f] hover:bg-[#2d5a87]"
             >
-              Go to Staff Login
+              Go to Success Team Login
             </Button>
           </CardContent>
         </Card>

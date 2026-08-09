@@ -603,7 +603,7 @@ export default function StaffLogin() {
             <span className="text-white font-bold text-xl">AYP</span>
           </div>
           <CardTitle className="text-2xl">
-            {view === 'login' && 'Staff Login'}
+            {view === 'login' && 'Success Team Login'}
             {view === 'forgot' && 'Reset Password'}
             {view === 'reset_sent' && 'Check Your Email'}
             {view === 'invitation' && 'Complete Your Account'}
