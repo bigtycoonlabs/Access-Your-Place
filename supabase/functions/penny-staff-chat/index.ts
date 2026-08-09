@@ -141,6 +141,43 @@ async function landlordPortal(url: string, key: string) {
 // distinction Penny must never blur: a client FILE is what we know about someone; an
 // ACCOUNT is something they can sign into.
 
+async function myAlerts(url: string, key: string, staffId: string) {
+  // Refresh derived join alerts first, so someone who signed up minutes ago is already
+  // there. A notification system that only updates on a schedule is one people learn to
+  // distrust.
+  await rpc(url, key, 'ayp_sync_join_alerts').catch(() => null);
+  const { ok, status, data } = await rpc(url, key, 'penny_my_alerts', { p_staff_id: staffId });
+  if (!ok) {
+    console.error('penny-staff-chat rpc_my_alerts', status, JSON.stringify(data).slice(0, 200));
+    return { error: `read_failed_${status}` };
+  }
+  return data;
+}
+
+async function assignManager(url: string, key: string, a: any, staffId: string) {
+  const { ok, status, data } = await rpc(url, key, 'penny_assign_manager', {
+    p_file_id: String(a.file_id), p_staff_id: String(a.staff_id || staffId),
+    p_role: String(a.role), p_by: staffId || null,
+  });
+  if (!ok) {
+    console.error('penny-staff-chat rpc_assign_manager', status, JSON.stringify(data).slice(0, 200));
+    return { error: 'assign_failed', http: status };
+  }
+  return data;
+}
+
+async function presentDeal(url: string, key: string, a: any, staffId: string) {
+  const { ok, status, data } = await rpc(url, key, 'penny_present_deal', {
+    p_property_id: String(a.property_id), p_client_file_id: String(a.client_file_id),
+    p_by_staff_id: staffId || null, p_why: a.why ? String(a.why) : null,
+  });
+  if (!ok) {
+    console.error('penny-staff-chat rpc_present_deal', status, JSON.stringify(data).slice(0, 200));
+    return { error: 'present_failed', http: status };
+  }
+  return data;
+}
+
 async function assignClientFile(url: string, key: string, fileId: string, toStaffId: string, byStaffId: string) {
   const { ok, status, data } = await rpc(url, key, 'penny_assign_client_file', {
     p_file_id: fileId, p_to_staff_id: toStaffId, p_by_staff_id: byStaffId || null,
@@ -1109,6 +1146,20 @@ async function execTool(name: string, args: any, ctx: Ctx): Promise<unknown> {
     }
     if (name === 'seller_flow') return await sellerFlow(url, key);
     if (name === 'landlord_portal') return await landlordPortal(url, key);
+    if (name === 'my_alerts') return await myAlerts(url, key, staffId);
+    if (name === 'assign_manager') {
+      if (!args?.file_id || !args?.role) return { error: 'file_id and role required' };
+      return await assignManager(url, key, args, staffId);
+    }
+    if (name === 'present_deal') {
+      if (!args?.property_id || !args?.client_file_id) return { error: 'property_id and client_file_id required' };
+      if (args.confirmed !== true) {
+        return { needs_confirmation: true,
+          action: 'send this deal to the client with the address withheld',
+          instruction: 'Say which property, which client, the rent and the acquisition cost. Get a yes, then call again with confirmed true.' };
+      }
+      return await presentDeal(url, key, args, staffId);
+    }
     if (name === 'my_book') return await myBook(url, key, staffId);
     if (name === 'assign_client_file') {
       if (!args?.file_id || !args?.to_staff_id) return { error: 'file_id and to_staff_id required' };
@@ -1423,6 +1474,47 @@ const TOOLS = [
       name: 'landlord_portal',
       description: "The supply side: properties landlords have submitted and nobody has reviewed, unread messages FROM landlords, corporate applications still open, and how many landlords have no acquisition manager. Read-only.",
       parameters: { type: 'object', properties: {}, required: [] },
+    },
+  },
+  {
+    type: 'function',
+    function: {
+      name: 'my_alerts',
+      description: "What needs this person today: alerts (a client joined and has no acquisition manager, and so on) plus derived tasks — overdue next steps, things due today, assigned people never contacted, and deals presented over two days ago with no answer. THIS BUSINESS IS COMMISSION-BASED, so an unseen task is somebody's income sitting still. Lead with anything urgent.",
+      parameters: { type: 'object', properties: {}, required: [] },
+    },
+  },
+  {
+    type: 'function',
+    function: {
+      name: 'assign_manager',
+      description: "Make somebody the acquisition or setup manager for a client file. A client can have BOTH at once. Omit staff_id to assign the person you are talking to — that is how an acquisition manager claims a file after a client joins.",
+      parameters: {
+        type: 'object',
+        properties: {
+          file_id: { type: 'string' },
+          role: { type: 'string', enum: ['acquisition', 'setup'] },
+          staff_id: { type: 'string', description: 'Omit to claim it yourself.' },
+        },
+        required: ['file_id', 'role'],
+      },
+    },
+  },
+  {
+    type: 'function',
+    function: {
+      name: 'present_deal',
+      description: "Put a deal in front of a client WITH THE ADDRESS WITHHELD. They see market, beds, rent, condition, terms, why this one and the acquisition cost — everything needed to decide. They release the address with credits or cash. Refuses if the property has no acquisition cost, because they could never release it.",
+      parameters: {
+        type: 'object',
+        properties: {
+          property_id: { type: 'string' },
+          client_file_id: { type: 'string' },
+          why: { type: 'string', description: 'Why this one, for this client.' },
+          confirmed: { type: 'boolean' },
+        },
+        required: ['property_id', 'client_file_id'],
+      },
     },
   },
   {
@@ -2132,6 +2224,25 @@ by what costs us most: an account never signed into, then clients not on the pla
 landlords with no portal, then people never engaged at all.
 
 Give names, reasons and contact details. It is a call list, not a report.
+
+YOU ARE THE NOTIFICATION SYSTEM. This business runs on commission, so a task nobody sees is
+somebody's income standing still. When a staff member opens a conversation, my_alerts is
+usually the first thing worth checking — and if something is urgent, lead with it rather
+than waiting to be asked.
+
+HOW THE WORK FLOWS between the roles:
+  A client joins -> the acquisition manager claims the file with assign_manager and starts
+    sourcing against what the file says they want, while the client searches with you on
+    their side.
+  The AM finds something -> present_deal puts it in front of the client with the address
+    withheld. They see the market, the numbers, the condition and the cost. The address is
+    what they release, with credits or cash.
+  A client can have BOTH an acquisition manager and a setup manager. Do not overwrite one
+    with the other.
+
+NEVER SPEAK AN ADDRESS THAT HAS NOT BEEN RELEASED. Not in a summary, not in an example, not
+when someone asks what the deal is. Finding the door is the work we are paid for, and
+giving it away in conversation is giving away the sale.
 
 AND CLOSE THE LOOP. After somebody makes contact, log_touch records what happened — the
 note must say the OUTCOME, because "called them" tells the next person nothing. Set a next
