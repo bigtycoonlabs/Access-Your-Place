@@ -214,10 +214,29 @@ Deno.serve(async (req) => {
       console.error('penny-staff-brief operations_threw', e instanceof Error ? e.message : String(e));
     }
 
+    // The role procedure for whoever asked. The SOP tab leads with this, so a screen
+    // consuming a field the endpoint never sends would show an empty tab — and somebody
+    // reading an empty procedures tab concludes they have no responsibilities.
+    let sop: unknown = null;
+    if (body.staff_id) {
+      try {
+        const r = await fetch(`${url}/rest/v1/rpc/penny_my_sop`, {
+          method: 'POST',
+          headers: { apikey: key, Authorization: `Bearer ${key}`, 'Content-Type': 'application/json' },
+          body: JSON.stringify({ p_staff_id: body.staff_id }),
+        });
+        if (r.ok) sop = await r.json();
+        else console.error('penny-staff-brief sop_failed', r.status);
+      } catch (e) {
+        console.error('penny-staff-brief sop_threw', e instanceof Error ? e.message : String(e));
+      }
+    }
+
     return json({
       success: true,
       attention,
       operations,
+      sop,
       staff_name: staffName || null,
       greeting: `Hi ${first} —`,
       message: parts.join(' '),

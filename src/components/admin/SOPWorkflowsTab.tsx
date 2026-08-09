@@ -129,6 +129,34 @@ const roleLabels: Record<string, { label: string; color: string }> = {
 };
 
 export function SOPWorkflowsTab({ userRole, userName, staffId }: SOPWorkflowsTabProps) {
+  const [roleSop, setRoleSop] = useState<Array<{ role: string; section: string; title: string; body: string }>>([]);
+  const [sopRole, setSopRole] = useState('');
+  const [sopError, setSopError] = useState('');
+
+  useEffect(() => {
+    let dead = false;
+    (async () => {
+      if (!staffId) return;
+      try {
+        const { data, error } = await supabase.functions.invoke('penny-staff-brief', {
+          body: { staff_id: staffId, sop_only: true },
+        });
+        if (dead) return;
+        if (error || !data?.sop) {
+          // Said, not swallowed. A missing procedure is worth knowing about — somebody
+          // reading an empty tab concludes they have no responsibilities.
+          setSopError('Could not load your role procedures just now. Ask Penny for them directly.');
+          return;
+        }
+        setRoleSop(data.sop.sections || []);
+        setSopRole(data.sop.role || '');
+      } catch {
+        if (!dead) setSopError('Could not load your role procedures just now. Ask Penny for them directly.');
+      }
+    })();
+    return () => { dead = true; };
+  }, [staffId]);
+
   const [sops, setSOPs] = useState<SOP[]>([]);
   const [groupedSOPs, setGroupedSOPs] = useState<Record<string, SOP[]>>({});
   const [categories, setCategories] = useState<string[]>([]);
@@ -479,6 +507,38 @@ export function SOPWorkflowsTab({ userRole, userName, staffId }: SOPWorkflowsTab
 
   return (
     <div className="space-y-6" role="region" aria-label="Standard Operating Procedures">
+      {/* YOUR ROLE'S PROCEDURE, FIRST.
+          These are written from how the platform actually works and each step names the
+          tool that does it. They sit above everything else because the question this tab
+          exists to answer is "what am I responsible for", and that should not require
+          scrolling past a workflow builder. Owners see every role's. */}
+      {roleSop.length > 0 && (
+        <section aria-labelledby="role-sop-heading" className="rounded-lg border border-slate-300 bg-white">
+          <h2 id="role-sop-heading" className="border-b border-slate-200 px-4 py-3 text-base font-bold text-slate-900">
+            {sopRole === 'owner' ? 'Every role\u2019s responsibilities' : 'What you are responsible for'}
+          </h2>
+          <div className="divide-y divide-slate-100">
+            {roleSop.map((sec, i) => (
+              <article key={i} className="px-4 py-4">
+                <p className="text-[10px] font-semibold uppercase tracking-wider text-slate-500">
+                  {sec.role} \u00b7 {sec.section}
+                </p>
+                <h3 className="mt-1 text-sm font-semibold text-slate-900">{sec.title}</h3>
+                {/* whitespace-pre-line keeps the numbered steps as written rather than
+                    collapsing them into a wall a screen reader reads as one sentence */}
+                <p className="mt-2 whitespace-pre-line text-sm leading-relaxed text-slate-700">
+                  {sec.body}
+                </p>
+              </article>
+            ))}
+          </div>
+        </section>
+      )}
+      {sopError && (
+        <p role="status" className="rounded-md border border-amber-300 bg-amber-50 px-4 py-3 text-sm text-slate-800">
+          {sopError}
+        </p>
+      )}
       {/* Screen reader announcements */}
       <div 
         className="sr-only" 
