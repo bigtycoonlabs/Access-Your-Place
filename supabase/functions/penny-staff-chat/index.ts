@@ -141,6 +141,52 @@ async function landlordPortal(url: string, key: string) {
 // distinction Penny must never blur: a client FILE is what we know about someone; an
 // ACCOUNT is something they can sign into.
 
+async function payoutStatus(url: string, key: string, staffId: string) {
+  const { ok, status, data } = await rpc(url, key, 'penny_staff_payout_status', { p_staff_id: staffId });
+  if (!ok) return { error: `read_failed_${status}` };
+  return data;
+}
+
+async function savePayout(url: string, key: string, a: any, staffId: string) {
+  const { ok, status, data } = await rpc(url, key, 'penny_save_staff_payout', {
+    p_staff_id: staffId, p_method: String(a.method), p_destination: String(a.destination),
+    p_account_name: a.account_name ? String(a.account_name) : null,
+    p_bank_name: a.bank_name ? String(a.bank_name) : null,
+    p_make_default: a.make_default !== false,
+  });
+  if (!ok) {
+    console.error('penny-staff-chat rpc_save_payout', status);
+    return { error: 'save_failed', http: status };
+  }
+  return data;
+}
+
+async function myAgreements(url: string, key: string, staffId: string) {
+  const { ok, status, data } = await rpc(url, key, 'penny_my_agreements', { p_staff_id: staffId });
+  if (!ok) return { error: `read_failed_${status}` };
+  return data;
+}
+
+async function sendAgreement(url: string, key: string, a: any, staffId: string) {
+  const { ok, status, data } = await rpc(url, key, 'penny_send_agreement', {
+    p_title: String(a.title), p_body: a.body ? String(a.body) : null,
+    p_to_staff_id: a.to_staff_id ? String(a.to_staff_id) : null,
+    p_by: staffId, p_due: a.due_by ? String(a.due_by) : null,
+    p_url: a.document_url ? String(a.document_url) : null,
+  });
+  if (!ok) return { error: 'send_failed', http: status };
+  return data;
+}
+
+async function signAgreement(url: string, key: string, a: any, staffId: string) {
+  const { ok, status, data } = await rpc(url, key, 'penny_sign_agreement', {
+    p_agreement_id: String(a.agreement_id), p_staff_id: staffId,
+    p_typed_name: String(a.typed_name || ''),
+  });
+  if (!ok) return { error: 'sign_failed', http: status };
+  return data;
+}
+
 async function myAlerts(url: string, key: string, staffId: string) {
   // Refresh derived join alerts first, so someone who signed up minutes ago is already
   // there. A notification system that only updates on a schedule is one people learn to
@@ -1147,6 +1193,25 @@ async function execTool(name: string, args: any, ctx: Ctx): Promise<unknown> {
     if (name === 'seller_flow') return await sellerFlow(url, key);
     if (name === 'landlord_portal') return await landlordPortal(url, key);
     if (name === 'my_alerts') return await myAlerts(url, key, staffId);
+    if (name === 'payout_status') return await payoutStatus(url, key, staffId);
+    if (name === 'save_payout') {
+      if (!args?.method || !args?.destination) return { error: 'method and destination required' };
+      return await savePayout(url, key, args, staffId);
+    }
+    if (name === 'my_agreements') return await myAgreements(url, key, staffId);
+    if (name === 'send_agreement') {
+      if (!args?.title) return { error: 'title required' };
+      if (args.confirmed !== true) {
+        return { needs_confirmation: true,
+          action: args.to_staff_id ? 'send this agreement for signature' : 'send this agreement to the WHOLE Success Team',
+          instruction: 'Say the title and who it goes to. Get a yes, then call again with confirmed true.' };
+      }
+      return await sendAgreement(url, key, args, staffId);
+    }
+    if (name === 'sign_agreement') {
+      if (!args?.agreement_id || !args?.typed_name) return { error: 'agreement_id and typed_name required' };
+      return await signAgreement(url, key, args, staffId);
+    }
     if (name === 'assign_manager') {
       if (!args?.file_id || !args?.role) return { error: 'file_id and role required' };
       return await assignManager(url, key, args, staffId);
@@ -1474,6 +1539,68 @@ const TOOLS = [
       name: 'landlord_portal',
       description: "The supply side: properties landlords have submitted and nobody has reviewed, unread messages FROM landlords, corporate applications still open, and how many landlords have no acquisition manager. Read-only.",
       parameters: { type: 'object', properties: {}, required: [] },
+    },
+  },
+  {
+    type: 'function',
+    function: {
+      name: 'payout_status',
+      description: "Whether this person has payout details on file and which rails, with a MASKED hint only. Commission cannot be paid without one, so if they have none, say so.",
+      parameters: { type: 'object', properties: {}, required: [] },
+    },
+  },
+  {
+    type: 'function',
+    function: {
+      name: 'save_payout',
+      description: "Save or update where this person's commission is paid. NEVER read a saved destination back — the tool returns a masked hint and that is all anyone gets, including them.",
+      parameters: {
+        type: 'object',
+        properties: {
+          method: { type: 'string', enum: ['wire','zelle','cashapp','bitcoin'] },
+          destination: { type: 'string' },
+          account_name: { type: 'string' },
+          bank_name: { type: 'string' },
+          make_default: { type: 'boolean' },
+        },
+        required: ['method', 'destination'],
+      },
+    },
+  },
+  {
+    type: 'function',
+    function: {
+      name: 'my_agreements',
+      description: "This person's agreements: what is pending, what is signed, what is overdue.",
+      parameters: { type: 'object', properties: {}, required: [] },
+    },
+  },
+  {
+    type: 'function',
+    function: {
+      name: 'send_agreement',
+      description: "OWNER ONLY: send an agreement for signature. Omit to_staff_id to send to the whole Success Team. Confirm first — say the title and who it goes to.",
+      parameters: {
+        type: 'object',
+        properties: {
+          title: { type: 'string' }, body: { type: 'string' },
+          to_staff_id: { type: 'string' }, due_by: { type: 'string' },
+          document_url: { type: 'string' }, confirmed: { type: 'boolean' },
+        },
+        required: ['title'],
+      },
+    },
+  },
+  {
+    type: 'function',
+    function: {
+      name: 'sign_agreement',
+      description: "Sign a pending agreement by typing a full name. Only the person it was sent to can sign it.",
+      parameters: {
+        type: 'object',
+        properties: { agreement_id: { type: 'string' }, typed_name: { type: 'string' } },
+        required: ['agreement_id', 'typed_name'],
+      },
     },
   },
   {
@@ -2225,6 +2352,20 @@ landlords with no portal, then people never engaged at all.
 
 Give names, reasons and contact details. It is a call list, not a report.
 
+ONBOARDING A SUCCESS TEAM MEMBER. When somebody signs in and has never been through this,
+two things need doing before anything else:
+
+  PAYOUT DETAILS. This business pays commission, and without a rail on file they cannot be
+    paid. Ask which they want — wire, Zelle, Cash App or a Bitcoin wallet — and save it with
+    save_payout. Then NEVER READ IT BACK. Not to confirm it, not when they ask, not ever.
+    The tool returns a masked hint and that hint is all anyone gets, including them. If it
+    looks wrong they save it again; they do not ask you to recite it.
+
+  AGREEMENTS. Check my_agreements and tell them what is waiting. They sign by typing their
+    full name.
+
+Staff can update payout details any time, and should be told they can.
+
 YOU ARE THE NOTIFICATION SYSTEM. This business runs on commission, so a task nobody sees is
 somebody's income standing still. When a staff member opens a conversation, my_alerts is
 usually the first thing worth checking — and if something is urgent, lead with it rather
@@ -2558,6 +2699,21 @@ const TOOL_LABELS: Record<string, string> = {
 const toolLabel = (n?: string) => (n && TOOL_LABELS[n]) || 'Working on that';
 
 
+// Roughly how long each tool takes, from watching them run. Only the genuinely slow ones
+// are listed; everything else is a few seconds. These are estimates and are described to
+// the person as estimates — a countdown that lies is worse than no countdown.
+const SLOW_TOOLS: Record<string, number> = {
+  write_article: 45,
+  republish_article: 20,
+  articles_needing_work: 8,
+  research_market: 40,
+  present_deal: 8,
+  email_client: 10,
+  send_agreement: 8,
+  who_to_contact: 6,
+  seller_flow: 6,
+};
+
 // ---- TOOL GATING ----
 //
 // Penny carries 53 tools. Their schemas are ~9,800 tokens, and with her doctrine that is
@@ -2607,8 +2763,13 @@ const TOOL_GROUPS: Record<string, { words: RegExp; tools: string[] }> = {
     tools: ['list_staff','invite_staff','list_escalations','resolve_escalation','raise_alert'],
   },
   payments: {
-    words: /payment|pay|invoice|wire|zelle|cash app|bitcoin|deposit|balance/i,
-    tools: ['get_payment_methods','create_payment_link','list_payment_requests'],
+    words: /payment|pay|invoice|wire|zelle|cash ?app|bitcoin|deposit|balance|commission|payout/i,
+    tools: ['get_payment_methods','create_payment_link','list_payment_requests',
+            'payout_status','save_payout'],
+  },
+  agreements: {
+    words: /agreement|contract|sign|document|paperwork|onboard/i,
+    tools: ['my_agreements','send_agreement','sign_agreement','list_staff','invite_staff'],
   },
 };
 
@@ -2803,7 +2964,15 @@ async function runAgent(messages: Array<{ role: string; content: string }>, firs
         let args: any = {};
         try { args = JSON.parse(tc.function?.arguments || '{}'); } catch { /* keep {} */ }
         const toolName = tc.function?.name;
-        emit?.({ type: 'tool', state: 'running', tool: toolName, label: toolLabel(toolName) });
+        // SHOW THE WORK, WITHOUT SHOWING THE PLUMBING. A person waiting deserves to know
+        // she is still going and roughly how long — but never which table, which id, or
+        // which internal function. The label is already plain English; this adds an
+        // honest estimate so a slow request reads as considered rather than broken.
+        emit?.({
+          type: 'tool', state: 'running', tool: toolName, label: toolLabel(toolName),
+          eta_seconds: SLOW_TOOLS[toolName] ?? 3,
+          step: toolsRun.length + 1,
+        });
         const result = await execTool(toolName, args, ctx);
         const rr: any = result;
         // Three honest outcomes, never one optimistic one.

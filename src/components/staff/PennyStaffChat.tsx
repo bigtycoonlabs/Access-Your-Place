@@ -262,7 +262,16 @@ export function PennyStaffChat({
           } else if (ev.type === 'tool') {
             const label = ev.label || 'Working on that';
             if (ev.state === 'running') {
-              setProgress(label);
+              // Show an estimate when the step is genuinely slow. A person who knows a
+              // request will take forty seconds waits happily; the same wait with no
+              // signal reads as broken. Anything quick gets no estimate at all, because
+              // "about 3 seconds" on every step is noise.
+              const eta = typeof ev.eta_seconds === 'number' ? ev.eta_seconds : 0;
+              const step = typeof ev.step === 'number' && ev.step > 1 ? ` (step ${ev.step})` : '';
+              const withEta = eta >= 8 ? `${label}${step} — usually about ${eta} seconds` : `${label}${step}`;
+              setProgress(withEta);
+              // Spoken without the estimate: a screen reader hearing a number every step
+              // is worse than hearing what is happening.
               announce(label);
             } else if (ev.state === 'failed') {
               // A failure is a milestone. Forced past the throttle, because a tool that
