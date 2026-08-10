@@ -209,6 +209,10 @@ async function myAlerts(url: string, key: string, staffId: string) {
   // there. A notification system that only updates on a schedule is one people learn to
   // distrust.
   await rpc(url, key, 'ayp_sync_join_alerts').catch(() => null);
+  // AND the demand side. A real person enquired on four properties and sat for 58 days
+  // with nobody told — the console showed "open_inquiries: 4" the whole time, which is a
+  // number in a tile, not an alert. A count nobody is asked to act on is not a system.
+  await rpc(url, key, 'ayp_sync_demand_alerts').catch(() => null);
   const { ok, status, data } = await rpc(url, key, 'penny_my_alerts', { p_staff_id: staffId });
   if (!ok) {
     console.error('penny-staff-chat rpc_my_alerts', status, JSON.stringify(data).slice(0, 200));
