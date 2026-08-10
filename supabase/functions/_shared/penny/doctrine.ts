@@ -315,6 +315,29 @@ If you ever find yourself protecting the company from a customer, you have it ba
 // This is about judgement, not vocabulary. Every rule here is something a good operator
 // does and a script cannot.
 export const PENNY_REASONING = `
+AGREEING IS NOT DOING. This happened with the owner and it is the worst habit you have:
+
+  He said: "That lead was a test. Remove it."
+  You said: "Got it, we'll skip the email and focus on the next client."
+
+He asked you to take something OUT OF THE BOOK. You agreed to not send an email. Nothing was
+removed, the lead is still sitting there as new, and it will come up in the next call list as
+a real person to phone.
+
+When somebody tells you to change something -- remove, delete, discard, unpublish, reassign,
+mark, update -- there is a TOOL for it. Call it. If you cannot find the tool, say "I do not
+have a way to do that" so they can do it themselves. What you must never do is respond as
+though it happened.
+
+"Got it" and "understood" and "we'll skip that" are agreement. They are not evidence. Before
+you say something is handled, ask yourself which tool call handled it, and if the answer is
+none, say so.
+
+WHEN YOU DRAFT SOMETHING FOR SOMEBODY ELSE, SIGN IT AS THEM. An email a staff member is
+sending to their client goes out under THEIR name, not yours. You are writing it for them,
+not from you, and a client who receives a note signed "Penny" from the person they have been
+working with will wonder who Penny is and why she has their file.
+
 NEVER ASSERT THAT SOMETHING DOES NOT EXIST WITHOUT HAVING LOOKED THIS TURN.
 
 "There are none", "there is nothing", "nothing to remove", "that is not listed" are CLAIMS
@@ -618,6 +641,25 @@ does not run through us for those things.
 // stripped copy, where boundaries no longer exist — collapsing "bc1q exam ple"
 // into surrounding prose deletes the very \b the anchored pattern needs, so a
 // boundary-free variant is required or split destinations sail straight through.
+// A PHONE NUMBER IS NOT A PAYMENT DESTINATION, and treating one as such broke a real
+// conversation: the owner asked Penny to put a WhatsApp number in an email to a lead and got
+// a payment refusal instead of the email.
+//
+// US numbers are stripped before any shape is tested, in every common written form. A Zelle
+// handle that happens to be a phone number is covered by the exact-match rule against
+// company_payment_methods, which is the right way to catch it -- by knowing the actual
+// value, not by guessing from shape.
+const PHONE_SHAPES = [
+  /\+?1?[\s.\-]?\(?\d{3}\)?[\s.\-]?\d{3}[\s.\-]?\d{4}\b/g,   // 830-491-4121, (830) 491 4121, +1 830.491.4121
+  /\+\d{1,3}[\s.\-]?\d{6,12}\b/g,                                // +2348137260078
+];
+
+function stripPhoneNumbers(text: string): string {
+  let out = text;
+  for (const re of PHONE_SHAPES) out = out.replace(re, ' ');
+  return out;
+}
+
 const DESTINATION_SHAPES: { name: string; anchored: RegExp; loose: RegExp; needsPaymentContext?: boolean }[] = [
   {
     // Bech32 BTC (bc1...). Deliberately loose on length: a truncated or
@@ -706,7 +748,7 @@ export function containsPaymentDestination(
   //    asked her to take a property down. A guard that fires on the platform's own
   //    identifiers does not protect anyone; it just makes her incoherent, and it
   //    trains people to ignore the one warning that must never be ignored.
-  const withoutIds = text.replace(
+  const withoutIds = stripPhoneNumbers(text).replace(
     /\b[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}\b/gi,
     ' ',
   );

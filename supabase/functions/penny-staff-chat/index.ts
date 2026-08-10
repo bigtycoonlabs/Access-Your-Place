@@ -476,6 +476,14 @@ async function bookAppointment(url: string, key: string, a: any, staffId: string
       : `BOOKED BUT NOT SENT - the invitation email failed, so ${r.with} does not know about it.` };
 }
 
+async function discardLead(url: string, key: string, a: any, staffId: string) {
+  const { ok, status, data } = await rpc(url, key, 'penny_discard_lead', {
+    p_lead_id: String(a.lead_id), p_staff_id: staffId || null, p_reason: String(a.reason || ''),
+  });
+  if (!ok) return { error: 'discard_failed', http: status };
+  return data;
+}
+
 async function teamReadiness(url: string, key: string) {
   const { ok, status, data } = await rpc(url, key, 'penny_team_readiness');
   if (!ok) return { error: `read_failed_${status}` };
@@ -1461,6 +1469,10 @@ async function execTool(name: string, args: any, ctx: Ctx): Promise<unknown> {
     }
     if (name === 'client_book') return await clientBook(url, key);
     if (name === 'team_readiness') return await teamReadiness(url, key);
+    if (name === 'discard_lead') {
+      if (!args?.lead_id || !args?.reason) return { error: 'lead_id and reason required' };
+      return await discardLead(url, key, args, staffId);
+    }
     if (name === 'inbox') return await inbox(url, key, staffId);
     if (name === 'mark_message_read') {
       if (!args?.message_id || !args?.audience) return { error: 'message_id and audience required' };
@@ -2167,6 +2179,18 @@ const TOOLS = [
           confirmed: { type: 'boolean' },
         },
         required: ['audience', 'to_id', 'when', 'purpose'],
+      },
+    },
+  },
+  {
+    type: 'function',
+    function: {
+      name: 'discard_lead',
+      description: "Take a lead out of the book - a test entry, a duplicate, or somebody who is not real. Needs a reason. It is kept with the reason recorded, not deleted, so nobody re-adds it next month.",
+      parameters: {
+        type: 'object',
+        properties: { lead_id: { type: 'string' }, reason: { type: 'string' } },
+        required: ['lead_id', 'reason'],
       },
     },
   },
@@ -3259,7 +3283,7 @@ const TOOL_GROUPS: Record<string, { words: RegExp; tools: string[] }> = {
   },
   leads: {
     words: /lead|inquir|interest|new person|came in|signed up|joined/i,
-    tools: ['list_leads','set_lead_status','list_inquiries','set_inquiry_status','add_inquiry_note'],
+    tools: ['list_leads','set_lead_status','discard_lead','list_inquiries','set_inquiry_status','add_inquiry_note'],
   },
   email: {
     words: /email|write|send|message|reach out|follow up|invite|notify/i,
