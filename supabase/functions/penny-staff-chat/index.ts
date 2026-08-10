@@ -2472,7 +2472,7 @@ const TOOLS = [
     type: 'function',
     function: {
       name: 'add_property',
-      description: "Add a property to the platform. This is a WRITE — only call with confirmed:true after the staff member has said yes. IT DOES NOT GO LIVE: it lands as pending review, because a deal on the marketplace means a human has spoken to the landlord and validated the numbers. Say that plainly rather than implying it is listed.",
+      description: "Add a property to the platform. USE THIS when somebody says they want to list, add or submit a property - do NOT send them to the List a Deal tab, you only need an address, city and state and can ask for them. This is a WRITE — only call with confirmed:true after the staff member has said yes. IT DOES NOT GO LIVE: it lands as pending review, because a deal on the marketplace means a human has spoken to the landlord and validated the numbers. Say that plainly rather than implying it is listed.",
       parameters: {
         type: 'object',
         properties: {
