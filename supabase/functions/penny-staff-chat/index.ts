@@ -2951,7 +2951,18 @@ function toolsForTurn(userText: string) {
   const picked = TOOLS.filter((t: any) => wanted.has(t?.function?.name));
   // If matching produced almost nothing, send everything rather than leave her unable to
   // act. A smaller payload is not worth a refusal on a request we simply failed to classify.
-  return picked.length >= 8 ? picked : TOOLS;
+  // NEVER FALL BACK TO ALL 62. That is ~11k tokens of schema on top of ~10k of doctrine,
+  // which puts a single turn near the 30k/minute limit — so the SECOND question in a
+  // conversation gets rate limited, drops to the no-tools fallback, and answers blind.
+  // That is what happened when the owner asked about Texas twice in a row.
+  //
+  // A short list plus the core read tools is better than everything: she can still look
+  // things up, and she is not spending the whole budget describing tools she will not call.
+  if (picked.length >= 8) return picked;
+  const ALWAYS = new Set([...CORE_TOOLS, 'list_marketplace', 'client_book', 'list_leads',
+    'list_opportunities', 'find_client_file', 'my_alerts', 'who_to_contact']);
+  const fallback = TOOLS.filter((t: any) => ALWAYS.has(t?.function?.name));
+  return fallback.length ? fallback : TOOLS.slice(0, 20);
 }
 
 async function runAgent(messages: Array<{ role: string; content: string }>, first: string, ctx: Ctx, emit?: Emit) {
@@ -3005,6 +3016,11 @@ async function runAgent(messages: Array<{ role: string; content: string }>, firs
 
   const sys = systemPrompt(first, ctx.isOwner === true, ctx.identified === true, ctx.fullName || first, ctx.docText, ctx.docName, (ctx as any).memories, (ctx as any).attention);
   const sysWithFacts = sys + liveFacts;
+  // Appended only on the no-tools fallback path.
+  const FALLBACK_NOTE = `\n\nIMPORTANT RIGHT NOW: your tools are UNAVAILABLE this turn — the ` +
+    `reasoning service refused the tools payload. You cannot look anything up. Answer from ` +
+    `the facts already given to you above and say plainly that you could not run a live ` +
+    `check. Do NOT state that something does not exist; you are not in a position to know.`;
 
   // Which tools this turn actually needs. Matched against the last few things said rather
   // than only the latest message, so "do that for Elizabeth too" still loads client tools.
@@ -3077,7 +3093,15 @@ async function runAgent(messages: Array<{ role: string; content: string }>, firs
       // Surfaced rather than collapsed into a generic failure — a 400 from the tools
       // payload and a 429 rate limit need completely different responses from a person.
       emit?.({ type: 'status', phase: 'error', text: `Reasoning service returned ${res.status}` });
-      const plain = await plainReply(key, sys, messages);
+      // THE FALLBACK USED `sys`, WITHOUT THE LIVE FACTS. This is the path that answered
+      // the owner when he asked about Texas: the tools call failed, she dropped to a
+      // NO-TOOLS reply, and answered from a prompt that did not contain the marketplace.
+      // She could not have looked even if she wanted to — and she said "there are none"
+      // rather than "I could not check".
+      //
+      // It now carries the same facts as the main path, so a fallback answer is still
+      // grounded, and the caller is told the tools were unavailable.
+      const plain = await plainReply(key, sysWithFacts + FALLBACK_NOTE, messages);
       // The no-tools fallback bypasses finalize(), so it needs the same guard.
       if (plain) {
         const pLeak = containsPaymentDestination(plain);
