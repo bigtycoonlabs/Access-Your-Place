@@ -175,7 +175,7 @@ async function rpc(url: string, key: string, fn: string, args: Record<string, un
 // (general market + type + economics + score) — same source of truth the public Penny uses.
 async function fetchLiveDeals(url: string, key: string): Promise<string> {
   const props = await rpc(url, key, 'penny_live_deals')
-  if (!Array.isArray(props) || props.length === 0) return ''
+  if (!Array.isArray(props) || props.length === 0) return NOTHING_LISTED
   const lines = props.map((p: any) => {
     const loc = [p.city, p.state].filter(Boolean).join(', ') + (p.zip_code ? ` ${p.zip_code}` : '')
     const bits = [
@@ -285,6 +285,14 @@ function parseSetup(msg: string): number | null {
 // down, and she answers from nothing while sounding exactly as confident as usual.
 //
 // That is this platform's signature defect pointed at the one thing a client acts on.
+// Same shape as ENGINE_UNAVAILABLE: an empty marketplace is a FACT to state, not silence to
+// improvise around. The marketplace was emptied on 10 August, so a client asking what is
+// available needs a straight answer rather than a vague one.
+const NOTHING_LISTED =
+  'NOTHING IS LISTED ON THE MARKETPLACE RIGHT NOW. Say so plainly. Deals move quickly here ' +
+  'and new ones are worked constantly - offer to flag them the moment something in their ' +
+  'market lands. Never invent a deal or a figure to fill the gap.'
+
 const ENGINE_UNAVAILABLE =
   'ENGINE UNAVAILABLE: the calculation could not be run just now. Tell the client plainly ' +
   'that you could not run the numbers this moment and offer to come back to them. Do NOT ' +
@@ -406,7 +414,7 @@ async function fetchOperatorMemory(url: string, key: string, userId: string): Pr
     if (!res.ok) { console.error('ai-investor-chat engine_http', res.status); return ENGINE_UNAVAILABLE }
     const rows = await res.json()
     const mem = Array.isArray(rows) && rows[0]?.memory && typeof rows[0].memory === 'object' ? rows[0].memory : null
-    if (!mem || Object.keys(mem).length === 0) return ''
+    if (!mem || Object.keys(mem).length === 0) return NOTHING_LISTED
     const formatted = formatMemoryForPrompt(mem)
     return formatted ? `WHAT YOU REMEMBER ABOUT THIS OPERATOR (from past conversations — use it to tailor your advice and avoid re-asking what you already know; if they correct any of it, go with the correction):\n${formatted}` : ''
   } catch (e) { console.error('ai-investor-chat engine_threw', e instanceof Error ? e.message : 'unknown'); return ENGINE_UNAVAILABLE }

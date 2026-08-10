@@ -255,7 +255,24 @@ async function askPenny(system: string, messages: Msg[], effort: Effort): Promis
 // fields (general market + type + economics + score). No street address, contact, or links.
 async function fetchLiveDeals(url: string, key: string): Promise<string> {
   const props = await rpc(url, key, 'penny_live_deals');
-  if (!Array.isArray(props) || props.length === 0) return '';
+  // THREE DIFFERENT SITUATIONS COLLAPSED INTO ONE EMPTY STRING: the read failed, the
+  // marketplace is genuinely empty, or something else went wrong. All of them left her with
+  // NO deal context at all, so she improvised to a stranger about what we have for sale.
+  //
+  // The marketplace was emptied on 10 August, so this is live right now rather than
+  // hypothetical.
+  if (props === null || props === undefined) {
+    return 'DEAL LIST UNAVAILABLE: you could not read the live marketplace this moment. Say ' +
+      'that plainly - that you cannot pull the list up right now and will not guess at what ' +
+      'is on it. Do NOT say there are no deals; you do not know that.';
+  }
+  if (!Array.isArray(props) || props.length === 0) {
+    return 'NO DEALS ARE LISTED RIGHT NOW. This is accurate and you should say it plainly ' +
+      'rather than talking around it: nothing is on the marketplace at this moment. Deals ' +
+      'come and go quickly here and new ones are worked constantly, so the useful next step ' +
+      'is to get their details so somebody reaches out when something in their market lands. ' +
+      'Never invent a deal, a market or a price to fill the gap.';
+  }
   const lines = props.map((p: any) => {
     const loc = [p.city, p.state].filter(Boolean).join(', ') + (p.zip_code ? ` ${p.zip_code}` : '');
     const bits = [
