@@ -323,6 +323,28 @@ async function creditPicture(url: string, key: string) {
   return data;
 }
 
+async function verificationGap(url: string, key: string) {
+  const { ok, status, data } = await rpc(url, key, 'ayp_verification_gap');
+  if (!ok) return { error: `read_failed_${status}` };
+  return data;
+}
+
+async function recordVerification(url: string, key: string, a: any, staffId: string) {
+  const { ok, status, data } = await rpc(url, key, 'ayp_record_verification', {
+    p_property_id: String(a.property_id), p_staff_id: staffId || null,
+    p_landlord_spoken_to: a.landlord_spoken_to ?? null,
+    p_landlord_marketing_consent: a.landlord_marketing_consent ?? null,
+    p_landlord_ready_to_sign: a.landlord_ready_to_sign ?? null,
+    p_terms_pre_negotiated: a.terms_pre_negotiated ?? null,
+    p_operation_evaluated: a.operation_evaluated ?? null,
+    p_inventory_verified: a.inventory_verified ?? null,
+    p_vendors_confirmed: a.vendors_confirmed ?? null,
+    p_note: a.note ? String(a.note) : null,
+  });
+  if (!ok) return { error: 'record_failed', http: status };
+  return data;
+}
+
 async function teamReadiness(url: string, key: string) {
   const { ok, status, data } = await rpc(url, key, 'penny_team_readiness');
   if (!ok) return { error: `read_failed_${status}` };
@@ -1305,6 +1327,16 @@ async function execTool(name: string, args: any, ctx: Ctx): Promise<unknown> {
     }
     if (name === 'client_book') return await clientBook(url, key);
     if (name === 'team_readiness') return await teamReadiness(url, key);
+    if (name === 'verification_gap') return await verificationGap(url, key);
+    if (name === 'record_verification') {
+      if (!args?.property_id) return { error: 'property_id required' };
+      if (args.confirmed !== true) {
+        return { needs_confirmation: true,
+          action: 'record what was actually verified on this property',
+          instruction: 'Read back exactly which boxes you are about to mark true and WHO says so. This is the claim the whole marketplace rests on - never record something the staff member did not actually tell you they did. Get a clear yes, then call again with confirmed true.' };
+      }
+      return await recordVerification(url, key, args, staffId);
+    }
     if (name === 'credit_requests') return await creditRequests(url, key, args?.investor_id ? String(args.investor_id) : undefined);
     if (name === 'credit_picture') return await creditPicture(url, key);
     if (name === 'decide_credit_request') {
@@ -1820,6 +1852,37 @@ const TOOLS = [
       name: 'credit_picture',
       description: "The platform-wide credit position. Credit sits in two places that do not reconcile historically — say so plainly if asked, and NEVER suggest adjusting a client's balance: the owner is verifying every holder against their file personally.",
       parameters: { type: 'object', properties: {}, required: [] },
+    },
+  },
+  {
+    type: 'function',
+    function: {
+      name: 'verification_gap',
+      description: "Which live listings claim to be AYP verified but have no recorded evidence behind it. Every listing on the marketplace is supposed to mean a human spoke to the landlord.",
+      parameters: { type: 'object', properties: {}, required: [] },
+    },
+  },
+  {
+    type: 'function',
+    function: {
+      name: 'record_verification',
+      description: "Record what was actually verified on a property, by the person who did it. NEVER record something they have not told you they did - 'we spoke to the landlord' is the claim the marketplace rests on. Confirm before calling.",
+      parameters: {
+        type: 'object',
+        properties: {
+          property_id: { type: 'string' },
+          landlord_spoken_to: { type: 'boolean' },
+          landlord_marketing_consent: { type: 'boolean', description: 'The landlord consents to the property being marketed.' },
+          landlord_ready_to_sign: { type: 'boolean' },
+          terms_pre_negotiated: { type: 'boolean' },
+          operation_evaluated: { type: 'boolean', description: 'Third-party sales only.' },
+          inventory_verified: { type: 'boolean', description: 'Third-party sales only.' },
+          vendors_confirmed: { type: 'boolean', description: 'Third-party sales only.' },
+          note: { type: 'string' },
+          confirmed: { type: 'boolean' },
+        },
+        required: ['property_id'],
+      },
     },
   },
   {
@@ -2893,7 +2956,7 @@ const CORE_TOOLS = new Set([
 const TOOL_GROUPS: Record<string, { words: RegExp; tools: string[] }> = {
   deals: {
     words: /deal|propert|listing|marketplace|unpublish|publish|address|release|quote|forge|price|rent|market/i,
-    tools: ['list_marketplace','unpublish_property','add_property','quote_deal','forge_status',
+    tools: ['list_marketplace','unpublish_property','add_property','quote_deal','forge_status','verification_gap','record_verification',
             'release_property','present_deal','property_detail','search_properties'],
   },
   clients: {

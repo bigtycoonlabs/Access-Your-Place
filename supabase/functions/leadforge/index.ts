@@ -99,16 +99,32 @@ async function marketAnalysis(zip_code: string, city: string, state: string) {
 }
 
 // Real listings via Google Custom Search (when the key is authorized). Real source links, unverified.
-async function googleListings(zip_code: string, city: string, state: string, min_beds: number) {
-  if (!GOOGLE_KEY || !GOOGLE_CX) return [];
+// Returns { listings, status } rather than a bare array.
+//
+// This returned [] in THREE different situations: no API key configured, the search request
+// failing, and the search genuinely finding nothing. A client running a search could not
+// tell "we looked and there is nothing" from "this tool has never been switched on" -- and
+// Property Forge has run ZERO searches in its life, so nobody has ever seen which it was.
+//
+// The market-analysis function directly above already does this correctly, returning
+// source: 'unavailable'. This one did not.
+async function googleListings(zip_code: string, city: string, state: string, min_beds: number):
+  Promise<{ listings: unknown[]; status: 'ok' | 'not_configured' | 'failed' }> {
+  if (!GOOGLE_KEY || !GOOGLE_CX) {
+    console.error('leadforge google_search_not_configured');
+    return { listings: [], status: 'not_configured' };
+  }
   try {
     const q = `rental property ${zip_code} ${city} ${state} for rent ${min_beds}+ bedrooms`;
     const sr = await fetchTimeout(
       `https://www.googleapis.com/customsearch/v1?key=${GOOGLE_KEY}&cx=${GOOGLE_CX}&q=${encodeURIComponent(q)}&num=10`,
       { method: 'GET' }, 10000);
-    if (!sr.ok) return [];
+    if (!sr.ok) {
+      console.error('leadforge google_search_http', sr.status);
+      return { listings: [], status: 'failed' };
+    }
     const sd = await sr.json();
-    if (!Array.isArray(sd.items)) return [];
+    if (!Array.isArray(sd.items)) return { listings: [], status: 'ok' };
     return sd.items.map((item: any) => {
       const text = `${item.title || ''} ${item.snippet || ''}`;
       const bed = text.match(/(\d+)\s*(bed|br|bedroom)/i);
@@ -124,7 +140,10 @@ async function googleListings(zip_code: string, city: string, state: string, min
         city, state, zip_code, is_verified: false, requires_verification: true, source: 'google_cse',
       };
     }).filter((l: any) => l.source_url && (!l.bedrooms || l.bedrooms >= min_beds));
-  } catch (_e) { return []; }
+  } catch (e) {
+    console.error('leadforge google_search_threw', e instanceof Error ? e.message : 'unknown');
+    return { listings: [], status: 'failed' as const };
+  }
 }
 
 // --- SEARCH: real listings + market analysis. Specifics HIDDEN until release. ---
@@ -132,10 +151,11 @@ async function doSearch(body: any) {
   const { zip_code, city = '', state = '', min_beds = 2, operation_type = 'all', investor_id = null } = body;
   if (!zip_code) return json({ success: false, error: 'zip_code is required' }, 400);
 
-  const [{ analysis, source: analysisSource }, found] = await Promise.all([
+  const [{ analysis, source: analysisSource }, listingResult] = await Promise.all([
     marketAnalysis(zip_code, city, state),
     googleListings(zip_code, city, state, min_beds),
   ]);
+  const found = listingResult.listings as any[];
 
   // Truth-guard: only cache + offer REAL sourced listings. Teasers hide address/source/photos.
   const opportunities: any[] = [];
@@ -173,8 +193,16 @@ async function doSearch(body: any) {
       available: true, free: true, no_obligation: true,
       message: 'These figures are AI estimates based on our research methodology, not verified market data. If you would rather see research validated by a human, you can schedule a free, no-obligation call with an acquisition manager on our success team - to review any property you find here, or any property listed in the marketplace.',
     },
+    // WHY it is empty, not just THAT it is empty. "No listings were found" told a client the
+    // market was bare when in fact the search had never been switched on -- Property Forge
+    // has run zero searches in its life, so nobody has ever seen which case they were in.
+    listing_search_status: listingResult.status,
     note: opportunities.length === 0
-      ? 'No real listings were found for this search right now. Nothing was charged.'
+      ? (listingResult.status === 'not_configured'
+          ? 'Property search is not switched on for this platform yet, so no listings could be pulled. This is not an empty market - it is a setup step on our side. Nothing was charged, and the market figures above are still real.'
+          : listingResult.status === 'failed'
+            ? 'The property search could not be reached just now, so we cannot say whether there are listings here. Nothing was charged - please try again shortly.'
+            : 'No real listings were found for this search right now. Nothing was charged.')
       : 'Search is free. Releasing a property spends one $62.50 credit and reveals its address, photos, and direct source link.',
   });
 }
