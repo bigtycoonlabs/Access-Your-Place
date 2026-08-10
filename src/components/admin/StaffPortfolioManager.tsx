@@ -248,11 +248,14 @@ export function StaffPortfolioManager({ investorId, investorName, staffId, staff
         if (editForm.community_name !== undefined) updateData.community_name = editForm.community_name;
         if (editForm.community_website !== undefined) updateData.community_website = editForm.community_website;
 
-        const { error } = await supabase
-          .from('investor_portfolio')
-          .update(updateData)
-          .eq('id', editingProp.id);
-        if (!error) success = true;
+        // Routed through the edge function. Anon UPDATE on investor_portfolio was revoked
+        // (it let anybody with the publishable key edit any client's holdings), which broke
+        // this direct write.
+        const { data: r } = await supabase.functions.invoke('manage-investor-admin', {
+          body: { action: 'staff_update_portfolio_property', property_id: editingProp.id,
+                  updates: updateData, staff_id: staffId },
+        });
+        if (r?.success) success = true;
       } catch {}
     }
 
@@ -288,11 +291,11 @@ export function StaffPortfolioManager({ investorId, investorName, staffId, staff
           .single();
         const currentNotes = prop?.staff_notes || [];
         const newNote = { author: staffName, text: noteText, date: new Date().toISOString() };
-        const { error } = await supabase
-          .from('investor_portfolio')
-          .update({ staff_notes: [...currentNotes, newNote], updated_at: new Date().toISOString() })
-          .eq('id', propertyId);
-        if (!error) success = true;
+        const { data: r } = await supabase.functions.invoke('manage-investor-admin', {
+          body: { action: 'staff_update_portfolio_property', property_id: propertyId,
+                  updates: { staff_notes: [...currentNotes, newNote] }, staff_id: staffId },
+        });
+        if (r?.success) success = true;
       } catch {}
     }
 
@@ -324,11 +327,10 @@ export function StaffPortfolioManager({ investorId, investorName, staffId, staff
 
   const handleDeleteProperty = async (propertyId: string) => {
     try {
-      const { error } = await supabase
-        .from('investor_portfolio')
-        .delete()
-        .eq('id', propertyId);
-      if (!error) {
+      const { data: dr } = await supabase.functions.invoke('manage-investor-admin', {
+        body: { action: 'staff_delete_portfolio_property', property_id: propertyId, staff_id: staffId },
+      });
+      if (dr?.success) {
         toast({ title: 'Property Removed' });
         fetchPortfolio();
         onRefresh?.();
@@ -470,13 +472,12 @@ export function StaffPortfolioManager({ investorId, investorName, staffId, staff
           created_at: new Date().toISOString()
         };
 
-        const { data: inserted, error } = await supabase
-          .from('investor_portfolio')
-          .insert(portfolioData)
-          .select()
-          .single();
+        const { data: ar } = await supabase.functions.invoke('manage-investor-admin', {
+          body: { action: 'add_portfolio_property', ...portfolioData, staff_id: staffId },
+        });
+        const inserted = ar?.property ?? null;
 
-        if (!error && inserted) {
+        if (ar?.success && inserted) {
           success = true;
           // Send notification
           try {
@@ -580,13 +581,10 @@ export function StaffPortfolioManager({ investorId, investorName, staffId, staff
           created_at: new Date().toISOString()
         };
 
-        const { error } = await supabase
-          .from('investor_portfolio')
-          .insert(portfolioData)
-          .select()
-          .single();
-
-        if (!error) success = true;
+        const { data: ar2 } = await supabase.functions.invoke('manage-investor-admin', {
+          body: { action: 'add_portfolio_property', ...portfolioData, staff_id: staffId },
+        });
+        if (ar2?.success) success = true;
       } catch {}
     }
 

@@ -176,11 +176,11 @@ function KanbanQuickAssign({
           body: { action: 'assign', staff_id: staffId, property_id: property.id, investor_id: selected.id, assigned_by: staffId, notes: `Quick-assigned from kanban by ${staffName || 'staff'}` }
         });
       } catch {
-        // Fallback: direct insert
-        await supabase.from('investor_portfolio').insert({
-          investor_id: selected.id, property_id: property.id, assigned_by: staffId,
-          status: 'assigned', created_at: new Date().toISOString(), notes: `Quick-assigned from kanban`
-        });
+        // The direct-insert fallback is gone. Anon INSERT on investor_portfolio was
+        // revoked, so it could no longer work — and it swallowed its own errors, so a
+        // failed assignment looked identical to a successful one.
+        console.error('[DealKanbanBoard] assignment failed:', property.id, selected.id);
+        throw new Error('Could not assign that deal. Nothing was saved.');
       }
       // Update property record
       await supabase.from('properties').update({ assigned_investor_id: selected.id, assigned_to: selected.full_name || selected.email }).eq('id', property.id);

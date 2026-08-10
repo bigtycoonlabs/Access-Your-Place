@@ -354,9 +354,13 @@ export function PropertyAssignmentModal({
           created_at: new Date().toISOString()
         };
 
-        const { error: insertError } = await supabase
-          .from('investor_portfolio')
-          .insert(portfolioData);
+        // Routed through the edge function. Anon INSERT on investor_portfolio was
+        // revoked because it let anybody with the publishable key add a holding to any
+        // client's portfolio.
+        const { data: assignRes } = await supabase.functions.invoke('manage-investor-admin', {
+          body: { action: 'add_portfolio_property', ...portfolioData, staff_id: staffId },
+        });
+        const insertError = assignRes?.success ? null : new Error(assignRes?.error || 'Could not assign the property.');
 
         if (!insertError) {
           success = true;

@@ -220,6 +220,75 @@ Deno.serve(async (req) => {
       return json({ success: true, investor: inv, linked_staff: linkedStaff, messages, documents, inquiries, portfolio });
     }
 
+    // ---- STAFF PORTFOLIO WRITES ----
+    //
+    // Anon INSERT/UPDATE/DELETE on investor_portfolio was revoked because it let anybody
+    // with the publishable key edit any client's holdings. That closed the hole and BROKE
+    // EIGHT STAFF WRITE SITES, which were writing the table directly — I caused that
+    // regression and this is the fix for it.
+    //
+    // Staff genuinely need to edit a portfolio they do not own, so these do NOT check
+    // investor ownership. They check that a real staff member is doing it.
+
+    if (action === 'staff_update_portfolio_property') {
+      const { property_id, updates, staff_id } = body;
+      if (!property_id || !staff_id) {
+        return new Response(JSON.stringify({ success: false, error: 'property_id and staff_id are required.' }),
+          { status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' } });
+      }
+      const who = await fetch(`${SUPABASE_URL}/rest/v1/staff_users?id=eq.${staff_id}&is_active=is.true&select=id,name`, { headers: getH });
+      const staff = (await who.json().catch(() => []))?.[0];
+      if (!staff) {
+        return new Response(JSON.stringify({ success: false, error: 'Portfolio edits have to be made by an active staff member.' }),
+          { status: 403, headers: { ...corsHeaders, 'Content-Type': 'application/json' } });
+      }
+      const patch = { ...(updates && typeof updates === 'object' ? updates : {}), updated_at: new Date().toISOString() };
+      delete (patch as Record<string, unknown>).id;
+      delete (patch as Record<string, unknown>).investor_id;
+      const res = await fetch(`${SUPABASE_URL}/rest/v1/investor_portfolio?id=eq.${property_id}`, {
+        method: 'PATCH', headers: { ...mutH, Prefer: 'return=representation' }, body: JSON.stringify(patch),
+      });
+      if (!res.ok) {
+        console.error('staff_update_portfolio_property failed', res.status);
+        return new Response(JSON.stringify({ success: false, error: 'Could not save. Nothing was changed.' }),
+          { status: 502, headers: { ...corsHeaders, 'Content-Type': 'application/json' } });
+      }
+      const rows = await res.json();
+      if (!rows?.length) {
+        return new Response(JSON.stringify({ success: false, error: 'No portfolio property with that id. Nothing was changed.' }),
+          { status: 404, headers: { ...corsHeaders, 'Content-Type': 'application/json' } });
+      }
+      return new Response(JSON.stringify({ success: true, property: rows[0] }),
+        { headers: { ...corsHeaders, 'Content-Type': 'application/json' } });
+    }
+
+    if (action === 'staff_delete_portfolio_property') {
+      const { property_id, staff_id } = body;
+      if (!property_id || !staff_id) {
+        return new Response(JSON.stringify({ success: false, error: 'property_id and staff_id are required.' }),
+          { status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' } });
+      }
+      const who = await fetch(`${SUPABASE_URL}/rest/v1/staff_users?id=eq.${staff_id}&is_active=is.true&select=id`, { headers: getH });
+      if (!((await who.json().catch(() => []))?.length)) {
+        return new Response(JSON.stringify({ success: false, error: 'Removing a holding has to be done by an active staff member.' }),
+          { status: 403, headers: { ...corsHeaders, 'Content-Type': 'application/json' } });
+      }
+      const res = await fetch(`${SUPABASE_URL}/rest/v1/investor_portfolio?id=eq.${property_id}`, {
+        method: 'DELETE', headers: { ...mutH, Prefer: 'return=representation' },
+      });
+      if (!res.ok) {
+        return new Response(JSON.stringify({ success: false, error: 'Could not remove it. Nothing was deleted.' }),
+          { status: 502, headers: { ...corsHeaders, 'Content-Type': 'application/json' } });
+      }
+      const rows = await res.json();
+      if (!rows?.length) {
+        return new Response(JSON.stringify({ success: false, error: 'No portfolio property with that id. Nothing was deleted.' }),
+          { status: 404, headers: { ...corsHeaders, 'Content-Type': 'application/json' } });
+      }
+      return new Response(JSON.stringify({ success: true, removed: property_id }),
+        { headers: { ...corsHeaders, 'Content-Type': 'application/json' } });
+    }
+
     if (action === 'add_property_to_portfolio' || action === 'add_portfolio_property') {
       if (!investor_id) return json({ success: false, error: 'investor_id required' });
       const property_address = body.property_address || body.address || '';
