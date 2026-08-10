@@ -883,7 +883,7 @@ export default function Deals() {
           title: isSaved ? 'Removed from saved' : 'Deal saved!',
           description: isSaved 
             ? 'Deal removed from your saved list' 
-            : 'Deal saved to your investor portal. View it in your Saved Deals tab.',
+            : 'Deal saved to your operator portal. View it in your Saved Deals tab.',
         });
       }
     } catch (err) {

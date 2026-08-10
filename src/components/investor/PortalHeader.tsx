@@ -177,7 +177,7 @@ export function PortalHeader({ investor, onSettingsClick, onMessagesClick }: Por
             <Building2 className="w-8 h-8 text-[#d4a574]" aria-hidden="true" />
             <div>
               <span className="font-bold text-lg">Access Your Place</span>
-              <span className="text-xs block text-[#d4a574]">Investor Portal</span>
+              <span className="text-xs block text-[#d4a574]">Operator Portal</span>
             </div>
           </a>
 

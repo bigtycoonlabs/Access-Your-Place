@@ -748,17 +748,17 @@ export function StaffSettingsTab({ staffSession, onSessionUpdate, isSuccessManag
                           ...data.investor,
                           loginTime: Date.now()
                         }));
-                        // Navigate to investor portal
+                        // Navigate to operator portal
                         window.location.href = '/investor';
                       }
                     } catch (err) {
-                      console.error('Failed to switch to investor portal:', err);
+                      console.error('Failed to switch to operator portal:', err);
                     }
                   }}
                   className="flex-1 bg-gradient-to-r from-[#d4a574]/10 to-[#d4a574]/5 border-[#d4a574]/30 hover:bg-[#d4a574]/20"
                 >
                   <ArrowLeftRight className="w-4 h-4 mr-2" aria-hidden="true" />
-                  Switch to Investor Portal
+                  Switch to Operator Portal
                 </Button>
 
                 <Button
@@ -784,7 +784,7 @@ export function StaffSettingsTab({ staffSession, onSessionUpdate, isSuccessManag
                 <AlertCircle className="w-4 h-4" aria-hidden="true" />
                 <AlertTitle>No Linked Account</AlertTitle>
                 <AlertDescription>
-                  Link an investor account to easily switch between staff and investor portals.
+                  Link an investor account to easily switch between staff and operator portals.
                 </AlertDescription>
               </Alert>
 

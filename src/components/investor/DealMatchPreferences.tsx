@@ -679,7 +679,7 @@ export function DealMatchPreferences({ investorId }: Props) {
                     </div>
                     <div>
                       <p className="font-medium">In-App Notifications</p>
-                      <p className="text-sm text-gray-500">See alerts in your investor portal</p>
+                      <p className="text-sm text-gray-500">See alerts in your operator portal</p>
                     </div>
                   </div>
                   <Switch

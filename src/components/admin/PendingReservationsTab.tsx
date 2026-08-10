@@ -222,7 +222,7 @@ export function PendingReservationsTab({ staffId, staffName, isSuccessManager = 
 
     setProcessing(true);
     try {
-      const { data, error } = await supabase.functions.invoke('investor-messaging', {
+      const { data, error } = await supabase.functions.invoke('manage-investor-admin', {
         body: {
           action: 'send_message',
           investor_id: selectedReservation.investor_id,

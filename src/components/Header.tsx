@@ -122,7 +122,7 @@ export default function Header() {
             <Link 
               to="/investor/login" 
               className="flex items-center gap-1 hover:text-[#d4a574] transition-colors text-sm focus:outline-none focus:ring-2 focus:ring-[#d4a574] focus:ring-offset-2 focus:ring-offset-[#0a0f1a] rounded px-2 py-1"
-              aria-label="Investor Portal Login"
+              aria-label="Operator Portal Login"
             >
               <User size={14} aria-hidden="true" />
               Portal
@@ -182,7 +182,7 @@ export default function Header() {
               onClick={() => handleNavClick('/investor/login')}
               className="block w-full text-left hover:text-[#d4a574] transition-colors py-2 px-2 focus:outline-none focus:ring-2 focus:ring-[#d4a574] rounded"
             >
-              Investor Portal
+              Operator Portal
             </button>
             <button 
               onClick={() => handleNavClick('/staff/login')}

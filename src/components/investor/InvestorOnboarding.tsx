@@ -139,7 +139,7 @@ export function InvestorOnboarding({ investor, onComplete }: Props) {
           // Log onboarding completed activity
           logOnboardingCompleted(investor.id);
           
-          toast({ title: 'Profile Complete!', description: 'Welcome to the investor portal.' });
+          toast({ title: 'Profile Complete!', description: 'Welcome to the operator portal.' });
           onComplete({ ...data.investor, show_guided_tour: true });
           setLoading(false);
           return;

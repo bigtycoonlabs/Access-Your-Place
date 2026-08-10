@@ -299,7 +299,7 @@ ${sigData.signature_image_url ? `<img src="${sigData.signature_image_url}" alt="
 <p><strong>Date:</strong> ${doc.signed_at ? new Date(doc.signed_at).toLocaleString() : 'N/A'}</p>
 <p><strong>IP Address:</strong> ${doc.signed_ip || 'N/A'}</p>
 <p><strong>Document ID:</strong> ${doc.id}</p></div>
-<div class="meta"><p>This document was electronically signed through the Access Your Place (AYP) Investor Portal.</p>
+<div class="meta"><p>This document was electronically signed through the Access Your Place (AYP) Operator Portal.</p>
 <p>Electronic signatures are legally binding under the ESIGN Act and UETA.</p></div></body></html>`;
 
     const blob = new Blob([htmlContent], { type: 'text/html' });

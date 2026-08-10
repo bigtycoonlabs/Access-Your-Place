@@ -28,7 +28,7 @@ const TUTORIALS: Tutorial[] = [
   {
     id: 'getting-started',
     title: 'Getting Started with Your Portal',
-    description: 'A complete walkthrough of your investor portal, including navigation, dashboard widgets, and key features.',
+    description: 'A complete walkthrough of your operator portal, including navigation, dashboard widgets, and key features.',
     duration: '5:30',
     category: 'Getting Started',
     icon: <BookOpen className="w-5 h-5" />,
@@ -270,7 +270,7 @@ export function VideoTutorials({ investorId }: Props) {
                   )}
                 </CardTitle>
                 <CardDescription>
-                  Learn how to use every feature of your investor portal
+                  Learn how to use every feature of your operator portal
                 </CardDescription>
               </div>
             </div>

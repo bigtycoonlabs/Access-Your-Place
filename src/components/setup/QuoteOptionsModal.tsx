@@ -145,7 +145,7 @@ export default function QuoteOptionsModal({
         throw new Error(data?.error || fnError?.message || 'Failed to save quote');
       }
 
-      setSuccess(`Quote #${data.quoteNumber} saved to your account! View it anytime in your investor portal.`);
+      setSuccess(`Quote #${data.quoteNumber} saved to your account! View it anytime in your operator portal.`);
     } catch (err: any) {
       setError(err.message || 'Failed to save quote');
     } finally {
@@ -362,12 +362,12 @@ export default function QuoteOptionsModal({
                   </div>
                   <div>
                     <h4 className="font-semibold text-[#1a2332]">
-                      {investor ? 'Save to Your Account' : 'Save to Investor Portal'}
+                      {investor ? 'Save to Your Account' : 'Save to Operator Portal'}
                     </h4>
                     <p className="text-sm text-gray-600 mt-1">
                       {investor 
-                        ? `Logged in as ${investor.full_name || investor.email}. Save this quote to access it anytime from your investor portal.`
-                        : 'Log in to your investor portal to save quotes and access them anytime.'
+                        ? `Logged in as ${investor.full_name || investor.email}. Save this quote to access it anytime from your operator portal.`
+                        : 'Log in to your operator portal to save quotes and access them anytime.'
                       }
                     </p>
                   </div>

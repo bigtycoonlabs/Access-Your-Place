@@ -106,7 +106,7 @@ export function AccountSwitcher({
           sessionSyncService.setInvestorSession(investorSession);
 
           toast({
-            title: 'Switched to Investor Portal',
+            title: 'Switched to Operator Portal',
             description: `Welcome, ${data.investor.full_name || 'Investor'}!`
           });
 
@@ -327,7 +327,7 @@ export function AccountSwitcher({
               ) : (
                 <Briefcase className="w-4 h-4 mr-2" />
               )}
-              Switch to {currentAccountType === 'staff' ? 'Investor Portal' : 'Staff Dashboard'}
+              Switch to {currentAccountType === 'staff' ? 'Operator Portal' : 'Staff Dashboard'}
             </DropdownMenuItem>
             <DropdownMenuSeparator />
           </>

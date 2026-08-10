@@ -62,7 +62,7 @@ export default function PrivacyPolicy() {
           {/* Introduction */}
           <section className="mb-10">
             <p className="text-gray-700 leading-relaxed">
-              Access Your Place ("AYP," "we," "us," or "our") is committed to protecting your privacy and ensuring the security of your personal information. This Privacy Policy explains how we collect, use, disclose, and safeguard your information when you use our website, investor portal, and services. Please read this policy carefully to understand our practices regarding your personal data.
+              Access Your Place ("AYP," "we," "us," or "our") is committed to protecting your privacy and ensuring the security of your personal information. This Privacy Policy explains how we collect, use, disclose, and safeguard your information when you use our website, operator portal, and services. Please read this policy carefully to understand our practices regarding your personal data.
             </p>
           </section>
 

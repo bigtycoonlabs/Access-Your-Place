@@ -840,7 +840,7 @@ export default function InvestorPortal() {
         </div>
       )}
 
-      <main id="main-content" className={`mx-auto px-4 py-8 ${activeTab === 'dashboard' ? 'max-w-7xl' : 'max-w-7xl'}`} role="main" aria-label="Investor Portal Dashboard">
+      <main id="main-content" className={`mx-auto px-4 py-8 ${activeTab === 'dashboard' ? 'max-w-7xl' : 'max-w-7xl'}`} role="main" aria-label="Operator Portal Dashboard">
         {/* Email Verification Banner */}
         <EmailVerificationBanner />
 
@@ -936,8 +936,12 @@ export default function InvestorPortal() {
           className="space-y-6"
           activationMode="manual"
         >
-          {activeTab === 'dashboard' && (
-            <>
+          {/* NAVIGATION IS NOT GATED TO THE DASHBOARD.
+              It used to be wrapped in `activeTab === 'dashboard' && (...)`, so all 23 tabs
+              DISAPPEARED the moment an operator opened any of them. Clicking Portfolio left
+              you on Portfolio with no way back except the browser button — and for a screen
+              reader user, no announced way out at all. */}
+<>
               {/* Mobile Navigation - dropdown menu for small screens */}
               <InvestorMobileNav
                 items={getInvestorTabs()}
@@ -1047,7 +1051,6 @@ export default function InvestorPortal() {
                 </TabsList>
               </div>
             </>
-          )}
 
 
 

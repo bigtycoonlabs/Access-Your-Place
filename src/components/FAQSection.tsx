@@ -7,7 +7,7 @@ export default function FAQSection() {
     { q: 'Do I need experience in real estate?', a: 'No prior experience required. Our Success Team guides you through every step, from acquisition to setup to ongoing optimization.' },
     { q: 'What types of properties do you work with?', a: 'We specialize in four categories: Short-Term Rentals (STR), Co-Living Spaces, Group Homes, and Event Style Properties.' },
     { q: 'How do I access the deal flow?', a: 'Visit our Deals page to browse our current inventory of vetted properties available for acquisition.' },
-    { q: 'How does Penny AI Market Scan work?', a: 'Penny AI analyzes your target markets in real-time, providing comprehensive market data, property recommendations, ROI projections, and regulatory insights. Access it through the investor portal or deals page.' },
+    { q: 'How does Penny AI Market Scan work?', a: 'Penny AI analyzes your target markets in real-time, providing comprehensive market data, property recommendations, ROI projections, and regulatory insights. Access it through the operator portal or deals page.' },
     { q: 'Can I submit my own property for consideration?', a: 'Yes! Use our Submit Property form. If approved, your property will be listed on our deal flow within 24 hours.' },
     { q: 'What happens after I book a discovery call?', a: 'Our acquisition team reviews your goals, discusses available deals, and creates a custom strategy. There is no obligation to proceed.' },
   ];

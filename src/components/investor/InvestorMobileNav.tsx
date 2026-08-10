@@ -197,7 +197,7 @@ export function InvestorMobileNav({ items, activeTab, onTabChange }: InvestorMob
   );
 }
 
-// Pre-built tab configuration for investor portal
+// Pre-built tab configuration for operator portal
 export function getInvestorTabs(): InvestorNavItem[] {
   return [
     { value: 'dashboard', label: 'Dashboard', icon: LayoutDashboard, group: 'overview' },

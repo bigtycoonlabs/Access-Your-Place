@@ -18,7 +18,7 @@ interface TourStep {
 const tourSteps: TourStep[] = [
   {
     id: 'welcome',
-    title: 'Welcome to Your Investor Portal!',
+    title: 'Welcome to Your Operator Portal!',
     description: 'Let\'s take a quick tour of the features available to help you find and manage rental arbitrage investments.',
     icon: <Sparkles className="w-8 h-8 text-amber-500" />,
   },
@@ -80,7 +80,7 @@ const tourSteps: TourStep[] = [
   {
     id: 'complete',
     title: 'You\'re All Set!',
-    description: 'You now know the basics of your investor portal. Start exploring deals and let us know if you have any questions!',
+    description: 'You now know the basics of your operator portal. Start exploring deals and let us know if you have any questions!',
     icon: <CheckCircle className="w-8 h-8 text-green-500" />,
   }
 ];

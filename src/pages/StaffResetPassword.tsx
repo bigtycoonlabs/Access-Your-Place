@@ -114,7 +114,7 @@ export default function StaffResetPassword() {
         console.log('staff-forgot-password failed, trying staff-login...');
         
         // Fallback to staff-login reset_password action
-        const { data: loginData, error: loginError } = await supabase.functions.invoke('staff-login', {
+        const { data: loginData, error: loginError } = await supabase.functions.invoke('staff-forgot-password', {
           body: { 
             action: 'reset_password', 
             reset_token: token, 

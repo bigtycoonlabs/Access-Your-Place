@@ -1124,7 +1124,7 @@ export default function InvestorLogin() {
               <div className="lg:hidden w-16 h-16 bg-gradient-to-br from-amber-400 to-amber-600 rounded-xl mx-auto mb-4 flex items-center justify-center">
                 <span className="text-white font-bold text-xl">AYP</span>
               </div>
-              <CardTitle className="text-2xl">Investor Portal</CardTitle>
+              <CardTitle className="text-2xl">Operator Portal</CardTitle>
               <CardDescription>Sign in or create your account</CardDescription>
             </CardHeader>
             <CardContent>

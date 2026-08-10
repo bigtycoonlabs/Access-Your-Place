@@ -193,7 +193,7 @@ export function GuidedOnboarding({ investor, onComplete, onSkip }: Props) {
         }
         
         if (data?.success) {
-          toast({ title: 'Setup Complete!', description: 'Welcome to your investor portal.' });
+          toast({ title: 'Setup Complete!', description: 'Welcome to your operator portal.' });
           onComplete({ ...data.investor, show_guided_tour: true });
           setLoading(false);
           return;

@@ -87,7 +87,7 @@ By submitting a referral, property lead, or listing an operation for sale on the
 • Acquisition Fee: The fee paid by the final buyer to secure the deal.
 
 3. THE REFERRAL PARTNER PROGRAM
-For individuals submitting leads via the "Referral Tab" in the Investor Portal.
+For individuals submitting leads via the "Referral Tab" in the Operator Portal.
 
 3.1 Client Referrals ($300 Flat Fee)
 • Definition: Referring a new individual who has never transacted with AYP.

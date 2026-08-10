@@ -561,7 +561,7 @@ export default function StaffDashboard() {
         sessionSyncService.setInvestorSession(investorSession);
         
         toast({
-          title: 'Switched to Investor Portal',
+          title: 'Switched to Operator Portal',
           description: `Welcome, ${data.investor.full_name || 'Investor'}!`
         });
         
@@ -576,7 +576,7 @@ export default function StaffDashboard() {
     } catch (err: any) {
       toast({ 
         title: 'Error', 
-        description: err.message || 'Failed to switch to investor portal', 
+        description: err.message || 'Failed to switch to operator portal', 
         variant: 'destructive' 
       });
     }
@@ -974,7 +974,7 @@ export default function StaffDashboard() {
                 aria-label="Switch to your investor account"
               >
                 <ArrowLeftRight className="w-4 h-4 mr-2" aria-hidden="true" />
-                <span className="hidden sm:inline">Investor Portal</span>
+                <span className="hidden sm:inline">Operator Portal</span>
               </Button>
             )}
 

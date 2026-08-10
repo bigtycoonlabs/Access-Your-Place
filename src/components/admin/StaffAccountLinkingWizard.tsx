@@ -352,7 +352,7 @@ export function StaffAccountLinkingWizard({
               <ul className="text-sm text-gray-600 space-y-2 ml-4">
                 <li className="flex items-center gap-2">
                   <Check className="w-4 h-4 text-green-500" />
-                  Access the investor portal
+                  Access the operator portal
                 </li>
                 <li className="flex items-center gap-2">
                   <Check className="w-4 h-4 text-green-500" />

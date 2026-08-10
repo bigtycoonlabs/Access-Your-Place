@@ -205,7 +205,7 @@ export function AccountLinkSuggestionsBanner({
                     )}
                   </p>
                   <p className="text-xs text-gray-500 mt-2">
-                    Linking accounts allows you to switch between the staff dashboard and investor portal without logging out.
+                    Linking accounts allows you to switch between the staff dashboard and operator portal without logging out.
                   </p>
                 </div>
               </div>

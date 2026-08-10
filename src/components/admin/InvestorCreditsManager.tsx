@@ -63,7 +63,7 @@ export function InvestorCreditsManager({ investorId, investorName, currentBalanc
   const fetchCreditHistory = async () => {
     setLoading(true);
     try {
-      const { data } = await supabase.functions.invoke('manage-investor-admin', {
+      const { data } = await supabase.functions.invoke('manage-investor-credits', {
         body: { action: 'get_credit_history', investor_id: investorId }
       });
       if (data?.history) {

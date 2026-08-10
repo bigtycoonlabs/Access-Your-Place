@@ -337,7 +337,7 @@ export function EmailMatchMigrationTool() {
           <h5 className="font-medium text-blue-900 mb-2">How Account Linking Works</h5>
           <ul className="text-sm text-blue-800 space-y-1">
             <li>• When a staff member and investor share the same email, they can be linked</li>
-            <li>• Linked accounts can switch between Staff Dashboard and Investor Portal without logging out</li>
+            <li>• Linked accounts can switch between Staff Dashboard and Operator Portal without logging out</li>
             <li>• New staff invitations and investor signups automatically detect matching emails</li>
             <li>• Users are prompted to link their accounts when a match is found</li>
           </ul>

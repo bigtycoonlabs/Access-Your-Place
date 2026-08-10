@@ -257,7 +257,7 @@ function DocumentUploadPanel({ staffId, staffName }: { staffId: string; staffNam
       if (uploadError) throw uploadError;
 
       // IMPORTANT: investor-documents bucket is PRIVATE, so getPublicUrl won't work for investors.
-      // We store the file_path so the investor portal can generate signed URLs on demand.
+      // We store the file_path so the operator portal can generate signed URLs on demand.
       // The edge function will also store the file_path for later signed URL generation.
 
       // Add to investor_documents table via edge function (which also sends email notification)

@@ -122,7 +122,7 @@ export default function Footer() {
                     href="/investor/login"
                     className="text-gray-400 hover:text-[#d4a574] transition-colors focus:outline-none focus:ring-2 focus:ring-[#d4a574] rounded"
                   >
-                    Investor Portal
+                    Operator Portal
                   </a>
                 </li>
                 <li>

@@ -42,7 +42,7 @@ export function StaffNotifications({ onClose }: Props) {
 
   const fetchNotifications = async () => {
     setLoading(true);
-    const { data } = await supabase.functions.invoke('manage-investor-admin', { body: { action: 'get_notifications' } });
+    const { data } = await supabase.functions.invoke('deal-flow-notifications', { body: { action: 'get_notifications' } });
     if (data?.notifications) setNotifications(data.notifications);
     setLoading(false);
   };

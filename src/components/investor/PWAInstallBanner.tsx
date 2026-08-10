@@ -79,7 +79,7 @@ export function PWAInstallBanner() {
               <Smartphone className="w-6 h-6 text-blue-600" />
             </div>
             <div>
-              <p className="font-semibold text-blue-900">Install AYP Investor Portal</p>
+              <p className="font-semibold text-blue-900">Install AYP Operator Portal</p>
               {isIOS ? (
                 <p className="text-sm text-blue-700">
                   Tap <Share2 className="w-3 h-3 inline mx-1" /> then "Add to Home Screen" for quick access

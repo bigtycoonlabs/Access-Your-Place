@@ -179,7 +179,7 @@ export default function OAuthCallback() {
       setStatus('success');
       setMessage(`Successfully connected your ${stateData.platform} account! Initial data sync has started.`);
 
-      // Redirect to investor portal after a delay
+      // Redirect to operator portal after a delay
       setTimeout(() => {
         navigate('/investor?tab=portfolio');
       }, 3000);
