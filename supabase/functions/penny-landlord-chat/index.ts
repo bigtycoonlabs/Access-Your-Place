@@ -18,6 +18,11 @@
 
 import { serve } from 'https://deno.land/std@0.168.0/http/server.ts'
 import { guardReply } from './penny_truth.ts'
+import {
+  containsPaymentDestination,
+  destinationRefusal,
+  PENNY_PAYMENT_DOCTRINE,
+} from '../_shared/penny/doctrine.ts'
 
 const corsHeaders = {
   'Access-Control-Allow-Origin': '*',
@@ -41,6 +46,10 @@ theirs and it can be made later.
 
 HOW THEY ONBOARD IS ALSO THEIRS. We can handle all the paperwork, or fit around whatever
 process they already use. Offer both.
+
+AGREEING IS NOT DOING. If a landlord asks you to change something and you have no way to do
+it, say so. "I will get that sorted" when nothing was recorded is worse than "I cannot do
+that from here, but I am flagging it for your contact right now."
 
 REASSURE BY BEING SPECIFIC, NOT BY BEING WARM. "We verify every operator before you speak to
 them" is reassuring. "Don't worry" is not. When there is nothing for them to do, say that
@@ -251,7 +260,9 @@ serve(async (req) => {
         })
       }
 
-      let systemPrompt = LANDLORD_SYSTEM_PROMPT
+      // The payment rule belongs in her prompt, not only in the guard. Being caught by a
+      // filter teaches her nothing; being told the rule means she does not go near it.
+      let systemPrompt = LANDLORD_SYSTEM_PROMPT + '\n\n' + PENNY_PAYMENT_DOCTRINE
       if (user_name) {
         systemPrompt += `\n\nYou are currently chatting with ${user_name}. Address them by their first name when appropriate.`
       }
@@ -314,6 +325,17 @@ serve(async (req) => {
 
       // TRUTH SPINE: no stateful tools ran on this surface, so any "it's done" claim is unbacked.
       assistantMessage = guardReply(assistantMessage, []).text
+
+      // THE LANDLORD SURFACE HAD NO PAYMENT DESTINATION GUARD AT ALL. It is the one
+      // conversation most likely to turn to money -- a landlord asking where rent lands or
+      // how a deposit is handled -- and it was the only Penny with no protection.
+      //
+      // One wrong character in a destination sends money somewhere unrecoverable, and the
+      // owners are blind and cannot catch it by looking.
+      if (containsPaymentDestination(assistantMessage).leaked) {
+        console.error('penny-landlord-chat destination_leak_blocked')
+        assistantMessage = destinationRefusal()
+      }
       if (!assistantMessage) assistantMessage = "I'm sorry, I couldn't generate a response. Please try again."
 
       // Save the conversation (same shape as the other Penny surfaces).

@@ -247,11 +247,11 @@ async function fetchProjection(url: string, key: string, zip: string, message: s
       headers: { apikey: key, Authorization: `Bearer ${key}`, 'Content-Type': 'application/json' },
       body: JSON.stringify(body),
     })
-    if (!res.ok) return ''
+    if (!res.ok) { console.error('ai-investor-chat engine_http', res.status); return ENGINE_UNAVAILABLE }
     const d = await res.json()
     if (!d || !d.market_analysis) return ''
     return `PROPERTY FORGE PROJECTION for ZIP ${zip} — a real projection from AYP's Property Forge analysis engine (an AI estimate following our research methodology, not a live data feed). Present these as the client's projection, tell them the numbers shift between runs as the market moves, and offer the free acquisition-manager call if they want a human check. Do not invent numbers beyond these:\n${JSON.stringify(d.market_analysis)}`
-  } catch { return '' }
+  } catch (e) { console.error('ai-investor-chat engine_threw', e instanceof Error ? e.message : 'unknown'); return ENGINE_UNAVAILABLE }
 }
 
 // Parse a monthly lease rent from free text (e.g. "$1,800/mo", "leasing at 1800", "rent is $2,100").
@@ -277,6 +277,19 @@ function parseSetup(msg: string): number | null {
 }
 
 // Real Deal Analysis for a client-supplied deal: if the message carries a monthly lease rent (plus a
+// WHEN AN ENGINE FAILS, PENNY IS TOLD IT FAILED.
+//
+// These calls all returned an empty string on failure, which reaches the model as silence --
+// indistinguishable from "there was nothing to compute". Her own prompt tells her she can
+// "run real numbers instead of a vague guess", so a client asks for numbers, the engine is
+// down, and she answers from nothing while sounding exactly as confident as usual.
+//
+// That is this platform's signature defect pointed at the one thing a client acts on.
+const ENGINE_UNAVAILABLE =
+  'ENGINE UNAVAILABLE: the calculation could not be run just now. Tell the client plainly ' +
+  'that you could not run the numbers this moment and offer to come back to them. Do NOT ' +
+  'estimate, do NOT approximate, and do NOT present anything as a computed result.'
+
 // ZIP), call the deal-analyzer engine and hand Penny the tool-computed underwriting across STR / MTR /
 // co-living. Returns '' when there is no confident rent, so the caller falls back to a plain market
 // projection. Deterministic math on the projection engine; honestly an estimate, never fabricated.
@@ -296,14 +309,14 @@ async function fetchDealAnalysis(url: string, key: string, zip: string, message:
       headers: { apikey: key, Authorization: `Bearer ${key}`, 'Content-Type': 'application/json' },
       body: JSON.stringify(reqBody),
     })
-    if (!res.ok) return ''
+    if (!res.ok) { console.error('ai-investor-chat engine_http', res.status); return ENGINE_UNAVAILABLE }
     const d = await res.json()
     if (d && d.success && d.text_summary) {
       return `DEAL ANALYZER RESULT (a real, tool-computed underwriting of the client's specific deal — deterministic math on AYP's projection engine, honestly an estimate). Present these figures as the analysis; do NOT invent, alter, or round them away, and keep the honest caveats:\n${d.text_summary}`
     }
     if (d && d.message) return `DEAL ANALYZER NOTE (relay this honestly; do not invent numbers): ${d.message}`
     return ''
-  } catch { return '' }
+  } catch (e) { console.error('ai-investor-chat engine_threw', e instanceof Error ? e.message : 'unknown'); return ENGINE_UNAVAILABLE }
 }
 
 // --- Furnishing estimate + co-living room-by-room model (tool-backed operator math) ----------
@@ -341,11 +354,11 @@ async function fetchFurnishing(url: string, key: string, message: string): Promi
       method: 'POST', headers: { apikey: key, Authorization: `Bearer ${key}`, 'Content-Type': 'application/json' },
       body: JSON.stringify(reqBody),
     })
-    if (!res.ok) return ''
+    if (!res.ok) { console.error('ai-investor-chat engine_http', res.status); return ENGINE_UNAVAILABLE }
     const d = await res.json()
     if (d && d.success && d.text_summary) return `FURNISHING ESTIMATE (real, tool-computed itemized estimate — a typical-cost model, not a quote. Present these figures and keep the honest caveats; do not invent or alter them):\n${d.text_summary}`
     return ''
-  } catch { return '' }
+  } catch (e) { console.error('ai-investor-chat engine_threw', e instanceof Error ? e.message : 'unknown'); return ENGINE_UNAVAILABLE }
 }
 
 // Co-living room-by-room model: fires when the operator is weighing co-living on a property.
@@ -362,11 +375,11 @@ async function fetchColiving(url: string, key: string, zip: string, message: str
       method: 'POST', headers: { apikey: key, Authorization: `Bearer ${key}`, 'Content-Type': 'application/json' },
       body: JSON.stringify(reqBody),
     })
-    if (!res.ok) return ''
+    if (!res.ok) { console.error('ai-investor-chat engine_http', res.status); return ENGINE_UNAVAILABLE }
     const d = await res.json()
     if (d && d.success && d.text_summary) return `CO-LIVING ROOM-BY-ROOM MODEL (real, tool-computed for the client's property — the per-room rate is an AYP estimate that shifts between runs. Present these figures and keep the honest caveats; do not invent or alter them):\n${d.text_summary}`
     return ''
-  } catch { return '' }
+  } catch (e) { console.error('ai-investor-chat engine_threw', e instanceof Error ? e.message : 'unknown'); return ENGINE_UNAVAILABLE }
 }
 
 // --- Operator memory (durable per-operator context) ------------------------------------------
@@ -390,13 +403,13 @@ async function fetchOperatorMemory(url: string, key: string, userId: string): Pr
     const res = await fetch(`${url}/rest/v1/penny_operator_memory?user_id=eq.${encodeURIComponent(userId)}&select=memory`, {
       headers: { apikey: key, Authorization: `Bearer ${key}` },
     })
-    if (!res.ok) return ''
+    if (!res.ok) { console.error('ai-investor-chat engine_http', res.status); return ENGINE_UNAVAILABLE }
     const rows = await res.json()
     const mem = Array.isArray(rows) && rows[0]?.memory && typeof rows[0].memory === 'object' ? rows[0].memory : null
     if (!mem || Object.keys(mem).length === 0) return ''
     const formatted = formatMemoryForPrompt(mem)
     return formatted ? `WHAT YOU REMEMBER ABOUT THIS OPERATOR (from past conversations — use it to tailor your advice and avoid re-asking what you already know; if they correct any of it, go with the correction):\n${formatted}` : ''
-  } catch { return '' }
+  } catch (e) { console.error('ai-investor-chat engine_threw', e instanceof Error ? e.message : 'unknown'); return ENGINE_UNAVAILABLE }
 }
 
 // Heuristic gate: does this message plausibly disclose durable operator facts worth remembering?
