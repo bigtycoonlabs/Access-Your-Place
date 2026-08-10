@@ -122,8 +122,11 @@ Deno.serve(async (req) => {
     // ============================================================
     // CREATE assignment + portfolio + notification + emails
     // ============================================================
-    if (action === 'create') {
-      const { property_id, investor_id, assigned_by, payment_amount, notes } = body;
+    // `assign` is the kanban board's name for `create`. Same operation, and it sends
+    // staff_id where this handler calls it assigned_by — mapped rather than reimplemented.
+    if (action === 'create' || action === 'assign') {
+      const { property_id, investor_id, payment_amount, notes } = body;
+      const assigned_by = body.assigned_by ?? body.staff_id ?? null;
 
       if (!property_id || !investor_id) {
         return new Response(JSON.stringify({ success: false, error: 'property_id and investor_id are required' }), {

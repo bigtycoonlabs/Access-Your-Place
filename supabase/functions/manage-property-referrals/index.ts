@@ -109,6 +109,45 @@ Deno.serve(async (req) => {
     }
 
     // ==================== GET MY REFERRALS (Investor) ====================
+    // get_property_referrals is what the operator's referral screen asks for, and it needs
+    // BOTH the referrals and the terms-of-service state in one response.
+    //
+    // I GUESSED THE COLUMN NAMES FIRST AND WAS WRONG ON BOTH. property_referrals keys on
+    // referrer_id, not referrer_investor_id, and the TOS flags on investors are
+    // referral_partner_tos_agreed, not referral_tos_agreed. Read out of
+    // information_schema before shipping, because a wrong column name here returns an empty
+    // list rather than an error — a referrer would be told they have no referrals.
+    if (action === 'get_property_referrals') {
+      const { investor_id } = body;
+      if (!investor_id) {
+        return new Response(JSON.stringify({ success: false, error: 'investor_id is required.' }),
+          { status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' } });
+      }
+      const [refRes, tosRes] = await Promise.all([
+        fetch(`${supabaseUrl}/rest/v1/property_referrals?referrer_id=eq.${investor_id}&select=*&order=created_at.desc`, { headers }),
+        fetch(`${supabaseUrl}/rest/v1/investors?id=eq.${investor_id}&select=referral_partner_tos_agreed,referral_partner_tos_agreed_at&limit=1`, { headers }),
+      ]);
+      // A failed read is NOT an empty list. Somebody with referrals must never be told they
+      // have none because a query fell over.
+      if (!refRes.ok) {
+        console.error('manage-property-referrals get_property_referrals read failed', refRes.status);
+        return new Response(JSON.stringify({ success: false, error: 'Could not load your referrals just now.' }),
+          { status: 502, headers: { ...corsHeaders, 'Content-Type': 'application/json' } });
+      }
+      const referrals = (await refRes.json()) || [];
+      const tos = tosRes.ok ? (await tosRes.json())?.[0] ?? {} : {};
+      // Blocking is per-referrer and lives as strike_count on the referrals themselves.
+      const strikes = referrals.reduce((t: number, r: Record<string, unknown>) => Math.max(t, Number(r.strike_count || 0)), 0);
+      return new Response(JSON.stringify({
+        success: true,
+        referrals,
+        tos_agreed: tos.referral_partner_tos_agreed ?? false,
+        tos_agreed_at: tos.referral_partner_tos_agreed_at ?? null,
+        blocked: strikes >= 3,
+        strikes,
+      }), { headers: { ...corsHeaders, 'Content-Type': 'application/json' } });
+    }
+
     if (action === 'get_my_referrals') {
       const { investor_id } = body;
       if (!investor_id) return json({ success: true, referrals: [] });
