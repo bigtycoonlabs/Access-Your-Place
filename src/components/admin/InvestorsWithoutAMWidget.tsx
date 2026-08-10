@@ -72,7 +72,7 @@ export function InvestorsWithoutAMWidget({ staffId, onCountChange }: Props) {
         supabase.functions.invoke('manage-investor-admin', {
           body: { action: 'get_unassigned_investors', limit: 100 }
         }),
-        supabase.functions.invoke('manage-am-assignments', {
+        supabase.functions.invoke('manage-staff', {
           body: { action: 'get_acquisition_managers_with_counts' }
         })
       ]);

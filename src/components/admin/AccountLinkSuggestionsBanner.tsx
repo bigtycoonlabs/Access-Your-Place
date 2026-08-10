@@ -61,7 +61,7 @@ export function AccountLinkSuggestionsBanner({
         }
       } else if (investorId) {
         // Fetch suggestions for investor
-        const { data, error } = await supabase.functions.invoke('investor-auth', {
+        const { data, error } = await supabase.functions.invoke('manage-staff', {
           body: { action: 'get_link_suggestions', investor_id: investorId }
         });
         
@@ -94,7 +94,7 @@ export function AccountLinkSuggestionsBanner({
           description: `Your staff account is now linked to your investor account (${suggestion.investor?.email || suggestion.email}).`
         });
       } else if (investorId) {
-        const { data, error } = await supabase.functions.invoke('investor-auth', {
+        const { data, error } = await supabase.functions.invoke('manage-staff', {
           body: { 
             action: 'accept_link_suggestion', 
             suggestion_id: suggestion.id,
@@ -134,7 +134,7 @@ export function AccountLinkSuggestionsBanner({
           }
         });
       } else if (investorId) {
-        await supabase.functions.invoke('investor-auth', {
+        await supabase.functions.invoke('manage-staff', {
           body: { 
             action: 'dismiss_link_suggestion', 
             suggestion_id: suggestion.id,

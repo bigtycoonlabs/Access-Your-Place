@@ -286,6 +286,14 @@ async function whoToContact(url: string, key: string, staffId: string, limit?: n
   return { count: rows.length, people: rows };
 }
 
+async function claimAlert(url: string, key: string, alertId: string, staffId: string) {
+  const { ok, status, data } = await rpc(url, key, 'penny_claim_alert', {
+    p_alert_id: alertId, p_staff_id: staffId,
+  });
+  if (!ok) return { error: 'claim_failed', http: status };
+  return data;
+}
+
 async function teamReadiness(url: string, key: string) {
   const { ok, status, data } = await rpc(url, key, 'penny_team_readiness');
   if (!ok) return { error: `read_failed_${status}` };
@@ -1268,6 +1276,10 @@ async function execTool(name: string, args: any, ctx: Ctx): Promise<unknown> {
     }
     if (name === 'client_book') return await clientBook(url, key);
     if (name === 'team_readiness') return await teamReadiness(url, key);
+    if (name === 'claim_alert') {
+      if (!args?.alert_id) return { error: 'alert_id required' };
+      return await claimAlert(url, key, String(args.alert_id), staffId);
+    }
     if (name === 'find_client_file') {
       return await findClientFile(url, key, String(args?.query || ''), args?.limit ? Number(args.limit) : undefined);
     }
@@ -1720,6 +1732,18 @@ const TOOLS = [
       name: 'who_to_contact',
       description: "Who to reach today, ranked, with the reason for each. Ordered by what costs us most: someone with an account who has never signed in, then clients we have worked with who are not on the platform, then landlords with no portal access, then people never engaged at all. Give the name, the reason and the contact detail — this is a call list, so make it usable.",
       parameters: { type: 'object', properties: { limit: { type: 'number' } }, required: [] },
+    },
+  },
+  {
+    type: 'function',
+    function: {
+      name: 'claim_alert',
+      description: "Take a shared alert so nobody doubles up. Shared alerts sit on a whole desk — every acquisition manager sees the same ones — and claiming removes it from everyone else's list. Refuses if somebody already claimed it, and names them.",
+      parameters: {
+        type: 'object',
+        properties: { alert_id: { type: 'string' } },
+        required: ['alert_id'],
+      },
     },
   },
   {
@@ -2409,6 +2433,14 @@ two things need doing before anything else:
 
 Staff can update payout details any time, and should be told they can.
 
+SHARED ALERTS ARE A DESK, NOT AN INBOX. An alert with no name on it is seen by EVERY person
+in that role — both acquisition managers see the same list. If somebody is about to work
+one, tell them to claim it first, because two people calling the same client is worse than
+one, and both assuming the other did it is worse still.
+
+An alert marked as claimed by somebody else has already gone from their list. Owners still
+see everything, with the claimant named.
+
 YOU ARE THE NOTIFICATION SYSTEM. This business runs on commission, so a task nobody sees is
 somebody's income standing still. When a staff member opens a conversation, my_alerts is
 usually the first thing worth checking — and if something is urgent, lead with it rather
@@ -2769,7 +2801,7 @@ const SLOW_TOOLS: Record<string, number> = {
 // everything through her prompt, so she can still say "I can do that" and then do it on
 // the next turn when the group loads.
 const CORE_TOOLS = new Set([
-  'my_alerts', 'my_book', 'who_to_contact', 'client_book', 'find_client_file',
+  'my_alerts', 'claim_alert', 'my_book', 'who_to_contact', 'client_book', 'find_client_file',
   'find_client', 'log_touch', 'attention', 'remember', 'forget',
 ]);
 

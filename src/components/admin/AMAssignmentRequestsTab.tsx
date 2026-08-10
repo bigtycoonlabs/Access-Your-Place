@@ -107,13 +107,13 @@ export function AMAssignmentRequestsTab({ staffId, staffName }: Props) {
     try {
       // Try the new dedicated manage-am-assignments function first for AM data
       const [requestsRes, changeRes, amsRes] = await Promise.all([
-        supabase.functions.invoke('manage-am-assignments', {
+        supabase.functions.invoke('manage-staff', {
           body: { action: 'get_am_assignment_requests' }
         }),
-        supabase.functions.invoke('manage-am-assignments', {
+        supabase.functions.invoke('manage-staff', {
           body: { action: 'get_am_assignment_requests', status: 'all' }
         }).catch(() => ({ data: { requests: [] } })),
-        supabase.functions.invoke('manage-am-assignments', {
+        supabase.functions.invoke('manage-staff', {
           body: { action: 'get_acquisition_managers_with_counts' }
         })
       ]);
