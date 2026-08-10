@@ -345,6 +345,30 @@ async function recordVerification(url: string, key: string, a: any, staffId: str
   return data;
 }
 
+async function setupBoard(url: string, key: string, projectId: string) {
+  const { ok, status, data } = await rpc(url, key, 'ayp_setup_board', { p_project_id: projectId });
+  if (!ok) return { error: `read_failed_${status}` };
+  return data;
+}
+
+async function setupAddItems(url: string, key: string, a: any, staffId: string) {
+  const { ok, status, data } = await rpc(url, key, 'ayp_setup_add_items', {
+    p_project_id: String(a.project_id), p_staff_id: staffId || null, p_items: a.items,
+  });
+  if (!ok) return { error: 'add_failed', http: status };
+  return data;
+}
+
+async function setupUpdateItem(url: string, key: string, a: any, staffId: string) {
+  const { ok, status, data } = await rpc(url, key, 'ayp_setup_update_item', {
+    p_item_id: String(a.item_id), p_staff_id: staffId || null,
+    p_status: a.status ?? null, p_vendor: a.vendor ?? null,
+    p_expected: a.expected ?? null, p_note: a.note ?? null,
+  });
+  if (!ok) return { error: 'update_failed', http: status };
+  return data;
+}
+
 async function teamReadiness(url: string, key: string) {
   const { ok, status, data } = await rpc(url, key, 'penny_team_readiness');
   if (!ok) return { error: `read_failed_${status}` };
@@ -1330,6 +1354,18 @@ async function execTool(name: string, args: any, ctx: Ctx): Promise<unknown> {
     }
     if (name === 'client_book') return await clientBook(url, key);
     if (name === 'team_readiness') return await teamReadiness(url, key);
+    if (name === 'setup_board') {
+      if (!args?.project_id) return { error: 'project_id required' };
+      return await setupBoard(url, key, String(args.project_id));
+    }
+    if (name === 'setup_add_items') {
+      if (!args?.project_id || !Array.isArray(args?.items)) return { error: 'project_id and items required' };
+      return await setupAddItems(url, key, args, staffId);
+    }
+    if (name === 'setup_update_item') {
+      if (!args?.item_id) return { error: 'item_id required' };
+      return await setupUpdateItem(url, key, args, staffId);
+    }
     if (name === 'verification_gap') return await verificationGap(url, key);
     if (name === 'record_verification') {
       if (!args?.property_id) return { error: 'property_id required' };
@@ -1885,6 +1921,62 @@ const TOOLS = [
           confirmed: { type: 'boolean' },
         },
         required: ['property_id'],
+      },
+    },
+  },
+  {
+    type: 'function',
+    function: {
+      name: 'setup_board',
+      description: "The furniture board for a setup project: every item by room, what is sourcing, ordered, on the way, delivered or flagged, plus anything marked delivered from the office that the pro has not confirmed on the ground.",
+      parameters: { type: 'object', properties: { project_id: { type: 'string' } }, required: ['project_id'] },
+    },
+  },
+  {
+    type: 'function',
+    function: {
+      name: 'setup_add_items',
+      description: "Add furniture to a setup board in one go. Every item needs a room and a name - an item nobody can place is not usable. Cost and vendor are optional and are never shown to the client.",
+      parameters: {
+        type: 'object',
+        properties: {
+          project_id: { type: 'string' },
+          items: {
+            type: 'array',
+            items: {
+              type: 'object',
+              properties: {
+                room: { type: 'string' },
+                item: { type: 'string' },
+                quantity: { type: 'number' },
+                vendor: { type: 'string' },
+                unit_cost: { type: 'number' },
+                expected: { type: 'string', description: 'YYYY-MM-DD' },
+                notes: { type: 'string' },
+              },
+              required: ['room', 'item'],
+            },
+          },
+        },
+        required: ['project_id', 'items'],
+      },
+    },
+  },
+  {
+    type: 'function',
+    function: {
+      name: 'setup_update_item',
+      description: "Move an item along the board. Marking delivered from the office does NOT confirm it on the ground - only the pro can do that from their portal.",
+      parameters: {
+        type: 'object',
+        properties: {
+          item_id: { type: 'string' },
+          status: { type: 'string', enum: ['sourcing','ordered','in_transit','delivered','assembled','issue','cancelled'] },
+          vendor: { type: 'string' },
+          expected: { type: 'string' },
+          note: { type: 'string' },
+        },
+        required: ['item_id'],
       },
     },
   },
@@ -2957,6 +3049,10 @@ const CORE_TOOLS = new Set([
 ]);
 
 const TOOL_GROUPS: Record<string, { words: RegExp; tools: string[] }> = {
+  setup: {
+    words: /setup|furnitur|furnish|deliver|room|item|sourc|vendor|assembl|launch|pro portal|inventory/i,
+    tools: ['setup_board', 'setup_add_items', 'setup_update_item'],
+  },
   deals: {
     words: /deal|propert|listing|marketplace|unpublish|publish|address|release|quote|forge|price|rent|market/i,
     tools: ['list_marketplace','unpublish_property','add_property','quote_deal','forge_status','verification_gap','record_verification',
