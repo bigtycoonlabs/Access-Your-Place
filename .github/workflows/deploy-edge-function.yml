@@ -187,6 +187,18 @@ jobs:
           # cry-wolf problem this check exists to remove.
           lits = {l for l in lits if "${" not in l and "`" not in l}
 
+          # Drop captures that ran across a QUOTE boundary. A single-quote pattern will
+          # happily match from the apostrophe in "member's" all the way to the next
+          # apostrophe several strings later, producing a fragment that was never a
+          # literal -- e.g. `, description: "The full email body in Penny`.
+          #
+          # Those show up as false "missing" results, which is what made this verifier
+          # report failures on deploys that had actually succeeded. A check that cries wolf
+          # is worse than no check: people learn to ignore it, and then a real failure gets
+          # waved through. Any capture containing the OTHER quote character is a boundary
+          # crossing, not a string.
+          lits = {l for l in lits if '"' not in l}
+
           missing = [l for l in lits if l not in live_text]
           print(f"checked {len(lits)} distinctive string literals from the repo source")
           print(f"present in deployed source: {len(lits) - len(missing)}")
