@@ -18,6 +18,7 @@ import { useCallerType } from '@/hooks/useCallerType';
 import { PennyScoreBadge } from '@/components/investor/PennyScoreBadge';
 import { PropertyImage } from '@/components/marketplace/PropertyImage';
 import { resolvePublicPhotoUrl } from '@/utils/photoUtils';
+import { DealSEO } from '@/components/marketplace/DealSEO';
 import {
   ArrowLeft, MapPin, Bed, Bath, Home, Building2, DollarSign, TrendingUp,
   Calendar, Clock, Heart, Share2, Phone, Mail, Shield, ShieldCheck,
@@ -396,6 +397,9 @@ export default function PropertyDetail() {
 
   return (
     <div className="min-h-screen bg-gray-50">
+      {/* Deal pages had no title, no meta and no structured data, so twelve distinct
+          listings looked like twelve copies of the homepage. */}
+      <DealSEO deal={property as never} />
       <SEO 
         title={`${displayTitle} | Rental Arbitrage Deal`}
         description={`${property.bedrooms} bed, ${property.bathrooms} bath property in ${property.city}, ${property.state}. Monthly rent: $${property.monthly_rent?.toLocaleString()}. Acquisition fee: $${property.acquisition_fee?.toLocaleString()}.`}
