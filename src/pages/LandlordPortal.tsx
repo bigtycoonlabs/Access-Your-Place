@@ -11,6 +11,7 @@ import LandlordPortalProperties from '@/components/landlord/LandlordPortalProper
 import LandlordPortalDocuments from '@/components/landlord/LandlordPortalDocuments';
 import LandlordPortalMessages from '@/components/landlord/LandlordPortalMessages';
 import { LandlordPennyChat } from '@/components/landlord/LandlordPennyChat';
+import { LandlordHome } from '@/components/landlord/LandlordHome';
 
 interface LandlordData {
   id: string;
@@ -30,7 +31,9 @@ export default function LandlordPortal() {
   const { toast } = useToast();
   const [landlord, setLandlord] = useState<LandlordData | null>(null);
   const [loading, setLoading] = useState(true);
-  const [activeTab, setActiveTab] = useState('applications');
+  // A landlord lands on where things stand, not on a form. The first question they
+  // have is whether anybody is working on their property.
+  const [activeTab, setActiveTab] = useState('home');
   const [chatAppId, setChatAppId] = useState<string | null>(null);
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const [profileForm, setProfileForm] = useState({ contact_name: '', company_name: '', phone: '', location: '' });
@@ -133,6 +136,7 @@ export default function LandlordPortal() {
   const isPending = landlord.status === 'pending_verification';
 
   const tabs = [
+    { id: 'home', label: 'Where things stand', icon: Home },
     { id: 'applications', label: 'Applications', icon: FileText, count: 0 },
     { id: 'properties', label: 'Properties', icon: Home },
     { id: 'documents', label: 'Documents', icon: FolderOpen },
@@ -264,6 +268,10 @@ export default function LandlordPortal() {
 
           {/* Main Content */}
           <main id="main-content" className="flex-1 min-w-0" role="main">
+
+            {activeTab === 'home' && landlord?.id && (
+              <LandlordHome landlordId={landlord.id} landlordName={landlord.name} />
+            )}
 
             {activeTab === 'applications' && (
               <div>

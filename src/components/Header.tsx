@@ -127,6 +127,17 @@ export default function Header() {
               <User size={14} aria-hidden="true" />
               Portal
             </Link>
+            {/* A landlord with an account had NO WAY BACK IN from anywhere on the site.
+                Operators and staff both had a nav sign-in; landlords had a marketing page
+                and nothing else, so anyone we onboarded had to keep the emailed link
+                forever. */}
+            <Link
+              to="/landlord/login"
+              className="hover:text-[#d4a574] transition-colors text-sm focus:outline-none focus:ring-2 focus:ring-[#d4a574]/50 rounded"
+              aria-label="Landlord Portal Login"
+            >
+              Landlords
+            </Link>
             <Link 
               to="/staff/login" 
               className="hover:text-[#d4a574] transition-colors text-xs opacity-70 focus:outline-none focus:ring-2 focus:ring-[#d4a574] focus:ring-offset-2 focus:ring-offset-[#0a0f1a] rounded px-2 py-1"
@@ -183,6 +194,13 @@ export default function Header() {
               className="block w-full text-left hover:text-[#d4a574] transition-colors py-2 px-2 focus:outline-none focus:ring-2 focus:ring-[#d4a574] rounded"
             >
               Operator Portal
+            </button>
+            <button
+              onClick={() => handleNavClick('/landlord/login')}
+              className="block w-full text-left hover:text-[#d4a574] transition-colors py-2 px-2 focus:outline-none focus:ring-2 focus:ring-[#d4a574]/50 rounded"
+              style={{ minHeight: 44 }}
+            >
+              Landlord Portal
             </button>
             <button 
               onClick={() => handleNavClick('/staff/login')}
