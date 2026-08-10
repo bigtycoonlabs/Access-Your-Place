@@ -46,7 +46,7 @@ export default function TermsOfService() {
           {/* Effective Date & Entity Info */}
           <div className="bg-blue-50 border border-blue-200 rounded-lg p-6 mb-8">
             <p className="text-sm text-blue-800">
-              <strong>Effective Date:</strong> January 23, 2026
+              <strong>Effective Date:</strong> January 23, 2026 &nbsp;|&nbsp; <strong>Last updated:</strong> 10 August 2026
             </p>
             <p className="text-sm text-blue-800 mt-1">
               <strong>Entity:</strong> Set Up Your Place LLC d/b/a Access Your Place (a Cooper Family Inc. Company)
@@ -116,6 +116,54 @@ export default function TermsOfService() {
               <p className="text-gray-700 mb-4">
                 To protect the integrity of our proprietary landlord relationships and the success of pending transactions, AYP enforces a strict communication protocol:
               </p>
+              {/* ALL COMMUNICATION RUNS THROUGH THE PLATFORM.
+                  This is a compliance and record-keeping requirement, and it is also how we
+                  protect our own staff. A Success Team member who has traded a personal
+                  mobile number has no way to end a conversation, no record of what was
+                  said, and no protection if it turns hostile. */}
+              <div className="bg-[#1a365d]/5 border border-[#1a365d]/20 rounded-lg p-5 mb-6">
+                <h3 className="font-bold text-[#1a365d] mb-2">All Communication Runs Through the Platform</h3>
+                <p className="text-gray-700 mb-3">
+                  Every conversation between a client and a member of our Success Team happens on this
+                  platform: by message, by video, or by audio, with email notifications so nothing is missed.
+                  This applies to all three, not only to written messages.
+                </p>
+                <p className="text-gray-700 mb-3">
+                  <strong>Our staff do not give out personal phone numbers, and are not permitted to conduct
+                  business through them.</strong> If you are asked for one, or offered one, tell us. This is
+                  not a formality and it is not us being difficult.
+                </p>
+                <p className="text-gray-700 mb-3">
+                  There are two reasons, and both matter to you as well as to us.
+                </p>
+                <ul className="space-y-2 text-gray-700 mb-3">
+                  <li className="flex items-start">
+                    <span className="w-2 h-2 bg-[#d4a574] rounded-full mt-2 mr-3 flex-shrink-0"></span>
+                    <span><strong>Compliance and record keeping.</strong> Deals here involve leases, money and
+                    landlord commitments. When a question comes up months later about what was agreed, the
+                    answer needs to exist somewhere both of us can see. A conversation on somebody's personal
+                    phone is a conversation neither of us can produce.</span>
+                  </li>
+                  <li className="flex items-start">
+                    <span className="w-2 h-2 bg-[#d4a574] rounded-full mt-2 mr-3 flex-shrink-0"></span>
+                    <span><strong>Protecting the people who work here.</strong> Our team should be reachable
+                    during business, not at midnight on a personal line. Keeping communication on the platform
+                    means a Success Team member can do their job without exposing their private number, and
+                    means any harassment is documented rather than invisible.</span>
+                  </li>
+                </ul>
+                <p className="text-gray-700 mb-3">
+                  <strong>Video and audio calls are booked through the platform.</strong> Ask for a call and you
+                  will receive an invitation with a join link. You never need anyone's number to speak to them.
+                </p>
+                <p className="text-gray-700">
+                  <strong>Landlords are the exception.</strong> Apartment communities and private owners are not
+                  always willing to use a video platform, and we will not lose a property over it. Our team may
+                  speak to landlords by whatever means that landlord prefers, and records the substance of those
+                  conversations here afterwards.
+                </p>
+              </div>
+
               <ul className="space-y-3 text-gray-700">
                 <li className="flex items-start">
                   <span className="w-2 h-2 bg-[#d4a574] rounded-full mt-2 mr-3 flex-shrink-0"></span>
