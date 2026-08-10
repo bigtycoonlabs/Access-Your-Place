@@ -795,7 +795,7 @@ export default function InvestorLogin() {
     try {
       console.log('[Registration] Starting registration for:', registerData.email);
       
-      const { data, error } = await supabase.functions.invoke('investor-register', {
+      const { data, error } = await supabase.functions.invoke('investor-auth-v2', {
         body: {
           action: 'register',
           email: registerData.email.trim().toLowerCase(),
