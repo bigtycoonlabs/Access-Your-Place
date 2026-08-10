@@ -2999,6 +2999,26 @@ async function runAgent(messages: Array<{ role: string; content: string }>, firs
         return acc;
       }, {});
       const spread = Object.entries(byState).map(([st, n]) => `${st}: ${n}`).join(', ');
+      // ALSO the properties that exist but are NOT live. Asked to "remove the Texas deals",
+      // Penny said there were none — and she was RIGHT: all six Texas properties were
+      // already unpublished. But "there are none" sent the owner away thinking the system
+      // had lost them, when the true answer was "all six are already down".
+      //
+      // Accurate and useless is still a failure. She needs both halves of the picture.
+      const unpubRes = await rpc(sbUrl, sbKey, 'penny_unpublished_properties');
+      if (unpubRes.ok && Array.isArray(unpubRes.data) && unpubRes.data.length) {
+        const un = unpubRes.data as Array<Record<string, unknown>>;
+        const unByState = un.reduce((acc: Record<string, number>, r) => {
+          const st = String(r.state || 'unknown');
+          acc[st] = (acc[st] || 0) + 1;
+          return acc;
+        }, {});
+        liveFacts += `\n\nNOT LIVE, but in the system: ${un.length} unpublished propert(ies). ` +
+          `By state — ${Object.entries(unByState).map(([st, n]) => `${st}: ${n}`).join(', ')}. ` +
+          `If somebody asks about a market with nothing LIVE but something unpublished, say BOTH: ` +
+          `how many are live and how many are sitting unpublished. Never answer "there are none" ` +
+          `when the honest answer is "none are live, and these are already down".`;
+      }
       liveFacts = `\n\nLIVE MARKETPLACE RIGHT NOW, read this second: ${rows.length} published ` +
         `listing(s). By state — ${spread}. If somebody asks what is listed, or asks you to ` +
         `remove listings somewhere, THESE ARE THE FACTS. Call list_marketplace for the ` +
