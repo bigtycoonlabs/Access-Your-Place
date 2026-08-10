@@ -42,6 +42,149 @@ serve(async (req: Request) => {
     }
 
     // ==================== LOGIN ====================
+    // ---- ADDED 9 Aug 2026 ----
+    //
+    // change_password, update_profile, logout_all and verify_otp were all called by the
+    // portal and none existed. change_password being dead is the serious one: a client who
+    // suspects their password is known has no way to change it.
+    //
+    // EVERY ONE OF THESE VALIDATES A SESSION TOKEN rather than trusting an investor_id
+    // from the request body. The existing callers send investor_id, which would let anyone
+    // edit anyone's profile by guessing an id — so the callers are being changed to send
+    // the token they already hold, rather than the server being loosened to accept less.
+
+    const sessionInvestor = async (token: string): Promise<string | null> => {
+      if (!token) return null
+      const r = await fetch(
+        `${supabaseUrl}/rest/v1/investor_sessions?session_token=eq.${encodeURIComponent(token)}&is_active=eq.true&select=investor_id`,
+        { headers },
+      )
+      if (!r.ok) return null
+      const rows = await r.json()
+      return Array.isArray(rows) && rows.length ? rows[0].investor_id : null
+    }
+
+    if (action === 'change_password') {
+      const investorId = await sessionInvestor(String(body.session_token || ''))
+      if (!investorId) {
+        return new Response(JSON.stringify({ success: false, error: 'Your session has expired. Sign in again and retry.' }),
+          { status: 401, headers: { ...corsHeaders, 'Content-Type': 'application/json' } })
+      }
+      const current = String(body.current_password || '')
+      const next = String(body.new_password || '')
+      if (next.length < 8) {
+        return new Response(JSON.stringify({ success: false, error: 'Your new password needs to be at least 8 characters.' }),
+          { status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' } })
+      }
+      if (next === current) {
+        return new Response(JSON.stringify({ success: false, error: 'That is the password you already have.' }),
+          { status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' } })
+      }
+
+      const who = await fetch(`${supabaseUrl}/rest/v1/investors?id=eq.${investorId}&select=password_hash`, { headers })
+      const rows = await who.json()
+      const stored = rows?.[0]?.password_hash || ''
+
+      // The CURRENT password must be right. Without this, anyone with a stolen session
+      // could lock the real owner out of their own account.
+      let matches = false
+      try {
+        if (stored.startsWith('$2')) {
+          const bcrypt = await import('https://deno.land/x/bcrypt@v0.4.1/mod.ts')
+          matches = bcrypt.compareSync(current, stored)
+        } else {
+          matches = stored === current
+        }
+      } catch (e) {
+        console.error('change_password compare error:', e)
+        return new Response(JSON.stringify({ success: false, error: 'Could not verify your current password. Nothing was changed.' }),
+          { status: 500, headers: { ...corsHeaders, 'Content-Type': 'application/json' } })
+      }
+      if (!matches) {
+        return new Response(JSON.stringify({ success: false, error: 'That is not your current password. Nothing was changed.' }),
+          { status: 403, headers: { ...corsHeaders, 'Content-Type': 'application/json' } })
+      }
+
+      let newHash: string
+      try {
+        const bcrypt = await import('https://deno.land/x/bcrypt@v0.4.1/mod.ts')
+        newHash = bcrypt.hashSync(next)
+      } catch (e) {
+        console.error('change_password hashing error:', e)
+        return new Response(JSON.stringify({ success: false, error: 'Could not set the new password. Nothing was changed.' }),
+          { status: 500, headers: { ...corsHeaders, 'Content-Type': 'application/json' } })
+      }
+
+      const upd = await fetch(`${supabaseUrl}/rest/v1/investors?id=eq.${investorId}`, {
+        method: 'PATCH', headers,
+        body: JSON.stringify({ password_hash: newHash, updated_at: new Date().toISOString() }),
+      })
+      if (!upd.ok) {
+        return new Response(JSON.stringify({ success: false, error: 'Could not save the new password. Nothing was changed.' }),
+          { status: 502, headers: { ...corsHeaders, 'Content-Type': 'application/json' } })
+      }
+
+      // Every OTHER session is ended. Changing a password because you think somebody has
+      // it is pointless if their session stays alive.
+      await fetch(`${supabaseUrl}/rest/v1/investor_sessions?investor_id=eq.${investorId}&session_token=neq.${encodeURIComponent(String(body.session_token))}`, {
+        method: 'PATCH', headers, body: JSON.stringify({ is_active: false }),
+      }).catch(() => {})
+
+      return new Response(JSON.stringify({ success: true,
+        note: 'Password changed. Every other device signed in as you has been signed out.' }),
+        { headers: { ...corsHeaders, 'Content-Type': 'application/json' } })
+    }
+
+    if (action === 'update_profile') {
+      const investorId = await sessionInvestor(String(body.session_token || ''))
+      if (!investorId) {
+        return new Response(JSON.stringify({ success: false, error: 'Your session has expired. Sign in again and retry.' }),
+          { status: 401, headers: { ...corsHeaders, 'Content-Type': 'application/json' } })
+      }
+      // Allowlist. Email is excluded on purpose: it identifies the account and links to
+      // the client file, so changing it is a support action, not a settings toggle.
+      const allowed = ['full_name', 'phone', 'company_name', 'city', 'state',
+                       'preferred_contact_method', 'timezone', 'notification_preferences']
+      const patch: Record<string, unknown> = {}
+      for (const k of allowed) if (k in body) patch[k] = body[k]
+      if (!Object.keys(patch).length) {
+        return new Response(JSON.stringify({ success: false,
+          error: `Nothing updatable was sent. You can change: ${allowed.join(', ')}. To change your email, message the Success Team.` }),
+          { status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' } })
+      }
+      patch.updated_at = new Date().toISOString()
+      const upd = await fetch(`${supabaseUrl}/rest/v1/investors?id=eq.${investorId}`, {
+        method: 'PATCH', headers: { ...headers, Prefer: 'return=representation' }, body: JSON.stringify(patch),
+      })
+      if (!upd.ok) {
+        return new Response(JSON.stringify({ success: false, error: 'Could not save your settings. Nothing was changed.' }),
+          { status: 502, headers: { ...corsHeaders, 'Content-Type': 'application/json' } })
+      }
+      const rows = await upd.json()
+      return new Response(JSON.stringify({ success: true, investor: rows?.[0] ?? null }),
+        { headers: { ...corsHeaders, 'Content-Type': 'application/json' } })
+    }
+
+    if (action === 'logout_all') {
+      const investorId = await sessionInvestor(String(body.session_token || ''))
+      if (!investorId) {
+        return new Response(JSON.stringify({ success: false, error: 'Your session has expired.' }),
+          { status: 401, headers: { ...corsHeaders, 'Content-Type': 'application/json' } })
+      }
+      const r = await fetch(`${supabaseUrl}/rest/v1/investor_sessions?investor_id=eq.${investorId}&is_active=eq.true`, {
+        method: 'PATCH', headers: { ...headers, Prefer: 'return=representation' },
+        body: JSON.stringify({ is_active: false }),
+      })
+      if (!r.ok) {
+        return new Response(JSON.stringify({ success: false, error: 'Could not sign your devices out. Nothing was changed.' }),
+          { status: 502, headers: { ...corsHeaders, 'Content-Type': 'application/json' } })
+      }
+      const rows = await r.json()
+      return new Response(JSON.stringify({ success: true, signed_out: rows?.length ?? 0,
+        note: 'Signed out everywhere, including this device. You will need to sign in again.' }),
+        { headers: { ...corsHeaders, 'Content-Type': 'application/json' } })
+    }
+
     if (action === 'login') {
       if (!email || !password) {
         return new Response(

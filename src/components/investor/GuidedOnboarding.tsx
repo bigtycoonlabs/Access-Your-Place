@@ -92,7 +92,7 @@ export function GuidedOnboarding({ investor, onComplete, onSkip }: Props) {
       await supabase.functions.invoke('investor-login', {
         body: {
           action: 'update_profile',
-          investor_id: investor.id,
+          session_token: localStorage.getItem('investorSessionToken'),
           ...stepData
         }
       });
@@ -170,8 +170,8 @@ export function GuidedOnboarding({ investor, onComplete, onSkip }: Props) {
         // Use investor-login for reliability (confirmed working)
         const { data, error } = await supabase.functions.invoke('investor-login', {
           body: { 
-            action: 'update_profile', 
-            investor_id: investor.id, 
+            action: 'update_profile',
+            session_token: localStorage.getItem('investorSessionToken'), 
             company_name: form.company_name,
             phone: form.phone,
             investment_budget_min: Number(form.investment_budget_min) || null, 

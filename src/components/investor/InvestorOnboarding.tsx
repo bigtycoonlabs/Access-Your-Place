@@ -113,8 +113,8 @@ export function InvestorOnboarding({ investor, onComplete }: Props) {
         // FIXED: Added body wrapper - this was the bug causing "Failed to save preferences"
         const { data, error } = await supabase.functions.invoke('investor-login', {
           body: {
-            action: 'update_profile', 
-            investor_id: investor.id, 
+            action: 'update_profile',
+            session_token: localStorage.getItem('investorSessionToken'), 
             company_name: form.company_name,
             portfolio_count: form.portfolio_count,
             investment_budget_min: Number(form.investment_budget_min) || null, 

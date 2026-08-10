@@ -209,7 +209,7 @@ export function AccountSettings({ investor, onUpdate, onLogout }: Props) {
         },
       };
       const { data, error } = await supabase.functions.invoke('investor-login', {
-        body: { action: 'update_profile', investor_id: investor.id, ...payload },
+        body: { action: 'update_profile', session_token: localStorage.getItem('investorSessionToken'), ...payload },
       });
       if (error) throw error;
       if (!data?.success) throw new Error(data?.error || 'Failed to save settings');
