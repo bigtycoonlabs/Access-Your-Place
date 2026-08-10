@@ -24,7 +24,7 @@ export function ReportHistory({ investorId, preferredMarkets }: Props) {
   useEffect(() => { loadReports(); }, [investorId]);
 
   const loadReports = async () => {
-    const { data } = await supabase.functions.invoke('manage-market-reports', {
+    const { data } = await supabase.functions.invoke('generate-monthly-report', {
       body: { action: 'get_reports', investor_id: investorId }
     });
     setReports(data?.reports || []);

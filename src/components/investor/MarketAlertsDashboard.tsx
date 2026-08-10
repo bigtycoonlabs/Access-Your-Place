@@ -97,7 +97,7 @@ export function MarketAlertsDashboard({ investorId, investorEmail, investorPhone
 
   const loadPreferences = useCallback(async () => {
     try {
-      const { data } = await supabase.functions.invoke('manage-notifications', {
+      const { data } = await supabase.functions.invoke('investor-email-notifications', {
         body: {
           action: 'get_preferences',
           investor_id: investorId
@@ -123,7 +123,7 @@ export function MarketAlertsDashboard({ investorId, investorEmail, investorPhone
   const savePreferences = async () => {
     setSavingPrefs(true);
     try {
-      const { data, error } = await supabase.functions.invoke('manage-notifications', {
+      const { data, error } = await supabase.functions.invoke('investor-email-notifications', {
         body: {
           action: 'update_preferences',
           investor_id: investorId,
