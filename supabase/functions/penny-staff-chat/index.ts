@@ -458,6 +458,8 @@ async function bookAppointment(url: string, key: string, a: any, staffId: string
           text: `Hi ${r.with},\n\n${r.staff_name} has booked a call with you.\n\n` +
             `When: ${when} (${r.minutes} minutes)\nWhat it is about: ${r.purpose}\n\n` +
             `Join here: ${r.meeting_link}\n\n` +
+            `That link opens in your browser. There is nothing to download and no account to create - ` +
+            `just click it at the time and you are in. It is a room for this call only.\n\n` +
             `If that time does not work, reply to this email and we will move it.\n\nPenny\nAccess Your Place`,
         }),
       });
@@ -470,7 +472,7 @@ async function bookAppointment(url: string, key: string, a: any, staffId: string
   }
   return { ...r, emailed,
     note: emailed
-      ? `Booked with ${r.with} and the invitation went out with the Zoom link.`
+      ? `Booked with ${r.with} and the invitation went out with the join link.`
       : `BOOKED BUT NOT SENT - the invitation email failed, so ${r.with} does not know about it.` };
 }
 
