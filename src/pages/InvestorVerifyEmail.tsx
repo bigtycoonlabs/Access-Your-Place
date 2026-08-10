@@ -173,7 +173,7 @@ export default function InvestorVerifyEmail() {
       const parsed = JSON.parse(session);
       setResending(true);
       
-      const { data, error } = await supabase.functions.invoke('investor-session', {
+      const { data, error } = await supabase.functions.invoke('investor-auth-v2', {
         body: { 
           action: 'resend_verification', 
           email: parsed.email,

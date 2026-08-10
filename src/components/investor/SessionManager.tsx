@@ -71,7 +71,7 @@ export default function SessionManager() {
 
     try {
       // Use the new investor-session function
-      const { data, error } = await supabase.functions.invoke('investor-session', {
+      const { data, error } = await supabase.functions.invoke('investor-auth-v2', {
         body: { action: 'get_active_sessions', session_token: sessionToken }
       });
 
@@ -94,7 +94,7 @@ export default function SessionManager() {
 
     try {
       // Use the new investor-session function
-      const { data, error } = await supabase.functions.invoke('investor-session', {
+      const { data, error } = await supabase.functions.invoke('investor-auth-v2', {
         body: { action: 'get_login_history', session_token: sessionToken }
       });
 
@@ -112,7 +112,7 @@ export default function SessionManager() {
     setRevoking(sessionId);
     try {
       // Use the new investor-session function
-      const { data, error } = await supabase.functions.invoke('investor-session', {
+      const { data, error } = await supabase.functions.invoke('investor-auth-v2', {
         body: { 
           action: 'revoke_session', 
           session_token: sessionToken,

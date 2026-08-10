@@ -692,7 +692,7 @@ export default function InvestorPortal() {
       try {
         // Use the new investor-session function with resend_verification action
         // Pass email instead of investor_id as per edge function API
-        const { data } = await supabase.functions.invoke('investor-session', {
+        const { data } = await supabase.functions.invoke('investor-auth-v2', {
           body: { 
             action: 'resend_verification', 
             email: investor.email, 

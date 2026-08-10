@@ -285,7 +285,7 @@ async function directInvestorRegister(data: {
 
     // Try to send verification email via edge function (best effort)
     try {
-      await supabase.functions.invoke('investor-session', {
+      await supabase.functions.invoke('investor-auth-v2', {
         body: {
           action: 'resend_verification',
           email: data.email.toLowerCase().trim(),
@@ -1028,7 +1028,7 @@ export default function InvestorLogin() {
     setOtpVerifying(true);
     try {
       const phoneDigits = forgotPhone.replace(/\D/g, '');
-      const { data, error } = await supabase.functions.invoke('investor-login', {
+      const { data, error } = await supabase.functions.invoke('investor-auth-v2', {
         body: { action: 'verify_otp', phone: phoneDigits, otp_code: otpCode }
       });
       
