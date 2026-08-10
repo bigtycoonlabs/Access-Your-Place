@@ -2960,7 +2960,51 @@ async function runAgent(messages: Array<{ role: string; content: string }>, firs
     console.error('penny-staff-chat missing_OPENAI_API_KEY');
     return { message: "My reasoning service is not configured — OPENAI_API_KEY is missing on the server. That is a platform problem, not something you did." };
   }
+  // THE LIVE MARKETPLACE, PUT IN FRONT OF HER EVERY TURN.
+  //
+  // The owner asked to remove the Texas deals and was told three times there were none,
+  // while fifteen were live and six were in Texas. I checked every layer — the RPC returns
+  // fifteen rows as service_role, the grants are right, the tool is loaded, and the doctrine
+  // telling her to look was deployed. The data path was never broken. She just did not call
+  // the tool and then spoke anyway.
+  //
+  // So this stops relying on her choosing to check. The count and the states are in the
+  // prompt as plain facts before she reads the question, which makes "there are none"
+  // contradict something already in front of her rather than merely violating an
+  // instruction. Prompts are hopes; facts in context are not.
+  let liveFacts = '';
+  try {
+    // NOT the `key` in this scope — that is the OpenAI key. Using it here would have sent
+    // an OpenAI token to Supabase and read nothing, which is exactly the silent-empty
+    // failure this whole change exists to stop.
+    const sbUrl = Deno.env.get('SUPABASE_URL') || '';
+    const sbKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY') || '';
+    const mk = await rpc(sbUrl, sbKey, 'penny_marketplace_listings');
+    if (mk.ok && Array.isArray(mk.data)) {
+      const rows = mk.data as Array<Record<string, unknown>>;
+      const byState = rows.reduce((acc: Record<string, number>, r) => {
+        const st = String(r.state || 'unknown');
+        acc[st] = (acc[st] || 0) + 1;
+        return acc;
+      }, {});
+      const spread = Object.entries(byState).map(([st, n]) => `${st}: ${n}`).join(', ');
+      liveFacts = `\n\nLIVE MARKETPLACE RIGHT NOW, read this second: ${rows.length} published ` +
+        `listing(s). By state — ${spread}. If somebody asks what is listed, or asks you to ` +
+        `remove listings somewhere, THESE ARE THE FACTS. Call list_marketplace for the ` +
+        `addresses and ids before acting. Never tell anyone the marketplace is empty or that ` +
+        `a state has nothing in it unless this line says so.`;
+    } else {
+      // A failed read is NOT zero listings. She is told the difference explicitly.
+      liveFacts = `\n\nWARNING: the live marketplace could not be read this turn. You do NOT ` +
+        `know how many listings exist. Do not say there are none and do not say there are any — ` +
+        `say you could not check and try list_marketplace.`;
+    }
+  } catch {
+    liveFacts = `\n\nWARNING: the live marketplace could not be read this turn. Say you could not check.`;
+  }
+
   const sys = systemPrompt(first, ctx.isOwner === true, ctx.identified === true, ctx.fullName || first, ctx.docText, ctx.docName, (ctx as any).memories, (ctx as any).attention);
+  const sysWithFacts = sys + liveFacts;
 
   // Which tools this turn actually needs. Matched against the last few things said rather
   // than only the latest message, so "do that for Elizabeth too" still loads client tools.
@@ -2983,7 +3027,7 @@ async function runAgent(messages: Array<{ role: string; content: string }>, firs
       ],
     } as any;
   });
-  const convo: any[] = [{ role: 'system', content: sys }, ...shaped];
+  const convo: any[] = [{ role: 'system', content: sysWithFacts }, ...shaped];
   // Tools whose action truly COMPLETED this turn — the backing the truth spine trusts.
   const toolsRun: string[] = [];
 

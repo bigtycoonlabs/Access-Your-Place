@@ -4,12 +4,16 @@ import { Sparkles, ArrowRight, Send } from 'lucide-react';
 import { PennyMark } from '@/components/investor/PennyMark';
 
 // Rotating example prompts — makes the hero feel alive without any backend call.
+// What somebody can actually ASK PUBLIC PENNY, which is a scan on an address. The old set
+// promised things this surface cannot do: it invited a stranger to "draft the acquisition
+// agreement for the Dallas deal", which no client would ever ask and Penny cannot do here.
+// Suggesting a capability that does not exist is a lie told before the conversation starts.
 const EXAMPLE_PROMPTS = [
-  'Penny, run the numbers on 1423 Oak Ave for a mid-term corporate setup…',
-  'Help me build a co-living operation — then find the units that fit it…',
-  'Which of my listings should I diversify off Airbnb?…',
-  'Pull MTR demand for this ZIP before I commit…',
-  'Draft the acquisition agreement for the Dallas deal…',
+  'Run the numbers on 1423 Oak Ave, Austin TX…',
+  'What would 200 Creek Ridge Dr earn as a furnished rental?…',
+  'Scan 88 Harbor St, Tampa FL for me…',
+  'What is the nightly rate and occupancy around this address?…',
+  'How much would a mid-term stay bring in at this address?…',
 ];
 
 const CAPABILITIES = [
