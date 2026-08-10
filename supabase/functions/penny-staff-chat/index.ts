@@ -294,6 +294,31 @@ async function claimAlert(url: string, key: string, alertId: string, staffId: st
   return data;
 }
 
+async function creditRequests(url: string, key: string, investorId?: string) {
+  const { ok, status, data } = await rpc(url, key, 'penny_credit_requests', {
+    p_investor_id: investorId || null,
+  });
+  if (!ok) return { error: `read_failed_${status}` };
+  const rows = Array.isArray(data) ? data : [];
+  return { count: rows.length, pending: rows.filter((r: any) => r.status === 'pending').length, requests: rows };
+}
+
+async function decideCreditRequest(url: string, key: string, a: any, staffId: string) {
+  const { ok, status, data } = await rpc(url, key, 'penny_decide_credit_request', {
+    p_request_id: String(a.request_id), p_approve: a.approve === true,
+    p_staff_id: staffId || null, p_notes: a.notes ? String(a.notes) : null,
+    p_amount: a.amount != null ? Number(a.amount) : null,
+  });
+  if (!ok) return { error: 'decide_failed', http: status };
+  return data;
+}
+
+async function creditPicture(url: string, key: string) {
+  const { ok, status, data } = await rpc(url, key, 'ayp_credit_discrepancy');
+  if (!ok) return { error: `read_failed_${status}` };
+  return data;
+}
+
 async function teamReadiness(url: string, key: string) {
   const { ok, status, data } = await rpc(url, key, 'penny_team_readiness');
   if (!ok) return { error: `read_failed_${status}` };
@@ -1276,6 +1301,19 @@ async function execTool(name: string, args: any, ctx: Ctx): Promise<unknown> {
     }
     if (name === 'client_book') return await clientBook(url, key);
     if (name === 'team_readiness') return await teamReadiness(url, key);
+    if (name === 'credit_requests') return await creditRequests(url, key, args?.investor_id ? String(args.investor_id) : undefined);
+    if (name === 'credit_picture') return await creditPicture(url, key);
+    if (name === 'decide_credit_request') {
+      if (!args?.request_id || args?.approve === undefined) {
+        return { error: 'request_id and approve are required' };
+      }
+      if (args.confirmed !== true) {
+        return { needs_confirmation: true,
+          action: args.approve ? `approve this credit request` : `decline this credit request`,
+          instruction: 'Say whose it is, how much they asked for, and what you are approving or why you are declining. Get a yes, then call again with confirmed true.' };
+      }
+      return await decideCreditRequest(url, key, args, staffId);
+    }
     if (name === 'claim_alert') {
       if (!args?.alert_id) return { error: 'alert_id required' };
       return await claimAlert(url, key, String(args.alert_id), staffId);
@@ -1744,6 +1782,40 @@ const TOOLS = [
         properties: { alert_id: { type: 'string' } },
         required: ['alert_id'],
       },
+    },
+  },
+  {
+    type: 'function',
+    function: {
+      name: 'credit_requests',
+      description: "Credit requests clients have submitted, with what they asked for, why, and how long they have waited. Omit investor_id for all of them. ADMIN owns credit issuing and approving.",
+      parameters: { type: 'object', properties: { investor_id: { type: 'string' } }, required: [] },
+    },
+  },
+  {
+    type: 'function',
+    function: {
+      name: 'decide_credit_request',
+      description: "Approve or decline a credit request. An approval may be for LESS than asked — pass amount. A decline REQUIRES a reason. Approving credits their spendable balance immediately. Confirm before calling.",
+      parameters: {
+        type: 'object',
+        properties: {
+          request_id: { type: 'string' },
+          approve: { type: 'boolean' },
+          amount: { type: 'number', description: 'Only if approving a different amount than requested.' },
+          notes: { type: 'string' },
+          confirmed: { type: 'boolean' },
+        },
+        required: ['request_id', 'approve'],
+      },
+    },
+  },
+  {
+    type: 'function',
+    function: {
+      name: 'credit_picture',
+      description: "The platform-wide credit position. Credit sits in two places that do not reconcile historically — say so plainly if asked, and NEVER suggest adjusting a client's balance: the owner is verifying every holder against their file personally.",
+      parameters: { type: 'object', properties: {}, required: [] },
     },
   },
   {
@@ -2433,6 +2505,15 @@ two things need doing before anything else:
 
 Staff can update payout details any time, and should be told they can.
 
+CREDIT IS ADMIN'S TO ISSUE AND APPROVE, per the role procedures. A client submits a request
+saying what it is for; admin decides. An approval can be for LESS than was asked, and if it
+is, whoever tells them must say why.
+
+NEVER SUGGEST ADJUSTING SOMEBODY'S CREDIT BALANCE. Credit sits in two places on this
+platform that do not reconcile for historic records, and the owner is verifying every
+credit holder against their file by hand. If somebody asks about the difference, say that
+plainly. Do not propose a fix, and never imply a balance is wrong.
+
 SHARED ALERTS ARE A DESK, NOT AN INBOX. An alert with no name on it is seen by EVERY person
 in that role — both acquisition managers see the same list. If somebody is about to work
 one, tell them to claim it first, because two people calling the same client is worse than
@@ -2840,7 +2921,7 @@ const TOOL_GROUPS: Record<string, { words: RegExp; tools: string[] }> = {
   payments: {
     words: /payment|pay|invoice|wire|zelle|cash ?app|bitcoin|deposit|balance|commission|payout/i,
     tools: ['get_payment_methods','create_payment_link','list_payment_requests',
-            'payout_status','save_payout'],
+            'payout_status','save_payout','credit_requests','decide_credit_request','credit_picture'],
   },
   agreements: {
     words: /agreement|contract|sign|document|paperwork|onboard/i,
