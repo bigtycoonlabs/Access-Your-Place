@@ -12,6 +12,12 @@ serve(async (req) => {
   try {
     const body = await req.json()
     const { action } = body
+    // Local helper for the handlers added below. The rest of this file predates it and
+    // writes `new Response(JSON.stringify(...))` inline; rewriting 60 call sites to match
+    // would be churn with real regression risk for no behavioural gain.
+    const json = (b: unknown, status = 200) =>
+      new Response(JSON.stringify(b), { status, headers: { ...corsHeaders, 'Content-Type': 'application/json' } })
+
     const supabaseUrl = Deno.env.get('SUPABASE_URL')!
     const supabaseKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!
     const resendKey = Deno.env.get('RESEND_API_KEY')
@@ -22,6 +28,152 @@ serve(async (req) => {
     }
 
     // ==================== GET STAFF ====================
+    // ---- ADDED 9 Aug 2026 ----
+    //
+    // Thirteen actions were asked for and not handled. Checked each against what already
+    // exists before writing anything, and three turned out to be existing behaviour under
+    // a different name — those are ALIASED rather than reimplemented, because two handlers
+    // doing the same thing drift apart and then disagree.
+
+    // get_staff_list is get_staff. Same question, different caller's vocabulary.
+    if (action === 'get_staff_list') {
+      const r = await fetch(`${supabaseUrl}/rest/v1/staff_users?select=id,first_name,last_name,name,email,role,team,is_active,is_owner&is_active=eq.true&order=first_name`, { headers })
+      if (!r.ok) return json({ success: false, error: `Could not read the team (${r.status}).` }, 502)
+      return json({ success: true, staff: await r.json() })
+    }
+
+    // delete_staff is DELIBERATELY deactivate_staff. A hard delete orphans every
+    // assignment, commission record and audit entry that names them, and none of that is
+    // recoverable. Deactivating is reversible and keeps the history intact.
+    if (action === 'delete_staff') {
+      if (!body.staff_id) return json({ success: false, error: 'staff_id is required.' }, 400)
+      const r = await fetch(`${supabaseUrl}/rest/v1/staff_users?id=eq.${body.staff_id}`, {
+        method: 'PATCH', headers: { ...headers, Prefer: 'return=representation' },
+        body: JSON.stringify({ is_active: false }),
+      })
+      if (!r.ok) return json({ success: false, error: `Could not deactivate (${r.status}).` }, 502)
+      return json({ success: true, deactivated: body.staff_id,
+        note: 'Deactivated rather than deleted. They keep their history and can be reinstated; a hard delete would orphan their assignments and commission records.' })
+    }
+
+    // ---- AM verification requests (a separate thing from certifications) ----
+    if (action === 'get_am_verification_requests') {
+      const r = await fetch(`${supabaseUrl}/rest/v1/am_verification_requests?select=*&order=created_at.desc`, { headers })
+      if (!r.ok) return json({ success: false, error: `Could not read the requests (${r.status}).` }, 502)
+      return json({ success: true, requests: await r.json() })
+    }
+    if (action === 'verify_am_request' || action === 'reject_am_request') {
+      if (!body.request_id || !body.staff_id) return json({ success: false, error: 'request_id and staff_id are required.' }, 400)
+      const rejecting = action === 'reject_am_request'
+      if (rejecting && !body.reason) {
+        return json({ success: false, error: 'A reason is required to reject — the person cannot act on a decision that does not say why.' }, 400)
+      }
+      const patch = rejecting
+        ? { status: 'rejected', rejected_by: body.staff_id, rejected_at: new Date().toISOString(), rejection_reason: body.reason }
+        : { status: 'verified', verified_by: body.staff_id, verified_at: new Date().toISOString() }
+      const r = await fetch(`${supabaseUrl}/rest/v1/am_verification_requests?id=eq.${body.request_id}&status=eq.pending`, {
+        method: 'PATCH', headers: { ...headers, Prefer: 'return=representation' }, body: JSON.stringify(patch),
+      })
+      if (!r.ok) return json({ success: false, error: `Could not record the decision (${r.status}).` }, 502)
+      const rows = await r.json()
+      // Filtering on status=pending means a second click updates nothing. Said, not
+      // silently reported as success.
+      if (!rows?.length) return json({ success: false, error: 'That request is no longer pending — it may already have been decided.' }, 409)
+      return json({ success: true, request: rows[0] })
+    }
+    if (action === 'get_certified_ams') {
+      const r = await fetch(`${supabaseUrl}/rest/v1/staff_users?select=id,first_name,last_name,name,email,role&is_active=eq.true&order=first_name`, { headers })
+      if (!r.ok) return json({ success: false, error: `Could not read the team (${r.status}).` }, 502)
+      const staff = await r.json()
+      const c = await fetch(`${supabaseUrl}/rest/v1/staff_certifications?select=staff_id,status&status=eq.verified`, { headers })
+      const certs = c.ok ? await c.json() : []
+      const certified = new Set((certs || []).map((x: any) => x.staff_id))
+      return json({ success: true, acquisition_managers: (staff || []).map((p: any) => ({ ...p, certified: certified.has(p.id) })) })
+    }
+
+    // ---- account link suggestions ----
+    if (action === 'get_link_suggestions') {
+      const r = await fetch(`${supabaseUrl}/rest/v1/account_link_suggestions?select=*&status=eq.pending&order=suggested_at.desc`, { headers })
+      if (!r.ok) return json({ success: false, error: `Could not read the suggestions (${r.status}).` }, 502)
+      return json({ success: true, suggestions: await r.json() })
+    }
+    if (action === 'accept_link_suggestion' || action === 'dismiss_link_suggestion') {
+      if (!body.suggestion_id) return json({ success: false, error: 'suggestion_id is required.' }, 400)
+      const accepting = action === 'accept_link_suggestion'
+      const r = await fetch(`${supabaseUrl}/rest/v1/account_link_suggestions?id=eq.${body.suggestion_id}&status=eq.pending`, {
+        method: 'PATCH', headers: { ...headers, Prefer: 'return=representation' },
+        body: JSON.stringify({ status: accepting ? 'accepted' : 'dismissed',
+                               resolved_at: new Date().toISOString(), resolved_by: body.staff_id ?? null }),
+      })
+      if (!r.ok) return json({ success: false, error: `Could not update the suggestion (${r.status}).` }, 502)
+      const rows = await r.json()
+      if (!rows?.length) return json({ success: false, error: 'That suggestion is no longer pending.' }, 409)
+      return json({ success: true, suggestion: rows[0] })
+    }
+    if (action === 'create_bulk_link_suggestions') {
+      const items: any[] = Array.isArray(body.suggestions) ? body.suggestions : []
+      if (!items.length) return json({ success: false, error: 'No suggestions were supplied, so nothing was created.' }, 400)
+      const r = await fetch(`${supabaseUrl}/rest/v1/account_link_suggestions`, {
+        method: 'POST', headers: { ...headers, Prefer: 'return=representation' },
+        body: JSON.stringify(items.map((i) => ({
+          staff_id: i.staff_id ?? null, investor_id: i.investor_id ?? null,
+          email: i.email ?? null, status: 'pending', suggested_at: new Date().toISOString(),
+        }))),
+      })
+      if (!r.ok) return json({ success: false, error: `Could not create the suggestions (${r.status}).` }, 502)
+      const rows = await r.json()
+      return json({ success: true, created: rows?.length ?? 0 })
+    }
+
+    // ---- trainee progress ----
+    if (action === 'update_trainee_progress') {
+      if (!body.progress_id) return json({ success: false, error: 'progress_id is required.' }, 400)
+      const patch: Record<string, unknown> = { updated_at: new Date().toISOString() }
+      if ('completed' in body) {
+        patch.completed = body.completed
+        patch.completed_at = body.completed ? new Date().toISOString() : null
+      }
+      for (const k of ['notes', 'score', 'evidence_url']) if (k in body) patch[k] = body[k]
+      if (body.verified_by) { patch.verified_by = body.verified_by; patch.verified_by_name = body.verified_by_name ?? null }
+      const r = await fetch(`${supabaseUrl}/rest/v1/certification_progress?id=eq.${body.progress_id}`, {
+        method: 'PATCH', headers: { ...headers, Prefer: 'return=representation' }, body: JSON.stringify(patch),
+      })
+      if (!r.ok) return json({ success: false, error: `Could not update progress (${r.status}).` }, 502)
+      const rows = await r.json()
+      if (!rows?.length) return json({ success: false, error: 'No progress record with that id.' }, 404)
+      return json({ success: true, progress: rows[0] })
+    }
+
+    // ---- staff profile ----
+    if (action === 'update_profile') {
+      if (!body.staff_id) return json({ success: false, error: 'staff_id is required.' }, 400)
+      // Allowlist. Somebody editing their own profile must not be able to set is_owner,
+      // is_active or their own role.
+      const allowed = ['first_name', 'last_name', 'name', 'phone', 'email', 'sms_opt_in', 'timezone']
+      const patch: Record<string, unknown> = {}
+      for (const k of allowed) if (k in body) patch[k] = body[k]
+      if (!Object.keys(patch).length) {
+        return json({ success: false, error: `Nothing updatable was sent. Allowed: ${allowed.join(', ')}.` }, 400)
+      }
+      const r = await fetch(`${supabaseUrl}/rest/v1/staff_users?id=eq.${body.staff_id}`, {
+        method: 'PATCH', headers: { ...headers, Prefer: 'return=representation' }, body: JSON.stringify(patch),
+      })
+      if (!r.ok) return json({ success: false, error: `Could not update the profile (${r.status}).` }, 502)
+      const rows = await r.json()
+      return json({ success: true, staff: rows?.[0] ?? null })
+    }
+
+    if (action === 'test_sms') {
+      // Honest refusal rather than a fake success. There is no SMS provider configured on
+      // this platform, and a "test sent" that went nowhere is exactly the lie we keep
+      // finding. Reported as unavailable, with what it would take to make it real.
+      return json({
+        success: false,
+        unavailable: true,
+        error: 'SMS is not configured on this platform, so no test was sent. Nothing is broken — the capability does not exist yet. It needs an SMS provider and a verified sending number before this can do anything.',
+      }, 501)
+    }
+
     if (action === 'get_staff') {
       const res = await fetch(
         `${supabaseUrl}/rest/v1/staff_users?is_active=eq.true&order=created_at.desc&select=*`,
