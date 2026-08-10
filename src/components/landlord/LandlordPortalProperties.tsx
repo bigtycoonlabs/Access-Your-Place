@@ -2,6 +2,7 @@ import { useState, useEffect } from 'react';
 import { supabase } from '@/lib/supabase';
 import { useToast } from '@/hooks/use-toast';
 import { Building, Plus, MapPin, Home, CheckCircle, Clock, X, AlertCircle, Globe, Upload, FileText, Loader2, Trash2 } from 'lucide-react';
+import { LandlordPropertyDetails } from './LandlordPropertyDetails';
 
 interface LandlordProperty {
   id: string;
@@ -466,6 +467,17 @@ export default function LandlordPortalProperties({ landlordId }: Props) {
                       </div>
                     </div>
                   )}
+                </div>
+
+                {/* What the landlord knows about their building that we do not. Kept on the
+                    property itself rather than in a separate tab, because it only means
+                    anything in the context of one building. */}
+                <div className="border-t border-gray-100 p-5">
+                  <LandlordPropertyDetails
+                    landlordId={landlordId}
+                    property={prop}
+                    onSaved={fetchProperties}
+                  />
                 </div>
               </div>
             );
