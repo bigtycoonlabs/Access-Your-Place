@@ -597,12 +597,47 @@ serve(async (req) => {
       }
 
       // Build the system prompt based on user type
+      // THE OPERATOR SHE IS ACTUALLY TALKING TO.
+      //
+      // She read the live deals, the library and the communities, but nothing about the
+      // person in front of her — so somebody signed into their own portal asking "what did
+      // you send me" or "what do I have to spend" got a general answer about the platform.
+      //
+      // The address of an unreleased deal is NOT in this payload at all. A field that is
+      // present but masked is one bad prompt away from being spoken.
+      let operatorFacts = ''
+      if (user_id && user_type !== 'staff') {
+        const ctxRes = await rpc(supabaseUrl, supabaseKey, 'ayp_operator_context', { p_investor_id: user_id })
+        const c = ctxRes && (ctxRes as Record<string, unknown>).ok !== false ? ctxRes as Record<string, any> : null
+        if (c) {
+          const props = Array.isArray(c.properties) ? c.properties : []
+          const deals = Array.isArray(c.deals_presented_to_you) ? c.deals_presented_to_you : []
+          operatorFacts = `\n\nTHIS OPERATOR, READ LIVE JUST NOW:\n` +
+            `- Name: ${c.name}\n` +
+            `- Spendable credit: ${c.credit_balance}\n` +
+            `- Properties they operate: ${c.portfolio_count}` +
+            (props.length ? ` — ${props.map((x: any) => `${x.address}, ${x.city} ${x.state}`).join('; ')}` : '') + `\n` +
+            `- Deals we have presented to them: ${deals.length}` +
+            (deals.length ? ` — ${deals.map((d: any) =>
+              `${d.headline || d.market || 'a deal'} (${d.status}${d.address_released ? ', address released' : ', address NOT released'})`).join('; ')}` : '') +
+            `\n\nUse these facts and do not add to them. If they ask about something not listed, ` +
+            `say you cannot see it rather than guessing. ` +
+            `NEVER state the address of a deal whose address has not been released — you do not have it, ` +
+            `and inventing one would be worse than saying so. Releasing it is done in their portal, not by you.`
+        } else {
+          // A failed read is not an empty portfolio. She is told the difference.
+          operatorFacts = `\n\nYou could NOT read this operator's account this turn. Do not say they ` +
+            `have no properties, no credit or no deals — say you cannot pull it up right now.`
+        }
+      }
+
       let systemPrompt = PENNY_SYSTEM_PROMPT
       if (user_type === 'staff') {
         systemPrompt += STAFF_ADDITIONS
       }
       if (user_name) {
         systemPrompt += `\n\nYou are currently chatting with ${user_name}. Address them by their first name when appropriate.`
+      systemPrompt += operatorFacts
       }
 
       // REAL GROUNDING: hand Penny the actual live deals + relevant library articles, so she
