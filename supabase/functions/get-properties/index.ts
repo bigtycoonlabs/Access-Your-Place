@@ -6,6 +6,31 @@ const corsHeaders = {
 }
 
 serve(async (req) => {
+  // THIS FUNCTION IS NAMED get-properties AND ONLY EVER CREATED ONE. Two screens called it
+  // expecting a read and got a property inserted or an error. The name has been a lie since
+  // it was written, and the acquisition manager's deal list has been empty because of it.
+  //
+  // Adding the read the name promises rather than renaming the function, because the slug
+  // is deployed and referenced elsewhere.
+  try {
+    const peek = await req.clone().json().catch(() => ({}));
+    if (peek?.action === 'get_all') {
+      const u = Deno.env.get('SUPABASE_URL');
+      const k = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY');
+      let q = `${u}/rest/v1/properties?select=*&order=created_at.desc&limit=500`;
+      // Private deals are staff-only. Default to published unless explicitly asked.
+      if (!peek.include_private) q += `&or=(is_published.is.true,status.in.(published,active,approved))`;
+      const r = await fetch(q, { headers: { apikey: k, Authorization: `Bearer ${k}` } });
+      if (!r.ok) {
+        return new Response(JSON.stringify({ success: false, error: `Could not load properties (${r.status}).` }),
+          { status: 502, headers: { ...corsHeaders, 'Content-Type': 'application/json' } });
+      }
+      const properties = await r.json();
+      return new Response(JSON.stringify({ success: true, properties, count: properties?.length ?? 0 }),
+        { headers: { ...corsHeaders, 'Content-Type': 'application/json' } });
+    }
+  } catch { /* not a read; fall through to the create path below */ }
+
   if (req.method === 'OPTIONS') {
     return new Response('ok', { headers: corsHeaders })
   }

@@ -492,6 +492,25 @@ async function askPenny(system: string, messages: PennyMsg[], effort: Effort): P
 }
 
 serve(async (req) => {
+  // Market alerts, read straight from the table. Sits before the chat handling because it
+  // is a plain read, not a conversation.
+  try {
+    const peek = await req.clone().json().catch(() => ({}));
+    if (peek?.action === 'get_market_alerts') {
+      const u = Deno.env.get('SUPABASE_URL');
+      const k = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY');
+      let q = `${u}/rest/v1/market_alerts?select=*&order=created_at.desc&limit=50`;
+      if (peek.market) q += `&market=ilike.${encodeURIComponent(`%${peek.market}%`)}`;
+      const r = await fetch(q, { headers: { apikey: k!, Authorization: `Bearer ${k}` } });
+      if (!r.ok) {
+        return new Response(JSON.stringify({ success: false, error: `Could not read market alerts (${r.status}).` }),
+          { status: 502, headers: { ...corsHeaders, 'Content-Type': 'application/json' } });
+      }
+      return new Response(JSON.stringify({ success: true, alerts: await r.json() }),
+        { headers: { ...corsHeaders, 'Content-Type': 'application/json' } });
+    }
+  } catch { /* not this action; fall through to chat */ }
+
   if (req.method === 'OPTIONS') {
     return new Response('ok', { headers: corsHeaders })
   }

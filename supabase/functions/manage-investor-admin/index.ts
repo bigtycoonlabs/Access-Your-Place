@@ -98,6 +98,34 @@ Deno.serve(async (req) => {
       } catch (e) { console.warn('Notification create failed:', e); }
     }
 
+    // investor_notifications carries BOTH `read` and `is_read`. Setting only one leaves the
+    // two disagreeing, and a later query picking the other column would show a read
+    // notification as unread forever. Both are set.
+    if (action === 'mark_notification_read') {
+      const notificationId = body.notification_id ?? body.id;
+      if (!notificationId) {
+        return new Response(JSON.stringify({ success: false, error: 'notification_id is required.' }),
+          { status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' } });
+      }
+      const res = await fetch(`${SUPABASE_URL}/rest/v1/investor_notifications?id=eq.${notificationId}`, {
+        method: 'PATCH',
+        headers: { ...mutH, Prefer: 'return=representation' },
+        body: JSON.stringify({ read: true, is_read: true, read_at: new Date().toISOString() }),
+      });
+      if (!res.ok) {
+        console.error('manage-investor-admin mark_notification_read failed', res.status);
+        return new Response(JSON.stringify({ success: false, error: 'Could not mark it read. Nothing changed.' }),
+          { status: 502, headers: { ...corsHeaders, 'Content-Type': 'application/json' } });
+      }
+      const rows = await res.json();
+      if (!rows?.length) {
+        return new Response(JSON.stringify({ success: false, error: 'No notification with that id.' }),
+          { status: 404, headers: { ...corsHeaders, 'Content-Type': 'application/json' } });
+      }
+      return new Response(JSON.stringify({ success: true, notification: rows[0] }),
+        { headers: { ...corsHeaders, 'Content-Type': 'application/json' } });
+    }
+
     if (action === 'sync_portfolio_counts') {
       console.log('[v17.4] Syncing portfolio counts for all investors...');
       const portfolioRes = await fetch(`${SUPABASE_URL}/rest/v1/investor_portfolio?select=investor_id,monthly_rent,monthly_earnings,status&status=eq.active`, { headers: getH });

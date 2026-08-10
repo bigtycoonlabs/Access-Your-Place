@@ -164,6 +164,38 @@ Deno.serve(async (req) => {
     const { action, ...params } = await req.json();
 
     switch (action) {
+      // A direct-booking site is not an OAuth platform — there is nothing to authorise
+      // against, which is exactly why it matters: direct bookings are the revenue the
+      // aggregators cannot see, and this business's numbers depend on counting them.
+      case 'add_direct_booking': {
+        const { investor_id, site_name, site_url } = params;
+        if (!investor_id || !site_name) {
+          return new Response(JSON.stringify({ success: false, error: 'investor_id and a site name are required.' }),
+            { status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' } });
+        }
+        const { data, error } = await supabase
+          .from('platform_connections')
+          .insert({
+            investor_id,
+            platform: 'direct',
+            connection_type: 'manual',
+            account_name: site_name,
+            metadata: site_url ? { site_url } : null,
+            is_active: true,
+            sync_status: 'manual',
+          })
+          .select()
+          .single();
+        if (error) {
+          console.error('[manage-platform-connections] add_direct_booking failed:', error.message);
+          return new Response(JSON.stringify({ success: false, error: 'Could not add it. Nothing was saved.' }),
+            { status: 502, headers: { ...corsHeaders, 'Content-Type': 'application/json' } });
+        }
+        return new Response(JSON.stringify({ success: true, connection: data,
+          note: 'Added. Direct bookings are entered by hand — nothing syncs automatically from your own site.' }),
+          { headers: { ...corsHeaders, 'Content-Type': 'application/json' } });
+      }
+
       case 'get_platforms':
         return await getPlatforms();
       case 'get_connections':

@@ -219,9 +219,9 @@ function PersonalizedRecommendations({ investor, onNavigate }: { investor: any; 
     const timeoutId = setTimeout(() => controller.abort(), 10000); // 10 second timeout
     
     try {
-      const { data } = await supabase.functions.invoke('get-properties', {
+      const { data } = await supabase.functions.invoke('penny-generate-description', {
         body: { 
-          action: 'get_recommended',
+          action: 'get_recommendations',
           investor_id: investor.id,
           preferred_markets: investor.preferred_markets || [],
           budget_min: investor.investment_budget_min,
