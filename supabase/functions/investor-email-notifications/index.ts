@@ -601,6 +601,93 @@ Deno.serve(async (req) => {
     // ============================================
     // ACTION: Send Acquisition Milestone Update
     // ============================================
+    // ---- ADDED 9 Aug 2026 ----
+    //
+    // Three notifications the acquisition manager's dashboard sends and none existed, so a
+    // client was never told their deal moved, their payment landed, or their workflow
+    // advanced. Checked against send-acquisition-emails first: manager_assigned WAS a match
+    // and has been repointed there; payment_success was NOT — it needs an assignment_id and
+    // the dashboard sends a property_id, so it is implemented here instead of forced.
+    //
+    // All three respect the client's email preferences, like every other notification in
+    // this function. A client who turned these off must stay off.
+
+    if (action === 'deal_status_update' || action === 'workflow_stage_update' || action === 'payment_received') {
+      const { investor_id } = body;
+      if (!investor_id) {
+        return new Response(JSON.stringify({ success: false, error: 'investor_id is required.' }),
+          { status: 400, headers: { 'Content-Type': 'application/json', ...corsHeaders } });
+      }
+
+      const shouldSend = await checkEmailPreference(investor_id, 'email_acquisition_milestones');
+      if (!shouldSend) {
+        return new Response(JSON.stringify({ success: true, skipped: true,
+          note: 'They have these emails turned off, so nothing was sent.' }),
+          { headers: { 'Content-Type': 'application/json', ...corsHeaders } });
+      }
+
+      const { data: investor } = await supabase
+        .from('investors').select('*').eq('id', investor_id).single();
+      if (!investor) {
+        return new Response(JSON.stringify({ success: false, error: 'No such client.' }),
+          { status: 404, headers: { 'Content-Type': 'application/json', ...corsHeaders } });
+      }
+
+      const name = investor.full_name?.split(' ')[0] || 'there';
+      let subject: string;
+      let line: string;
+
+      if (action === 'deal_status_update') {
+        const st = String(body.status || 'updated');
+        subject = `Update on your deal`;
+        line = `Your deal has moved to <strong>${st}</strong>.` +
+               (body.notes ? `<br><br>${String(body.notes)}` : '');
+      } else if (action === 'workflow_stage_update') {
+        const stage = String(body.stage_name || body.stage || 'the next stage');
+        subject = `Your acquisition has moved forward`;
+        line = `You are now at <strong>${stage}</strong>.`;
+      } else {
+        // NEVER say a payment is confirmed. This fires when staff RECORD a payment, and a
+        // recorded payment is not a cleared one — telling somebody their money has arrived
+        // when it has not is the worst thing this platform could say.
+        subject = `We have your payment details`;
+        line = `We have recorded your payment and it is with our team to confirm. ` +
+               `You will hear from us once it has cleared — nothing is needed from you in the meantime.`;
+      }
+
+      const html = `<div style="font-family:-apple-system,Segoe UI,Helvetica,Arial,sans-serif;font-size:16px;line-height:1.6;color:#1a1a1a;max-width:560px;">` +
+        `<p>Hi ${name},</p><p>${line}</p>` +
+        `<p>If anything looks wrong, just reply to this email and we will sort it out.</p>` +
+        `<p>Warmly,<br>The Success Team<br>Access Your Place</p></div>`;
+
+      if (!resendKey) {
+        console.error('investor-email-notifications: RESEND_API_KEY missing');
+        return new Response(JSON.stringify({ success: false, sent: false,
+          error: 'Email is not configured on the server, so nothing was sent.' }),
+          { status: 500, headers: { 'Content-Type': 'application/json', ...corsHeaders } });
+      }
+
+      const send = await fetch('https://api.resend.com/emails', {
+        method: 'POST',
+        headers: { Authorization: `Bearer ${resendKey}`, 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          from: 'The Success Team <success@accessyourplace.com>',
+          reply_to: 'success@accessyourplace.com',
+          to: [investor.email], subject, html,
+        }),
+      });
+      const out = await send.json().catch(() => null);
+      // The RESULT is read, not assumed from the status.
+      if (!send.ok || !out?.id) {
+        console.error('investor-email-notifications send failed', send.status, JSON.stringify(out).slice(0, 200));
+        return new Response(JSON.stringify({ success: false, sent: false,
+          error: `The email did NOT send (${send.status}).` }),
+          { status: 502, headers: { 'Content-Type': 'application/json', ...corsHeaders } });
+      }
+      return new Response(JSON.stringify({ success: true, sent: true, id: out.id }),
+        { headers: { 'Content-Type': 'application/json', ...corsHeaders } });
+    }
+
     if (action === 'acquisition_milestone') {
       const { investor_id, acquisition_data } = body;
 

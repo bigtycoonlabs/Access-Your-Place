@@ -398,7 +398,7 @@ export function AcquisitionManagerDashboard({ staffId, staffRole, staffRoles = [
 
       if (data?.success) {
         // Notify the investor about their new manager
-        await supabase.functions.invoke('investor-email-notifications', {
+        await supabase.functions.invoke('send-acquisition-emails', {
           body: {
             action: 'manager_assigned',
             investor_id: investorId,
