@@ -183,7 +183,10 @@ Deno.serve(async (req) => {
     }
 
     // ==================== LIST ====================
-    if (action === 'list') {
+    // get_documents is the AM dialog's name for `list`, and add_document is its name for
+    // `upload`. Same operations, different caller vocabulary — aliased rather than
+    // reimplemented, because two handlers doing one job drift apart and then disagree.
+    if (action === 'list' || action === 'get_documents') {
       const { investor_id, acquisition_id, document_type, status, limit: queryLimit, offset, order_by, order_direction } = params;
 
       if (!investor_id && !acquisition_id) {
@@ -252,7 +255,7 @@ Deno.serve(async (req) => {
     }
 
     // ==================== UPLOAD ====================
-    if (action === 'upload') {
+    if (action === 'upload' || action === 'add_document') {
       const { acquisition_id, investor_id, document_type, document_name, file_data, mime_type, uploaded_by, uploaded_by_name, investor_email, investor_name, property_id } = params;
 
       if (!investor_id || !document_name) {

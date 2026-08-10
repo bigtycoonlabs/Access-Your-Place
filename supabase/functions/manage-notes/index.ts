@@ -32,9 +32,68 @@ Deno.serve(async (req) => {
     const supabaseKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!;
     const supabase = createClient(supabaseUrl, supabaseKey);
 
-    const { action, property_id, note_id, data } = await req.json();
+    const body = await req.json();
+    const { action, property_id, note_id, data } = body;
 
     let result;
+
+    // INVESTOR notes, not property notes.
+    //
+    // This function's existing cases are all scoped to a PROPERTY and write to
+    // outreach_notes. The acquisition manager's dialog asks about an INVESTOR — a different
+    // subject entirely, so this is not a rename and could not be aliased.
+    //
+    // investor_notes already exists with exactly the right shape (investor_id, content,
+    // type, created_by) and nothing had ever written to it.
+    if (action === 'get_notes') {
+      if (!body.investor_id) {
+        return new Response(JSON.stringify({ success: false, error: 'investor_id is required.' }),
+          { status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' } });
+      }
+      const { data: rows, error } = await supabase
+        .from('investor_notes')
+        .select('*')
+        .eq('investor_id', body.investor_id)
+        .order('created_at', { ascending: false });
+      if (error) {
+        console.error('manage-notes get_notes failed', error.message);
+        return new Response(JSON.stringify({ success: false, error: 'Could not read the notes.' }),
+          { status: 502, headers: { ...corsHeaders, 'Content-Type': 'application/json' } });
+      }
+      return new Response(JSON.stringify({ success: true, notes: rows || [] }),
+        { headers: { ...corsHeaders, 'Content-Type': 'application/json' } });
+    }
+
+    if (action === 'add_note') {
+      const text = String(body.note ?? body.notes ?? '').trim();
+      if (!body.investor_id) {
+        return new Response(JSON.stringify({ success: false, error: 'investor_id is required.' }),
+          { status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' } });
+      }
+      // An empty note is not a note. Saving one means the next person opens the file and
+      // learns nothing, which is the same failure as not writing it down at all.
+      if (!text) {
+        return new Response(JSON.stringify({ success: false, error: 'A note needs something in it. Say what actually happened.' }),
+          { status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' } });
+      }
+      const { data: row, error } = await supabase
+        .from('investor_notes')
+        .insert({
+          investor_id: body.investor_id,
+          content: text,
+          type: body.note_type || 'general',
+          created_by: body.created_by || null,
+        })
+        .select()
+        .single();
+      if (error) {
+        console.error('manage-notes add_note failed', error.message);
+        return new Response(JSON.stringify({ success: false, error: 'Could not save the note. Nothing was recorded.' }),
+          { status: 502, headers: { ...corsHeaders, 'Content-Type': 'application/json' } });
+      }
+      return new Response(JSON.stringify({ success: true, note: row }),
+        { headers: { ...corsHeaders, 'Content-Type': 'application/json' } });
+    }
 
     switch (action) {
       case 'create':
