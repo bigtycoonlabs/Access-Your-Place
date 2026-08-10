@@ -57,6 +57,7 @@ export function QuickAssignPopover({
 }: QuickAssignPopoverProps) {
   const [searchQuery, setSearchQuery] = useState('');
   const [investors, setInvestors] = useState<Investor[]>([]);
+  const [loadError, setLoadError] = useState('');
   const [loading, setLoading] = useState(true);
   const [assigning, setAssigning] = useState(false);
   const [selectedInvestor, setSelectedInvestor] = useState<Investor | null>(null);
@@ -131,45 +132,17 @@ export function QuickAssignPopover({
       console.warn('[QuickAssign] manage-investor-admin failed:', err);
     }
 
-    // Strategy 2: Direct DB fallback
+    // Strategies 2 and 3 removed.
+    //
+    // Strategy 2 read `investors` directly, which the anon role cannot do — so it could
+    // only ever fail. Strategy 3 called investor-auth with action 'list', which that
+    // function has never handled, so it could only ever fail too.
+    //
+    // Three strategies deep where only the first works is not resilience: it is two silent
+    // failures wearing the costume of a fallback, and it hid the fact that when strategy 1
+    // breaks, this control simply shows nothing. Now a failure SAYS so.
     if (!fetched) {
-      try {
-        const { data, error } = await supabase
-          .from('investors')
-          .select('id, email, full_name, phone, company_name, is_active, onboarding_completed')
-          .order('created_at', { ascending: false })
-          .limit(500);
-        if (!error && data?.length) {
-          setInvestors(data.map((inv: any) => ({
-            ...inv,
-            first_name: inv.full_name?.split(' ')[0] || '',
-            last_name: inv.full_name?.split(' ').slice(1).join(' ') || ''
-          })));
-          fetched = true;
-          console.log(`[QuickAssign] Loaded ${data.length} investors via direct DB`);
-        }
-      } catch (err) {
-        console.warn('[QuickAssign] Direct DB query failed:', err);
-      }
-    }
-
-    // Strategy 3: investor-auth fallback
-    if (!fetched) {
-      try {
-        const { data } = await supabase.functions.invoke('investor-auth', {
-          body: { action: 'list' }
-        });
-        if (data?.investors?.length) {
-          setInvestors(data.investors.map((inv: any) => ({
-            ...inv,
-            first_name: inv.first_name || inv.full_name?.split(' ')[0] || '',
-            last_name: inv.last_name || inv.full_name?.split(' ').slice(1).join(' ') || ''
-          })));
-          console.log(`[QuickAssign] Loaded ${data.investors.length} investors via investor-auth`);
-        }
-      } catch (err) {
-        console.warn('[QuickAssign] investor-auth fallback failed:', err);
-      }
+      setLoadError('Could not load the client list. This is a server problem, not your account — try again shortly.');
     }
 
     setLoading(false);
@@ -454,8 +427,13 @@ export function QuickAssignPopover({
             ) : filtered.length === 0 ? (
               <div className="py-6 text-center">
                 <User className="w-6 h-6 text-gray-300 mx-auto mb-1" />
-                <p className="text-xs text-gray-400">
-                  {searchQuery ? `No investors matching "${searchQuery}"` : 'No investors found'}
+                {/* "No investors found" was shown whether the list was genuinely empty or
+                    the load had failed. Those are different facts and a staff member
+                    assigning a deal needs to know which. */}
+                <p className={`text-xs ${loadError ? 'text-amber-700' : 'text-gray-400'}`} role={loadError ? 'status' : undefined}>
+                  {loadError
+                    ? loadError
+                    : searchQuery ? `No investors matching "${searchQuery}"` : 'No investors found'}
                 </p>
               </div>
             ) : (

@@ -170,6 +170,140 @@ Deno.serve(async (req) => {
         note: 'Your request has been recorded and sent to our team. Nothing has been deleted yet — someone will contact you, because there are records attached to your account that we cannot simply erase.' });
     }
 
+    // Credit requests, routed to the SAME RPCs Penny uses and the SAME table the admin
+    // screen reads. Three surfaces, one path — a client submitting here and an admin
+    // reviewing in the staff dashboard are looking at the same row.
+
+    if (action === 'submit_credit_request') {
+      const { investor_id, amount, reason, request_type, property } = body;
+      if (!investor_id) return json({ success: false, error: 'investor_id is required.' }, 400);
+      const res = await fetch(`${baseUrl}/rest/v1/rpc/penny_submit_credit_request`, {
+        method: 'POST', headers,
+        body: JSON.stringify({
+          p_investor_id: investor_id, p_amount: amount,
+          p_reason: reason ?? body.description ?? '',
+          p_request_type: request_type ?? 'general', p_property: property ?? null,
+        }),
+      });
+      if (!res.ok) {
+        console.error('investor-auth submit_credit_request failed', res.status);
+        return json({ success: false, error: 'Could not submit your request. Nothing was recorded.' }, 502);
+      }
+      const out = await res.json();
+      if (out?.ok === false) return json({ success: false, error: out.error }, 400);
+      return json({ success: true, ...out });
+    }
+
+    if (action === 'get_credit_requests') {
+      const { investor_id } = body;
+      if (!investor_id) return json({ success: false, error: 'investor_id is required.' }, 400);
+      const res = await fetch(`${baseUrl}/rest/v1/rpc/penny_credit_requests`, {
+        method: 'POST', headers, body: JSON.stringify({ p_investor_id: investor_id }),
+      });
+      if (!res.ok) return json({ success: false, error: 'Could not read your requests.' }, 502);
+      return json({ success: true, requests: await res.json() });
+    }
+
+    // ---- LEGACY PROPERTY CLAIMING ----
+    //
+    // ClaimLegacyProperty searches `legacy_properties`, which is EMPTY and always has been.
+    // The real history is in client_files: 51 records carrying a property and a market,
+    // imported from the Master Spaces era. Searching an empty table would have told every
+    // returning client we have no record of them — the exact opposite of the point.
+    //
+    // So this searches the BOOK. A client who signs up and says "I had a unit with you"
+    // gets matched against what we actually know.
+
+    if (action === 'search_legacy_properties') {
+      const q = String(body.query || body.search || '').trim();
+      if (q.length < 3) {
+        return json({ success: false, error: 'Give me at least three characters — an address, a building, or the city.' }, 400);
+      }
+      const like = encodeURIComponent(`%${q}%`);
+      const res = await fetch(
+        `${baseUrl}/rest/v1/client_files?or=(property.ilike.${like},market.ilike.${like},company.ilike.${like},name.ilike.${like})` +
+        `&property=not.is.null&select=id,name,company,property,market,status,first_seen,email&limit=20`,
+        { headers },
+      );
+      if (!res.ok) {
+        console.error('investor-auth search_legacy_properties failed', res.status);
+        return json({ success: false, error: 'Could not search our records just now.' }, 502);
+      }
+      const rows = await res.json();
+      // The email is NOT returned. Somebody searching for a building must not be handed
+      // the contact details of whoever operated it.
+      const safe = (rows || []).map((r: Record<string, unknown>) => ({
+        record_id: r.id, property: r.property, market: r.market,
+        operator: r.company || r.name, since: r.first_seen, status: r.status,
+      }));
+      return json({ success: true, results: safe,
+        note: safe.length ? null : 'Nothing matched. If you had a property with us, message the Success Team and we will find it.' });
+    }
+
+    if (action === 'claim_legacy_property') {
+      const { investor_id, record_id } = body;
+      if (!investor_id || !record_id) return json({ success: false, error: 'investor_id and record_id are required.' }, 400);
+
+      const who = await fetch(`${baseUrl}/rest/v1/investors?id=eq.${investor_id}&select=email,full_name`, { headers });
+      const me = (await who.json().catch(() => []))?.[0];
+      if (!me) return json({ success: false, error: 'No such account.' }, 404);
+
+      const recRes = await fetch(`${baseUrl}/rest/v1/client_files?id=eq.${record_id}&select=id,email,property,market,company,name`, { headers });
+      const rec = (await recRes.json().catch(() => []))?.[0];
+      if (!rec) return json({ success: false, error: 'No such record.' }, 404);
+
+      // A CLAIM IS NOT SELF-SERVICE unless the email already matches. Letting anyone attach
+      // themselves to a property somebody else operated would hand over that history —
+      // rent, terms, who the landlord is — to a stranger who guessed a building name.
+      const matches = String(rec.email || '').toLowerCase() === String(me.email || '').toLowerCase();
+
+      const alert = await fetch(`${baseUrl}/rest/v1/staff_alerts`, {
+        method: 'POST', headers,
+        body: JSON.stringify({
+          for_role: 'admin', kind: 'legacy_claim',
+          severity: matches ? 'normal' : 'urgent',
+          title: `${me.full_name || me.email} is claiming ${rec.property || 'a legacy property'}`,
+          body: matches
+            ? `The email on the record already matches their account, so this is very likely genuine. Confirm and link the file.`
+            : `THE EMAIL DOES NOT MATCH the record (${rec.company || rec.name || 'unknown operator'}). Verify who they are before linking anything — this record carries the property, the market and the history.`,
+          investor_id, client_file_id: record_id,
+          dedupe_key: `legacyclaim:${investor_id}:${record_id}`,
+        }),
+      });
+      if (!alert.ok) {
+        console.error('investor-auth claim_legacy_property alert failed', alert.status);
+        return json({ success: false, error: 'Could not submit your claim. Nothing was recorded — please message the Success Team.' }, 502);
+      }
+      return json({ success: true,
+        note: matches
+          ? 'Submitted. The email on our record already matches your account, so this should be quick — someone will confirm and link it.'
+          : 'Submitted. Our team will verify this before linking anything, because the record is under a different email.' });
+    }
+
+    if (action === 'request_am_verification' || action === 'set_acquisition_manager') {
+      const { investor_id, am_id } = body;
+      if (!investor_id) return json({ success: false, error: 'investor_id is required.' }, 400);
+      if (!am_id) return json({ success: false, error: 'Which acquisition manager? Nothing was recorded.' }, 400);
+
+      const dupe = await fetch(`${baseUrl}/rest/v1/am_verification_requests?investor_id=eq.${investor_id}&status=eq.pending&select=id`, { headers });
+      const open = await dupe.json().catch(() => []);
+      if (Array.isArray(open) && open.length) {
+        return json({ success: false, error: 'You already have a request waiting. We will come back on that one first.' }, 409);
+      }
+
+      const ins = await fetch(`${baseUrl}/rest/v1/am_verification_requests`, {
+        method: 'POST', headers: { ...headers, Prefer: 'return=representation' },
+        body: JSON.stringify({ investor_id, am_id, status: 'pending' }),
+      });
+      if (!ins.ok) {
+        console.error('investor-auth request_am_verification failed', ins.status);
+        return json({ success: false, error: 'Could not record the request. Nothing was submitted.' }, 502);
+      }
+      const rows = await ins.json();
+      return json({ success: true, request: rows?.[0] ?? null,
+        note: 'Recorded. An acquisition manager is not assigned until our team confirms it.' });
+    }
+
     if (action === 'get_portfolio_properties') {
       const properties = await read('investor_portfolio', `investor_id=eq.${encodeURIComponent(investorId)}&status=eq.active&order=created_at.desc`);
       return json({ success: true, properties });
