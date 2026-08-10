@@ -44,6 +44,11 @@ export default function PennyPublicChat({ open, initialQuery, onClose }: Props) 
           body: { messages: next },
         });
         if (error) throw error;
+        // The function returns a friendly `message` on FAILURE as well as on success, so
+        // reading it without checking `success` renders "the AI service is not configured"
+        // as though Penny had answered the question. A visitor would take that as her
+        // reply and leave.
+        if (data?.success === false) throw new Error(String(data?.error || 'failed'));
         const reply =
           (data && (data.message as string)) ??
           "I couldn't put that into words just now — try me again?";

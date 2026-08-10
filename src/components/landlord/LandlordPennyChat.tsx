@@ -70,9 +70,12 @@ export function LandlordPennyChat({ landlordId, landlordName }: Props) {
         },
       });
       if (fnError) throw fnError;
+      // CHECK success FIRST. This function returns a friendly `message` on FAILURE too
+      // ("I'm having some technical trouble"), so reading `message` without checking
+      // success renders an error as though Penny had answered -- a landlord would think
+      // they had been told something.
+      if (data?.success !== true) throw new Error(data?.error || 'failed');
       const reply = data?.reply || data?.message;
-      // A failure says so. Silence here reads as "the software is broken", and a landlord
-      // who thinks that stops trusting the rest of the portal too.
       if (!reply) throw new Error('no reply');
       setMessages((m) => [...m, { role: 'assistant', content: reply }]);
     } catch {

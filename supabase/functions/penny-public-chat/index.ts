@@ -261,10 +261,12 @@ async function fetchLiveDeals(url: string, key: string): Promise<string> {
     const bits = [
       loc || 'market on file',
       p.operation_type ? String(p.operation_type) : '',
+      // NO RENT AND NO SCORES. The account gate tells her never to state a figure to
+      // somebody without an account — so the figures do not go into her context at all.
+      // Telling a model "you have this number but must not say it" is a rule it can break;
+      // not giving it the number is a rule it cannot. The deal list exists here so she can
+      // say WHETHER we have something in a market, not what it earns.
       p.is_furnished ? 'furnished' : 'unfurnished',
-      p.monthly_rent ? `rent $${Math.round(Number(p.monthly_rent))}/mo` : '',
-      p.str_viability_score ? `STR score ${p.str_viability_score}` : '',
-      p.coliving_viability_score ? `shared-living score ${p.coliving_viability_score}` : '',
       p.is_verified ? 'verified' : '',
     ].filter(Boolean);
     return `- ${bits.join(' · ')}`;
