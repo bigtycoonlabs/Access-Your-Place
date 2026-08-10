@@ -1022,8 +1022,8 @@ async function upsertCommunity(url: string, key: string, a: any, staffId: string
 // Owner gate. Reads the requesting staff member's is_owner flag straight from the
 // staff_users table (DATA_SCHEMA), so only a real owner account can invite staff — the
 // client can't forge this by passing a flag; we look it up server-side by their id.
-async function staffIsOwner(url: string, key: string, staffId: string): Promise<{ owner: boolean; name: string | null }> {
-  if (!staffId) return { owner: false, name: null };
+async function staffIsOwner(url: string, key: string, staffId: string): Promise<{ owner: boolean; name: string | null; role: string; team: string }> {
+  if (!staffId) return { owner: false, name: null, role: '', team: '' };
   try {
     // NO Accept-Profile HEADER, deliberately.
     //
@@ -1049,22 +1049,25 @@ async function staffIsOwner(url: string, key: string, staffId: string): Promise<
     // every function carrying this header at once, but it would also publish 281 tables
     // to the REST API where only curated public views are reachable today. Owner chose
     // the contained fix; this is it.
-    const res = await fetch(`${url}/rest/v1/staff_users?id=eq.${encodeURIComponent(staffId)}&select=is_owner,is_active,name,first_name,last_name`, {
+    const res = await fetch(`${url}/rest/v1/staff_users?id=eq.${encodeURIComponent(staffId)}&select=is_owner,is_active,name,first_name,role,team,last_name`, {
       headers: { apikey: key, Authorization: `Bearer ${key}` },
     });
-    if (!res.ok) { console.error('penny-staff-chat staff_is_owner_http', res.status); return { owner: false, name: null }; }
+    if (!res.ok) { console.error('penny-staff-chat staff_is_owner_http', res.status); return { owner: false, name: null, role: '', team: '' }; }
     const rows = await res.json().catch(() => []);
     const row = Array.isArray(rows) ? rows[0] : null;
-    if (!row) return { owner: false, name: null };
+    if (!row) return { owner: false, name: null, role: '', team: '' };
         // Fall back through the name columns so a row with a null `name` still identifies
     // the person, rather than making Penny claim she cannot tell who they are.
     const resolvedName = row.name
       || [row.first_name, row.last_name].filter(Boolean).join(' ').trim()
       || null;
-    return { owner: row.is_owner === true && row.is_active !== false, name: resolvedName };
+    // role and team come out too, so tool gating can tell a setup manager from an
+    // acquisition manager without a second lookup.
+    return { owner: row.is_owner === true && row.is_active !== false, name: resolvedName,
+             role: String(row.role || ''), team: String(row.team || '') };
   } catch (e) {
     console.error('penny-staff-chat staff_is_owner_threw', e instanceof Error ? e.message : String(e));
-    return { owner: false, name: null };
+    return { owner: false, name: null, role: '', team: '' };
   }
 }
 
@@ -1167,7 +1170,7 @@ async function resolveEscalation(url: string, key: string, id: string, notes: st
   }
 }
 
-type Ctx = { url: string; key: string; staffId: string; staffName: string; isOwner?: boolean; identified?: boolean; fullName?: string; docText?: string; docName?: string };
+type Ctx = { url: string; key: string; staffId: string; staffName: string; isOwner?: boolean; role?: string; identified?: boolean; fullName?: string; docText?: string; docName?: string };
 
 async function execTool(name: string, args: any, ctx: Ctx): Promise<unknown> {
   const { url, key, staffId, staffName } = ctx;
@@ -3003,7 +3006,31 @@ const TOOL_GROUPS: Record<string, { words: RegExp; tools: string[] }> = {
 // Everything the model may call this turn. Core always, plus any group whose words appear
 // in what was actually said. Nothing is hidden permanently — a group loads the moment the
 // subject comes up.
-function toolsForTurn(userText: string) {
+// Tools a given seat can actually use. A setup manager does not approve listings, invite
+// staff, publish articles or moderate a third-party sale, so sending her those schemas
+// spends the token budget describing work she cannot do.
+//
+// THIS IS WHY TANIA HIT A 429 ON HER SECOND MESSAGE: limit 30,000 tokens a minute, 18,904
+// already used, 12,286 requested. All 64 tool schemas are 10,728 tokens on their own, so two
+// turns in a minute cannot both fit. Gating by role is the difference between a payload that
+// fits and one that does not.
+//
+// It is also better behaviour: Penny stops offering somebody actions they are not allowed to
+// take, which she was doing.
+const ROLE_DENIED: Record<string, string[]> = {
+  setup: ['approve_listing', 'reject_listing', 'seller_flow', 'list_third_party_deal',
+          'invite_staff', 'list_staff', 'send_agreement', 'write_article', 'decide_article',
+          'republish_article', 'articles_needing_work', 'articles_awaiting_review',
+          'record_closing', 'record_verification', 'verification_gap', 'suspend_client',
+          'reinstate_client', 'decide_credit_request', 'resolve_escalation',
+          'unpublish_property', 'add_property', 'create_payment_link'],
+  acquisition: ['invite_staff', 'send_agreement', 'write_article', 'decide_article',
+                'republish_article', 'suspend_client', 'reinstate_client',
+                'decide_credit_request'],
+  admin: ['write_article', 'decide_article', 'republish_article'],
+};
+
+function toolsForTurn(userText: string, seat = 'owner') {
   const wanted = new Set(CORE_TOOLS);
   for (const g of Object.values(TOOL_GROUPS)) {
     if (g.words.test(userText)) for (const t of g.tools) wanted.add(t);
@@ -3015,7 +3042,12 @@ function toolsForTurn(userText: string) {
   if (/\b(list|show|what|which|any|all|none|remove|delete|are there|do we have)\b/i.test(userText)) {
     for (const t of ['list_marketplace', 'client_book', 'list_leads', 'list_opportunities']) wanted.add(t);
   }
-  const picked = TOOLS.filter((t: any) => wanted.has(t?.function?.name));
+  // Strip what this seat may not do. Owners are never restricted — they carry the whole
+  // business and hiding a tool from them would be hiding the business from them.
+  const denied = new Set(seat === 'owner' ? [] : (ROLE_DENIED[seat] || []));
+  for (const d of denied) wanted.delete(d);
+
+  const picked = TOOLS.filter((t: any) => wanted.has(t?.function?.name) && !denied.has(t?.function?.name));
   // If matching produced almost nothing, send everything rather than leave her unable to
   // act. A smaller payload is not worth a refusal on a request we simply failed to classify.
   // NEVER FALL BACK TO ALL 62. That is ~11k tokens of schema on top of ~10k of doctrine,
@@ -3028,7 +3060,7 @@ function toolsForTurn(userText: string) {
   if (picked.length >= 8) return picked;
   const ALWAYS = new Set([...CORE_TOOLS, 'list_marketplace', 'client_book', 'list_leads',
     'list_opportunities', 'find_client_file', 'my_alerts', 'who_to_contact']);
-  const fallback = TOOLS.filter((t: any) => ALWAYS.has(t?.function?.name));
+  const fallback = TOOLS.filter((t: any) => ALWAYS.has(t?.function?.name) && !denied.has(t?.function?.name));
   return fallback.length ? fallback : TOOLS.slice(0, 20);
 }
 
@@ -3112,7 +3144,13 @@ async function runAgent(messages: Array<{ role: string; content: string }>, firs
   // Which tools this turn actually needs. Matched against the last few things said rather
   // than only the latest message, so "do that for Elizabeth too" still loads client tools.
   const recentText = messages.slice(-4).map((m) => String(m?.content || '')).join(' ');
-  const turnTools = toolsForTurn(recentText);
+  // Seat drives which tools exist for this person at all.
+  const seat = ctx.isOwner === true ? 'owner'
+    : /setup/i.test(String(ctx.role || '')) ? 'setup'
+    : /acquisition/i.test(String(ctx.role || '')) ? 'acquisition'
+    : /admin|management/i.test(String(ctx.role || '')) ? 'admin'
+    : 'acquisition';
+  const turnTools = toolsForTurn(recentText, seat);
   console.log('penny-staff-chat tools_this_turn', turnTools.length, 'of', TOOLS.length);
   let didRetry = false;
   // Images ride on the most recent user message, as OpenAI's multimodal content array.
@@ -3453,6 +3491,7 @@ Deno.serve(async (req) => {
 
     const agentCtx = {
       url, key, staffId, staffName, isOwner: ownerCheck.owner,
+      role: `${ownerCheck.role || ''} ${ownerCheck.team || ''}`.trim(),
       identified, fullName, docText, docName, memories, attention, images,
     };
 
