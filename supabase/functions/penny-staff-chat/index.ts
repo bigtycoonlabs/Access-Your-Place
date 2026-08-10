@@ -851,23 +851,19 @@ async function unpublishProperty(url: string, key: string, propertyId: string, r
 
 async function addProperty(url: string, key: string, a: any, staffId: string) {
   const { ok, status, data } = await rpc(url, key, 'penny_add_property', {
-    p_address: String(a.address || ''),
-    p_city: String(a.city || ''),
-    p_state: String(a.state || ''),
-    p_monthly_rent: a.monthly_rent != null ? Number(a.monthly_rent) : null,
-    p_bedrooms: a.bedrooms != null ? Number(a.bedrooms) : null,
-    p_landlord_name: a.landlord_name ? String(a.landlord_name) : null,
-    p_landlord_phone: a.landlord_phone ? String(a.landlord_phone) : null,
-    p_notes: a.notes ? String(a.notes) : null,
-    p_staff_id: staffId || null,
+    p_address: String(a.address), p_city: a.city ?? null, p_state: a.state ?? null,
+    p_staff_id: staffId || null, p_unit: a.unit ?? null,
+    p_monthly_rent: a.monthly_rent ?? null, p_bedrooms: a.bedrooms ?? null,
+    p_bathrooms: a.bathrooms ?? null, p_sleeps: a.sleeps ?? null,
+    p_is_furnished: a.is_furnished ?? null, p_third_party: a.third_party ?? null,
+    p_asking_price: a.asking_price ?? null,
+    p_peak_revenue: a.peak_revenue ?? null, p_slow_revenue: a.slow_revenue ?? null,
+    p_landlord_name: a.landlord_name ?? null, p_landlord_phone: a.landlord_phone ?? null,
+    p_notes: a.notes ?? null,
   });
-  if (!ok) {
-    console.error('penny-staff-chat rpc_add_property', status, JSON.stringify(data).slice(0, 200));
-    return { error: 'add_failed', http: status };
-  }
+  if (!ok) return { error: 'add_failed', http: status };
   return data;
 }
-
 async function getOpportunity(url: string, key: string, inquiryId: string) {
   const { ok, status, data } = await rpc(url, key, 'penny_inquiry', { p_id: inquiryId });
   if (!ok) {
@@ -2472,21 +2468,29 @@ const TOOLS = [
     type: 'function',
     function: {
       name: 'add_property',
-      description: "Add a property to the platform. USE THIS when somebody says they want to list, add or submit a property - do NOT send them to the List a Deal tab, you only need an address, city and state and can ask for them. This is a WRITE — only call with confirmed:true after the staff member has said yes. IT DOES NOT GO LIVE: it lands as pending review, because a deal on the marketplace means a human has spoken to the landlord and validated the numbers. Say that plainly rather than implying it is listed.",
+      description: "Add a property or a third-party operation for sale. Pass EVERY figure you were given - asking price, rent, projected peak and slow revenue, sleeps, furnished, unit number. If you leave a figure out it is NOT saved anywhere, and saying it was recorded when it was not is the worst thing you can do here. Give the unit when there are several at one building or they cannot be told apart. Lands as pending review, never live. Confirm before calling.",
       parameters: {
         type: 'object',
         properties: {
           address: { type: 'string' },
+          unit: { type: 'string', description: 'Unit or apartment number.' },
           city: { type: 'string' },
           state: { type: 'string' },
+          third_party: { type: 'boolean', description: 'True when an existing operation is being SOLD by its operator.' },
+          asking_price: { type: 'number', description: 'What the operation is being sold for.' },
           monthly_rent: { type: 'number' },
+          peak_revenue: { type: 'number', description: 'Projected monthly revenue in peak season.' },
+          slow_revenue: { type: 'number', description: 'Projected monthly revenue in slow season.' },
           bedrooms: { type: 'number' },
+          bathrooms: { type: 'number' },
+          sleeps: { type: 'number' },
+          is_furnished: { type: 'boolean' },
           landlord_name: { type: 'string' },
           landlord_phone: { type: 'string' },
           notes: { type: 'string' },
           confirmed: { type: 'boolean' },
         },
-        required: ['address', 'city', 'state'],
+        required: ['address'],
       },
     },
   },
