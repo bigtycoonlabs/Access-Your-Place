@@ -637,8 +637,11 @@ serve(async (req) => {
       }
       if (user_name) {
         systemPrompt += `\n\nYou are currently chatting with ${user_name}. Address them by their first name when appropriate.`
-      systemPrompt += operatorFacts
       }
+      // OUTSIDE the user_name block. My own insertion put this INSIDE it, so an operator
+      // whose display name was missing got no account facts at all — the exact
+      // "works for most people, silently wrong for some" failure this is meant to end.
+      systemPrompt += operatorFacts
 
       // REAL GROUNDING: hand Penny the actual live deals + relevant library articles, so she
       // speaks from real current inventory instead of invented examples.
