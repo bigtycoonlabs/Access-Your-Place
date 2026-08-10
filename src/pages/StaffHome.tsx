@@ -256,6 +256,10 @@ export default function StaffHome({ staffSession }: { staffSession: StaffLite | 
 
         <Area title="Team" onAsk={setAsk} metrics={[
           { label: 'active', value: n(snap?.team,'active'), ask: 'Who is on the Success Team?' },
+          // Commission business: nobody being payable is found at payday otherwise.
+          { label: 'cannot be paid', value: n(snap?.team,'cannot_be_paid'), ask: 'Who has no payout details on file?', alert: n(snap?.team,'cannot_be_paid') > 0 },
+          { label: 'no clients yet', value: n(snap?.team,'no_clients_assigned'), ask: 'Who has no clients assigned to them?', alert: n(snap?.team,'no_clients_assigned') > 0 },
+          { label: 'agreements pending', value: n(snap?.team,'agreements_pending'), ask: 'Which agreements are waiting to be signed?', alert: n(snap?.team,'agreements_pending') > 0 },
           { label: 'owners', value: n(snap?.team,'owners'), ask: 'Who has owner access?' },
         ]} />
       </div>

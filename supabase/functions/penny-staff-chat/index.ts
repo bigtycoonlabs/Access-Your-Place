@@ -286,6 +286,12 @@ async function whoToContact(url: string, key: string, staffId: string, limit?: n
   return { count: rows.length, people: rows };
 }
 
+async function teamReadiness(url: string, key: string) {
+  const { ok, status, data } = await rpc(url, key, 'penny_team_readiness');
+  if (!ok) return { error: `read_failed_${status}` };
+  return data;
+}
+
 async function clientBook(url: string, key: string) {
   const { ok, status, data } = await rpc(url, key, 'penny_client_book');
   if (!ok) {
@@ -812,19 +818,6 @@ async function activityReport(url: string, key: string, days: number) {
 }
 
 // Find a client (investor) by name, email, or company — for lookup / disambiguation.
-async function findClient(url: string, key: string, query: string) {
-  const { ok, status, data } = await rpc(url, key, 'penny_find_client', { p_query: query });
-  if (!ok) {
-    console.error('penny-staff-chat rpc_find_client', status, JSON.stringify(data).slice(0, 200));
-    return { error: 'lookup_failed', http: status };
-  }
-  const rows = Array.isArray(data) ? data : [];
-  return { count: rows.length, clients: rows };
-}
-
-// "What is this client up to?" — signup, logins, sessions, messages, Penny chats,
-// pages/deals browsed, activity feed, and inquiries. Read-only. Self-resolves the
-// person from a name or email; returns matches when the name is ambiguous.
 async function clientActivity(url: string, key: string, query: string | null, investorId: string | null) {
   const { ok, status, data } = await rpc(url, key, 'penny_client_activity', {
     p_query: query, p_investor_id: investorId, p_limit: 8,
@@ -1120,9 +1113,12 @@ type Ctx = { url: string; key: string; staffId: string; staffName: string; isOwn
 async function execTool(name: string, args: any, ctx: Ctx): Promise<unknown> {
   const { url, key, staffId, staffName } = ctx;
   try {
-    if (name === 'find_client') {
+    // find_client was retired into find_client_file, which searches the WHOLE book rather
+    // than accounts only. Aliased rather than removed: if the model reaches for the old
+    // name it gets the better answer instead of an error.
+    if (name === 'find_client' || name === 'find_client_file') {
       if (!args?.query) return { error: 'query required' };
-      return await findClient(url, key, String(args.query));
+      return await findClientFile(url, key, String(args.query), args?.limit ? Number(args.limit) : undefined);
     }
     if (name === 'get_client_activity') {
       const q = args?.client ? String(args.client) : (args?.query ? String(args.query) : null);
@@ -1255,9 +1251,13 @@ async function execTool(name: string, args: any, ctx: Ctx): Promise<unknown> {
       return await presentDeal(url, key, args, staffId);
     }
     if (name === 'my_book') return await myBook(url, key, staffId);
+    // assign_client_file set a generic owner; assign_manager sets one BY ROLE, which is
+    // what the business actually needs since a client can have both an acquisition and a
+    // setup manager. Old name routed to the role-aware one, defaulting to acquisition.
     if (name === 'assign_client_file') {
-      if (!args?.file_id || !args?.to_staff_id) return { error: 'file_id and to_staff_id required' };
-      return await assignClientFile(url, key, String(args.file_id), String(args.to_staff_id), staffId);
+      if (!args?.file_id) return { error: 'file_id required' };
+      return await assignManager(url, key,
+        { file_id: args.file_id, staff_id: args.to_staff_id, role: args.role || 'acquisition' }, staffId);
     }
     if (name === 'log_touch') {
       if (!args?.file_id || !args?.note) return { error: 'file_id and a note are required' };
@@ -1267,10 +1267,12 @@ async function execTool(name: string, args: any, ctx: Ctx): Promise<unknown> {
       return await whoToContact(url, key, staffId, args?.limit ? Number(args.limit) : undefined);
     }
     if (name === 'client_book') return await clientBook(url, key);
+    if (name === 'team_readiness') return await teamReadiness(url, key);
     if (name === 'find_client_file') {
       return await findClientFile(url, key, String(args?.query || ''), args?.limit ? Number(args.limit) : undefined);
     }
-    if (name === 'client_file_overview') return await clientFileOverview(url, key);
+    // client_file_overview was strictly narrower than client_book. Aliased.
+    if (name === 'client_file_overview') return await clientBook(url, key);
     if (name === 'update_client_file') {
       if (!args?.file_id || !args?.field) return { error: 'file_id and field required' };
       if (args.confirmed !== true) {
@@ -1469,19 +1471,6 @@ const TOOLS = [
           client: { type: 'string', description: "The client's name or email address (a first name alone is fine)." },
           investor_id: { type: 'string', description: 'Optional exact investor id, if you already have it (e.g. from find_client).' },
         },
-        additionalProperties: false,
-      },
-    },
-  },
-  {
-    type: 'function',
-    function: {
-      name: 'find_client',
-      description: 'Look up a client (investor) by name, email, or company. Returns matching accounts with their id, name, email, company, signup date, status, and last login. Use this to find who someone is, or to pick between people with similar names before pulling their activity.',
-      parameters: {
-        type: 'object',
-        properties: { query: { type: 'string', description: 'A name, email, or company to search for.' } },
-        required: ['query'],
         additionalProperties: false,
       },
     },
@@ -1711,18 +1700,6 @@ const TOOLS = [
   {
     type: 'function',
     function: {
-      name: 'assign_client_file',
-      description: "Give a relationship an owner on the Success Team. An unowned relationship is one nobody calls. Use invite_staff or the team list to get the staff id.",
-      parameters: {
-        type: 'object',
-        properties: { file_id: { type: 'string' }, to_staff_id: { type: 'string' } },
-        required: ['file_id', 'to_staff_id'],
-      },
-    },
-  },
-  {
-    type: 'function',
-    function: {
       name: 'log_touch',
       description: "Record that somebody actually reached out, and what happened. The note must say the OUTCOME, not just that a call was made. Set a next step and a due date when there is one — this is what moves a person out of 'never engaged'. Whoever logs it takes ownership if nobody had it.",
       parameters: {
@@ -1748,6 +1725,14 @@ const TOOLS = [
   {
     type: 'function',
     function: {
+      name: 'team_readiness',
+      description: "Whether the Success Team is actually set up to work: who has no payout details and so cannot be paid commission, who has no clients assigned, and how many agreements are unsigned.",
+      parameters: { type: 'object', properties: {}, required: [] },
+    },
+  },
+  {
+    type: 'function',
+    function: {
       name: 'client_book',
       description: "The whole book at a glance: how many relationships, how many are clients, landlords and leads, how many are on the platform, and how many have nobody assigned.",
       parameters: { type: 'object', properties: {}, required: [] },
@@ -1763,14 +1748,6 @@ const TOOLS = [
         properties: { query: { type: 'string' }, limit: { type: 'number' } },
         required: ['query'],
       },
-    },
-  },
-  {
-    type: 'function',
-    function: {
-      name: 'client_file_overview',
-      description: "Where the book of business stands: how many client files, how many are on the platform, how many have an account they never used, how many have been invited.",
-      parameters: { type: 'object', properties: {}, required: [] },
     },
   },
   {
@@ -2835,7 +2812,7 @@ const TOOL_GROUPS: Record<string, { words: RegExp; tools: string[] }> = {
   },
   agreements: {
     words: /agreement|contract|sign|document|paperwork|onboard/i,
-    tools: ['my_agreements','send_agreement','sign_agreement','list_staff','invite_staff','my_sop'],
+    tools: ['my_agreements','send_agreement','sign_agreement','list_staff','invite_staff','my_sop','team_readiness'],
   },
   procedure: {
     words: /sop|procedure|responsib|what should i|my role|my job|how do i/i,
