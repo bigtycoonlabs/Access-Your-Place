@@ -1167,6 +1167,43 @@ Deno.serve(async (req) => {
     }
 
     // ==================== GET VERSION HISTORY ====================
+    // get_sop_diff: what actually CHANGED between two versions of a procedure. The
+    // sop_versions table already stores previous_content_html alongside content_html, so
+    // the comparison is stored rather than computed — no diffing library needed.
+    if (action === 'get_sop_diff') {
+      const { version_id } = body;
+      if (!version_id) {
+        return new Response(JSON.stringify({ success: false, error: 'version_id is required.' }),
+          { status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' } });
+      }
+      const res = await fetch(
+        `${SUPABASE_URL}/rest/v1/sop_versions?id=eq.${version_id}&select=id,sop_id,version_number,title,content_html,previous_content_html,change_summary,changed_by,created_at&limit=1`,
+        { headers });
+      if (!res.ok) {
+        console.error('manage-sop-repository get_sop_diff failed', res.status);
+        return new Response(JSON.stringify({ success: false, error: 'Could not load that version.' }),
+          { status: 502, headers: { ...corsHeaders, 'Content-Type': 'application/json' } });
+      }
+      const rows = await res.json();
+      const v = rows?.[0];
+      if (!v) {
+        return new Response(JSON.stringify({ success: false, error: 'No such version.' }),
+          { status: 404, headers: { ...corsHeaders, 'Content-Type': 'application/json' } });
+      }
+      // Say plainly when there is nothing to compare against, rather than showing an empty
+      // "before" pane that reads as "everything was deleted".
+      const isFirst = !v.previous_content_html;
+      return new Response(JSON.stringify({
+        success: true,
+        version: { id: v.id, sop_id: v.sop_id, number: v.version_number, title: v.title,
+                   summary: v.change_summary, changed_by: v.changed_by, created_at: v.created_at },
+        before: v.previous_content_html ?? null,
+        after: v.content_html ?? null,
+        is_first_version: isFirst,
+        note: isFirst ? 'This is the first version, so there is nothing to compare it against.' : null,
+      }), { headers: { ...corsHeaders, 'Content-Type': 'application/json' } });
+    }
+
     if (action === 'get_sop_version_history') {
       const { sop_id } = params;
       

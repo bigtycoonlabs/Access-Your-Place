@@ -192,6 +192,39 @@ Deno.serve(async (req) => {
     const { action, ...params } = await req.json();
 
     switch (action) {
+      // Marks the acquisition itself finished, which is different from approving a
+      // property. Filtered on not-already-complete so a second click reports the truth
+      // rather than a fresh success.
+      case 'mark_acquisition_complete': {
+        const { property_id, staff_name } = params;
+        if (!property_id) {
+          return new Response(JSON.stringify({ success: false, error: 'property_id is required.' }),
+            { status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' } });
+        }
+        const { data, error } = await supabase
+          .from('acquisition_requests')
+          .update({
+            status: 'completed',
+            manager_notes: staff_name ? `Marked complete by ${staff_name}` : null,
+            updated_at: new Date().toISOString(),
+          })
+          .eq('converted_property_id', property_id)
+          .neq('status', 'completed')
+          .select();
+        if (error) {
+          console.error('[manage-portfolio-approvals] mark_acquisition_complete failed:', error.message);
+          return new Response(JSON.stringify({ success: false, error: 'Could not mark it complete. Nothing was changed.' }),
+            { status: 502, headers: { ...corsHeaders, 'Content-Type': 'application/json' } });
+        }
+        if (!data?.length) {
+          return new Response(JSON.stringify({ success: false,
+            error: 'Nothing was updated — either there is no acquisition against that property, or it was already complete.' }),
+            { status: 409, headers: { ...corsHeaders, 'Content-Type': 'application/json' } });
+        }
+        return new Response(JSON.stringify({ success: true, acquisitions: data }),
+          { headers: { ...corsHeaders, 'Content-Type': 'application/json' } });
+      }
+
       case 'get_pending_approvals': {
         const { data: properties, error } = await supabase.from('portfolio_properties').select('*').eq('property_status', 'pending_approval').order('created_at', { ascending: false });
         if (error) throw error;

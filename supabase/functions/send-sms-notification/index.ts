@@ -115,6 +115,24 @@ async function sendTwilioSMS(to: string, message: string): Promise<{ success: bo
 }
 
 Deno.serve(async (req: Request) => {
+  // `send` REFUSES rather than pretending. The Twilio credentials this function reads have
+  // never been set on this project, so every send would fail silently and report success —
+  // and an SMS that was never sent, reported as sent, is worse than no SMS feature at all.
+  //
+  // It says what is missing and what it would take, rather than returning a fake message id.
+  try {
+    const b = await req.clone().json().catch(() => ({}));
+    if (b?.action === 'send') {
+      const configured = Deno.env.get('TWILIO_ACCOUNT_SID') && Deno.env.get('TWILIO_AUTH_TOKEN') && Deno.env.get('TWILIO_PHONE_NUMBER');
+      if (!configured) {
+        return new Response(JSON.stringify({
+          success: false, sent: false, unavailable: true,
+          error: 'SMS is not configured on this platform, so nothing was sent. This is not a temporary failure — it needs a Twilio account, an auth token and a verified sending number before any message can go out.',
+        }), { status: 501, headers: { ...corsHeaders, 'Content-Type': 'application/json' } });
+      }
+    }
+  } catch { /* fall through to the existing handler */ }
+
   if (req.method === 'OPTIONS') {
     return new Response('ok', { headers: corsHeaders });
   }

@@ -64,6 +64,66 @@ serve(async (req: Request) => {
       return Array.isArray(rows) && rows.length ? rows[0].investor_id : null
     }
 
+    // ---- ADDED 9 Aug 2026 ----
+    // Column names read out of information_schema, not inferred. A wrong column in a
+    // PostgREST filter returns an EMPTY SET rather than an error, so a guess here would
+    // show "no errors" on a widget whose whole job is surfacing errors.
+
+    if (action === 'get_auth_errors') {
+      const { error_type, email_filter, resolved, limit: lim } = body;
+      let q = `${supabaseUrl}/rest/v1/auth_errors?select=*&order=created_at.desc&limit=${Math.min(Number(lim) || 50, 200)}`;
+      if (error_type && error_type !== 'all') q += `&error_type=eq.${encodeURIComponent(String(error_type))}`;
+      if (email_filter) q += `&email=ilike.${encodeURIComponent(`%${email_filter}%`)}`;
+      if (resolved !== undefined && resolved !== null) q += `&resolved=is.${resolved ? 'true' : 'false'}`;
+      const res = await fetch(q, { headers });
+      if (!res.ok) {
+        console.error('investor-login get_auth_errors failed', res.status);
+        return new Response(JSON.stringify({ success: false, error: `Could not read the error log (${res.status}).` }),
+          { status: 502, headers: { ...corsHeaders, 'Content-Type': 'application/json' } });
+      }
+      const rows = await res.json();
+      return new Response(JSON.stringify({ success: true, errors: rows || [], count: rows?.length ?? 0 }),
+        { headers: { ...corsHeaders, 'Content-Type': 'application/json' } });
+    }
+
+    if (action === 'resolve_auth_error') {
+      const { error_id, staff_id } = body;
+      if (!error_id) return new Response(JSON.stringify({ success: false, error: 'error_id is required.' }),
+        { status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' } });
+      const res = await fetch(`${supabaseUrl}/rest/v1/auth_errors?id=eq.${error_id}&resolved=is.false`, {
+        method: 'PATCH', headers: { ...headers, Prefer: 'return=representation' },
+        body: JSON.stringify({ resolved: true, resolved_at: new Date().toISOString(), resolved_by: staff_id ?? null }),
+      });
+      if (!res.ok) {
+        return new Response(JSON.stringify({ success: false, error: 'Could not mark it resolved. Nothing changed.' }),
+          { status: 502, headers: { ...corsHeaders, 'Content-Type': 'application/json' } });
+      }
+      const rows = await res.json();
+      // Filtering on unresolved means a second click updates nothing. Said, not reported as
+      // a fresh success.
+      if (!rows?.length) {
+        return new Response(JSON.stringify({ success: false, error: 'That one was already resolved. Nothing changed.' }),
+          { status: 409, headers: { ...corsHeaders, 'Content-Type': 'application/json' } });
+      }
+      return new Response(JSON.stringify({ success: true, error_record: rows[0] }),
+        { headers: { ...corsHeaders, 'Content-Type': 'application/json' } });
+    }
+
+    if (action === 'get_saved_quotes') {
+      const investorId = await sessionInvestor(String(body.session_token || '')) || body.investor_id;
+      if (!investorId) {
+        return new Response(JSON.stringify({ success: false, error: 'Your session has expired. Sign in again and retry.' }),
+          { status: 401, headers: { ...corsHeaders, 'Content-Type': 'application/json' } });
+      }
+      const res = await fetch(`${supabaseUrl}/rest/v1/investor_saved_quotes?investor_id=eq.${investorId}&select=*&order=created_at.desc`, { headers });
+      if (!res.ok) {
+        return new Response(JSON.stringify({ success: false, error: 'Could not load your saved quotes.' }),
+          { status: 502, headers: { ...corsHeaders, 'Content-Type': 'application/json' } });
+      }
+      return new Response(JSON.stringify({ success: true, quotes: await res.json() }),
+        { headers: { ...corsHeaders, 'Content-Type': 'application/json' } });
+    }
+
     if (action === 'change_password') {
       const investorId = await sessionInvestor(String(body.session_token || ''))
       if (!investorId) {
