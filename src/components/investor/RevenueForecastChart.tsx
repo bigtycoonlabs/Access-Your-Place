@@ -74,11 +74,14 @@ export function RevenueForecastChart({ investorId }: RevenueForecastChartProps) 
     setLoading(true);
     try {
       // Load properties
-      const { data: props } = await supabase
-        .from('investor_portfolio')
-        .select('id, city, state, address')
-        .eq('investor_id', investorId)
-        .eq('property_status', 'active');
+      const { data: props } = await supabase.functions.invoke('get-portfolio', {
+        body: { investor_id: investorId },
+      }).then(r => ({
+        // The original query filtered on property_status = 'active'. The edge function
+        // returns the whole portfolio, so the filter is reapplied here rather than lost —
+        // dropping it would have silently widened what this chart forecasts.
+        data: (r.data?.units ?? []).filter((u: { property_status?: string }) => u.property_status === 'active'),
+      }));
       
       setProperties(props || []);
 

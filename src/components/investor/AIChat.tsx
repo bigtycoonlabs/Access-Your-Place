@@ -90,7 +90,9 @@ async function fetchPortfolioData(investorId: string) {
     if (data?.properties) return data.properties;
   } catch {}
   try {
-    const { data } = await supabase.from('investor_portfolio').select('*').eq('investor_id', investorId);
+    const { data } = await supabase.functions.invoke('get-portfolio', {
+        body: { investor_id: investorId },
+      }).then(r => ({ data: r.data?.units ?? [] }));
     return data || [];
   } catch { return []; }
 }

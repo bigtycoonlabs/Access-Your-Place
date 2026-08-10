@@ -26,6 +26,25 @@ Deno.serve(async (req) => {
 
   try {
     const body = await req.json().catch(() => ({}));
+
+    // STAFF READ. Staff legitimately view portfolios they do not own, and one screen reads
+    // ACROSS investors. That cannot go through the client path — which is scoped to one id
+    // on purpose — so it is a separate function that verifies an active staff member.
+    if (body.staff_id) {
+      const sres = await fetch(`${url}/rest/v1/rpc/ayp_staff_portfolio`, {
+        method: 'POST',
+        headers: { apikey: key, Authorization: `Bearer ${key}`, 'Content-Type': 'application/json' },
+        body: JSON.stringify({ p_staff_id: String(body.staff_id), p_investor_id: body.investor_id || null }),
+      });
+      if (!sres.ok) {
+        console.error('get-portfolio staff read failed', sres.status);
+        return json({ success: false, error: 'Could not load the portfolio.' }, 502);
+      }
+      const out = await sres.json();
+      if (out?.ok === false) return json({ success: false, error: out.error }, 403);
+      return json({ success: true, units: out?.units ?? [] });
+    }
+
     const investorId = String(body.investor_id || '').trim();
 
     // A missing id is refused rather than defaulted. Defaulting to "all" is precisely how

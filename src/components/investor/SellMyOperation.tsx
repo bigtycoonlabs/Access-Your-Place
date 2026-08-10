@@ -223,11 +223,13 @@ export function SellMyOperation({ investorId, investorName }: Props) {
       } else {
         // DB fallback for portfolio
         try {
-          const { data: dbPortfolio } = await supabase
-            .from('investor_portfolio')
-            .select('id, address, city, state, zip_code, bedrooms, bathrooms, monthly_rent, monthly_earnings, initial_investment')
-            .eq('investor_id', investorId)
-            .in('property_status', ['active', 'pending']);
+          const { data: dbPortfolio } = await supabase.functions.invoke('get-portfolio', {
+        body: { investor_id: investorId },
+      }).then(r => ({
+        // Original filtered property_status IN ('active','pending'). Reapplied, not lost.
+        data: (r.data?.units ?? []).filter((u: { property_status?: string }) =>
+          u.property_status === 'active' || u.property_status === 'pending'),
+      }));
           setPortfolio(dbPortfolio || []);
         } catch { setPortfolio([]); }
       }

@@ -292,11 +292,12 @@ export function PortfolioDashboard({ investorId, investorName, onNavigateToPrope
     if (fetched.length === 0) {
       try {
         console.log('[PortfolioDashboard] Trying direct DB query...');
-        const { data: dbData, error: dbErr } = await supabase
-          .from('investor_portfolio')
-          .select('*')
-          .eq('investor_id', investorId)
-          .order('created_at', { ascending: false });
+        const { data: dbData, error: dbErr } = await supabase.functions.invoke('get-portfolio', {
+        body: { investor_id: investorId },
+        // Original ordered by created_at descending. ayp_investor_portfolio already
+        // aggregates in that order, so the ordering is preserved by the source rather than
+        // reapplied here — verified against the function definition, not assumed.
+      }).then(r => ({ data: r.data?.units ?? [] }));
 
         if (!dbErr && dbData && dbData.length > 0) {
           fetched = dbData;
