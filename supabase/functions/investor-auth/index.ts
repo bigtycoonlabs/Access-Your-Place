@@ -97,8 +97,20 @@ Deno.serve(async (req) => {
 
       // Allowlist. A client describing their own unit must not be able to change what it
       // COST them or who it belongs to.
-      const allowed = ['address', 'city', 'state', 'bedrooms', 'bathrooms', 'monthly_rent',
-                       'monthly_earnings', 'status', 'notes', 'photo_urls', 'title'];
+      // WIDENED after checking what the edit form actually sends. My first allowlist had 11
+      // fields against the form's 17, so THIRTEEN would have been silently dropped — an
+      // operator edits their property, half the changes vanish, and the screen says saved.
+      // That is this platform's signature defect, and I would have written it into the fix
+      // for a security hole.
+      //
+      // Still an allowlist, and still excludes what a client must not set: investor_id
+      // (whose property it is) and any acquisition cost or fee field.
+      const allowed = ['address', 'city', 'state', 'zip_code', 'bedrooms', 'bathrooms',
+                       'square_footage', 'property_type', 'monthly_rent', 'monthly_earnings',
+                       'status', 'property_status', 'notes', 'photo_urls', 'title',
+                       'lease_type', 'operation_type', 'acquisition_date', 'acquisition_source',
+                       'acquisition_manager', 'acquired_through_ayp', 'documents_complete',
+                       'has_corporate_sublease', 'has_lease_documents', 'lease_agreements_received'];
       const patch: Record<string, unknown> = {};
       const src = property_data && typeof property_data === 'object' ? property_data : body;
       for (const k of allowed) if (k in src) patch[k] = (src as Record<string, unknown>)[k];

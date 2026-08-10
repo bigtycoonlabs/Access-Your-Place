@@ -341,10 +341,22 @@ export function InvestorPortfolio({ investorId, investorName, investorEmail }: P
           documents_complete: false, operation_type: formData.operation_type
         };
 
+        // Routed through the edge functions rather than writing the table directly. Anon
+        // INSERT and UPDATE on investor_portfolio have been revoked: they let anybody with
+        // the publishable key add a holding to any client's portfolio. These handlers check
+        // that the property actually belongs to the person editing it.
         if (editingProperty) {
-          await supabase.from('investor_portfolio').update(propertyData).eq('id', editingProperty.id).eq('investor_id', investorId);
+          const { data: upd } = await supabase.functions.invoke('investor-auth', {
+            body: { action: 'update_portfolio_property', investor_id: investorId,
+                    property_id: editingProperty.id, property_data: propertyData },
+          });
+          if (!upd?.success) throw new Error(upd?.error || 'Could not save the changes.');
         } else {
-          await supabase.from('investor_portfolio').insert({ ...propertyData, status: 'active' });
+          const { data: ins } = await supabase.functions.invoke('manage-investor-admin', {
+            body: { action: 'add_portfolio_property', investor_id: investorId,
+                    ...propertyData, status: 'active' },
+          });
+          if (!ins?.success) throw new Error(ins?.error || 'Could not add the property.');
         }
 
         toast({ title: editingProperty ? 'Property Updated' : 'Property Added' });
@@ -1208,11 +1220,14 @@ export function InvestorPortfolio({ investorId, investorName, investorEmail }: P
                     fetchPortfolio();
                     setPhotoManagerProperty(null);
                   } else {
-                    // Direct DB fallback
-                    await supabase.from('investor_portfolio')
-                      .update({ photo_urls: filePaths })
-                      .eq('id', photoManagerProperty.id)
-                      .eq('investor_id', investorId);
+                    // Was a direct table write, which anon can no longer do. Routed
+                    // through the ownership-checked handler instead.
+                    const { data: pu } = await supabase.functions.invoke('investor-auth', {
+                      body: { action: 'update_portfolio_property', investor_id: investorId,
+                              property_id: photoManagerProperty.id,
+                              property_data: { photo_urls: filePaths } },
+                    });
+                    if (!pu?.success) throw new Error(pu?.error || 'Could not save the photos.');
                     clearPhotoUrlCache();
                     toast({ title: 'Photos Saved' });
                     fetchPortfolio();
