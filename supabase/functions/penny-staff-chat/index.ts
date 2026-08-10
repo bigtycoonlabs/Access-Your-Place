@@ -2941,6 +2941,13 @@ function toolsForTurn(userText: string) {
   for (const g of Object.values(TOOL_GROUPS)) {
     if (g.words.test(userText)) for (const t of g.tools) wanted.add(t);
   }
+  // ANY QUESTION ABOUT WHAT EXISTS loads the read tools, whatever else it matched. The
+  // owner asked to remove Texas deals and was told there were none while fifteen were live
+  // and six were in Texas — she had the tool and answered without it. Cheap insurance:
+  // when somebody asks what is there, she always has the means to look.
+  if (/\b(list|show|what|which|any|all|none|remove|delete|are there|do we have)\b/i.test(userText)) {
+    for (const t of ['list_marketplace', 'client_book', 'list_leads', 'list_opportunities']) wanted.add(t);
+  }
   const picked = TOOLS.filter((t: any) => wanted.has(t?.function?.name));
   // If matching produced almost nothing, send everything rather than leave her unable to
   // act. A smaller payload is not worth a refusal on a request we simply failed to classify.
