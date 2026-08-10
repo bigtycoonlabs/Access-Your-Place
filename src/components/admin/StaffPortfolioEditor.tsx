@@ -71,9 +71,11 @@ export function StaffPortfolioEditor({ staffId, staffName }: Props) {
       // Fetch portfolio counts for all investors
       let portfolioCounts: Record<string, { total: number; pending: number; active: number }> = {};
       try {
-        const { data: portfolioData } = await supabase
-          .from('investor_portfolio')
-          .select('investor_id, property_status');
+        const { data: portfolioData } = await supabase.functions.invoke('get-portfolio', {
+        // Staff read, verified server-side. Reading the view directly required anon SELECT,
+        // which exposed every client's holdings to anybody holding the publishable key.
+        body: { staff_id: staffId },
+      }).then(r => ({ data: r.data?.units ?? [] }));
         
         if (portfolioData) {
           for (const p of portfolioData) {
@@ -180,11 +182,16 @@ export function StaffPortfolioEditor({ staffId, staffName }: Props) {
   const fetchRecentAdditions = async () => {
     setLoadingRecent(true);
     try {
-      const { data, error } = await supabase
-        .from('investor_portfolio')
-        .select('id, investor_id, address, city, state, property_status, created_at, community_name')
-        .order('created_at', { ascending: false })
-        .limit(10);
+      const { data, error } = await supabase.functions.invoke('get-portfolio', {
+        // Staff read, verified server-side. Reading the view directly required anon SELECT,
+        // which exposed every client's holdings to anybody holding the publishable key.
+        body: { staff_id: staffId },
+      }).then(r => ({
+        // Original was .order(created_at desc).limit(10). The ordering is preserved by
+        // ayp_staff_portfolio; the LIMIT was not, and without it "recent additions" would
+        // load every property in the system into a list meant to show ten.
+        data: (r.data?.units ?? []).slice(0, 10),
+      }));
 
       if (!error && data) {
         // Enrich with investor names

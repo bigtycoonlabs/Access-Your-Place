@@ -189,7 +189,13 @@ export function DealMarketplace({ investorId, investorName, investorEmail }: Pro
         const [listingsRes, receivedRes, portfolioRes] = await Promise.allSettled([
           supabase.from('deal_listings').select('*, property:investor_portfolio(*)').eq('seller_id', investorId).order('created_at', { ascending: false }),
           supabase.from('deal_listings').select('*, property:investor_portfolio(*)').eq('buyer_investor_id', investorId).eq('listing_type', 'private').order('created_at', { ascending: false }),
-          supabase.from('investor_portfolio').select('*').eq('investor_id', investorId).eq('status', 'active')
+          supabase.functions.invoke('get-portfolio', { body: { investor_id: investorId } })
+            // Reading the view directly needed anon SELECT, which exposed every client's
+            // holdings. The original filtered status = 'active'; reapplied here because the
+            // edge function returns the whole portfolio.
+            .then((r: { data?: { units?: Array<{ status?: string }> } }) => ({
+              data: (r.data?.units ?? []).filter((u) => u.status === 'active'),
+            })),
         ]);
         if (listingsRes.status === 'fulfilled') setMyListings(listingsRes.value.data || []);
         if (receivedRes.status === 'fulfilled') {

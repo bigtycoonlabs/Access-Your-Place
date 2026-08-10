@@ -143,11 +143,11 @@ export function StaffPortfolioManager({ investorId, investorName, staffId, staff
 
     if (!fetched) {
       try {
-        const { data, error } = await supabase
-          .from('investor_portfolio')
-          .select('*')
-          .eq('investor_id', investorId)
-          .order('created_at', { ascending: false });
+        const { data, error } = await supabase.functions.invoke('get-portfolio', {
+        // Staff read: verifies an active staff member server-side. The original ordered by
+        // created_at descending, which ayp_staff_portfolio already does.
+        body: { staff_id: staffId, investor_id: investorId },
+      }).then(r => ({ data: r.data?.units ?? [] }));
         if (!error && data) {
           setProperties(data as any);
           fetched = true;
@@ -284,16 +284,11 @@ export function StaffPortfolioManager({ investorId, investorName, staffId, staff
 
     if (!success) {
       try {
-        const { data: prop } = await supabase
-          .from('investor_portfolio')
-          .select('staff_notes')
-          .eq('id', propertyId)
-          .single();
-        const currentNotes = prop?.staff_notes || [];
-        const newNote = { author: staffName, text: noteText, date: new Date().toISOString() };
+        // Read-modify-write moved server-side. Reading the notes here and writing them
+        // back meant two staff adding a note at once would erase each other's.
         const { data: r } = await supabase.functions.invoke('manage-investor-admin', {
-          body: { action: 'staff_update_portfolio_property', property_id: propertyId,
-                  updates: { staff_notes: [...currentNotes, newNote] }, staff_id: staffId },
+          body: { action: 'staff_append_portfolio_note', property_id: propertyId,
+                  note: noteText, staff_id: staffId, staff_name: staffName },
         });
         if (r?.success) success = true;
       } catch {}

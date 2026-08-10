@@ -220,6 +220,47 @@ Deno.serve(async (req) => {
       return json({ success: true, investor: inv, linked_staff: linkedStaff, messages, documents, inquiries, portfolio });
     }
 
+    // APPENDING A NOTE IS A READ-MODIFY-WRITE, and doing it in the browser meant two staff
+    // adding a note at the same time would each read the same array and the second write
+    // would erase the first. Done server-side in one call so the read and the append are
+    // not separated by a network round trip.
+    if (action === 'staff_append_portfolio_note') {
+      const { property_id, note, staff_id, staff_name } = body;
+      if (!property_id || !staff_id) {
+        return new Response(JSON.stringify({ success: false, error: 'property_id and staff_id are required.' }),
+          { status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' } });
+      }
+      if (!String(note || '').trim()) {
+        return new Response(JSON.stringify({ success: false, error: 'A note needs something in it.' }),
+          { status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' } });
+      }
+      const who = await fetch(`${SUPABASE_URL}/rest/v1/staff_users?id=eq.${staff_id}&is_active=is.true&select=id,name`, { headers: getH });
+      const staff = (await who.json().catch(() => []))?.[0];
+      if (!staff) {
+        return new Response(JSON.stringify({ success: false, error: 'Notes have to be added by an active staff member.' }),
+          { status: 403, headers: { ...corsHeaders, 'Content-Type': 'application/json' } });
+      }
+      const cur = await fetch(`${SUPABASE_URL}/rest/v1/investor_portfolio?id=eq.${property_id}&select=staff_notes`, { headers: getH });
+      const row = (await cur.json().catch(() => []))?.[0];
+      if (!row) {
+        return new Response(JSON.stringify({ success: false, error: 'No portfolio property with that id.' }),
+          { status: 404, headers: { ...corsHeaders, 'Content-Type': 'application/json' } });
+      }
+      const notes = Array.isArray(row.staff_notes) ? row.staff_notes : [];
+      notes.push({ author: staff_name || staff.name, text: String(note).trim(), date: new Date().toISOString() });
+      const res = await fetch(`${SUPABASE_URL}/rest/v1/investor_portfolio?id=eq.${property_id}`, {
+        method: 'PATCH', headers: { ...mutH, Prefer: 'return=representation' },
+        body: JSON.stringify({ staff_notes: notes, updated_at: new Date().toISOString() }),
+      });
+      if (!res.ok) {
+        console.error('staff_append_portfolio_note failed', res.status);
+        return new Response(JSON.stringify({ success: false, error: 'Could not save the note. Nothing was recorded.' }),
+          { status: 502, headers: { ...corsHeaders, 'Content-Type': 'application/json' } });
+      }
+      return new Response(JSON.stringify({ success: true, notes }),
+        { headers: { ...corsHeaders, 'Content-Type': 'application/json' } });
+    }
+
     // ---- STAFF PORTFOLIO WRITES ----
     //
     // Anon INSERT/UPDATE/DELETE on investor_portfolio was revoked because it let anybody
