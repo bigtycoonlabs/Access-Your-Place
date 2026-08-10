@@ -25,7 +25,26 @@ const corsHeaders = {
 }
 
 // The authoritative AYP landlord model, from the founder. Everything here is a real offering.
-const LANDLORD_SYSTEM_PROMPT = `You are Penny, the landlord guide at Access Your Place (AYP), by Set Up Your Place LLC. You help landlords who have empty or underused properties understand how AYP places a qualified, vetted operator into their property — and you coach them warmly through every question. You are the door and the portal: you connect landlords to the right corporate tenant. You are honest, calm, and reassuring.
+const LANDLORD_SYSTEM_PROMPT = `You are Penny, the landlord guide at Access Your Place (AYP)
+
+WHOSE SIDE YOU ARE ON: the landlord's. You are talking TO a property owner, not to an
+operator about one. Never coach them as though they were the operator, and never withhold
+something from them to protect somebody else's position.
+
+THE LANDLORD PAYS NOTHING. Not to list, not to match, not to paper the lease, not ever. If
+they ask what it costs, the answer is nothing, said plainly and without hedging.
+
+HOW IT IS PAPERED IS THEIR CHOICE, and there are three honest options: our master lease
+where we hold it, working directly with the corporate partner we bring, or open to both.
+There is no wrong answer and you must not steer. If they have not chosen, say the choice is
+theirs and it can be made later.
+
+HOW THEY ONBOARD IS ALSO THEIRS. We can handle all the paperwork, or fit around whatever
+process they already use. Offer both.
+
+REASSURE BY BEING SPECIFIC, NOT BY BEING WARM. "We verify every operator before you speak to
+them" is reassuring. "Don't worry" is not. When there is nothing for them to do, say that
+outright and get out of the way, by Set Up Your Place LLC. You help landlords who have empty or underused properties understand how AYP places a qualified, vetted operator into their property — and you coach them warmly through every question. You are the door and the portal: you connect landlords to the right corporate tenant. You are honest, calm, and reassuring.
 
 ## The one thing a landlord most wants to know
 - Landlords NEVER pay AYP a dime — not to list, not to market, not to match, not ever. Our network pays for itself. If a landlord asks what it costs them, the answer is simply: nothing.
@@ -77,6 +96,15 @@ async function rpc(url: string, key: string, fn: string, args: Record<string, un
 }
 
 // Optional education grounding: surface relevant PUBLISHED library articles for the question.
+async function landlordStatus(url: string, key: string, landlordId: string) {
+  // Penny answers "what is happening with my property" from the SAME source the portal
+  // shows, so she can never tell a landlord something the screen contradicts. If this read
+  // fails she gets nothing rather than a guess, and the doctrine tells her to say so.
+  if (!landlordId) return null
+  const out = await rpc(url, key, 'ayp_landlord_overview', { p_landlord_id: landlordId })
+  return out && out.ok !== false ? out : null
+}
+
 async function searchLibrary(url: string, key: string, query: string) {
   const term = query.replace(/[(),*]/g, ' ').trim().slice(0, 120)
   if (!term) return []
@@ -226,6 +254,28 @@ serve(async (req) => {
       let systemPrompt = LANDLORD_SYSTEM_PROMPT
       if (user_name) {
         systemPrompt += `\n\nYou are currently chatting with ${user_name}. Address them by their first name when appropriate.`
+      }
+
+      // THEIR OWN PROPERTIES, from the same source the portal renders. Without this Penny
+      // can only talk in general terms, and a landlord asking "what is happening with my
+      // building" gets a brochure answer instead of an answer.
+      const status = await landlordStatus(supabaseUrl, supabaseKey, String(user_id || ''))
+      if (status?.properties?.length) {
+        const lines = (status.properties as Array<Record<string, unknown>>).map((pr) => {
+          const needs = Array.isArray(pr.needs_from_you) ? pr.needs_from_you as string[] : []
+          return `- ${pr.address} (${pr.city ?? ''} ${pr.state ?? ''}): ${pr.stage}. ${pr.stage_detail}` +
+            (needs.length ? ` STILL NEEDED FROM THEM: ${needs.join('; ')}.` : ' Nothing is needed from them right now.') +
+            ` Lease preference on file: ${pr.lease_preference}.`
+        }).join('\n')
+        systemPrompt += `\n\nTHIS LANDLORD'S ACTUAL PROPERTIES, read live just now:\n${lines}\n\n` +
+          `Use these facts. Do not add to them. If they ask about something not listed here, ` +
+          `say you cannot see it rather than guessing. If nothing is needed from them, SAY SO PLAINLY ` +
+          `and do not invent a task to seem useful — a landlord who is told to wait and trusts that is ` +
+          `better served than one given busywork.`
+      } else if (user_id) {
+        systemPrompt += `\n\nYou could not read this landlord's properties just now. Do NOT say they have ` +
+          `none and do NOT guess at status — say you cannot pull it up this moment and offer to have ` +
+          `their contact follow up.`
       }
 
       // Optional education grounding (never invent articles).

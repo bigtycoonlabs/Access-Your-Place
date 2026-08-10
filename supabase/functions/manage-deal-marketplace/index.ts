@@ -28,7 +28,7 @@ serve(async (req) => {
           .from('deal_listings')
           .select(`
             *,
-            property:investor_portfolio(*)
+            property:investor_portfolio(id,address,city,state,zip_code,bedrooms,bathrooms,square_footage,property_type,monthly_rent,monthly_earnings,photo_urls,community_name,lease_type,operation_type,status,property_status,created_at)
           `)
           .eq('seller_id', investor_id)
           .order('created_at', { ascending: false })
@@ -40,7 +40,7 @@ serve(async (req) => {
             *,
             listing:deal_listings(
               *,
-              property:investor_portfolio(*)
+              property:investor_portfolio(id,address,city,state,zip_code,bedrooms,bathrooms,square_footage,property_type,monthly_rent,monthly_earnings,photo_urls,community_name,lease_type,operation_type,status,property_status,created_at)
             ),
             seller:investors!seller_id(full_name, email)
           `)
@@ -410,7 +410,7 @@ serve(async (req) => {
       case 'get_public_listings': {
         const { data, error } = await supabase
           .from('deal_listings')
-          .select('*, property:investor_portfolio(*)')
+          .select('*, property:investor_portfolio(id,address,city,state,zip_code,bedrooms,bathrooms,square_footage,property_type,monthly_rent,monthly_earnings,photo_urls,community_name,lease_type,operation_type,status,property_status,created_at)')
           .eq('listing_type', 'public')
           .eq('status', 'active')
           .order('created_at', { ascending: false })
@@ -423,7 +423,7 @@ serve(async (req) => {
         const { investor_id } = params
         const { data, error } = await supabase
           .from('deal_listings')
-          .select('*, property:investor_portfolio(*)')
+          .select('*, property:investor_portfolio(id,address,city,state,zip_code,bedrooms,bathrooms,square_footage,property_type,monthly_rent,monthly_earnings,photo_urls,community_name,lease_type,operation_type,status,property_status,created_at)')
           .eq('seller_id', investor_id)
           .order('created_at', { ascending: false })
         if (error) throw error

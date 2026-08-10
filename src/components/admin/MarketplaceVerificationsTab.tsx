@@ -206,7 +206,7 @@ export function MarketplaceVerificationsTab() {
       } else {
         try {
           const { data } = await supabase.from('deal_listings')
-            .select('*, property:investor_portfolio(*), seller:investors!seller_id(full_name, email)')
+            .select('*, seller:investors!seller_id(full_name, email)')
             .eq('status', 'pending_approval').eq('listing_type', 'public')
             .order('created_at', { ascending: false });
           setPublicListings(data || []);

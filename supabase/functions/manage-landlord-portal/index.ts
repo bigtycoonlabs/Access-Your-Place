@@ -54,6 +54,85 @@ Deno.serve(async (req: Request) => {
     const body = await req.json();
     const action = body.action;
 
+    // ---- LANDLORD-FACING. THIS PORTAL IS ABOUT THEM. ----
+    //
+    // A landlord pays us nothing. We find and verify a corporate lease partner for their
+    // property. Every response here says where things stand in plain words and what, if
+    // anything, is needed from them — because the alternative is a landlord refreshing a
+    // page wondering whether anybody is working on it.
+
+    if (action === "landlord_overview") {
+      const { landlord_id } = body;
+      if (!landlord_id) return json({ success: false, error: "landlord_id is required." }, 400);
+      const res = await fetch(`${supabaseUrl}/rest/v1/rpc/ayp_landlord_overview`, {
+        method: "POST", headers, body: JSON.stringify({ p_landlord_id: landlord_id }),
+      });
+      if (!res.ok) {
+        console.error("landlord_overview failed", res.status);
+        return json({ success: false, error: "We could not load your properties just now." }, 502);
+      }
+      const out = await res.json();
+      if (out?.ok === false) return json({ success: false, error: out.error }, 404);
+      return json({ success: true, ...out });
+    }
+
+    if (action === "set_lease_preference") {
+      const { property_id, landlord_id, lease_preference, onboarding_style } = body;
+      if (!property_id || !landlord_id) {
+        return json({ success: false, error: "property_id and landlord_id are required." }, 400);
+      }
+      const allowed = ["master_lease", "direct_with_partner", "open_to_both", "undecided"];
+      if (lease_preference && !allowed.includes(String(lease_preference))) {
+        return json({ success: false, error: `Choose one of: ${allowed.join(", ")}.` }, 400);
+      }
+      const styles = ["we_handle_paperwork", "landlord_handles", "their_own_process", "undecided"];
+      if (onboarding_style && !styles.includes(String(onboarding_style))) {
+        return json({ success: false, error: `Choose one of: ${styles.join(", ")}.` }, 400);
+      }
+      const patch: Record<string, unknown> = {};
+      if (lease_preference) {
+        patch.lease_preference = lease_preference;
+        patch.lease_preference_set_at = new Date().toISOString();
+      }
+      if (onboarding_style) patch.onboarding_style = onboarding_style;
+      if (!Object.keys(patch).length) {
+        return json({ success: false, error: "Nothing was chosen, so nothing was saved." }, 400);
+      }
+      // Scoped to THEIR property. A landlord must not be able to set a preference on
+      // somebody else's building by passing its id.
+      const res = await fetch(
+        `${supabaseUrl}/rest/v1/landlord_properties?id=eq.${property_id}&landlord_id=eq.${landlord_id}`,
+        { method: "PATCH", headers: { ...headers, Prefer: "return=representation" }, body: JSON.stringify(patch) });
+      if (!res.ok) return json({ success: false, error: "We could not save that. Nothing was changed." }, 502);
+      const rows = await res.json();
+      if (!rows?.length) return json({ success: false, error: "That property is not on your account." }, 403);
+      return json({ success: true, property: rows[0],
+        note: "Saved. You can change this at any time before anything is signed." });
+    }
+
+    if (action === "save_property_details") {
+      const { property_id, landlord_id } = body;
+      if (!property_id || !landlord_id) {
+        return json({ success: false, error: "property_id and landlord_id are required." }, 400);
+      }
+      // Only what a landlord owns about their own building.
+      const allowed = ["community_rules_note", "property_rules_note", "maintenance_contact_name",
+                       "maintenance_contact_phone", "maintenance_contact_email", "maintenance_notes",
+                       "photos", "videos", "community_website", "unit_count", "submission_notes"];
+      const patch: Record<string, unknown> = {};
+      for (const k of allowed) if (k in body) patch[k] = body[k];
+      if (!Object.keys(patch).length) {
+        return json({ success: false, error: `Nothing updatable was sent. You can set: ${allowed.join(", ")}.` }, 400);
+      }
+      const res = await fetch(
+        `${supabaseUrl}/rest/v1/landlord_properties?id=eq.${property_id}&landlord_id=eq.${landlord_id}`,
+        { method: "PATCH", headers: { ...headers, Prefer: "return=representation" }, body: JSON.stringify(patch) });
+      if (!res.ok) return json({ success: false, error: "We could not save that. Nothing was changed." }, 502);
+      const rows = await res.json();
+      if (!rows?.length) return json({ success: false, error: "That property is not on your account." }, 403);
+      return json({ success: true, property: rows[0] });
+    }
+
     if (action === "get_all_portal_landlords") {
       return json({ success: true, landlords: await read("landlord_contacts", "select=*&portal_enabled=eq.true&order=created_at.desc") });
     }

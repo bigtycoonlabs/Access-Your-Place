@@ -210,7 +210,7 @@ export function SellMyOperation({ investorId, investorName }: Props) {
         try {
           const { data: dbListings } = await supabase
             .from('marketplace_listings')
-            .select('*, property:investor_portfolio(*)')
+            .select('*')
             .eq('seller_id', investorId)
             .order('created_at', { ascending: false });
           setListings(dbListings || []);

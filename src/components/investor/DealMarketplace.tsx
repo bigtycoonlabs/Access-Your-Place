@@ -187,8 +187,8 @@ export function DealMarketplace({ investorId, investorName, investorEmail }: Pro
       console.error('Error fetching marketplace data:', err);
       try {
         const [listingsRes, receivedRes, portfolioRes] = await Promise.allSettled([
-          supabase.from('deal_listings').select('*, property:investor_portfolio(*)').eq('seller_id', investorId).order('created_at', { ascending: false }),
-          supabase.from('deal_listings').select('*, property:investor_portfolio(*)').eq('buyer_investor_id', investorId).eq('listing_type', 'private').order('created_at', { ascending: false }),
+          supabase.from('deal_listings').select('*').eq('seller_id', investorId).order('created_at', { ascending: false }),
+          supabase.from('deal_listings').select('*').eq('buyer_investor_id', investorId).eq('listing_type', 'private').order('created_at', { ascending: false }),
           supabase.functions.invoke('get-portfolio', { body: { investor_id: investorId } })
             // Reading the view directly needed anon SELECT, which exposed every client's
             // holdings. The original filtered status = 'active'; reapplied here because the
@@ -231,7 +231,7 @@ export function DealMarketplace({ investorId, investorName, investorEmail }: Pro
       console.error('Browse listings edge function failed, using DB fallback:', err);
       try {
         let query = supabase.from('deal_listings')
-          .select('*, property:investor_portfolio(*)', { count: 'exact' })
+          .select('*', { count: 'exact' })
           .eq('listing_type', 'public')
           .in('status', ['active', 'verified']);
         
@@ -269,7 +269,7 @@ export function DealMarketplace({ investorId, investorName, investorEmail }: Pro
       // Search via DB - query deal_listings with status='active' and join investor_portfolio
       const searchTerm = browseSearch.trim().toLowerCase();
       let query = supabase.from('deal_listings')
-        .select('*, property:investor_portfolio(*)', { count: 'exact' })
+        .select('*', { count: 'exact' })
         .eq('listing_type', 'public')
         .eq('status', 'active');
       

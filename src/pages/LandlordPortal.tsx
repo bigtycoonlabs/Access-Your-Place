@@ -10,6 +10,7 @@ import LandlordPortalApplications from '@/components/landlord/LandlordPortalAppl
 import LandlordPortalProperties from '@/components/landlord/LandlordPortalProperties';
 import LandlordPortalDocuments from '@/components/landlord/LandlordPortalDocuments';
 import LandlordPortalMessages from '@/components/landlord/LandlordPortalMessages';
+import { LandlordPennyChat } from '@/components/landlord/LandlordPennyChat';
 
 interface LandlordData {
   id: string;
@@ -408,6 +409,13 @@ export default function LandlordPortal() {
           </main>
         </div>
       </div>
+
+      {/* Penny for LANDLORDS. Not the operator Penny -- that one is written for the other
+          side of the table and is told never to reveal the operator's margin, which would
+          put her on the wrong side of her own rule in front of a property owner. */}
+      {landlord?.id && (
+        <LandlordPennyChat landlordId={landlord.id} landlordName={landlord.name} />
+      )}
     </div>
   );
 }
