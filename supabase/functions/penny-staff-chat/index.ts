@@ -369,6 +369,111 @@ async function setupUpdateItem(url: string, key: string, a: any, staffId: string
   return data;
 }
 
+async function inbox(url: string, key: string, staffId: string) {
+  await rpc(url, key, 'ayp_sync_message_alerts').catch(() => null);
+  const { ok, status, data } = await rpc(url, key, 'penny_inbox', { p_staff_id: staffId });
+  if (!ok) return { error: `read_failed_${status}` };
+  return data;
+}
+
+// Send, THEN email, THEN record whether the email actually went. A message marked notified
+// when the send failed is the defect this platform keeps producing, so the result is read.
+async function sendMessage(url: string, key: string, a: any, staffId: string) {
+  const { ok, status, data } = await rpc(url, key, 'penny_send_message', {
+    p_from_staff_id: staffId || null, p_audience: String(a.audience),
+    p_to_id: String(a.to_id), p_subject: a.subject ?? null,
+    p_body: String(a.body), p_parent: a.parent ?? null,
+  });
+  if (!ok) return { error: 'send_failed', http: status };
+  const r = data as Record<string, any>;
+  if (r?.ok !== true) return r;
+
+  const resendKey = Deno.env.get('RESEND_API_KEY');
+  if (!resendKey || !r.to_email) {
+    await rpc(url, key, 'penny_mark_message_notified',
+      { p_audience: a.audience, p_message_id: r.message_id, p_ok: false });
+    return { ...r, emailed: false,
+      warning: 'The message is saved but NO email went out, so they do not know it is there.' };
+  }
+
+  const portal = a.audience === 'landlord'
+    ? 'https://accessyourplace.com/landlord/login'
+    : 'https://accessyourplace.com/investor/login';
+  const body = `${r.from} sent you a message on Access Your Place.\n\n` +
+    `${a.subject ? a.subject + '\n\n' : ''}${a.body}\n\n` +
+    `Reply in your portal so it stays with the rest of your file: ${portal}`;
+
+  let emailed = false; let deliveryId: string | null = null;
+  try {
+    const res = await fetch('https://api.resend.com/emails', {
+      method: 'POST',
+      headers: { Authorization: `Bearer ${resendKey}`, 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        from: 'Penny <penny@accessyourplace.com>',
+        reply_to: 'success@accessyourplace.com',
+        to: [r.to_email],
+        subject: a.subject ? `${a.subject} - Access Your Place` : `A message from ${r.from}`,
+        text: body,
+      }),
+    });
+    const out = await res.json().catch(() => null);
+    emailed = res.ok && !!out?.id;
+    deliveryId = out?.id ?? null;
+    if (!emailed) console.error('penny-staff-chat message_email_failed', res.status);
+  } catch (e) {
+    console.error('penny-staff-chat message_email_threw', e instanceof Error ? e.message : 'unknown');
+  }
+
+  await rpc(url, key, 'penny_mark_message_notified',
+    { p_audience: a.audience, p_message_id: r.message_id, p_ok: emailed, p_delivery_id: deliveryId });
+
+  return { ...r, emailed,
+    note: emailed
+      ? `Sent to ${r.to_name} and the email notification went out.`
+      : `SAVED BUT NOT DELIVERED - the email notification failed, so ${r.to_name} does not know it is there. Tell somebody.` };
+}
+
+async function bookAppointment(url: string, key: string, a: any, staffId: string) {
+  const { ok, status, data } = await rpc(url, key, 'penny_book_appointment', {
+    p_staff_id: staffId || null, p_audience: String(a.audience), p_to_id: String(a.to_id),
+    p_when: String(a.when), p_purpose: String(a.purpose), p_minutes: a.minutes ?? 30,
+  });
+  if (!ok) return { error: 'book_failed', http: status };
+  const r = data as Record<string, any>;
+  if (r?.ok !== true) return r;
+
+  const resendKey = Deno.env.get('RESEND_API_KEY');
+  let emailed = false;
+  if (resendKey && r.to_email) {
+    try {
+      const when = new Date(r.when).toLocaleString('en-US', { dateStyle: 'full', timeStyle: 'short' });
+      const res = await fetch('https://api.resend.com/emails', {
+        method: 'POST',
+        headers: { Authorization: `Bearer ${resendKey}`, 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          from: 'Penny <penny@accessyourplace.com>',
+          reply_to: 'success@accessyourplace.com',
+          to: [r.to_email],
+          subject: `Your call with ${r.staff_name} - ${r.purpose}`,
+          text: `Hi ${r.with},\n\n${r.staff_name} has booked a call with you.\n\n` +
+            `When: ${when} (${r.minutes} minutes)\nWhat it is about: ${r.purpose}\n\n` +
+            `Join here: ${r.meeting_link}\n\n` +
+            `If that time does not work, reply to this email and we will move it.\n\nPenny\nAccess Your Place`,
+        }),
+      });
+      const out = await res.json().catch(() => null);
+      emailed = res.ok && !!out?.id;
+      if (!emailed) console.error('penny-staff-chat appointment_email_failed', res.status);
+    } catch (e) {
+      console.error('penny-staff-chat appointment_email_threw', e instanceof Error ? e.message : 'unknown');
+    }
+  }
+  return { ...r, emailed,
+    note: emailed
+      ? `Booked with ${r.with} and the invitation went out with the Zoom link.`
+      : `BOOKED BUT NOT SENT - the invitation email failed, so ${r.with} does not know about it.` };
+}
+
 async function teamReadiness(url: string, key: string) {
   const { ok, status, data } = await rpc(url, key, 'penny_team_readiness');
   if (!ok) return { error: `read_failed_${status}` };
@@ -1354,6 +1459,31 @@ async function execTool(name: string, args: any, ctx: Ctx): Promise<unknown> {
     }
     if (name === 'client_book') return await clientBook(url, key);
     if (name === 'team_readiness') return await teamReadiness(url, key);
+    if (name === 'inbox') return await inbox(url, key, staffId);
+    if (name === 'mark_message_read') {
+      if (!args?.message_id || !args?.audience) return { error: 'message_id and audience required' };
+      const { ok, data } = await rpc(url, key, 'penny_mark_message_read',
+        { p_audience: String(args.audience), p_message_id: String(args.message_id) });
+      return ok ? data : { error: 'mark_failed' };
+    }
+    if (name === 'send_message') {
+      if (!args?.audience || !args?.to_id || !args?.body) return { error: 'audience, to_id and body required' };
+      if (args.confirmed !== true) {
+        return { needs_confirmation: true, action: 'send this message',
+          instruction: 'Read the message back and say who it is going to. It sends an email as well as landing in their portal.' };
+      }
+      return await sendMessage(url, key, args, staffId);
+    }
+    if (name === 'book_appointment') {
+      if (!args?.audience || !args?.to_id || !args?.when || !args?.purpose) {
+        return { error: 'audience, to_id, when and purpose required' };
+      }
+      if (args.confirmed !== true) {
+        return { needs_confirmation: true, action: 'book this call and email the invitation',
+          instruction: 'Read back who it is with, the day and time, and what it is about.' };
+      }
+      return await bookAppointment(url, key, args, staffId);
+    }
     if (name === 'setup_board') {
       if (!args?.project_id) return { error: 'project_id required' };
       return await setupBoard(url, key, String(args.project_id));
@@ -1977,6 +2107,64 @@ const TOOLS = [
           note: { type: 'string' },
         },
         required: ['item_id'],
+      },
+    },
+  },
+  {
+    type: 'function',
+    function: {
+      name: 'inbox',
+      description: "Unread messages waiting: from clients, from landlords, and from colleagues. Client and landlord messages are SHARED - anyone on the team can answer. Team messages are yours.",
+      parameters: { type: 'object', properties: {}, required: [] },
+    },
+  },
+  {
+    type: 'function',
+    function: {
+      name: 'send_message',
+      description: "Send a message to a client, a landlord or a colleague. It lands in their portal AND emails them a copy with a link to sign in and reply. Confirm before sending.",
+      parameters: {
+        type: 'object',
+        properties: {
+          audience: { type: 'string', enum: ['client', 'landlord', 'team'] },
+          to_id: { type: 'string' },
+          subject: { type: 'string' },
+          body: { type: 'string' },
+          parent: { type: 'string', description: 'The message being replied to, if this is a reply.' },
+          confirmed: { type: 'boolean' },
+        },
+        required: ['audience', 'to_id', 'body'],
+      },
+    },
+  },
+  {
+    type: 'function',
+    function: {
+      name: 'mark_message_read',
+      description: "Mark a message read once it has actually been dealt with.",
+      parameters: {
+        type: 'object',
+        properties: { audience: { type: 'string', enum: ['client','landlord','team'] }, message_id: { type: 'string' } },
+        required: ['audience', 'message_id'],
+      },
+    },
+  },
+  {
+    type: 'function',
+    function: {
+      name: 'book_appointment',
+      description: "Book a Zoom call with a client or landlord and email them the invitation with the join link. Uses the staff member's own saved Zoom link - refuses if they have not saved one, rather than sending an appointment nobody can join.",
+      parameters: {
+        type: 'object',
+        properties: {
+          audience: { type: 'string', enum: ['client', 'landlord'] },
+          to_id: { type: 'string' },
+          when: { type: 'string', description: 'ISO datetime.' },
+          minutes: { type: 'number' },
+          purpose: { type: 'string' },
+          confirmed: { type: 'boolean' },
+        },
+        required: ['audience', 'to_id', 'when', 'purpose'],
       },
     },
   },
@@ -3049,6 +3237,10 @@ const CORE_TOOLS = new Set([
 ]);
 
 const TOOL_GROUPS: Record<string, { words: RegExp; tools: string[] }> = {
+  messages: {
+    words: /message|inbox|reply|respond|wrote|unread|call|zoom|appointment|book|meeting|schedul/i,
+    tools: ['inbox', 'send_message', 'mark_message_read', 'book_appointment'],
+  },
   setup: {
     words: /setup|furnitur|furnish|deliver|room|item|sourc|vendor|assembl|launch|pro portal|inventory/i,
     tools: ['setup_board', 'setup_add_items', 'setup_update_item'],
