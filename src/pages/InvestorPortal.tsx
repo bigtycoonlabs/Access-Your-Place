@@ -756,13 +756,29 @@ export default function InvestorPortal() {
 
     if (investor.email_verified) return null;
 
+    // Never in front of somebody who is mid-acquisition. A caution banner directly above
+    // a payment form reads as a warning about the payment.
+    try {
+      const q = new URLSearchParams(window.location.search);
+      if (q.get('acquire') || q.get('tab') === 'payments') return null;
+    } catch { /* ignore */ }
+
     return (
       <div className="bg-amber-50 border border-amber-200 rounded-lg p-4 mb-6 flex items-center justify-between">
         <div className="flex items-center gap-3">
           <Mail className="w-5 h-5 text-amber-600" />
           <div>
-            <p className="font-medium text-amber-800">Please verify your email address</p>
-            <p className="text-sm text-amber-600">Check your inbox for a verification link to unlock all features.</p>
+            {/* This said "verify your email to unlock all features". Nothing on this
+                platform is gated on email verification: every tab, the marketplace and
+                the acquisition flow all work without it. It was a false claim, and it
+                sat directly above the payment panel, so a first-time buyer about to
+                send a deposit read that they were not fully unlocked. Now it says what
+                verification is actually for. */}
+            <p className="font-medium text-amber-800">Confirm your email address</p>
+            <p className="text-sm text-amber-600">
+              We sent you a link. Confirming it means we can reach you about your deals and
+              your acquisition. Everything on the platform works in the meantime.
+            </p>
           </div>
         </div>
         <Button 

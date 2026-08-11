@@ -100,7 +100,11 @@ async function fetchPortfolioData(investorId: string) {
 async function fetchMarketplaceDeals() {
   try {
     const { data } = await supabase.from('properties')
-      .select('*')
+      // select('*') now fails for anon: address, landlord contact and staff
+      // internals were revoked at the column level rather than nulled in the
+      // browser after they were already on the wire. Ask for what this screen
+      // actually shows.
+      .select('id, listing_title, title, city, state, zip_code, bedrooms, bathrooms, sqft, monthly_rent, acquisition_fee, is_furnished, is_verified, staff_verified, operation_type, property_type, photos, description, listing_description, projected_monthly_revenue_peak, projected_monthly_revenue_slow, projected_yearly_revenue, adr_peak_season, adr_slow_season, avg_occupancy_rate, monthly_room_rate, peak_season_description, deposits_concessions_notes, penny_score, penny_recommendation, is_featured, featured, is_published, status, deal_status, workflow_stage, created_at, updated_at, community_name, is_third_party_seller, assigned_investor_id, cap_rate')
       .eq('status', 'published')
       .order('created_at', { ascending: false })
       .limit(10);

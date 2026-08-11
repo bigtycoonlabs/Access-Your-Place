@@ -1,0 +1,35 @@
+-- 2026-08-11. Closing the anon grants on properties and property_photos.
+--
+-- WRITE. anon held INSERT and UPDATE on both. The anon key ships in the site bundle, so
+-- anyone could rewrite a live listing: workflow_stage, acquisition_fee, is_published,
+-- the verification flag. Proven earlier today: a same-value PATCH returned
+-- content-range 0-0/1 against a real row.
+--   Verified before revoking: not one public or investor screen writes to either table.
+--   All 8 files outside admin/ and dealflow/ only read.
+--
+-- READ. anon could read all 24 addresses, 3 landlord names and phones, 2 landlord
+-- emails and 3 source listing URLs. The browser "protected" these by nulling them AFTER
+-- the fetch, which is not privacy: the values were on the wire for anyone with devtools,
+-- or anyone calling REST directly with the bundled key.
+--   Fixed with column-level grants rather than by removing the read, because 8 screens
+--   depend on it. address, landlord_*, listing_url, source, internal_notes,
+--   visibility_settings, verification_*, and every staff/client internal field are now
+--   ungranted. Requesting them returns 401 rather than quietly returning data.
+--   select('*') consequently fails for anon, so DealCarousel, SavedDeals and AIChat were
+--   changed to name the columns they display.
+--
+-- Verified as anon against production afterwards:
+--   PATCH properties            -> 401
+--   POST properties             -> 401
+--   POST property_photos        -> 401
+--   select=address              -> 401  (also landlord_name/phone/email, listing_url, source)
+--   select=*                    -> 401
+--   select=id,city,acquisition_fee -> 200, real rows
+--
+-- STILL OPEN, and the reason this is not finished: staff screens in src/components/admin
+-- and src/components/dealflow write to properties straight from the browser, and the
+-- staff session is a JSON blob in localStorage with no server-side authentication, so
+-- those requests also arrive as anon. Revoking anon write takes staff table-editing down
+-- until those writes move behind edge functions that validate a real staff session.
+-- That is the correct trade: a stranger unpublishing the marketplace is worse than staff
+-- editing through admin functions for a while. The console still reads fine.
