@@ -1,0 +1,27 @@
+-- 2026-08-11. Owner decision: the marketplace only shows turnkey offerings.
+--
+-- A deal qualifies in one of three ways:
+--   1. already furnished
+--   2. an existing operation being sold
+--   3. unfurnished AND listed with a setup package: our team, the furniture, the
+--      household supplies, all brand new in the box, operator chooses the look
+--
+-- Added to properties: setup_package_included, setup_package_tier, setup_package_cost,
+-- setup_package_summary, setup_package_lead_time_days. Only is_furnished existed before,
+-- which cannot express any of this.
+--
+-- public.ayp_turnkey_status(uuid) and public.ayp_turnkey_label(uuid) put the rule in one
+-- place so every surface agrees, and both are exposed on marketplace_public.
+--
+-- ENFORCED AT THE TABLE, not just the form. Trigger ayp_require_turnkey_to_publish
+-- refuses to set is_published on a deal that is unfurnished, is not an operation, and
+-- has no setup package summary. A rule that lives only in a form is not a rule: the
+-- staff console writes to properties from several screens and directly over REST.
+-- Creating and editing an unfurnished deal is still allowed. Only publishing is blocked.
+--
+-- Verified against production: the block fires on a non-turnkey publish, the same update
+-- succeeds once the setup package is stated, and the test was rolled back. Both live
+-- Cleveland deals pass as operation_for_sale and were untouched.
+--
+-- 12 unpublished properties currently read not_turnkey and will need a package stated
+-- before they can go live.

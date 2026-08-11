@@ -1,5 +1,9 @@
 import { useState } from 'react';
 import { supabase } from '@/lib/supabase';
+// This page had no SEO block, so it inherited the generic site title. It is a
+// lead-capture page, which is exactly what a promotion drives traffic to, and for a
+// screen reader every page announcing the same sentence is no title at all.
+import SEO from '@/components/SEO';
 
 /**
  * /list-your-property — the supply side's front door.
@@ -91,7 +95,9 @@ export default function ListYourProperty() {
 
   if (status === 'done') {
     return (
-      <main className="min-h-screen bg-slate-50 px-4 py-12">
+      <>
+        <SEO title="List your property with Access Your Place" description="Landlords and owners: tell us about your property. We vet every property and speak to every landlord before it goes in front of an operator." />
+        <main className="min-h-screen bg-slate-50 px-4 py-12">
         <div className="mx-auto max-w-xl rounded-xl border border-slate-200 bg-white p-6">
           <h1 className="text-2xl font-semibold text-slate-900">Thank you — we have your property</h1>
           <div role="status" aria-live="polite">
@@ -111,13 +117,16 @@ export default function ListYourProperty() {
           </p>
         </div>
       </main>
+    </>
     );
   }
 
   const field = 'mt-1 w-full min-h-[44px] rounded-md border border-slate-300 px-3 py-2';
 
   return (
-    <main className="min-h-screen bg-slate-50 px-4 py-10">
+    <>
+      <SEO title="List your property with Access Your Place" description="Landlords and owners: tell us about your property. We vet every property and speak to every landlord before it goes in front of an operator." />
+      <main className="min-h-screen bg-slate-50 px-4 py-10">
       <div className="mx-auto max-w-xl">
         <h1 className="text-2xl font-semibold text-slate-900">List your property with us</h1>
         <p className="mt-2 text-slate-700">
@@ -244,5 +253,6 @@ export default function ListYourProperty() {
         </form>
       </div>
     </main>
+  </>
   );
 }

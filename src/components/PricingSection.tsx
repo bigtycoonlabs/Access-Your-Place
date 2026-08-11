@@ -56,7 +56,8 @@ export default function PricingSection() {
     <section id="pricing" className="py-20 bg-gray-50">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
         <div className="text-center mb-16">
-          <h2 className="text-4xl font-bold text-[#1a2332] mb-4">Transparent Pricing</h2>
+          {/* This was an h2, which left the pricing page with no h1 at all. */}
+          <h1 className="text-4xl font-bold text-[#1a2332] mb-4">Transparent Pricing</h1>
           <p className="text-xl text-gray-600 max-w-3xl mx-auto">
             Professional acquisition and setup services with no hidden fees
           </p>

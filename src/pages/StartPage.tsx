@@ -1,5 +1,9 @@
 import { useState } from 'react';
 import { supabase } from '@/lib/supabase';
+// This page had no SEO block, so it inherited the generic site title. It is a
+// lead-capture page, which is exactly what a promotion drives traffic to, and for a
+// screen reader every page announcing the same sentence is no title at all.
+import SEO from '@/components/SEO';
 
 /**
  * /start — the front door.
@@ -112,7 +116,9 @@ export default function StartPage() {
 
   if (status === 'done') {
     return (
-      <main className="min-h-screen bg-slate-50 px-4 py-12">
+      <>
+        <SEO title="Get started with Access Your Place" description="Tell us what you need and we will point you to the right person on the team. No account required." />
+        <main className="min-h-screen bg-slate-50 px-4 py-12">
         <div className="mx-auto max-w-xl rounded-xl border border-slate-200 bg-white p-6">
           <h1 className="text-2xl font-semibold text-slate-900">Thank you — we have it</h1>
           <p role="status" aria-live="polite" className="mt-3 text-lg text-slate-800">{note}</p>
@@ -124,11 +130,14 @@ export default function StartPage() {
           </p>
         </div>
       </main>
+    </>
     );
   }
 
   return (
-    <main className="min-h-screen bg-slate-50 px-4 py-10">
+    <>
+      <SEO title="Get started with Access Your Place" description="Tell us what you need and we will point you to the right person on the team. No account required." />
+      <main className="min-h-screen bg-slate-50 px-4 py-10">
       <div className="mx-auto max-w-xl">
         <h1 className="text-2xl font-semibold text-slate-900">Let's get you to the right person</h1>
         <p className="mt-2 text-slate-700">
@@ -255,5 +264,6 @@ export default function StartPage() {
         </form>
       </div>
     </main>
+  </>
   );
 }

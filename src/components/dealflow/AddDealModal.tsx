@@ -115,6 +115,7 @@ export function AddDealModal({ open, onOpenChange, onAdd, staffId, staffName }: 
     monthly_rent: '', property_type: 'single_family', listing_title: '', description: '',
     landlord_name: '', landlord_phone: '', landlord_email: '', listing_url: '', acquisition_fee: '2500',
     is_furnished: false, is_featured: false, operation_type: 'str', selected_categories: [] as string[],
+    setup_package_included: false, setup_package_tier: '', setup_package_cost: '', setup_package_summary: '', setup_package_lead_time_days: '',
     source: 'acquisition_team',
     is_verified: false,
     staff_verified: false,
@@ -174,6 +175,11 @@ export function AddDealModal({ open, onOpenChange, onAdd, staffId, staffName }: 
           listing_title: form.listing_title,
           acquisition_fee: parseFloat(form.acquisition_fee) || 2500,
           is_furnished: form.is_furnished,
+        setup_package_included: !!form.setup_package_included,
+        setup_package_tier: form.setup_package_tier || null,
+        setup_package_cost: form.setup_package_cost ? safeParseFloat(form.setup_package_cost) : null,
+        setup_package_summary: form.setup_package_summary || null,
+        setup_package_lead_time_days: form.setup_package_lead_time_days ? parseInt(String(form.setup_package_lead_time_days)) : null,
           staff_name: staffName || 'Acquisition Team',
           description: form.description
         }
@@ -479,6 +485,7 @@ export function AddDealModal({ open, onOpenChange, onAdd, staffId, staffName }: 
         monthly_rent: '', property_type: 'single_family', listing_title: '', description: '',
         landlord_name: '', landlord_phone: '', landlord_email: '', listing_url: '', acquisition_fee: '2500',
         is_furnished: false, is_featured: false, operation_type: 'str', selected_categories: [], 
+    setup_package_included: false, setup_package_tier: '', setup_package_cost: '', setup_package_summary: '', setup_package_lead_time_days: '',
         source: 'acquisition_team', is_verified: false, staff_verified: false,
         // Reset financial projection fields
         adr_peak_season: '', adr_slow_season: '', monthly_room_rate: '',
@@ -734,6 +741,84 @@ export function AddDealModal({ open, onOpenChange, onAdd, staffId, staffName }: 
                 <Label htmlFor="is_furnished" className="cursor-pointer">Fully Furnished</Label>
               </div>
             </div>
+
+            {/* The marketplace only lists turnkey offerings. A deal qualifies by being
+                furnished, by being an operation for sale, or by being unfurnished WITH a
+                setup package. So an unfurnished deal that is not an operation has to say
+                what the operator is buying. The database refuses to publish it otherwise,
+                and this is where staff are asked, rather than finding out at publish. */}
+            {!form.is_furnished && !form.is_third_party_seller && (
+              <fieldset className="p-4 bg-blue-50 border-2 border-blue-200 rounded-lg space-y-3">
+                <legend className="px-1 text-sm font-semibold text-blue-900">
+                  This deal is unfurnished, so it needs a setup package
+                </legend>
+                <p className="text-sm text-blue-900">
+                  The marketplace only shows turnkey deals. An unfurnished property cannot be
+                  published until you state what our setup team delivers with it.
+                </p>
+
+                <div className="flex items-center gap-2">
+                  <Checkbox
+                    id="setup_package_included"
+                    checked={form.setup_package_included}
+                    onCheckedChange={c => setForm({ ...form, setup_package_included: !!c })}
+                  />
+                  <Label htmlFor="setup_package_included" className="cursor-pointer">
+                    Listed with a setup package
+                  </Label>
+                </div>
+
+                <div>
+                  <Label htmlFor="setup_package_summary">
+                    What the operator gets <span aria-hidden="true">*</span>
+                  </Label>
+                  <Textarea
+                    id="setup_package_summary"
+                    rows={3}
+                    value={form.setup_package_summary}
+                    onChange={e => setForm({ ...form, setup_package_summary: e.target.value })}
+                    placeholder="Our setup team furnishes the whole unit: all furniture, appliances and household supplies brand new in the box, installed on site, with the operator choosing the look."
+                  />
+                  <p className="mt-1 text-xs text-blue-900">
+                    A buyer reads this sentence. Say what is included, who installs it, and what the operator chooses.
+                  </p>
+                </div>
+
+                <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
+                  <div>
+                    <Label htmlFor="setup_package_tier">Package name</Label>
+                    <Input
+                      id="setup_package_tier"
+                      value={form.setup_package_tier}
+                      onChange={e => setForm({ ...form, setup_package_tier: e.target.value })}
+                      placeholder="Full launch"
+                    />
+                  </div>
+                  <div>
+                    <Label htmlFor="setup_package_cost">Setup package cost ($)</Label>
+                    <Input
+                      id="setup_package_cost"
+                      type="number"
+                      min={0}
+                      value={form.setup_package_cost}
+                      onChange={e => setForm({ ...form, setup_package_cost: e.target.value })}
+                      placeholder="12500"
+                    />
+                  </div>
+                  <div>
+                    <Label htmlFor="setup_package_lead_time_days">Days to guest ready</Label>
+                    <Input
+                      id="setup_package_lead_time_days"
+                      type="number"
+                      min={0}
+                      value={form.setup_package_lead_time_days}
+                      onChange={e => setForm({ ...form, setup_package_lead_time_days: e.target.value })}
+                      placeholder="21"
+                    />
+                  </div>
+                </div>
+              </fieldset>
+            )}
             
             {/* Featured on Homepage Toggle */}
             <div className="p-4 bg-amber-50 border border-amber-200 rounded-lg">
