@@ -225,21 +225,21 @@ export default function Deals() {
     const SUPABASE_URL = 'https://adcbrclppmnguzkzwiys.supabase.co';
     const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImFkY2JyY2xwcG1uZ3V6a3p3aXlzIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODE5MjgyOTAsImV4cCI6MjA5NzUwNDI5MH0.wBv4AZYvndsvnj8XrkT5VNGBuT3GE6j1w-LI5k1Jr-U';
 
-    // Blacklist hidden statuses. `status.is.null` keeps legacy rows with no
-    // status value visible. Also keep rows that are explicitly published OR
-    // have workflow_stage='published' OR have is_published=true — this way
-    // we catch every "visible" shape the data can take.
-    const filter = [
-      'or=(',
-      [
-        'is_published.eq.true',
-        'workflow_stage.eq.published',
-        'status.is.null',
-        'status.not.in.(draft,new_lead,archived,rejected,deleted,pending_review,internal_only)',
-      ].join(','),
-      ')',
-    ].join('');
-    const url = `${SUPABASE_URL}/rest/v1/properties?${filter}&order=is_featured.desc.nullsfirst,created_at.desc&limit=500`;
+    // ALLOWLIST, NOT BLACKLIST, AND THE SAFE VIEW RATHER THAN THE TABLE.
+    //
+    // This was a blacklist: keep anything with is_published, OR workflow_stage 'published',
+    // OR a null status, OR a status not in a hardcoded hidden list. 'unpublished' was not in
+    // that hidden list, so every deal the owner took off the marketplace passed straight
+    // through it and stayed on the page. He saw 24 deals after I reported the marketplace
+    // empty.
+    //
+    // A blacklist has to be updated every time a new status appears, and nobody ever
+    // remembers. marketplace_public is an allowlist by construction: it selects only
+    // is_published rows, and it CANNOT return an address, a landlord phone number or a source
+    // URL because those columns are not in it. This path queried the properties table
+    // directly with the publishable key, so it was also the one place still putting every
+    // address on the wire.
+    const url = `${SUPABASE_URL}/rest/v1/marketplace_public?order=is_featured.desc.nullsfirst,created_at.desc&limit=500`;
 
     const res = await fetch(url, {
       method: 'GET',
