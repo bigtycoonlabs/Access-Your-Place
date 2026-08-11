@@ -1,393 +1,240 @@
 # The Access Your Place Bible
 
-Reference for the platform. Written 6 August 2026.
-
-**Rule for this document: everything here was verified, not assumed.** Where something is
-believed but unproven it says so. Where something is broken it says that too. A reference
-that flatters the codebase is worse than none, because this platform's signature defect is
-reporting success while doing nothing.
+**Rewritten 11 August 2026.** Everything here was read out of the running system, not
+remembered. Where something is broken it says so. Where something is unfinished it says that
+too. A reference that flatters this codebase is worse than none, because the platform's
+signature defect is reporting success while doing nothing.
 
 ---
 
-## 1. What the company actually is
+## 1. What the company is
 
-Access Your Place is a **rental arbitrage acquisition practice**. It finds furnished and
-flexible rental opportunities, vets them personally, negotiates with the landlord, and
-hands an operator a deal that is ready to sign. It also buys and sells existing
-operations.
+Access Your Place is a rental arbitrage acquisition practice. It finds furnished and flexible
+rental opportunities, vets them personally, negotiates with the landlord, and hands an
+operator a deal ready to sign. It also buys and sells existing operations.
 
-It is **not** a property manager. Terms of service say the operator runs their own
-operation and is responsible for the properties they take on.
+It is not a property manager. The operator runs their own operation.
 
-The business runs today largely outside the software: deals come from Facebook posts,
-phone calls and socials, and clients buy after someone explains the model. That works.
-The platform's job is to make that loop faster, not replace it.
+### The team
 
-### The team, and what each role does
+Called the Success Team.
 
-Called the **Success Team**.
+**Admin** — compliance, legal, issue resolution, customer support, documents out on time.
+15% per deal.
 
-**Admin** — compliance, legal, issue resolution across clients, landlords, client to
-client and client to company. The customer support function. Also makes sure documents go
-out on time. **15% per deal.**
+**Setup Manager** — sources furniture and supplies, matches clients with vendors on the
+ground, manages the pros at each launch, takes inventory as product arrives, keeps the client
+file current. 15% on an already-furnished deal, flat $1,500 on a full project launch.
 
-**Setup Manager** — sources furniture and supplies, matches clients with on-the-ground
-vendors, manages the pros sent to each launch, takes inventory as product arrives, keeps
-the client file current. **15% on an already-furnished deal, flat $1,500 on a full project
-launch.**
+**Acquisition Manager** — finds deals, contacts landlords, runs the numbers, negotiates, runs
+discovery and closing calls. 15% for closing the client, 15% for finding the property, up to
+30%.
 
-**Acquisition Manager** — finds deals, contacts landlords and apartment communities, runs
-the numbers before a deal is posted, negotiates with landlords, and runs discovery and
-closing calls with clients. **15% for closing the client, 15% for finding the
-landlord/property — up to 30%.**
-
-Everyone promotes on Facebook and other channels for leads.
-
-The company keeps the remainder. The team is designed to cover the launch cycle of a
-client.
-
-### The constraint
-
-**Leads.** Acquisition managers leave because there are not enough to feed them, and the
-owner cannot train fast enough while also writing code. Everything should be judged
-against whether it brings landlord leads and client leads in, or frees the owner to train.
+**The constraint is leads.** Acquisition managers leave because there are not enough to feed
+them. Judge everything against whether it brings leads in or frees the owner to train.
 
 ### Client referrals
-
-$300 cash or credit when a client's referral closes a deal.
+$300 cash or credit when a referral closes.
 
 ### Third-party sales
-
-When someone sells an existing operation through the platform: **seller takes 80%, the
-platform takes 20%** of the acquisition listing cost. **Half the seller payout is held
-until the lease is signed** with the new operator, or through the master lease programme.
+Seller takes 80%, platform takes 20% of the acquisition listing cost. Half the seller payout
+is held until the lease is signed with the new operator.
 
 ---
 
-## 2. Verification tiers — the most important concept in the platform
+## 2. Verification tiers — the most important concept here
 
-Two tiers. They must never be presented as the same thing.
+Two tiers. Never present them as the same thing.
 
-### penny_scan
+**`penny_scan`** — calculated from an address. Nobody has spoken to the landlord. This is what
+Property Forge returns when a user sources their own deal. **It is a lead, not an Access Your
+Place deal.**
 
-Penny calculated from an address. **Nobody has spoken to the landlord** and no human has
-cross-checked the research. This is what a user gets from Property Forge when they find a
-property themselves.
+**`ayp_verified`** — a human has spoken to the landlord, validated the numbers, confirmed the
+landlord consents to marketing, and pre-negotiated terms. **For a third-party operation being
+sold, the test is different:** the operation, the supplies, the furniture and which vendors
+stay have all been evaluated.
 
-It is **not** an Access Your Place approved deal and must never be shown as one.
+Computed by `public.ayp_verification_tier(property_id)` from evidence columns. One definition,
+one place.
 
-### ayp_verified
+**Recording evidence:** `ayp_record_verification(property_id, staff_id, ...)`. It requires an
+active staff member — the claim needs a name against it. It refuses to round up: if a property
+still falls short it says so rather than claiming the tier.
 
-A human has:
-
-- spoken to the landlord personally
-- validated the numbers Penny is showing
-- confirmed the landlord consents to the property being marketed
-- pre-negotiated terms so the landlord is ready to sign
-
-For a third-party operation being sold, instead: the operation, supplies, furniture and
-which vendors stay have all been evaluated.
-
-**Everything in the deal marketplace is ayp_verified by definition.** That claim is the
-product. It is why clients buy when the website is not working.
-
-Computed by `public.ayp_verification_tier(property_id)` from evidence columns on
-`properties`. One definition in one place.
-
-**Current state:** all 21 properties compute as `penny_scan` because the evidence columns
-are not populated yet. 19 carry the older `is_verified` flag with zero `staff_verified`
-and zero `approved_by_staff_id`. **This is a record-keeping gap, not a fabrication** — the
-team did speak to these landlords, the system never gave them anywhere to write it down.
-Nothing was unpublished on the strength of it. It needs a backfill by the people who made
-the calls.
+**Current state: both live properties genuinely compute as `ayp_verified`.** That is new. For
+most of this platform's life, listings carried an `is_verified` badge with no evidence behind
+it — twelve at once, at one point. The public view now **derives** the badge from the evidence
+rather than reading the stored flag, so a badge cannot outlive what justified it.
 
 ---
 
-## 3. Deal scoring
+## 3. The three publish signals
 
-### The method
+**Read this before changing what is listed.** A property is "live" according to three columns
+that can and do disagree:
 
-**80% raw market research, 20% aggregator cross-reference.**
+- `is_published` — boolean
+- `status` — `published` / `active` / `approved` versus `unpublished` / `sold`
+- `workflow_stage` — `published` / `discovery` / `new_lead` / `approved`
 
-The 20% cannot stand alone. Aggregators only see OTA listings — they miss the hotel market
-and direct-booking operators. That is precisely why this company's numbers beat theirs,
-and why a score built on aggregator data alone would be the thing it is meant to replace.
+**The public deals page trusts `workflow_stage`.** When the marketplace was emptied on the
+owner's instruction, the first two were cleared, the result verified through two functions,
+and it was reported done. Eighteen listings stayed up because `workflow_stage` was untouched.
 
-Raw market means: hotel occupancy, hotel ADR, lodging tax collections and their trend,
-travel demand, peak and slow season, where traffic spikes in a city, and regulation and
-zoning.
-
-### The scorer refuses
-
-`public.ayp_deal_score(research_id)` returns `scored: false` and **names what is missing**
-rather than producing a number. Regulation is a **gate**: `prohibited` returns 0 and
-`pass` regardless of how good everything else looks.
-
-This is the whole design, and it exists because of what was found on 6 August 2026:
-**43 score rows existed and exactly ONE had the research behind it.** The other 42 were
-generated with no hotel occupancy, no ADR, no regulation check and no competition
-analysis — and rated deals **higher and with more confidence** than the genuine one.
-Houston scored 77 "buy" at 80% confidence with no research; one Tampa row claimed **90%
-confidence on nothing**. All 21 live properties carried one, shown to investors in five
-places.
-
-Those 42 are now suppressed. Nothing was deleted; the rows are flagged
-`research_complete = false` so the history stays auditable. One property keeps its score:
-Tampa, 76, "buy" — the only one that earned it.
-
-### Penny drafts, a human confirms
-
-Penny writes research into `penny_draft` **and nowhere else**. The scorer reads only the
-real columns, which are written only by `confirm_research_field`, which requires a staff
-id and is callable only by `service_role` through `staff-confirm-research`.
-
-**Penny cannot cause a score to exist. She can only propose one.**
-
-Confirmation is one field at a time. There is no confirm-all button, deliberately: one
-button is how somebody rubber-stamps six numbers they checked two of.
-
-### Three scan types
-
-Penny **asks** which scan before answering — short-term, shared living, mid-term, or all
-three. These are three different businesses in the same building and blending them
-produces a number that describes nothing. It matters twice over for output read aloud.
-
-**STR** — nightly. `ayp_deal_score`.
-
-**MTR** — furnished stays of a month or more. `ayp_mtr_projection`. Carries the
-lodging-tax threshold, which is **not the same everywhere**: Virginia 30 days,
-Massachusetts 31, Michigan 30, **New Jersey 90**. Where a stay clears the threshold the
-lodging tax drops away, so **compare MTR against STR on net, not gross.**
-
-**Shared living** — `ayp_shared_living_projection`. **Per room, in a house the operator
-controls. Monthly or weekly, never nightly.** Not per bed — per bed is a sober-living
-model and is not what this business does. Four tiers: budget, median, average, luxury.
-**The spread is the product** — it shows what a room earns depending on how much the
-operator puts into it. Weekly converts at **52/12, not times four**; four weeks a month
-undercounts by ~8%.
-
-Each refuses independently. A market with hotel data but no room comps returns an STR
-score and an explicit refusal for shared living.
+`public.ayp_publish_signal_conflicts()` reports disagreement in words. Run it after any change.
 
 ---
 
-## 4. Data sources
+## 4. Public data — what a stranger may see
 
-**41 verified sources across 18 states, covering all 36 markets.** Registry:
-`research_sources`. Penny may cite from it **and nowhere else** — broad search is easier
-to fool, and this tool is both free to the public and what the acquisition team relies on.
+**`public.marketplace_public`** is the only thing public pages read. Absent **by
+construction**, not nulled downstream:
 
-### The best source is also the cheapest
+`address`, `landlord_name`, `landlord_phone`, `landlord_email`, `original_url`,
+`processed_url`, `source`
 
-**Lodging and tourist development tax collections**, published as government open data.
-Revenue is rooms sold multiplied by room rate, so it measures the **entire** lodging
-market including direct bookings — the data AirDNA structurally cannot see. Over 120 of
-the 150 largest US cities levy one.
+The last three matter and get restored by accident: **a link to the source listing is the
+address, one click later.**
 
-Texas publishes all cities in one machine-readable portal. North Carolina publishes all
-counties in one monthly fact sheet. Georgia requires every jurisdiction to file annually
-as a condition of keeping the tax. Nevada's LVCVA is the single best source found —
-monthly occupancy, ADR, RevPAR, visitor volume, convention attendance, airport and
-highway traffic.
+Nulling a field in the browser is not privacy. The value is already on the wire for anyone who
+opens devtools. Addresses leaked on **three separate fetch paths** before this was closed, and
+each was fixed a round apart because "I fixed the leak" was true of one query and not the page.
 
-### Paid cross-reference
+**`get-properties`** strips the same six fields server-side for any non-staff caller, on both
+its list and by-id branches.
 
-**AirROI, about $0.01 per call**, self-serve, no contract — roughly $100/month for 100
-markets, against AirDNA enterprise reported at $50,000+/year. **Free sources are enough to
-ship. Add AirROI when volume justifies it.**
-
-### Caveats recorded, because they would otherwise mislead
-
-- Texas HOT data is **self-reported and not verified by the Comptroller**
-- LVCVA figures come from a **75% survey sample**, so month-on-month carries noise
-- Georgia figures from **2021 onward include Airbnb** (HB317) and are not comparable to earlier years
-- Nashville's rate rose 1% on **1 July 2023**
-- Kent County Michigan went 5% to 8% on **1 Jan 2025**
-- Santa Fe County extended to STRs in **2023**
-- North Carolina rates differ by county — Mecklenburg 8%, Wake 6%, New Hanover 3%
-- **Alabama: Vrbo does not collect lodging tax**, so Vrbo-heavy operators carry it themselves
-- Maryland has **no statewide publication** — county by county
-- Washington DC is **15.95%** through Sept 2027, high enough to flip STR against MTR on net
-
-**Mexico has no equivalent open lodging-tax regime** and needs a different approach.
+**Still open:** `anon` can SELECT `public.properties` directly. 62 browser call sites read it
+and staff screens act as `anon`, so revoking needs a walk-every-caller sweep first.
 
 ---
 
 ## 5. Penny
 
-### What she is
+One Penny across every surface. Aware everywhere, gated per surface. Awareness is prompt-level;
+permission is code-level. Telling her a tool exists cannot grant her the ability to run it.
 
-One Penny across every surface. **Aware everywhere, gated per surface.** Every surface is
-told her full capability set; each is told what it may execute there; and where the rest
-lives, so she routes a person instead of dead-ending them.
+**Surfaces:** `penny-staff-chat` (75 tools), `ai-investor-chat` (operator), `penny-public-chat`,
+`penny-landlord-chat`, `penny-market-scan`, `penny-research-market`.
 
-Awareness is prompt-level. Permission is code-level, enforced in `planToolInvocation`,
-which rejects any tool absent from `toolsForContext` before reading a parameter. **Telling
-her a tool exists cannot grant her the ability to run it.** There is a test for this:
-*"MERGE INVARIANT: awareness never grants execution."*
+### Tool schemas have hard limits
+Description ≤ 1024 chars, name ≤ 64, ≤ 128 tools. **One over-long description rejects the
+entire tools payload with a 400** — Penny then answers with no tools at all and says they are
+unavailable. This happened and took three rounds to find because the 400 body was never
+logged. `scripts/check-tool-schemas.mjs` guards it; run it after touching any schema.
 
-### Shared spine
+### Tools are gated by seat
+A setup manager does not approve listings, invite staff or publish articles. Sending those
+schemas spends the token budget describing work they cannot do — and a real 429 followed
+(30,000 tokens/minute; all 75 schemas are ~10,700 on their own). Owners are never restricted.
 
-`supabase/functions/_shared/penny/` — capability, doctrine, compose, executor, tools.
-**79 tests passing**, run with `deno test --no-check`.
+### Doctrine that exists because it was violated
 
-### Surfaces
+**Agreeing is not doing.** Asked to remove a test lead, she said "got it, we'll skip the
+email" and changed nothing.
 
-- `penny-staff-chat` — the staff desk. 21 inline tools. Identity, owner posture, payment doctrine and the destination guard are wired.
-- `penny-public-chat` — public. No tools by design, but she reads real live deals through `penny_live_deals()` and library articles.
-- `penny-market-scan` — asks which scan, then runs it. Refuses honestly.
-- `penny-research-market` — assembles the research pack from approved sources.
+**Never describe a record you did not write.** She reported an $8,000 deal listed with all
+figures. Nothing was written — the tool had no field for asking price, so she dropped it
+silently and confirmed anyway. Report what the tool says it saved, not what you were told.
 
-### Hard rules
+**Do not send somebody to a tab for something you can do.** She redirected a colleague to
+"List a Deal" while holding the tool that needed three fields.
 
-**Never recite a payment destination.** Not a Bitcoin address, Zelle tag, cashtag, wire
-account or routing number. Name the rail, point at the Payments tab copy button. One wrong
-character sends money somewhere unrecoverable and the owners are blind and cannot catch it
-by looking. Enforced by `containsPaymentDestination` on **all three** outgoing paths in
-staff chat, and it **replaces** the reply rather than appending to it.
+**Never raise payment destinations unprompted.** She volunteered a payment refusal to a
+marketplace question. Phone numbers are now stripped before any destination shape is tested —
+a phone number is not a payment destination.
 
-**Never say a payment is confirmed or received.** Penny intakes and routes; staff
-adjudicate.
-
-**Credits may buy** deals, property leads and platform services. **They may not buy**
-furniture, household supplies, property deposits, application fees or landlord rent.
-Explain the line rather than just refusing.
+**Never recite a payment destination.** Not a Bitcoin address, Zelle tag, cashtag, wire or
+routing number. Name the rail, point at the Payments tab. One wrong character sends money
+somewhere unrecoverable.
 
 ---
 
 ## 6. Platform facts that bite
 
-### PostgREST serves ONLY the public schema
+**PostgREST serves only the `public` schema.** Any request sending
+`Accept-Profile: prj_X-ZoVQv6LKXT` is rejected.
 
-`authenticator: pgrst.db_schemas = public`. Confirmed from `pg_db_role_setting`.
+**Adding a column is not enough** — the matching public view must expose it or nothing can
+read or write it.
 
-**Any request sending `Accept-Profile: prj_X-ZoVQv6LKXT` is rejected.** This silently broke
-Penny's identity lookup for her entire existence — she could never identify anyone, and
-everything else about the request was correct.
+**A new view is invisible to PostgREST until its schema cache reloads.** It exists, it is
+granted, it returns rows, and the REST API 404s it. `notify pgrst, 'reload schema';`
 
-**Adding a column to a table is not enough.** The matching `public` view must expose it or
-nothing can read or write it. This has now bitten three times: `is_owner` missing from
-`staff_users` (Penny blind), the triage columns missing from `leads` (lead capture failed),
-and it is the first thing to check when a write is rejected.
+**Creating a Postgres function only proves it parses.** Wrong column names, violated check
+constraints and bad foreign keys all survive creation and fail on the first call.
+`ayp_record_verification` wrote to `verification_note` (the column is `verification_notes`)
+and threw weeks after being declared ready.
 
-### No scheduler
+**Ask what a table defaults to when a tool does not set it.** The Cleveland units listed as
+single-family homes because `add_property` had no property-type field. Same shape as a missing
+asking price. Both silent.
 
-`pg_cron` is **not installed** and there are no scheduled jobs. The GitHub Actions
-workflow at `.github/workflows/deploy-edge-function.yml` is the scheduler — free, and
-proven working.
+**No scheduler.** `pg_cron` is not installed. The GitHub Actions workflow is the scheduler.
 
-### Deploying
+**Deploy:** `gh workflow run deploy-edge-function.yml -f slug=<name>`. The run often reports
+failure on a successful deploy — check the `Deploy` step, not the run.
 
-`gh workflow run deploy-edge-function.yml -f slug=<name>` or the Actions tab. The runner
-deploys from disk, so bytes go repo → runner → Supabase with no transcription. It then
-verifies by checking that distinctive string literals from the commit are present in what
-is deployed.
-
-**`supabase functions download` returns TRANSPILED output**, not the TypeScript. Types are
-stripped, trailing commas dropped. A byte diff can never pass — do not build one.
-
-The Supabase MCP's `deploy_edge_function` takes file contents as a parameter, so using it
-means retyping the whole file. Acceptable for a small new function; **not** for a large
-live one.
-
-### Verify by calling, not by creating
-
-Creating a Postgres function only checks that it **parses**. Three real bugs on 6 August
-were found only by calling the thing: an array-append type error, a jsonb-into-numeric
-assignment, and a permission revoke that silently did nothing because Postgres grants
-EXECUTE to `PUBLIC` by default.
-
-A successful migration is not evidence.
+**`supabase functions download` returns transpiled output**, not the TypeScript. A byte diff
+can never pass.
 
 ---
 
-## 7. What is live and working
+## 7. What is live
 
-**169 edge functions**, 36 pages.
+173 edge functions. 24 properties, 2 live and both genuinely verified. 35 investors holding
+$17,440 credit. 475 client book records. 6 active staff. 46 library articles.
 
-Verified working on 6 August 2026:
-
-- Staff login and password reset, end to end
-- Penny identifying staff and owners correctly
-- `capture-lead` and `/start` — the front door, four lead types
-- `submit-landlord-property` and `/list-your-property` — supply side
-- `penny-market-scan`, `penny-research-market`, `staff-confirm-research`
-- `/staff/research-review` — the AM confirmation screen
-- Public Penny returning 18 real live deals through `penny_live_deals()`
-- All email now sending from owned domains, Penny as sender, with a working reply-to
-
-### Property Forge
-
-**Property Forge is the lead-generation system** where an operator sources their own
-deals. Code identifiers still say `leadforge` — `leadforge_balance`,
-`leadforge_search_cache`, `leadforge_release`, the `leadforge` and `apollo-leadforge`
-functions, and `/staff/leadforge`. **Those are live database objects and deployed function
-slugs and were deliberately left alone**; only user-visible text was renamed.
-
-A deal a user sources themselves through Property Forge is `penny_scan`, never
-`ayp_verified`, because no human has spoken to the landlord.
+Working and walked: staff login and reset, Penny identifying staff and owners, lead capture,
+landlord property submission, market scan and research, the operator portal, the landlord
+portal, unified messaging across staff/client/landlord with email notification, setup boards
+with a pro portal, appointment booking with a per-appointment video room, client onboarding
+with credit and portfolio.
 
 ---
 
 ## 8. Known broken or unfinished
 
-- **35 front-end actions call handlers that do not exist** — `change_password`,
-  `update_profile`, `verify_otp`, `resend_verification`, `revoke_session`,
-  `get_login_history`, `delete_account`, `refresh_session` and more. Buttons that silently
-  do nothing.
-- **The Accept-Profile shim sits in ~117 functions doing nothing useful.** They work only
-  because public views happen to mirror their tables. Any function selecting a column its
-  view omits is silently broken. Not yet audited.
-- **Landlord passwords use SHA-256 with a fixed salt**, not bcrypt. `landlord_contacts`
-  has **zero rows**, so this can be fixed with no migration and nobody to lock out. That
-  window closes at the first landlord signup.
-- `LandlordPortal` has **no property submission form** — `/list-your-property` covers it
-  for now.
-- 97 inputs with a placeholder and no detectable label; 22 `img` tags with no alt; 16
-  click handlers on plain divs that keyboard and screen readers cannot reach.
-- 25 Dependabot vulnerabilities on main (14 high).
-- `login_count` is never incremented — all 34 investors read 0 while 13 have a real
-  `last_login`.
-- Five tombstoned function slugs still need deleting from the Supabase dashboard.
-- `PaymentCheckout.tsx` hardcodes a live Stripe publishable key; the Stripe account should
-  be closed.
+- **`anon` SELECT on `public.properties`** — pages are closed, the grant is not.
+- **Property Forge has never run.** `GOOGLE_API_KEY` and `GOOGLE_CX` are not set.
+- **Geocoding** — key exists, API not enabled on its GCP project.
+- **18 dead front-end actions.**
+- **65 click handlers on plain `div`s** keyboard and screen-reader users cannot reach.
+- **17 inputs with a placeholder and no label.**
+- **Landlord passwords are SHA-256 with a fixed salt.** Zero accounts, so free to fix now.
+  That window closes at the first landlord signup.
+- **25 Dependabot advisories**, 14 high.
+- **No staff member has payout details on file**, so no commission can be paid.
+- **`PropertyDetail.tsx` reads `property.square_feet`**, which has never existed. The column
+  is `sqft`. Undefined for the life of the page and nobody noticed.
 
 ---
 
 ## 9. Scale — read before assuming anything is big
 
-21 properties. 34 investors. 13 who ever logged in. 4 deal inquiries. 9 portfolio
-holdings. 9 AM agreements, 5 signed. 9,544 investor invitations. Zero landlords with
-portal accounts. Zero setup projects. Zero commissions recorded. Zero referrals tracked.
-
-**283 tables. 211 completely empty. 47 with fewer than ten rows. 25 with real data.**
-
-About nine tenths of the schema describes work that has never happened. **Do not size work
-by code volume.**
+24 properties. 35 investors. 4 deal inquiries. 475 book records. **0 landlord portal accounts.
+0 setup projects. 0 Property Forge searches ever.** Most of the schema describes work that has
+never happened. Do not size work by code volume.
 
 ---
 
 ## 10. How to work on this platform
 
-**Never claim success when nothing happened.** This is the dominant defect here and the
-one that matters most, because the owners are blind and cannot catch a lying green
-checkmark by glancing at a screen.
+**Look at the site after every push.** `python3 scripts/look-at-site.py /deals` renders the
+real page and prints what shows, what the page logged, and what failed. HTTP 200s, bundle
+greps and self-written verification functions all passed while the marketplace was wrong twice
+in a row. The owner found both by opening the page.
 
-Confirmed instances: a follow-up executor that read nothing, SMS callbacks pointed at a
-dead host, invitations marked delivered on API acceptance, photos marked processed that
-were never modified, 42 scores invented from no inputs, a password reset that reported
-success and changed nothing, and a login page reporting an outage when the password was
-simply wrong.
+**Never claim success when nothing happened.** This is the dominant defect and it matters most
+because both owners are blind and cannot catch a lying green checkmark by glancing at a screen.
 
-**Report the failure.** A rejected form beats a silent lead. "I have not researched this
-market yet" beats a number nobody can stand behind.
+**Verify by exercising, not by deploying.** Insert the row. Call the function. Check the
+permission afterwards.
 
-**Verify by exercising, not by deploying.** Insert the test row. Call the function. Check
-the permission afterwards.
+**Empty and broken are not the same thing.** A failed read returning zero is not "no results".
+Say which.
 
-**Accessibility is not decoration.** Both owners use VoiceOver. Linear speakable prose, no
-dense tables, real labels bound to inputs, live regions for status, 44px targets, and
-`autoCapitalize="none"` on password fields — iOS will otherwise capitalise a revealed
-password and silently corrupt it.
+**Lead with problems.** Say plainly what could not be done rather than attempting it badly.
 
-**Lead with problems.** Say plainly what cannot be done rather than attempting it badly.
+**Accessibility is not decoration.** Linear speakable prose, real labels bound to inputs, live
+regions for status, 44px targets, and `autoCapitalize="none"` on password fields.
