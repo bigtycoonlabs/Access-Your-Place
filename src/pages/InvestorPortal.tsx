@@ -700,7 +700,22 @@ export default function InvestorPortal() {
 
   if (!investor) return null;
   
-  if (!investor.onboarding_completed) {
+  // A buyer who clicked "Start Your Acquisition" on a deal arrives with ?acquire=<id>.
+  // They were dropped into the guided onboarding wizard instead: several steps of
+  // profile questions, including "which markets are you interested in?" offering Austin,
+  // Dallas and Houston while they were trying to buy in Cleveland. No mention of the
+  // deal. Nothing explaining the detour. That is where somebody with their card out
+  // gives up, and it is the single most expensive place on the platform to lose a person.
+  //
+  // Onboarding is not abandoned, it is deferred: they still see it next time they open
+  // the portal without acquisition intent. Reserving a deal is the more urgent thing and
+  // the acquisition itself collects what actually matters.
+  const acquiringNow = (() => {
+    try { return Boolean(new URLSearchParams(window.location.search).get('acquire')); }
+    catch { return false; }
+  })();
+
+  if (!investor.onboarding_completed && !acquiringNow) {
     return <GuidedOnboarding investor={investor} onComplete={handleUpdateInvestor} />;
   }
 
