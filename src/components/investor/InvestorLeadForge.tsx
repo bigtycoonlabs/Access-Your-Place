@@ -408,9 +408,13 @@ export function InvestorLeadForge({ investorId, investorName }: InvestorLeadForg
         <div style={{ display:"flex", alignItems:"center", gap:8, marginRight:28 }}>
           <span style={{ color:BLUE, fontSize:20, lineHeight:1 }}>⬡</span>
           <span style={{ fontWeight:800, fontSize:15, color:"#fff", letterSpacing:"-0.02em" }}>Property Forge</span>
+          {/* This said "Apollo Live". Property Forge has never run a single search in
+              its life: GOOGLE_API_KEY and GOOGLE_CX are not set on the project. A green
+              live badge on a feature that has never worked is the worst kind of lie to
+              tell an operator who cannot see the screen. */}
           <span style={{ fontSize:9, fontWeight:800, letterSpacing:"0.05em", textTransform:"uppercase",
-            color:"#4ADE80", background:"rgba(74,222,128,0.12)", border:"1px solid rgba(74,222,128,0.25)",
-            padding:"2px 8px", borderRadius:10 }}>● Apollo Live</span>
+            color:"#FBBF24", background:"rgba(251,191,36,0.12)", border:"1px solid rgba(251,191,36,0.3)",
+            padding:"2px 8px", borderRadius:10 }}>Coming soon</span>
         </div>
 
         {[["finder","🔍 Lead Finder"], ["crm", `📋 CRM${crm.length ? ` (${crm.length})` : ""}`], ["auto","⚡ Automation"]].map(([id, lbl]) => (
@@ -430,6 +434,15 @@ export function InvestorLeadForge({ investorId, investorName }: InvestorLeadForg
             {wonRev > 0 && <span style={{ color:MUTED }}>Rev: <b style={{ color:"#60A5FA" }}>${wonRev.toLocaleString()}/mo</b></span>}
           </div>
         )}
+      </div>
+
+      {/* Spoken before any control, so a screen reader user is told the state of the
+          feature before being offered buttons that cannot do anything yet. */}
+      <div role="status" style={{ background:"rgba(251,191,36,0.10)", borderBottom:"1px solid rgba(251,191,36,0.3)",
+        padding:"12px 20px", color:"#FDE68A", fontSize:13, lineHeight:1.6 }}>
+        <strong>Property Forge is coming soon.</strong> Lead search is not connected yet, so nothing here returns
+        real properties. What is live today is deal scoring and analytics on the marketplace: every published deal
+        carries a score out of 100 with the arithmetic behind it. Browse those under Available Deals.
       </div>
 
       {/* ═══════════ FINDER TAB ═══════════ */}

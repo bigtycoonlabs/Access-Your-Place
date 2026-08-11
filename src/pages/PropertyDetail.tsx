@@ -967,6 +967,49 @@ export default function PropertyDetail() {
                     <p className="text-gray-500 mt-2">${property.monthly_rent?.toLocaleString()}/mo rent</p>
                   </div>
 
+                  {/* Deal score. Computed from the figures recorded on this listing, and
+                      it says so, because the previous scorer was retired for producing
+                      confident numbers with no research behind them. */}
+                  {typeof (property as any).deal_score === 'number' && (
+                    <section
+                      aria-labelledby="deal-score-heading"
+                      className="rounded-lg border-2 border-[#1a365d]/15 bg-[#1a365d]/[0.03] p-4 mb-6"
+                    >
+                      <h2 id="deal-score-heading" className="text-sm font-semibold text-[#1a365d] mb-2">
+                        Deal score
+                      </h2>
+                      <p className="text-3xl font-bold text-[#1a365d]">
+                        {(property as any).deal_score}
+                        <span className="text-base font-normal text-gray-600"> out of 100</span>
+                      </p>
+                      <dl className="mt-3 space-y-1 text-sm">
+                        {(property as any).fee_payback_months != null && (
+                          <div className="flex justify-between gap-4">
+                            <dt className="text-gray-600">Fee repaid in</dt>
+                            <dd className="font-semibold text-[#1a365d]">{(property as any).fee_payback_months} months</dd>
+                          </div>
+                        )}
+                        {(property as any).slow_season_profit != null && (
+                          <div className="flex justify-between gap-4">
+                            <dt className="text-gray-600">Slow season profit</dt>
+                            <dd className="font-semibold text-[#1a365d]">${Number((property as any).slow_season_profit).toLocaleString()}/mo</dd>
+                          </div>
+                        )}
+                        {(property as any).projected_annual_profit != null && (
+                          <div className="flex justify-between gap-4">
+                            <dt className="text-gray-600">Projected annual profit</dt>
+                            <dd className="font-semibold text-[#1a365d]">${Number((property as any).projected_annual_profit).toLocaleString()}</dd>
+                          </div>
+                        )}
+                      </dl>
+                      {(property as any).deal_score_basis && (
+                        <p className="mt-3 text-xs leading-relaxed text-gray-600">
+                          {(property as any).deal_score_basis}
+                        </p>
+                      )}
+                    </section>
+                  )}
+
                   {monthlyProfit > 0 && (
                     <div className="bg-gradient-to-r from-emerald-50 to-teal-50 rounded-lg p-4 mb-6">
                       <div className="flex items-center justify-between">
