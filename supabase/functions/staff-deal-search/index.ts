@@ -74,12 +74,19 @@ Deno.serve(async (req) => {
       }
     });
 
+    // A failed read is not zero results. Returning an empty list on a failed query
+    // told staff "no existing deals in this ZIP" when the truth was "the lookup did
+    // not run". Somebody would then source a property already in the pipeline.
     let dbProperties = [];
+    let dealsLookup = 'answered';
+    let dealsLookupError = null;
     if (dbResponse.ok) {
       dbProperties = await dbResponse.json();
     } else {
-      const errText = await dbResponse.text();
-      console.error('DB Query Error:', errText);
+      dealsLookup = 'unavailable';
+      dealsLookupError = 'The existing-deal lookup failed with HTTP ' + dbResponse.status
+        + '. This is not the same as there being no deals here. ' + (await dbResponse.text()).slice(0, 300);
+      console.error('DB Query Error:', dealsLookupError);
     }
 
     // Map database properties to return format
@@ -197,6 +204,10 @@ Deno.serve(async (req) => {
       zip_code: zip_code || city || state,
       existing_deals: existingDeals,
       existing_deals_count: existingDeals.length,
+      // 'answered' means the count is real. 'unavailable' means the lookup failed and
+      // the count means nothing. Never present an unavailable count as zero deals.
+      existing_deals_status: dealsLookup,
+      existing_deals_error: dealsLookupError,
       listings: listings,
       listings_count: listings.length,
       market_data: marketData
