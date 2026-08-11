@@ -6,7 +6,10 @@
 // AI ESTIMATE (via OpenAI) and is labeled as such; a failed analysis is reported as unavailable,
 // never replaced with invented numbers.
 
-const DATA_SCHEMA = 'prj_X-ZoVQv6LKXT';
+// PostgREST on this project exposes ONLY the public schema, so forcing
+// Accept-Profile: prj_X-ZoVQv6LKXT made every REST call in this function return
+// 406 PGRST106 'Invalid schema'. Every prj_ table has a matching public view.
+const DATA_SCHEMA = 'public';
 const SUPABASE_URL = Deno.env.get('SUPABASE_URL')!;
 const SERVICE_KEY = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!;
 const OPENAI_KEY = Deno.env.get('OPENAI_API_KEY');

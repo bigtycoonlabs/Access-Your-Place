@@ -5,7 +5,10 @@
 // email_delivery_logs, investor_communications. Staff-only: validated by session_token on staff_users.
 // Never invents facts — Penny writes only from the staff briefing.
 
-const DATA_SCHEMA = 'prj_X-ZoVQv6LKXT';
+// PostgREST on this project exposes ONLY the public schema, so forcing
+// Accept-Profile: prj_X-ZoVQv6LKXT made every REST call in this function return
+// 406 PGRST106 'Invalid schema'. Every prj_ table has a matching public view.
+const DATA_SCHEMA = 'public';
 const PLATFORM_URL = 'https://accessyourplace.com';
 
 // Route every /rest/v1 call through the app schema (same pattern as send-notification-email).

@@ -8,7 +8,10 @@
 // The gateway spoke the OpenAI chat-completions shape, so this is a base URL, an auth
 // header and a model swap. google/gemini-2.5-flash becomes gpt-4o, which is the model the
 // rest of this platform already runs on.
-const DATA_SCHEMA = 'prj_X-ZoVQv6LKXT';
+// PostgREST on this project exposes ONLY the public schema, so forcing
+// Accept-Profile: prj_X-ZoVQv6LKXT made every REST call in this function return
+// 406 PGRST106 'Invalid schema'. Every prj_ table has a matching public view.
+const DATA_SCHEMA = 'public';
 const originalFetch = globalThis.fetch;
 globalThis.fetch = (input: any, init: any = {}) => {
   const url = typeof input === 'string'

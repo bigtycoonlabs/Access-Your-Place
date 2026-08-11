@@ -27,7 +27,10 @@
 
 import * as bcrypt from 'https://deno.land/x/bcrypt@v0.4.1/mod.ts';
 
-const DATA_SCHEMA = 'prj_X-ZoVQv6LKXT';
+// PostgREST on this project exposes ONLY the public schema, so forcing
+// Accept-Profile: prj_X-ZoVQv6LKXT made every REST call in this function return
+// 406 PGRST106 'Invalid schema'. Every prj_ table has a matching public view.
+const DATA_SCHEMA = 'public';
 
 // A blanket global-fetch shim forcing Accept-Profile was added here and the owner
 // immediately hit "We could not process that request" — the staff_users lookup was
