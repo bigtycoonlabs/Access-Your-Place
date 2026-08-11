@@ -896,6 +896,7 @@ async function addProperty(url: string, key: string, a: any, staffId: string) {
     p_peak_revenue: a.peak_revenue ?? null, p_slow_revenue: a.slow_revenue ?? null,
     p_landlord_name: a.landlord_name ?? null, p_landlord_phone: a.landlord_phone ?? null,
     p_notes: a.notes ?? null, p_property_type: a.property_type ?? null,
+    p_acquisition_fee: a.acquisition_fee ?? null,
     p_listing_title: a.listing_title ?? null,
   });
   if (!ok) return { error: 'add_failed', http: status };
@@ -2593,7 +2594,8 @@ const TOOLS = [
           city: { type: 'string' },
           state: { type: 'string' },
           third_party: { type: 'boolean', description: 'True when an existing operation is being SOLD by its operator.' },
-          asking_price: { type: 'number', description: 'What the operation is being sold for.' },
+          acquisition_fee: { type: 'number', description: 'What the CLIENT PAYS US to acquire this deal. Always include it - a card without it is a deal nobody can decide on. Different from asking_price, which is what a seller receives.' },
+          asking_price: { type: 'number', description: 'What the operation is being sold for, i.e. what the SELLER receives.' },
           monthly_rent: { type: 'number' },
           peak_revenue: { type: 'number', description: 'Projected monthly revenue in peak season.' },
           slow_revenue: { type: 'number', description: 'Projected monthly revenue in slow season.' },
