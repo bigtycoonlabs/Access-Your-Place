@@ -46,6 +46,7 @@ import ProPortal from "./pages/ProPortal";
 import CommunityStandards from "./pages/CommunityStandards";
 import LegalAgreementGate from "./pages/LegalAgreementGate";
 import PennyAI from "@/components/PennyAI";
+import PennyPage from "./pages/PennyPage";
 
 // Global error boundary — catches any unhandled React render crash and shows
 // a recoverable error screen instead of a blank white page.
@@ -150,7 +151,7 @@ const App = () => (
                   <Route path="/pro-portal/:token" element={<ProPortal />} />
                   <Route path="/community-standards" element={<CommunityStandards />} />
                   <Route path="/legal-agreement-gate" element={<LegalAgreementGate />} />
-                  <Route path="/penny-ai" element={<PennyAI />} />
+                  <Route path="/penny-ai" element={<PennyPage />} />
                   <Route path="*" element={<NotFound />} />
                 </Routes>
               </BrowserRouter>

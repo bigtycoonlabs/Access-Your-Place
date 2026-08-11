@@ -338,6 +338,38 @@ Deno.serve(async (req) => {
       }
     }
 
+    // LIVE DEALS. Penny had no deal data at all: she is a persona with no tools, so
+    // asked "what deals do you have and what are their scores" she deflected to "send
+    // me an address" every time. With promotion starting, the assistant on the deals
+    // site could not name a single deal on it. This hands her exactly what the public
+    // marketplace shows, including the score and the arithmetic behind it, so her
+    // answers come from the same rows a visitor can see. If the read fails she is told
+    // it failed, so she says she cannot check rather than inventing inventory.
+    try {
+      const dr = await fetch(
+        `${url}/rest/v1/marketplace_public?select=listing_title,city,state,bedrooms,bathrooms,acquisition_fee,monthly_rent,projected_monthly_revenue_peak,projected_monthly_revenue_slow,deal_score,fee_payback_months,slow_season_profit,projected_annual_profit,verification_tier`,
+        { headers: { apikey: key, Authorization: `Bearer ${key}` } });
+      if (dr.ok) {
+        const deals = await dr.json();
+        if (Array.isArray(deals) && deals.length) {
+          const lines = deals.map((d: Record<string, unknown>) =>
+            `- ${d.listing_title} in ${d.city}, ${d.state}. ${d.bedrooms} bed. ` +
+            `Acquisition fee $${Number(d.acquisition_fee).toLocaleString()}. Rent $${Number(d.monthly_rent).toLocaleString()}/mo. ` +
+            `Peak season revenue $${Number(d.projected_monthly_revenue_peak).toLocaleString()}/mo, slow season $${Number(d.projected_monthly_revenue_slow).toLocaleString()}/mo. ` +
+            `Deal score ${d.deal_score} out of 100. Fee repaid in about ${d.fee_payback_months} months. ` +
+            `Slow season profit $${Number(d.slow_season_profit).toLocaleString()}/mo, projected annual profit $${Number(d.projected_annual_profit).toLocaleString()}. ` +
+            `Verification: ${d.verification_tier}.`).join('\n');
+          system += `\n\n──────────\n\nDEALS AVAILABLE RIGHT NOW (${deals.length}). These are the only deals currently on the marketplace. If someone asks what is available, what the scores are, or what the numbers look like, answer from THIS list and nothing else. Do not invent other deals.\n${lines}\n\nThe deal score is arithmetic on the figures recorded for that deal: whether it still clears the rent in the slow season, how fast the acquisition fee is repaid, and how far revenue sits above rent. It is NOT a market study and does not check hotel occupancy, nightly rates, regulation or competing listings. Say so if asked what the score means. Anyone can browse these at ${APP_URL}/deals . To enquire on a deal a person needs a free account.`;
+        } else {
+          system += `\n\n──────────\n\nDEALS AVAILABLE RIGHT NOW: none are published at this moment. Say that plainly rather than describing deals that are not listed.`;
+        }
+      } else {
+        system += `\n\n──────────\n\nDEAL LOOKUP FAILED. You could not read the marketplace just now. If asked what is available, say you cannot check the live list at this moment and point them to ${APP_URL}/deals . Do NOT describe any specific deal.`;
+      }
+    } catch (_e) {
+      system += `\n\n──────────\n\nDEAL LOOKUP FAILED. You could not read the marketplace just now. If asked what is available, say you cannot check the live list at this moment and point them to ${APP_URL}/deals . Do NOT describe any specific deal.`;
+    }
+
     // Account routing — runs for ANY message (even a short "log in"). If the visitor
     // names an email, hand Penny the truth about their account and the one right link;
     // if they only signal intent, tell her to ask for the email first.

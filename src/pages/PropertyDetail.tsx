@@ -299,7 +299,7 @@ export default function PropertyDetail() {
         title: 'Account required',
         description: 'Please create a free account or sign in to enquire about this deal. Taking you there now.',
       });
-      setTimeout(() => navigate(`/investor-portal?redirect=/deals/${id}`), 1200);
+      setTimeout(() => navigate(`/investor/login?redirect=/deals/${id}`), 1200);
       return;
     }
 
@@ -318,7 +318,7 @@ export default function PropertyDetail() {
       if (result?.error === 'account_required') {
         toast({ title: 'Account required', description: result.message, variant: 'destructive' });
         setSubmitting(false);
-        setTimeout(() => navigate(`/investor-portal?redirect=/deals/${id}`), 1200);
+        setTimeout(() => navigate(`/investor/login?redirect=/deals/${id}`), 1200);
         return;
       }
       if (error) throw error;
