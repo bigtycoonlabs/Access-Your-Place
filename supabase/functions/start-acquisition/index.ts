@@ -185,6 +185,7 @@ Deno.serve(async (req) => {
         acquisition_fee_deposit: {
           amount: deal.acquisition_fee_deposit,
           paid_to: 'Access Your Place',
+          due: 'Now. This is the only payment due up front.',
           what_it_does:
             `A deposit of $${Number(deal.acquisition_fee_deposit).toLocaleString()} takes this operation off the market and holds it for you. ` +
             `It comes off the $${Number(deal.acquisition_fee).toLocaleString()} acquisition fee, it does not add to it.`,
@@ -193,14 +194,27 @@ Deno.serve(async (req) => {
           required: deal.property_deposit_required,
           amount: deal.property_deposit_amount,
           paid_to: 'the landlord or the property, not Access Your Place',
+          // NOT DUE NOW, and saying so matters. A landlord deposit listed beside the
+          // $2,500 reads as "bring both today", which would put people off deals they
+          // can afford. It is never due until the lease is in their hand and read.
+          due: 'Never until the lease is in your hand and you have reviewed it.',
           note:
             deal.property_deposit_required === true
               ? (deal.property_deposit_amount
-                  ? `This property also requires a $${Number(deal.property_deposit_amount).toLocaleString()} deposit paid to the property. That is additional money and does not come off our acquisition fee.`
-                  : 'This property also requires a deposit paid to the property. The amount is being confirmed. It is additional and does not come off our acquisition fee.')
+                  ? `This property also takes a $${Number(deal.property_deposit_amount).toLocaleString()} deposit paid to the landlord, not to us. It is not due now: you get the lease in your hand and read it before you pay a landlord anything.`
+                  : 'This property also takes a deposit paid to the landlord, not to us, with the amount still being confirmed. It is not due now: you get the lease in your hand and read it before you pay a landlord anything.')
               : deal.property_deposit_required === false
-                ? 'This property requires no separate deposit to the landlord.'
-                : 'Whether this property requires a separate landlord deposit has not been confirmed yet. Ask your acquisition manager before you budget.',
+                ? 'This property takes no landlord deposit.'
+                : 'Whether the landlord takes a deposit here is still being confirmed. If there is one, it is never due until the lease is in your hand and you have read it.',
+        },
+        // The whole order of payments, so nobody has to assemble it themselves.
+        payment_timeline: {
+          due_now: `$${Number(deal.acquisition_fee_deposit).toLocaleString()} acquisition fee deposit. This is the only payment due up front.`,
+          before_lease_signing: 'The remainder of the acquisition fee, due before lease signing and before the operation is fully turned over to you.',
+          after_lease_secured: deal.setup_package_summary
+            ? 'On a setup project, the furniture and logistics are paid after the lease is secured.'
+            : null,
+          landlord_deposit: 'If the property takes one, never until the lease is in your hand and you have read it.',
         },
         // One sentence covering both, for reading aloud.
         what_you_need_up_front: deal.deposit_summary,

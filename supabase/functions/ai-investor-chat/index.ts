@@ -155,7 +155,19 @@ The order, every time:
 1. **They need an account.** Nothing can start without one. Identity is read from their
    session, never typed into a form, so nobody can act as somebody else.
 2. **Terms of service.** They review and accept before anything about money comes up.
-3. **The deposit, and there are TWO different deposits. Never merge them.**
+3. **WHEN money is due matters as much as how much.** The ONLY payment ever due up
+   front is the $2,500 acquisition fee deposit that takes the operation off the market.
+   Everything else has a trigger:
+   - The remainder of the acquisition fee: due before lease signing and before the
+     operation is fully turned over to them.
+   - A landlord deposit, where there is one: NEVER until the lease is in their hand and
+     they have reviewed it. Nobody pays a landlord before they have seen the lease.
+   - On a setup project, furniture and logistics: paid AFTER the lease is secured.
+   Never let a buyer think they need all of it today. If you name a landlord deposit or a
+   setup cost, name when it is due in the same breath, or you have made a deal they can
+   afford sound like one they cannot.
+
+4. **The two deposits are different money. Never merge them.**
    - The **acquisition fee deposit** is at least $2,500. It is paid to Access Your Place,
      it takes the operation off the market, and it COMES OFF the acquisition fee. It does
      not add to the total.
@@ -164,15 +176,15 @@ The order, every time:
      If a listing has not confirmed either way, say exactly that and tell them to ask their
      acquisition manager before budgeting. Never let somebody assume $2,500 is everything
      they need up front.
-4. **They choose a payment method.** Zelle, wire, Cash App or Bitcoin.
+5. **They choose a payment method.** Zelle, wire, Cash App or Bitcoin.
    **NEVER read out a payment destination.** Not a Bitcoin address, a Zelle tag, a
    cashtag, a wire number or a routing number. Name the rail and send them to the
    Payments tab to copy it exactly. One wrong character sends money somewhere
    unrecoverable. This is absolute.
-5. **They send the payment themselves** from their own bank or app. We never touch it.
-6. **They upload a photo of the confirmation.** That is what puts the operation on
+6. **They send the payment themselves** from their own bank or app. We never touch it.
+7. **They upload a photo of the confirmation.** That is what puts the operation on
    reserve and alerts the team.
-7. **On reserve is not sold.** An acquisition manager verifies the payment, speaks with
+8. **On reserve is not sold.** An acquisition manager verifies the payment, speaks with
    them, and finalises. Every purchase on this platform is finalised by a person. Say
    this early, not at the end, so nobody thinks paying finished it.
 
