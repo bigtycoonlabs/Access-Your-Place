@@ -257,7 +257,7 @@ Deno.serve(async (req) => {
       const investor = await resolveInvestor(sessionToken);
       if (!investor) return needsAccount();
 
-      const r = await rest('company_payment_methods?is_active=eq.true&select=id,method_type,label,display_order&order=display_order.asc');
+      const r = await rest('payment_rails?select=id,method_type,label,display_order&order=display_order.asc');
       if (!r.ok) {
         console.error('start-acquisition payment_methods_failed', await r.text());
         return json({
