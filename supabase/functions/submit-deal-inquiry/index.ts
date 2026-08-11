@@ -130,7 +130,58 @@ Deno.serve(async (req) => {
       // Non-fatal: the inquiry itself is saved; owner notification is a bonus.
     }
 
-    return new Response(JSON.stringify({ success: true, inquiry: data, owner_notified }), {
+    // NOBODY ON THE TEAM WAS TOLD. This function emailed the landlord or seller and
+    // pinned a note to a property page, and that was all. No staff notification, no
+    // email to the Success Team. Suresh Bachu enquired on four properties on 13 June
+    // 2026 and was still uncontacted 58 days later. He was not ignored: the staff
+    // request centre was filtering inquiries on a status this table never writes, and
+    // nothing alerted a human either. Both halves are fixed.
+    let staff_notified = false
+    let staff_notify_error: string | null = null
+    try {
+      const { data: prop } = await supabase
+        .from('properties')
+        .select('listing_title, title, address, city, state')
+        .eq('id', property_id)
+        .single()
+      const label = prop?.listing_title || prop?.title ||
+        [prop?.address, prop?.city, prop?.state].filter(Boolean).join(', ') || 'a listing'
+
+      const { error: notifErr } = await supabase.from('staff_notifications').insert({
+        type: 'deal_inquiry',
+        notification_type: 'deal_inquiry',
+        target_role: 'acquisition_manager',
+        priority: 'high',
+        title: `New deal inquiry from ${name}`,
+        message: `${name} (${email}${phone ? ', ' + phone : ''}) asked about ${label}. ${message ? 'They said: ' + message : 'No message left.'}`,
+        investor_name: name,
+        investor_email: email,
+        property_id,
+        metadata: { inquiry_id: data?.id, investment_type: investment_type || 'general' },
+      })
+      if (notifErr) {
+        staff_notify_error = notifErr.message
+        console.error('staff_notifications insert failed:', notifErr.message)
+      } else {
+        staff_notified = true
+      }
+
+      // Email as well as the in-app row, because an alert nobody opens is not an alert.
+      const emailed = await sendEmail(
+        'success@accessyourplace.com',
+        `New deal inquiry: ${name} on ${label}`,
+        `<p><strong>${name}</strong> enquired about <strong>${label}</strong>.</p>` +
+        `<p>Email: ${email}<br/>Phone: ${phone || 'not given'}<br/>Type: ${investment_type || 'general'}</p>` +
+        `<p>Message: ${message || 'No message left.'}</p>` +
+        `<p>This inquiry is in the Success Team request centre with status new.</p>`
+      )
+      if (!emailed && !staff_notify_error) staff_notify_error = 'in-app notification saved, team email did not send'
+    } catch (e) {
+      staff_notify_error = (e as Error).message
+      console.error('staff notification threw:', staff_notify_error)
+    }
+
+    return new Response(JSON.stringify({ success: true, inquiry: data, owner_notified, staff_notified, staff_notify_error }), {
       headers: { 'Content-Type': 'application/json', ...corsHeaders },
     })
   } catch (error) {
