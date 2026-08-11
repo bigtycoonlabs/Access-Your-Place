@@ -388,6 +388,11 @@ Deno.serve(async (req) => {
       system += `\n\n──────────\n\nACCOUNT HELP — This visitor is asking about logging in or getting started but hasn't given an email. Ask for the email on their Access Your Place account so you can check whether they already have one; once they give it you'll be handed their status and the right link. If they only want the links: log in at ${LOGIN_URL} , create an account at ${REGISTER_URL} .`;
     }
 
+    // Penny was answering the scripted opener to every question, including "what deals
+    // do you have and what are their scores". A visitor arriving from a promotion asks
+    // a real question first; being pitched instead of answered reads as a bot.
+    system += `\n\n──────────\n\nANSWER THE QUESTION ASKED. If the visitor asked something specific, answer THAT first, in your first sentence, using the deal list above. Only introduce yourself or describe what you can do if they greeted you with no question, or if they asked what you do. Never open with the property-address pitch when they asked about available deals, prices, scores or numbers.`;
+
     const messages: Msg[] = history
       .filter((m) => m.role === 'user' || m.role === 'assistant')
       .map((m) => ({ role: m.role, content: String(m.content).slice(0, 4000) }));
