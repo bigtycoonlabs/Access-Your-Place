@@ -895,7 +895,8 @@ async function addProperty(url: string, key: string, a: any, staffId: string) {
     p_asking_price: a.asking_price ?? null,
     p_peak_revenue: a.peak_revenue ?? null, p_slow_revenue: a.slow_revenue ?? null,
     p_landlord_name: a.landlord_name ?? null, p_landlord_phone: a.landlord_phone ?? null,
-    p_notes: a.notes ?? null,
+    p_notes: a.notes ?? null, p_property_type: a.property_type ?? null,
+    p_listing_title: a.listing_title ?? null,
   });
   if (!ok) return { error: 'add_failed', http: status };
   return data;
@@ -2602,6 +2603,8 @@ const TOOLS = [
           is_furnished: { type: 'boolean' },
           landlord_name: { type: 'string' },
           landlord_phone: { type: 'string' },
+          property_type: { type: 'string', enum: ['apartment','single_family','townhome','condo','multi_family'], description: 'A unit in a building is an apartment. Do not leave this out - the table defaults to a single family home and a downtown apartment listed as a house is wrong on the card and wrong in search.' },
+          listing_title: { type: 'string', description: 'The headline on the deal card.' },
           notes: { type: 'string' },
           confirmed: { type: 'boolean' },
         },

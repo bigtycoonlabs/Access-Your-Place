@@ -14,6 +14,47 @@ serve(async (req) => {
   // is deployed and referenced elsewhere.
   try {
     const peek = await req.clone().json().catch(() => ({}));
+
+    // FETCHING ONE PROPERTY BY ID. This branch did not exist. The deal detail page has always
+    // called this function with { id }, got back a list-shaped response with no matching
+    // property, fallen through to a direct query, and shown "not found" on deals that are
+    // right there on the marketplace.
+    //
+    // Every deal card was clickable and every one of them dead-ended.
+    if (peek?.id && !peek?.action) {
+      const u = Deno.env.get('SUPABASE_URL');
+      const k = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY');
+      const isStaff = peek.caller_type === 'staff';
+      let q = `${u}/rest/v1/properties?select=*&id=eq.${encodeURIComponent(String(peek.id))}&limit=1`;
+      // A non-staff caller may only see a published deal. Staff see it whatever its state.
+      if (!isStaff) q += `&or=(is_published.is.true,status.in.(published,active,approved))`;
+      const r = await fetch(q, { headers: { apikey: k, Authorization: `Bearer ${k}` } });
+      if (!r.ok) {
+        console.error('get-properties by_id_http', r.status);
+        return new Response(JSON.stringify({ success: false, error: `Could not load that deal (${r.status}).` }),
+          { status: 502, headers: { ...corsHeaders, 'Content-Type': 'application/json' } });
+      }
+      const rows = await r.json();
+      const property = Array.isArray(rows) ? rows[0] : null;
+      if (!property) {
+        return new Response(JSON.stringify({ success: false, error: 'That deal is not available.' }),
+          { status: 404, headers: { ...corsHeaders, 'Content-Type': 'application/json' } });
+      }
+      // The address and the landlord are withheld from anyone who is not staff. The deal
+      // presentation mechanic depends on this, so it is stripped SERVER SIDE rather than
+      // nulled in the browser where it would still be on the wire.
+      if (!isStaff) {
+        property.address = null;
+        property.landlord_name = null;
+        property.landlord_phone = null;
+        property.landlord_email = null;
+        property.original_url = null;
+        property.processed_url = null;
+      }
+      return new Response(JSON.stringify({ success: true, property }),
+        { headers: { ...corsHeaders, 'Content-Type': 'application/json' } });
+    }
+
     if (peek?.action === 'get_all') {
       const u = Deno.env.get('SUPABASE_URL');
       const k = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY');
