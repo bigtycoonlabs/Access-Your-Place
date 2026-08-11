@@ -420,7 +420,11 @@ export default function InvestorPortal() {
   const [activeTab, setActiveTab] = useState(() => {
     try {
       const q = new URLSearchParams(window.location.search);
-      if (q.get('tab') === 'payments' || q.get('acquire')) return 'payments';
+      // The payments panel is a NESTED tab inside the 'financial' tab. Setting the
+      // outer tab to 'payments' matched no TabsContent, so the portal rendered its
+      // header and footer with an empty middle: a 2,113 character page and the
+      // payment methods call never fired. The outer tab must be 'financial'.
+      if (q.get('tab') === 'payments' || q.get('acquire')) return 'financial';
     } catch { /* no window, keep the default */ }
     return 'penny-home';
   });
@@ -1313,7 +1317,15 @@ export default function InvestorPortal() {
           {/* ===== FINANCIAL HUB (Merged Account & Credits + Payments) ===== */}
           <TabsContent value="financial" role="tabpanel" aria-label="Financial hub - account, credits, and payments">
             <InvestorTabErrorBoundary tabName="Financial Hub">
-              <Tabs defaultValue="account" className="space-y-4">
+              <Tabs
+                defaultValue={(() => {
+                  try {
+                    const q = new URLSearchParams(window.location.search);
+                    return (q.get('acquire') || q.get('tab') === 'payments') ? 'payments' : 'account';
+                  } catch { return 'account'; }
+                })()}
+                className="space-y-4"
+              >
                 <div className="flex items-center justify-between mb-2">
                   <div>
                     <h2 className="text-xl font-bold text-gray-900 flex items-center gap-2">
