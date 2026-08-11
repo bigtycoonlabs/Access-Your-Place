@@ -55,7 +55,17 @@ serve(async (req) => {
         { headers: { ...corsHeaders, 'Content-Type': 'application/json' } });
     }
 
-    if (peek?.action === 'get_all') {
+    // THE DEALS PAGE SENDS NO ACTION. It posts { limit, include_all, caller_type }, so it
+    // never matched action === 'get_all' and fell through to the property CREATION path
+    // below, which is not a list at all. That is why the marketplace was empty even when the
+    // fallback ran.
+    //
+    // A function called get-properties should return properties when asked without a verb.
+    // Anything that is clearly a read is treated as one.
+    const wantsList = peek?.action === 'get_all'
+      || (!peek?.action && !peek?.id && !peek?.address && !peek?.city);
+
+    if (wantsList) {
       const u = Deno.env.get('SUPABASE_URL');
       const k = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY');
       let q = `${u}/rest/v1/properties?select=*&order=created_at.desc&limit=500`;
