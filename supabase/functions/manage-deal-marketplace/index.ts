@@ -216,14 +216,21 @@ serve(async (req) => {
           .eq('buyer_id', investor_id)
 
         // Notify staff
-        await supabase
+        // The column is `metadata`. This wrote `data`, which does not exist, so the
+        // insert failed every time and no staff notification was ever created. The
+        // error was never checked, so the buyer was told the team had been informed.
+        const { error: notifErr1 } = await supabase
           .from('staff_notifications')
           .insert({
             type: 'verification_requested',
+            notification_type: 'verification_requested',
+            target_role: 'admin',
+            priority: 'high',
             title: 'New Deal Verification Request',
             message: 'A buyer has requested verification for a private deal',
-            data: { listing_id, verification_id: verification.id }
+            metadata: { listing_id, verification_id: verification.id }
           })
+        if (notifErr1) console.error('staff_notifications insert failed:', notifErr1.message)
 
         return new Response(
           JSON.stringify({
@@ -339,14 +346,18 @@ serve(async (req) => {
           .eq('id', listing_id)
 
         // Notify staff
-        await supabase
+        const { error: notifErr2 } = await supabase
           .from('staff_notifications')
           .insert({
             type: 'full_transaction_requested',
+            notification_type: 'full_transaction_requested',
+            target_role: 'admin',
+            priority: 'high',
             title: 'Full Transaction Management Requested',
             message: `A buyer has opted for full transaction management. Fee: $${feeAmount.toLocaleString()}`,
-            data: { listing_id, transaction_id: transaction.id }
+            metadata: { listing_id, transaction_id: transaction.id }
           })
+        if (notifErr2) console.error('staff_notifications insert failed:', notifErr2.message)
 
         return new Response(
           JSON.stringify({
@@ -810,14 +821,22 @@ serve(async (req) => {
           updated_at: new Date().toISOString(),
         }).eq('id', listing_id)
         if (error) throw error
-        await supabase.from('staff_notifications').insert({
+        const { error: notifErr3 } = await supabase.from('staff_notifications').insert({
           type: 'landlord_meeting_requested',
+          notification_type: 'landlord_meeting_requested',
+          target_role: 'acquisition_manager',
+          priority: 'high',
           title: 'A seller has proposed a landlord call',
-          message: `Listing ${listing_id}${proposed_for ? ` — proposed for ${proposed_for}` : ''}. Acquisition team needs to attend.`,
-          data: { listing_id },
+          message: `Listing ${listing_id}${proposed_for ? ` \u2014 proposed for ${proposed_for}` : ''}. Acquisition team needs to attend.`,
+          metadata: { listing_id },
         })
+        if (notifErr3) console.error('staff_notifications insert failed:', notifErr3.message)
+        // Do not tell a seller the team has been told when the write failed.
         return new Response(JSON.stringify({ success: true,
-          note: 'Our acquisition team has been told. They will confirm the time with you.' }),
+          staff_notified: !notifErr3,
+          note: notifErr3
+            ? 'Your request is recorded, but we could not alert the acquisition team automatically. Please email success@accessyourplace.com so this is not missed.'
+            : 'Our acquisition team has been told. They will confirm the time with you.' }),
           { headers: { ...corsHeaders, 'Content-Type': 'application/json' } })
       }
 
