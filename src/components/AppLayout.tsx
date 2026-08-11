@@ -13,6 +13,7 @@ import Footer from './Footer';
 import LeadCapture from './LeadCapture';
 import SubmitPropertyModal from './SubmitPropertyModal';
 import SEO, { getOrganizationSchema, getWebsiteSchema, getFAQSchema } from './SEO';
+import LogisticsSection from '@/components/LogisticsSection';
 
 const AppLayout: React.FC = () => {
   const faqData = [
@@ -101,6 +102,7 @@ const AppLayout: React.FC = () => {
         <Hero2026 />
         <HowWeWork />
         <FeaturedDeals />
+        <LogisticsSection />
         <MissionSection />
         <EcosystemSection />
         <TestimonialsSection />

@@ -333,7 +333,7 @@ export default function SetupServices() {
 
       <SEO 
         title="Property Setup Services - Professional Furnishing & Installation"
-        description="Transform your rental property from empty to photo-ready in 30 days. Our Setup Management Team handles design, furniture sourcing, delivery, and installation across 64+ US markets."
+        description="Fourteen days from sourcing to guest ready. Furniture, freight, junk removal, technology install and styling for one unit or an entire building, across the US and Mexico. Consolidated through our Texas warehouse and delivered by our own team."
         keywords="property setup services, Airbnb setup, vacation rental furnishing, STR setup, co-living setup, furniture installation, rental property design, turnkey rental setup"
         canonicalUrl="/setup-services"
         ogType="website"
@@ -359,13 +359,23 @@ export default function SetupServices() {
         <div className="relative max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-24 lg:py-32">
           <div className="max-w-3xl">
             <span className="inline-block bg-[#d4a574]/20 text-[#d4a574] px-4 py-2 rounded-full text-sm font-semibold mb-6">
-              À La Carte Setup Services
+              Setup and Logistics
             </span>
             <h1 className="text-4xl md:text-5xl lg:text-6xl font-bold mb-6 leading-tight">
-              Setup Management Team
+              We launch properties. All of them, anywhere.
             </h1>
-            <p className="text-xl md:text-2xl text-gray-300 mb-8 leading-relaxed">
-              From mood board to photo-ready in as little as 30 days. Our dedicated team handles design, sourcing, delivery, and installation—so you don't have to lift a finger.
+            {/* The page used to open on mood boards and 30 days. The thing no
+                competitor can match is the logistics: a warehouse, our own truck, YP
+                Pros on the ground and a setup manager watching every project. That is
+                what a buyer needs to hear first. */}
+            <p className="text-xl md:text-2xl text-gray-300 mb-6 leading-relaxed">
+              Fourteen days from sourcing to a guest checking in. One apartment or an
+              entire building. Across the United States and into Mexico.
+            </p>
+            <p className="text-lg text-gray-400 mb-8 leading-relaxed">
+              Furniture, delivery, junk removal, technology install, styling and the final
+              walkthrough. You do not need to have bought the property through us, and you do
+              not need to be anywhere near it.
             </p>
             <div className="flex flex-col sm:flex-row gap-4">
               <a 
@@ -391,12 +401,12 @@ export default function SetupServices() {
           <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6">
             <div className="grid grid-cols-2 md:grid-cols-4 gap-6 text-center">
               <div>
-                <div className="text-3xl font-bold text-[#d4a574]">64+</div>
-                <div className="text-sm text-gray-400">Markets Nationwide</div>
+                <div className="text-3xl font-bold text-[#d4a574]">14</div>
+                <div className="text-sm text-gray-400">Days, sourcing to guest ready</div>
               </div>
               <div>
-                <div className="text-3xl font-bold text-[#d4a574]">14</div>
-                <div className="text-sm text-gray-400">Days On-Site Setup</div>
+                <div className="text-3xl font-bold text-[#d4a574]">1</div>
+                <div className="text-sm text-gray-400">Texas warehouse, our own truck</div>
               </div>
               <div>
                 <div className="text-3xl font-bold text-[#d4a574]">150+</div>
@@ -412,11 +422,89 @@ export default function SetupServices() {
       </section>
 
       {/* Introduction */}
+      {/* HOW THE FREIGHT ACTUALLY WORKS.
+          This is the part no competitor can copy, and the page never mentioned it. It is
+          also the answer to the question every serious buyer asks: what happens when a
+          sofa arrives at an empty apartment and nobody is there. */}
+      <section className="py-16 bg-[#1a2332] text-white">
+        <div className="max-w-5xl mx-auto px-4 sm:px-6 lg:px-8">
+          <h2 className="text-3xl md:text-4xl font-bold mb-4">
+            Nothing ships to your door. It ships to ours.
+          </h2>
+          <p className="text-lg text-gray-300 leading-relaxed mb-6">
+            For years we did it the ordinary way and had furniture delivered straight to the
+            property. It is not the clean way to do it. Deliveries land when nobody is there,
+            freight sits in a hallway, items go missing, and damage is discovered weeks later
+            when it is too late to claim.
+          </p>
+          <p className="text-lg text-gray-300 leading-relaxed mb-10">
+            So we changed it. Every large parcel now ships to our secured warehouse in Texas.
+            We move it ourselves, on our own truck, to wherever the launch is. A YP Pro on
+            the ground receives it and does the work. A setup manager watches the whole
+            project remotely and signs off each stage. Nobody has to be at the property but us.
+          </p>
+
+          <ol className="space-y-4">
+            {[
+              ['Sourcing', 'We buy through wholesale furniture suppliers, so you are not paying retail for a full unit of furniture.'],
+              ['Consolidation', 'Everything lands at our Texas warehouse and is checked in against the order before it goes anywhere near the property.'],
+              ['Transport', 'Our own truck carries the large parcels to the launch site. We are not waiting on a third-party freight window.'],
+              ['On the ground', 'A YP Pro unloads, builds, installs and styles. Junk removal and technology installation are part of the job, not an extra call you have to make.'],
+              ['Oversight', 'A setup manager runs the project remotely, keeps the inventory current, and maintains compliance and security over large merchandise purchases from the moment they are bought.'],
+              ['Guest ready', 'Final walkthrough, photos, and a property a guest can check into.'],
+            ].map(([step, detail], i) => (
+              <li key={step} className="flex gap-4">
+                <span className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-[#d4a574] font-bold text-[#1a2332]">
+                  {i + 1}
+                </span>
+                <span>
+                  <strong className="text-white">{step}.</strong>{' '}
+                  <span className="text-gray-300">{detail}</span>
+                </span>
+              </li>
+            ))}
+          </ol>
+
+          <p className="mt-10 text-lg text-gray-300">
+            Fourteen days, start to finish. That timeline exists because of the warehouse,
+            not in spite of it.
+          </p>
+        </div>
+      </section>
+
+      {/* WHAT WE TAKE ON. The page only described one furnished apartment. */}
+      <section className="py-16 bg-white">
+        <div className="max-w-5xl mx-auto px-4 sm:px-6 lg:px-8">
+          <h2 className="text-3xl md:text-4xl font-bold text-[#1a2332] mb-4">
+            One unit, or every unit in the building.
+          </h2>
+          <p className="text-lg text-gray-600 leading-relaxed mb-8">
+            Setup is a service in its own right. You do not have to have found the property
+            through us, and you do not have to be buying anything else from us.
+          </p>
+          <div className="grid gap-6 md:grid-cols-2">
+            {[
+              ['Whole building launches', 'An entire apartment building, every unit furnished and brought online. We plan the sequence, stage the freight and keep units coming online rather than waiting for the whole building to finish.'],
+              ['Single property launches', 'One unit, launched properly, anywhere we operate. The same warehouse and the same pros.'],
+              ['Portfolios across markets', 'Multiple properties in different cities, run as one project with one setup manager rather than a scramble in each market.'],
+              ['United States and Mexico', 'We launch across the US and in parts of Mexico. Same team, same oversight.'],
+              ['Teardowns', 'A property coming out of service. We plan and execute the teardown, and handle what leaves the building.'],
+              ['Portfolio moves', 'Furniture and equipment moved between properties without buying it twice.'],
+            ].map(([title, detail]) => (
+              <div key={title} className="rounded-xl border border-gray-200 p-6">
+                <h3 className="mb-2 font-bold text-[#1a2332]">{title}</h3>
+                <p className="text-sm leading-relaxed text-gray-600">{detail}</p>
+              </div>
+            ))}
+          </div>
+        </div>
+      </section>
+
       <section className="py-16 bg-white">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="max-w-4xl mx-auto text-center">
             <h2 className="text-3xl md:text-4xl font-bold text-[#1a2332] mb-6">
-              The Perfect Complement to Acquisition
+              It works alongside acquisition, and it works on its own
             </h2>
             <p className="text-lg text-gray-600 leading-relaxed mb-8">
               While our Acquisition Management Team helps you find and secure the perfect property, our Setup Management Team transforms that empty space into a revenue-generating furnished rental. Unlike acquisition services, our setup team works <strong>à la carte</strong>—you choose exactly what you need.

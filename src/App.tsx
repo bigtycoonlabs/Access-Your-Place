@@ -26,7 +26,6 @@ import StaffQuickAddContact from "./pages/StaffQuickAddContact";
 import AMAgreementSign from "./pages/AMAgreementSign";
 import KnowledgeLibrary from "./pages/KnowledgeLibrary";
 import BlogArticle from "./pages/BlogArticle";
-import Pricing from "./pages/Pricing";
 import SetupServices from "./pages/SetupServices";
 import LandlordPartnership from "./pages/LandlordPartnership";
 import LandlordLogin from "./pages/LandlordLogin";
@@ -130,7 +129,7 @@ const App = () => (
                   <Route path="/knowledge-library" element={<KnowledgeLibrary />} />
                   <Route path="/article-demo" element={<Navigate to="/knowledge-library" replace />} />
                   <Route path="/blog/:slug" element={<BlogArticle />} />
-                  <Route path="/pricing" element={<Pricing />} />
+                  {/* /pricing removed 11 Aug 2026, owner decision: unnecessary. */}
                   <Route path="/setup-services" element={<SetupServices />} />
                   <Route path="/landlord-partnership" element={<LandlordPartnership />} />
                   <Route path="/careers" element={<Careers />} />
