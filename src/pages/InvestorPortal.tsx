@@ -81,6 +81,7 @@ import {
   BellRing, MailOpen, ArrowRight, Sparkles, MapPin, AlertTriangle,
   Wallet, WifiOff, RefreshCw, Shield, Brain, BookOpen, CalendarDays,
   Search, X, ChevronLeft, Wrench, Zap
+  Package,
 } from 'lucide-react';
 
 
@@ -1021,6 +1022,15 @@ export default function InvestorPortal() {
                   <TabsTrigger value="portfolio" className="flex items-center gap-2">
                     <Home className="w-4 h-4" aria-hidden="true" />
                     <span>Portfolio</span>
+                  </TabsTrigger>
+                  {/* The Property Setup panel existed with no way to reach it: there was
+                      a TabsContent value="setup" and no matching TabsTrigger anywhere in
+                      the portal. A page nobody can get to does not exist. Setup is a
+                      service in its own right, offered on any property an operator owns
+                      whether they acquired it through us or found it themselves. */}
+                  <TabsTrigger value="setup" className="flex items-center gap-2">
+                    <Package className="w-4 h-4" aria-hidden="true" />
+                    <span>Setup &amp; Launch</span>
                   </TabsTrigger>
                   <TabsTrigger value="marketplace" className="flex items-center gap-2">
                     <Store className="w-4 h-4" aria-hidden="true" />
