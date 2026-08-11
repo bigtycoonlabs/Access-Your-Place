@@ -34,7 +34,7 @@ const SUBMIT_TOOL: Tool = {
       state: { type: 'string', description: 'Two-letter state code' },
       zip_code: { type: 'string' },
       operation_type: { type: 'string', enum: ['str', 'mtr', 'corporate', 'co_living', 'sober_living', 'group_home', 'other'], description: 'Operation model' },
-      asking_price: { type: 'number', description: 'Asking price in dollars' },
+      acquisition_fee: { type: 'number', description: 'The acquisition fee in dollars. This is the price of the operation. There is no separate asking price.' },
       monthly_revenue: { type: 'number', description: 'Current or projected monthly revenue in dollars' },
       monthly_rent: { type: 'number', description: 'Monthly lease rent paid to the landlord' },
       bedrooms: { type: 'number' },
@@ -60,7 +60,7 @@ const SUBMIT_TOOL: Tool = {
       verification_flags: { type: 'array', items: { type: 'string' }, description: 'What still needs proof before publish' },
       notes: { type: 'string', description: 'Any other internal notes' },
     },
-    required: ['address', 'city', 'state', 'zip_code', 'operation_type', 'asking_price', 'monthly_revenue', 'landlord_name'],
+    required: ['address', 'city', 'state', 'zip_code', 'operation_type', 'acquisition_fee', 'monthly_revenue', 'landlord_name'],
   },
 }
 
@@ -162,7 +162,7 @@ serve(async (req) => {
       const submitPayload: Record<string, unknown> = {
         action: 'submit_deal',
         address: p.address, city: p.city, state: p.state, zip_code: p.zip_code,
-        operation_type: p.operation_type, asking_price: p.asking_price, monthly_revenue: p.monthly_revenue,
+        operation_type: p.operation_type, acquisition_fee: p.acquisition_fee, monthly_revenue: p.monthly_revenue,
         monthly_room_rate: p.monthly_room_rate ?? null,
         bedrooms: p.bedrooms ?? null, bathrooms: p.bathrooms ?? null, sqft: p.sqft ?? null,
         property_type: p.property_type ?? null,

@@ -52,7 +52,7 @@ Deno.serve(async (req) => {
         }
 
         // Validate price
-        const price = parseFloat(prop.price || prop.listing_price || prop.asking_price || '0');
+        const price = parseFloat(prop.acquisition_fee || prop.price || prop.listing_price || prop.asking_price || '0');
         if (price <= 0) {
           warnings.push('Price is missing or invalid');
         }
@@ -111,7 +111,7 @@ Deno.serve(async (req) => {
             city: prop[field_mapping?.city] || prop.city,
             state: prop[field_mapping?.state] || prop.state,
             zip_code: prop[field_mapping?.zip_code] || prop.zip_code || prop.zip || prop.postal_code,
-            price: parseFloat(prop[field_mapping?.price] || prop.price || prop.listing_price || prop.asking_price || '0'),
+            acquisition_fee: parseFloat(prop[field_mapping?.acquisition_fee] || prop[field_mapping?.price] || prop.acquisition_fee || prop.price || prop.listing_price || prop.asking_price || '0'),
             bedrooms: parseInt(prop[field_mapping?.bedrooms] || prop.bedrooms || prop.beds || '0'),
             bathrooms: parseFloat(prop[field_mapping?.bathrooms] || prop.bathrooms || prop.baths || '0'),
             square_feet: parseInt(prop[field_mapping?.square_feet] || prop.square_feet || prop.sqft || prop.sq_ft || '0'),
@@ -183,7 +183,7 @@ Deno.serve(async (req) => {
             if (mappedProperty.price > 0) {
               await supabase.from('deal_analytics').insert({
                 property_id: inserted.id,
-                asking_price: mappedProperty.price,
+                acquisition_fee: mappedProperty.acquisition_fee,
                 created_at: new Date().toISOString()
               });
             }

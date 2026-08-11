@@ -53,7 +53,7 @@ interface Deal {
   zip_code?: string;
   status: string;
   deal_type: string;
-  asking_price: number;
+  acquisition_fee: number;
   monthly_revenue: number;
   monthly_rent?: number;
   verification_status: string;
@@ -1516,7 +1516,7 @@ export function AcquisitionManagerDashboard({ staffId, staffRole, staffRoles = [
                           </div>
                           <p className="text-sm text-gray-600">{deal.city}, {deal.state}</p>
                           <div className="flex gap-4 mt-2 text-sm text-gray-500">
-                            <span>Price: ${deal.asking_price?.toLocaleString() || 'N/A'}</span>
+                            <span>Price: ${deal.acquisition_fee?.toLocaleString() || 'N/A'}</span>
                             <span>Revenue: ${deal.monthly_revenue?.toLocaleString() || deal.monthly_rent?.toLocaleString() || 'N/A'}/mo</span>
                           </div>
                         </div>
@@ -2066,7 +2066,7 @@ export function AcquisitionManagerDashboard({ staffId, staffRole, staffRoles = [
                   <h4 className="font-semibold">{selectedDeal.title || selectedDeal.address}</h4>
                   <p className="text-sm text-gray-600">{selectedDeal.city}, {selectedDeal.state}</p>
                   <div className="flex gap-4 mt-2 text-sm">
-                    <span>Price: ${selectedDeal.asking_price?.toLocaleString()}</span>
+                    <span>Price: ${selectedDeal.acquisition_fee?.toLocaleString()}</span>
                     <span>Revenue: ${selectedDeal.monthly_revenue?.toLocaleString() || selectedDeal.monthly_rent?.toLocaleString()}/mo</span>
                   </div>
                 </CardContent>
@@ -2227,7 +2227,7 @@ export function AcquisitionManagerDashboard({ staffId, staffRole, staffRoles = [
           address: d.address,
           city: d.city,
           state: d.state,
-          asking_price: d.asking_price,
+          acquisition_fee: d.acquisition_fee,
           monthly_revenue: d.monthly_revenue,
           monthly_rent: d.monthly_rent
         }))}

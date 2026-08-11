@@ -44,7 +44,7 @@ interface Transaction {
   access_details?: any;
   created_at: string;
   listing?: {
-    asking_price: number;
+    acquisition_fee: number;
     monthly_revenue: number;
     property?: {
       address: string;

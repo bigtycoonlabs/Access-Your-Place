@@ -56,7 +56,7 @@ export function AMSubmitDealModal({ open, onOpenChange, staffId, staffName, onSu
   const [form, setForm] = useState({
     address: '', city: '', state: '', zip_code: '',
     listing_title: '', listing_description: '',
-    asking_price: '', monthly_revenue: '',
+    acquisition_fee: '', monthly_revenue: '',
     bedrooms: '3', bathrooms: '2', sqft: '',
     property_type: 'single_family', operation_type: '',
     notes: '', listing_url: '',
@@ -98,7 +98,7 @@ export function AMSubmitDealModal({ open, onOpenChange, staffId, staffName, onSu
     if (!form.state) errors[1].push({ field: 'state', message: 'State is required' });
     if (!form.zip_code.trim()) errors[1].push({ field: 'zip_code', message: 'ZIP code is required' });
     // Step 2: Financials
-    if (!form.asking_price || parseFloat(form.asking_price) <= 0) errors[2].push({ field: 'asking_price', message: 'Asking price is required' });
+    if (!form.acquisition_fee || parseFloat(form.acquisition_fee) <= 0) errors[2].push({ field: 'acquisition_fee', message: 'Acquisition fee is required' });
     if (!form.monthly_revenue || parseFloat(form.monthly_revenue) <= 0) errors[2].push({ field: 'monthly_revenue', message: 'Monthly revenue is required' });
     if (!form.operation_type) errors[2].push({ field: 'operation_type', message: 'Operation type is required' });
     // Step 3: Landlord
@@ -209,7 +209,7 @@ export function AMSubmitDealModal({ open, onOpenChange, staffId, staffName, onSu
     setForm({
       address: '', city: '', state: '', zip_code: '',
       listing_title: '', listing_description: '',
-      asking_price: '', monthly_revenue: '', bedrooms: '3', bathrooms: '2',
+      acquisition_fee: '', monthly_revenue: '', bedrooms: '3', bathrooms: '2',
       sqft: '', property_type: 'single_family', operation_type: '',
       notes: '', listing_url: '', landlord_name: '', landlord_email: '', landlord_phone: '',
       is_third_party_seller: false,
@@ -243,7 +243,7 @@ export function AMSubmitDealModal({ open, onOpenChange, staffId, staffName, onSu
           address: form.address.trim(), city: form.city.trim(), state: form.state, zip_code: form.zip_code.trim(),
           listing_title: form.listing_title.trim() || undefined,
           listing_description: form.listing_description.trim() || undefined,
-          asking_price: parseFloat(form.asking_price), monthly_revenue: parseFloat(form.monthly_revenue),
+          acquisition_fee: parseFloat(form.acquisition_fee), monthly_revenue: parseFloat(form.monthly_revenue),
           bedrooms: parseInt(form.bedrooms) || 3, bathrooms: parseFloat(form.bathrooms) || 2,
           sqft: form.sqft ? parseInt(form.sqft) : null,
           property_type: form.property_type, operation_type: form.operation_type,
@@ -411,10 +411,10 @@ export function AMSubmitDealModal({ open, onOpenChange, staffId, staffName, onSu
               </legend>
               <div className="grid grid-cols-2 gap-3 mt-2">
                 <div>
-                  <Label htmlFor="field-price" className={isFieldInvalid('asking_price') ? 'text-red-600' : ''}>Asking Price ($) *</Label>
-                  <Input id="field-price" type="number" value={form.asking_price} onChange={e => updateForm('asking_price', e.target.value)}
-                    placeholder="250000" aria-required="true" aria-invalid={isFieldInvalid('asking_price') || undefined}
-                    className={isFieldInvalid('asking_price') ? 'border-red-400 bg-red-50' : ''} />
+                  <Label htmlFor="field-price" className={isFieldInvalid('acquisition_fee') ? 'text-red-600' : ''}>Acquisition Fee ($) *</Label>
+                  <Input id="field-price" type="number" value={form.acquisition_fee} onChange={e => updateForm('acquisition_fee', e.target.value)}
+                    placeholder="250000" aria-required="true" aria-invalid={isFieldInvalid('acquisition_fee') || undefined}
+                    className={isFieldInvalid('acquisition_fee') ? 'border-red-400 bg-red-50' : ''} />
                 </div>
                 <div>
                   <Label htmlFor="field-revenue" className={isFieldInvalid('monthly_revenue') ? 'text-red-600' : ''}>Monthly Revenue ($) *</Label>
@@ -692,7 +692,7 @@ export function AMSubmitDealModal({ open, onOpenChange, staffId, staffName, onSu
               <div className="p-4 bg-green-50 rounded-lg border space-y-2">
                 <h4 className="font-semibold text-sm flex items-center gap-2"><DollarSign className="w-4 h-4 text-green-600" aria-hidden="true" /> Financials</h4>
                 <div className="grid grid-cols-2 gap-2 text-sm">
-                  <div><span className="text-gray-500">Asking Price:</span> <strong>{fmt(form.asking_price)}</strong></div>
+                  <div><span className="text-gray-500">Acquisition Fee:</span> <strong>{fmt(form.acquisition_fee)}</strong></div>
                   <div><span className="text-gray-500">Monthly Revenue:</span> <strong>{fmt(form.monthly_revenue)}/mo</strong></div>
                   {form.adr_peak_season && <div><span className="text-gray-500">ADR Peak:</span> <strong>{fmt(form.adr_peak_season)}/nt</strong></div>}
                   {form.avg_occupancy_rate && <div><span className="text-gray-500">Occupancy:</span> <strong>{form.avg_occupancy_rate}%</strong></div>}

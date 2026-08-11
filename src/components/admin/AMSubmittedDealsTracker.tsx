@@ -36,7 +36,7 @@ interface TrackedDeal {
   computed_status: 'pending_review' | 'approved' | 'published' | 'rejected';
   is_verified: boolean;
   is_published: boolean;
-  asking_price?: number;
+  acquisition_fee?: number;
   monthly_rent?: number;
   bedrooms?: number;
   bathrooms?: number;
@@ -438,10 +438,10 @@ export function AMSubmittedDealsTracker({ staffId, staffName }: Props) {
                       </p>
 
                       <div className="flex items-center gap-4 mt-2 text-xs text-gray-500 flex-wrap">
-                        {deal.asking_price && (
+                        {deal.acquisition_fee && (
                           <span className="flex items-center gap-0.5">
                             <DollarSign className="w-3 h-3" aria-hidden="true" />
-                            ${deal.asking_price.toLocaleString()}
+                            ${deal.acquisition_fee.toLocaleString()}
                           </span>
                         )}
                         {deal.monthly_rent && (

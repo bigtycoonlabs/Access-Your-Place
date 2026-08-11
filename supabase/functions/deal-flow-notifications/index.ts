@@ -594,7 +594,7 @@ Deno.serve(async (req) => {
       const { staff_id } = body;
       if (!staff_id) return json({ success: false, error: 'staff_id required' }, 400);
 
-      const propsUrl = `${SUPABASE_URL}/rest/v1/properties?or=(added_by_staff_id.eq.${staff_id},found_by_am_id.eq.${staff_id})&order=created_at.desc&limit=100&select=id,listing_title,address,city,state,zip_code,status,deal_status,is_verified,is_published,asking_price,monthly_rent,monthly_revenue,bedrooms,bathrooms,operation_type,photos,created_at,updated_at,approved_by_staff_name,approved_at,denial_reason,found_by_am_name,added_by_staff_name`;
+      const propsUrl = `${SUPABASE_URL}/rest/v1/properties?or=(added_by_staff_id.eq.${staff_id},found_by_am_id.eq.${staff_id})&order=created_at.desc&limit=100&select=id,listing_title,address,city,state,zip_code,status,deal_status,is_verified,is_published,acquisition_fee,monthly_rent,monthly_revenue,bedrooms,bathrooms,operation_type,photos,created_at,updated_at,approved_by_staff_name,approved_at,denial_reason,found_by_am_name,added_by_staff_name`;
       const propsRes = await fetch(propsUrl, { headers });
       const properties = await propsRes.json();
 
@@ -631,7 +631,7 @@ Deno.serve(async (req) => {
           address: p.address, city: p.city, state: p.state, zip_code: p.zip_code,
           status: p.status, deal_status: p.deal_status, computed_status: computedStatus,
           is_verified: p.is_verified, is_published: p.is_published,
-          asking_price: p.asking_price, monthly_rent: p.monthly_rent || p.monthly_revenue,
+          acquisition_fee: p.acquisition_fee, monthly_rent: p.monthly_rent || p.monthly_revenue,
           bedrooms: p.bedrooms, bathrooms: p.bathrooms, operation_type: p.operation_type,
           photos: p.photos, created_at: p.created_at, updated_at: p.updated_at,
           approved_by_staff_name: p.approved_by_staff_name, approved_at: p.approved_at,

@@ -518,7 +518,7 @@ interface SendDealDialogProps {
   investor: { id: string; full_name: string; email: string } | null;
   staffId: string;
   staffName: string;
-  deals: Array<{ id: string; title?: string; address: string; city: string; state: string; asking_price?: number; monthly_revenue?: number; monthly_rent?: number }>;
+  deals: Array<{ id: string; title?: string; address: string; city: string; state: string; acquisition_fee?: number; monthly_revenue?: number; monthly_rent?: number }>;
 }
 
 export function AMSendDealDialog({ open, onOpenChange, investor, staffId, staffName, deals }: SendDealDialogProps) {
@@ -549,12 +549,12 @@ export function AMSendDealDialog({ open, onOpenChange, investor, staffId, staffN
     try {
       const deal = deals.find(d => d.id === selectedDealId);
       const dealTitle = deal?.title || `${deal?.address}, ${deal?.city}`;
-      const priceStr = deal?.asking_price ? `$${deal.asking_price.toLocaleString()}` : 'Contact for pricing';
+      const priceStr = deal?.acquisition_fee ? `$${deal.acquisition_fee.toLocaleString()}` : 'Contact for pricing';
       const revenueStr = deal?.monthly_revenue || deal?.monthly_rent
         ? `$${(deal?.monthly_revenue || deal?.monthly_rent || 0).toLocaleString()}/mo`
         : 'N/A';
 
-      const messageBody = `Hi ${investor.full_name?.split(' ')[0] || 'there'},\n\nI wanted to share a deal I think would be a great fit for you:\n\n${dealTitle}\nAsking Price: ${priceStr}\nProjected Revenue: ${revenueStr}\n\n${personalNote ? `${personalNote}\n\n` : ''}Let me know if you'd like to learn more or schedule a call to discuss!\n\nBest,\n${staffName}`;
+      const messageBody = `Hi ${investor.full_name?.split(' ')[0] || 'there'},\n\nI wanted to share a deal I think would be a great fit for you:\n\n${dealTitle}\nAcquisition Fee: ${priceStr}\nProjected Revenue: ${revenueStr}\n\n${personalNote ? `${personalNote}\n\n` : ''}Let me know if you'd like to learn more or schedule a call to discuss!\n\nBest,\n${staffName}`;
 
       const { data, error } = await supabase.functions.invoke('investor-messaging', {
         body: {
@@ -624,9 +624,9 @@ export function AMSendDealDialog({ open, onOpenChange, investor, staffId, staffN
                       </p>
                     </div>
                     <div className="text-right">
-                      {deal.asking_price && (
+                      {deal.acquisition_fee && (
                         <p className="text-sm font-semibold text-green-700">
-                          ${deal.asking_price.toLocaleString()}
+                          ${deal.acquisition_fee.toLocaleString()}
                         </p>
                       )}
                       {(deal.monthly_revenue || deal.monthly_rent) && (

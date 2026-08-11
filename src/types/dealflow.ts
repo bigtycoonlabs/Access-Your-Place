@@ -42,7 +42,7 @@ export interface Property {
   updated_at: string;
 
   // Financial breakdown fields
-  asking_price?: number;
+  /** RETIRED. The price of an operation is acquisition_fee. Do not reintroduce. */
   adr_peak_season?: number;
   adr_slow_season?: number;
   monthly_room_rate?: number;

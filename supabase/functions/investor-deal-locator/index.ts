@@ -162,7 +162,7 @@ Deno.serve(async (req) => {
         square_feet: p.square_feet,
         monthly_rent: p.monthly_rent,
         acquisition_fee: p.acquisition_fee,
-        asking_price: p.asking_price || p.price,
+        acquisition_fee: p.acquisition_fee,
         cap_rate: p.cap_rate,
         operation_type: p.operation_type,
         property_type: p.property_type,

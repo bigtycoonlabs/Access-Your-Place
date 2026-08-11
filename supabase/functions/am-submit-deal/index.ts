@@ -234,7 +234,7 @@ Deno.serve(async (req) => {
     // ========== SUBMIT DEAL ==========
     if (action === 'submit_deal') {
       const {
-        address, city, state, zip_code, asking_price, monthly_revenue,
+        address, city, state, zip_code, acquisition_fee, monthly_revenue,
         bedrooms, bathrooms, sqft, property_type, operation_type,
         notes, photos, listing_url, landlord_name, landlord_email, landlord_phone,
         submitted_by_staff_id, submitted_by_staff_name, community_name,
@@ -250,7 +250,7 @@ Deno.serve(async (req) => {
       if (!city?.trim()) errors.push('City is required');
       if (!state?.trim()) errors.push('State is required');
       if (!zip_code?.trim()) errors.push('ZIP code is required');
-      if (!asking_price || parseFloat(String(asking_price)) <= 0) errors.push('Asking price is required');
+      if (!acquisition_fee || parseFloat(String(acquisition_fee)) <= 0) errors.push('Acquisition fee is required');
       if (!monthly_revenue || parseFloat(String(monthly_revenue)) <= 0) errors.push('Monthly revenue is required');
       if (!operation_type) errors.push('Operation type is required');
       if (!landlord_name?.trim()) errors.push('Landlord name is required');
@@ -268,7 +268,7 @@ Deno.serve(async (req) => {
       const propertyData: Record<string, any> = {
         title: autoTitle, listing_title: autoTitle, listing_description: listing_description || null,
         address: address.trim(), city: city.trim(), state: state.trim().toUpperCase().substring(0, 2),
-        zip_code: zip_code.trim(), price: parseFloat(String(asking_price)),
+        zip_code: zip_code.trim(),
         monthly_rent: parseFloat(String(monthly_revenue)),
         bedrooms: parseInt(String(bedrooms)) || 3, bathrooms: parseFloat(String(bathrooms)) || 2,
         sqft: sqft ? parseInt(String(sqft)) : null,
@@ -285,7 +285,12 @@ Deno.serve(async (req) => {
         is_published: false, is_featured: false, featured: false, is_verified: false, staff_verified: false,
         added_by_staff_id: submitted_by_staff_id || null, added_by_staff_name: submitted_by_staff_name || null,
         found_by_am_id: submitted_by_staff_id || null, found_by_am_name: submitted_by_staff_name || null,
-        units_available: 1, acquisition_fee: 2500,
+        units_available: 1,
+        // The acquisition fee IS the price of the operation. There is no separate
+        // asking price. This used to write the submitted figure into `price`, a
+        // column nothing reads, and hardcode the fee to 2500, so every deal an
+        // acquisition manager submitted was priced at $2,500 whatever they typed.
+        acquisition_fee: parseFloat(String(acquisition_fee)),
         visibility_settings: { show_address: false, show_community_name: false, show_landlord_contact: false, show_full_photos: true, show_financials: true },
         created_at: new Date().toISOString(), updated_at: new Date().toISOString()
       };
@@ -314,7 +319,7 @@ Deno.serve(async (req) => {
       const property = Array.isArray(inserted) ? inserted[0] : inserted;
       console.log('[am-submit-deal] Created property:', property?.id);
 
-      await logActivity(property.id, 'am_deal_submitted', `${submitterType === 'seller' ? 'Seller' : 'AM'} ${submitted_by_staff_name || submitted_by_client_name || 'Unknown'} submitted deal: ${address}, ${city}${is_third_party_seller ? ' [Third-Party Seller]' : ''}`, submitted_by_staff_name || submitted_by_client_name || 'Submitter', JSON.stringify({ asking_price, monthly_revenue, status: 'am_submitted', submitted_by_type: submitterType, is_third_party_seller }), null, submitted_by_staff_id || null);
+      await logActivity(property.id, 'am_deal_submitted', `${submitterType === 'seller' ? 'Seller' : 'AM'} ${submitted_by_staff_name || submitted_by_client_name || 'Unknown'} submitted deal: ${address}, ${city}${is_third_party_seller ? ' [Third-Party Seller]' : ''}`, submitted_by_staff_name || submitted_by_client_name || 'Submitter', JSON.stringify({ acquisition_fee, monthly_revenue, status: 'am_submitted', submitted_by_type: submitterType, is_third_party_seller }), null, submitted_by_staff_id || null);
 
       // v9.1: Insert deal_status_notification for the AM (submission confirmation)
       if (submitted_by_staff_id) {
@@ -340,7 +345,7 @@ Deno.serve(async (req) => {
           body: JSON.stringify({
             notification_type: 'am_deal_submitted',
             title: `New Deal Submitted: ${autoTitle}${is_third_party_seller ? ' [3rd Party]' : ''}`,
-            message: `${submitted_by_staff_name || submitted_by_client_name || 'Someone'} submitted ${address}, ${city}, ${state} for review. Asking: $${Number(asking_price).toLocaleString()}`,
+            message: `${submitted_by_staff_name || submitted_by_client_name || 'Someone'} submitted ${address}, ${city}, ${state} for review. Acquisition fee: $${Number(acquisition_fee).toLocaleString()}`,
             target_role: 'success_managers', property_id: property.id,
             created_by_staff_id: submitted_by_staff_id || null,
             created_by_staff_name: submitted_by_staff_name || submitted_by_client_name || null,
@@ -366,7 +371,7 @@ Deno.serve(async (req) => {
                   <p>Your deal <strong>${autoTitle}</strong> has been received and is under Success Team review.</p>
                   <div style="background:#f9fafb;padding:16px;border-radius:8px;margin:16px 0;border-left:4px solid #d4a574;">
                     <p style="margin:4px 0;"><strong>Location:</strong> ${city}, ${state}</p>
-                    <p style="margin:4px 0;"><strong>Asking Price:</strong> $${Number(asking_price).toLocaleString()}</p>
+                    <p style="margin:4px 0;"><strong>Acquisition Fee:</strong> $${Number(acquisition_fee).toLocaleString()}</p>
                     <p style="margin:4px 0;"><strong>Monthly Revenue:</strong> $${Number(monthly_revenue).toLocaleString()}/mo</p>
                   </div>
                   <div style="text-align:center;margin-top:24px;"><a href="https://accessyourplace.com/staff" style="background:#d4a574;color:white;padding:12px 24px;border-radius:6px;text-decoration:none;font-weight:bold;">Track in Dashboard</a></div>
@@ -394,7 +399,7 @@ Deno.serve(async (req) => {
                   <div style="background:#f9fafb;padding:16px;border-radius:8px;margin:16px 0;border-left:4px solid #d4a574;">
                     <p style="margin:4px 0;font-weight:bold;">${autoTitle}</p>
                     <p style="margin:4px 0;">${city}, ${state} ${zip_code || ''}</p>
-                    <p style="margin:4px 0;">Price: $${Number(asking_price).toLocaleString()} | Revenue: $${Number(monthly_revenue).toLocaleString()}/mo</p>
+                    <p style="margin:4px 0;">Price: $${Number(acquisition_fee).toLocaleString()} | Revenue: $${Number(monthly_revenue).toLocaleString()}/mo</p>
                     ${is_third_party_seller ? '<p style="margin:4px 0;color:#9333ea;font-weight:bold;">Third-Party Seller Deal</p>' : ''}
                   </div>
                   <div style="text-align:center;margin-top:24px;"><a href="https://accessyourplace.com/staff" style="background:#d4a574;color:white;padding:12px 28px;border-radius:6px;text-decoration:none;font-weight:bold;">Review Deal</a></div>
@@ -678,7 +683,7 @@ Deno.serve(async (req) => {
     if (action === 'edit_deal') {
       const { property_id, updates, staff_name, staff_id } = body;
       if (!property_id) return json({ success: false, error: 'Property ID required' }, 400);
-      const allowedFields = ['price', 'monthly_rent', 'bedrooms', 'bathrooms', 'sqft', 'operation_type', 'property_type', 'title', 'listing_title', 'listing_description', 'acquisition_fee', 'internal_notes', 'community_name', 'visibility_settings', 'is_third_party_seller', 'landlord_name', 'landlord_email', 'landlord_phone', 'adr_peak_season', 'adr_slow_season', 'monthly_room_rate', 'avg_occupancy_rate', 'projected_yearly_revenue', 'projected_monthly_revenue_peak', 'projected_monthly_revenue_slow', 'peak_season_description', 'deposits_concessions_notes'];
+      const allowedFields = ['monthly_rent', 'bedrooms', 'bathrooms', 'sqft', 'operation_type', 'property_type', 'title', 'listing_title', 'listing_description', 'acquisition_fee', 'internal_notes', 'community_name', 'visibility_settings', 'is_third_party_seller', 'landlord_name', 'landlord_email', 'landlord_phone', 'adr_peak_season', 'adr_slow_season', 'monthly_room_rate', 'avg_occupancy_rate', 'projected_yearly_revenue', 'projected_monthly_revenue_peak', 'projected_monthly_revenue_slow', 'peak_season_description', 'deposits_concessions_notes'];
       const safeUpdates: Record<string, any> = { updated_at: new Date().toISOString() };
       for (const [key, val] of Object.entries(updates || {})) {
         if (allowedFields.includes(key)) safeUpdates[key] = val;

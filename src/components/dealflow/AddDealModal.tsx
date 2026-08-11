@@ -25,7 +25,7 @@ import { handleDealError, ClassifiedError } from '@/utils/dealErrorHandler';
  * Safely parse a string/number to a float, returning `null` instead of `NaN`.
  *
  * DB schema note — the properties table financial columns
- * (asking_price, sqft, adr_peak_season, adr_slow_season, monthly_room_rate,
+ * (sqft, adr_peak_season, adr_slow_season, monthly_room_rate,
  *  avg_occupancy_rate, projected_yearly_revenue, projected_monthly_revenue_peak,
  *  projected_monthly_revenue_slow, peak_season_description, deposits_concessions_notes)
  * were added via ALTER TABLE and are **nullable** — sending `null` is safe.
@@ -119,7 +119,7 @@ export function AddDealModal({ open, onOpenChange, onAdd, staffId, staffName }: 
     is_verified: false,
     staff_verified: false,
     // Financial projections
-    asking_price: '', adr_peak_season: '', adr_slow_season: '', monthly_room_rate: '',
+    adr_peak_season: '', adr_slow_season: '', monthly_room_rate: '',
     avg_occupancy_rate: '', projected_yearly_revenue: '', projected_monthly_revenue_peak: '',
     projected_monthly_revenue_slow: '', peak_season_description: '', deposits_concessions_notes: '',
     sqft: '',
@@ -333,7 +333,6 @@ export function AddDealModal({ open, onOpenChange, onAdd, staffId, staffName }: 
         // We always include every field explicitly so the insert payload is
         // deterministic. safeParseFloat returns `null` (not NaN) for empty /
         // invalid values, which Postgres accepts for nullable columns.
-        asking_price: safeParseFloat(form.asking_price),
         sqft: safeParseFloat(form.sqft),
         monthly_room_rate: safeParseFloat(form.monthly_room_rate),
         adr_peak_season: safeParseFloat(form.adr_peak_season),
@@ -482,7 +481,7 @@ export function AddDealModal({ open, onOpenChange, onAdd, staffId, staffName }: 
         is_furnished: false, is_featured: false, operation_type: 'str', selected_categories: [], 
         source: 'acquisition_team', is_verified: false, staff_verified: false,
         // Reset financial projection fields
-        asking_price: '', adr_peak_season: '', adr_slow_season: '', monthly_room_rate: '',
+        adr_peak_season: '', adr_slow_season: '', monthly_room_rate: '',
         avg_occupancy_rate: '', projected_yearly_revenue: '', projected_monthly_revenue_peak: '',
         projected_monthly_revenue_slow: '', peak_season_description: '', deposits_concessions_notes: '',
         sqft: '',
@@ -837,10 +836,6 @@ export function AddDealModal({ open, onOpenChange, onAdd, staffId, staffName }: 
                 <DollarSign className="w-4 h-4" aria-hidden="true" /> Core Financials
               </legend>
               <div className="grid grid-cols-2 md:grid-cols-3 gap-3 mt-2">
-                <div>
-                  <Label htmlFor="fin-asking-price">Asking Price ($)</Label>
-                  <Input id="fin-asking-price" type="number" value={form.asking_price} onChange={e => setForm({...form, asking_price: e.target.value})} placeholder="250000" />
-                </div>
                 <div>
                   <Label htmlFor="fin-sqft">Square Footage</Label>
                   <Input id="fin-sqft" type="number" value={form.sqft} onChange={e => setForm({...form, sqft: e.target.value})} placeholder="1500" />

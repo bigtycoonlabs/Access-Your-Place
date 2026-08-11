@@ -75,7 +75,7 @@ interface SubmittedDeal {
 
 interface SellerDeal {
   id: string;
-  asking_price: number;
+  acquisition_fee: number;
   monthly_revenue: number;
   description: string;
   status: string;
@@ -749,7 +749,7 @@ export function AMSubmittedDealsTab({ staffId, staffName, isSuccessManager }: Pr
                       <p className="text-sm text-gray-600">{deal.property?.city}, {deal.property?.state}</p>
 
                       <div className="flex flex-wrap gap-4 mt-3 text-sm">
-                        <span className="text-green-700 font-medium">Asking: ${deal.asking_price?.toLocaleString()}</span>
+                        <span className="text-green-700 font-medium">Fee: ${deal.acquisition_fee?.toLocaleString()}</span>
                         <span className="text-blue-700">Revenue: ${deal.monthly_revenue?.toLocaleString()}/mo</span>
                         {deal.property?.bedrooms && <span className="text-gray-600">{deal.property.bedrooms}BR / {deal.property.bathrooms}BA</span>}
                       </div>
@@ -821,7 +821,7 @@ export function AMSubmittedDealsTab({ staffId, staffName, isSuccessManager }: Pr
                     <div className="space-y-4 mt-3">
                       <div className="grid grid-cols-2 gap-3">
                         <div>
-                          <Label htmlFor="edit-price" className="text-xs">Asking Price ($)</Label>
+                          <Label htmlFor="edit-price" className="text-xs">Acquisition Fee ($)</Label>
                           <Input id="edit-price" type="number" value={editForm.price} onChange={(e) => setEditForm({ ...editForm, price: parseFloat(e.target.value) || 0 })} />
                         </div>
                         <div>
@@ -868,7 +868,7 @@ export function AMSubmittedDealsTab({ staffId, staffName, isSuccessManager }: Pr
                     </div>
                   ) : (
                     <div className="grid grid-cols-2 gap-2 text-sm mt-2">
-                      <div><span className="text-gray-500">Asking Price:</span> <strong>{fmt(reviewDeal.price)}</strong></div>
+                      <div><span className="text-gray-500">Acquisition Fee:</span> <strong>{fmt(reviewDeal.price)}</strong></div>
                       <div><span className="text-gray-500">Monthly Revenue:</span> <strong>{reviewDeal.monthly_rent ? `${fmt(reviewDeal.monthly_rent)}/mo` : 'N/A'}</strong></div>
                       <div><span className="text-gray-500">Bedrooms:</span> <strong>{reviewDeal.bedrooms || 'N/A'}</strong></div>
                       <div><span className="text-gray-500">Bathrooms:</span> <strong>{reviewDeal.bathrooms || 'N/A'}</strong></div>

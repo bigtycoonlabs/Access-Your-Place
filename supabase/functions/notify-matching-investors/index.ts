@@ -22,7 +22,7 @@ function dealEmailHtml(property: any): string {
   const where = property.market || property.city || 'a new market'
   const beds = property.bedrooms ?? '?'
   const baths = property.bathrooms ?? '?'
-  const price = property.asking_price ? `$${Number(property.asking_price).toLocaleString()}` : 'Contact us'
+  const price = property.acquisition_fee ? `$${Number(property.acquisition_fee).toLocaleString()}` : 'Contact us'
   const addr = property.listing_title || property.address || where
   return `<!DOCTYPE html><html><head><meta charset="UTF-8"><meta name="viewport" content="width=device-width, initial-scale=1.0"></head><body style="margin:0;padding:0;font-family:Arial,Helvetica,sans-serif;background:#f8fafc;">
 <table width="100%" cellpadding="0" cellspacing="0" border="0" style="background:#f8fafc;"><tr><td align="center" style="padding:40px 20px;">
@@ -84,8 +84,11 @@ Deno.serve(async (req) => {
     let matchingInvestors = (investors || []).filter((inv: any) => {
       const prefs = inv.investment_preferences || {}
       if (prefs.markets?.length && !prefs.markets.includes(property.market)) return false
-      if (prefs.max_budget && property.asking_price > prefs.max_budget) return false
-      if (prefs.min_budget && property.asking_price < prefs.min_budget) return false
+      // Budget matching compared against asking_price, which is null on every
+      // property, so every comparison was against undefined and the filter never
+      // excluded anybody on price.
+      if (prefs.max_budget && property.acquisition_fee > prefs.max_budget) return false
+      if (prefs.min_budget && property.acquisition_fee < prefs.min_budget) return false
       if (prefs.property_types?.length && !prefs.property_types.includes(property.property_type)) return false
       return true
     })
@@ -104,8 +107,8 @@ Deno.serve(async (req) => {
       investor_id: inv.id,
       type: 'new_deal',
       title: 'New Deal Matching Your Criteria!',
-      message: `A new property in ${property.market || property.city} is now available. ${property.bedrooms || '?'} bed, ${property.bathrooms || '?'} bath - $${property.asking_price?.toLocaleString() || 'TBD'}`,
-      data: { propertyId, address: property.address, market: property.market, price: property.asking_price },
+      message: `A new property in ${property.market || property.city} is now available. ${property.bedrooms || '?'} bed, ${property.bathrooms || '?'} bath - $${property.acquisition_fee?.toLocaleString() || 'TBD'}`,
+      data: { propertyId, address: property.address, market: property.market, acquisition_fee: property.acquisition_fee },
     }))
     if (notifications.length > 0) {
       await supabase.from('investor_notifications').insert(notifications)

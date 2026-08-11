@@ -94,7 +94,9 @@ Deno.serve(async (req) => {
         bedrooms: p.bedrooms || 0,
         bathrooms: p.bathrooms || 0,
         monthly_rent: p.monthly_rent || 0,
-        asking_price: p.price || 0,
+        // `price` is a dead column, null on every row, so this always returned 0.
+        // The acquisition fee is the price of the operation.
+        acquisition_fee: p.acquisition_fee || 0,
         cap_rate: p.cap_rate || 0,
         property_type: p.property_type || 'single_family',
         operation_type: p.operation_type || 'str',

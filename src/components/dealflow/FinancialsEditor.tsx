@@ -60,7 +60,6 @@ export function FinancialsEditor({ property, onUpdate }: FinancialsEditorProps) 
     projected_monthly_revenue_peak: property.projected_monthly_revenue_peak ?? '',
     projected_monthly_revenue_slow: property.projected_monthly_revenue_slow ?? '',
     peak_season_description: property.peak_season_description ?? '',
-    asking_price: property.asking_price ?? '',
     sqft: property.sqft ?? '',
   });
 
@@ -78,8 +77,7 @@ export function FinancialsEditor({ property, onUpdate }: FinancialsEditorProps) 
       projected_monthly_revenue_peak: property.projected_monthly_revenue_peak ?? '',
       projected_monthly_revenue_slow: property.projected_monthly_revenue_slow ?? '',
       peak_season_description: property.peak_season_description ?? '',
-      asking_price: property.asking_price ?? '',
-      sqft: property.sqft ?? '',
+        sqft: property.sqft ?? '',
     });
     setPropertyCategory((property as any).property_category === 'community' ? 'community' : 'single_family');
     setTotalUnits((property as any).total_units || 1);
@@ -170,7 +168,7 @@ export function FinancialsEditor({ property, onUpdate }: FinancialsEditorProps) 
         'adr_peak_season', 'adr_slow_season', 'monthly_room_rate',
         'monthly_rent', 'acquisition_fee', 'avg_occupancy_rate',
         'projected_yearly_revenue', 'projected_monthly_revenue_peak',
-        'projected_monthly_revenue_slow', 'asking_price', 'sqft'
+        'projected_monthly_revenue_slow', 'sqft'
       ];
 
       for (const field of numericFields) {
@@ -229,7 +227,6 @@ export function FinancialsEditor({ property, onUpdate }: FinancialsEditorProps) 
             projected_monthly_revenue_slow: updateData.projected_monthly_revenue_slow,
             deposits_concessions_notes: updateData.deposits_concessions_notes,
             peak_season_description: updateData.peak_season_description,
-            asking_price: updateData.asking_price,
             sqft: updateData.sqft,
           })
           .eq('id', property.id);

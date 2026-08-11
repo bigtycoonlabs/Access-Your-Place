@@ -154,16 +154,16 @@ export function PropertyDetailModal({ property, analytics, outreach, notes, temp
                 </div>
 
                 {/* Quick Financial Summary */}
-                {(property.asking_price || property.adr_peak_season || property.projected_yearly_revenue || property.monthly_room_rate) && (
+                {(property.acquisition_fee || property.adr_peak_season || property.projected_yearly_revenue || property.monthly_room_rate) && (
                   <div className="mt-3 p-3 bg-emerald-50 rounded-lg border border-emerald-200">
                     <p className="text-xs font-semibold text-emerald-700 mb-2 flex items-center gap-1">
                       <BarChart3 className="w-3 h-3" aria-hidden="true" /> Financial Summary
                     </p>
                     <div className="grid grid-cols-2 gap-2 text-xs">
-                      {property.asking_price != null && property.asking_price > 0 && (
+                      {property.acquisition_fee != null && property.acquisition_fee > 0 && (
                         <div>
-                          <span className="text-gray-500">Asking Price:</span>{' '}
-                          <span className="font-medium text-emerald-800">${Number(property.asking_price).toLocaleString()}</span>
+                          <span className="text-gray-500">Acquisition Fee:</span>{' '}
+                          <span className="font-medium text-emerald-800">${Number(property.acquisition_fee).toLocaleString()}</span>
                         </div>
                       )}
                       {property.monthly_room_rate != null && property.monthly_room_rate > 0 && (

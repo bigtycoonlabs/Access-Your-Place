@@ -36,7 +36,6 @@ interface FinancialData {
   projected_yearly_revenue?: number;
   projected_monthly_revenue_peak?: number;
   projected_monthly_revenue_slow?: number;
-  asking_price?: number;
   sqft?: number;
   peak_season_description?: string;
   deposits_concessions_notes?: string;
@@ -70,7 +69,6 @@ export function InlineFinancialEditor({ property, open, onOpenChange, staffId, s
         projected_yearly_revenue: property.projected_yearly_revenue || 0,
         projected_monthly_revenue_peak: property.projected_monthly_revenue_peak || 0,
         projected_monthly_revenue_slow: property.projected_monthly_revenue_slow || 0,
-        asking_price: property.asking_price || 0,
         sqft: property.sqft || 0,
         peak_season_description: property.peak_season_description || '',
         deposits_concessions_notes: property.deposits_concessions_notes || '',
@@ -124,7 +122,6 @@ export function InlineFinancialEditor({ property, open, onOpenChange, staffId, s
         projected_yearly_revenue: safeNum(form.projected_yearly_revenue),
         projected_monthly_revenue_peak: safeNum(form.projected_monthly_revenue_peak),
         projected_monthly_revenue_slow: safeNum(form.projected_monthly_revenue_slow),
-        asking_price: safeNum(form.asking_price),
         sqft: safeNum(form.sqft),
         peak_season_description: form.peak_season_description?.trim() || null,
         deposits_concessions_notes: form.deposits_concessions_notes?.trim() || null,
@@ -153,7 +150,6 @@ export function InlineFinancialEditor({ property, open, onOpenChange, staffId, s
       if (financialPayload.monthly_rent) savedSummary.push(`Rent: $${financialPayload.monthly_rent.toLocaleString()}`);
       if (financialPayload.acquisition_fee) savedSummary.push(`Acq Fee: $${financialPayload.acquisition_fee.toLocaleString()}`);
       if (financialPayload.projected_yearly_revenue) savedSummary.push(`Yearly Rev: $${financialPayload.projected_yearly_revenue.toLocaleString()}`);
-      if (financialPayload.asking_price) savedSummary.push(`Asking: $${financialPayload.asking_price.toLocaleString()}`);
 
       toast({
         title: 'Financials Saved Successfully',
@@ -257,15 +253,12 @@ export function InlineFinancialEditor({ property, open, onOpenChange, staffId, s
             </div>
           </div>
 
-          {/* Asking Price & Sqft */}
+          {/* Size and room rate. There is no asking price on a property: the
+              acquisition fee entered above is the price of the operation. */}
           <h4 className="font-semibold text-sm text-gray-700 flex items-center gap-2 pt-2">
-            <Home className="w-4 h-4 text-[#d4a574]" /> Property Valuation
+            <Home className="w-4 h-4 text-[#d4a574]" /> Property Detail
           </h4>
-          <div className="grid grid-cols-3 gap-4">
-            <div>
-              <Label className="text-xs" htmlFor="asking-price">Asking Price ($)</Label>
-              <Input id="asking-price" type="number" min={0} step={1000} value={form.asking_price || ''} onChange={(e) => setForm({ ...form, asking_price: Number(e.target.value) })} placeholder="250000" />
-            </div>
+          <div className="grid grid-cols-2 gap-4">
             <div>
               <Label className="text-xs flex items-center gap-1" htmlFor="square-footage"><Square className="w-3 h-3" /> Square Footage</Label>
               <Input id="square-footage" type="number" min={0} step={10} value={form.sqft || ''} onChange={(e) => setForm({ ...form, sqft: Number(e.target.value) })} placeholder="1500" />
