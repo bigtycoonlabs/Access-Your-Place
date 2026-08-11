@@ -1,4 +1,10 @@
-const DATA_SCHEMA = 'prj_X-ZoVQv6LKXT';
+// PostgREST on this project exposes ONLY the public schema. Sending
+// Accept-Profile: prj_X-ZoVQv6LKXT made every REST call return 406 PGRST106, so
+// this function returned 500 'Invalid schema' to every visitor who submitted a
+// lead. Three front-end forms call it: LeadCapture, SubmitPropertyModal and
+// SetupServices. Not one lead from any of them reached the database.
+// Every prj_ table has a matching public view, so public is the correct profile.
+const DATA_SCHEMA = 'public';
 const originalFetch = globalThis.fetch;
 globalThis.fetch = (input: any, init: any = {}) => {
   const url = typeof input === 'string'
