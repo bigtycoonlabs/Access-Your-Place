@@ -142,7 +142,7 @@ export default function PropertyDetail() {
       // Strategy 2: Direct DB query fallback with client-side visibility filtering
       if (!propertyData) {
         const { data: dbData, error: dbError } = await supabase
-          .from('properties')
+          .from('marketplace_public')
           .select('*')
           .eq('id', id)
           .single();

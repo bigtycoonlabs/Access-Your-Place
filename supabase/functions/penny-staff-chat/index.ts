@@ -498,6 +498,28 @@ async function updateProperty(url: string, key: string, a: any, staffId: string)
   return data;
 }
 
+async function onboardClient(url: string, key: string, a: any, staffId: string) {
+  const { ok, status, data } = await rpc(url, key, 'penny_onboard_client', {
+    p_staff_id: staffId || null, p_email: String(a.email), p_full_name: String(a.full_name),
+    p_company: a.company ?? null, p_phone: a.phone ?? null,
+    p_credit: a.credit ?? null, p_credit_reason: a.credit_reason ?? null,
+  });
+  if (!ok) return { error: 'onboard_failed', http: status };
+  return data;
+}
+
+async function addToPortfolio(url: string, key: string, a: any, staffId: string) {
+  const { ok, status, data } = await rpc(url, key, 'penny_add_to_portfolio', {
+    p_staff_id: staffId || null, p_investor_id: String(a.investor_id),
+    p_address: String(a.address), p_city: a.city ?? null, p_state: a.state ?? null,
+    p_bedrooms: a.bedrooms ?? null, p_bathrooms: a.bathrooms ?? null,
+    p_monthly_rent: a.monthly_rent ?? null, p_acquired_on: a.acquired_on ?? null,
+    p_status: a.status ?? null, p_notes: a.notes ?? null,
+  });
+  if (!ok) return { error: 'portfolio_failed', http: status };
+  return data;
+}
+
 async function teamReadiness(url: string, key: string) {
   const { ok, status, data } = await rpc(url, key, 'penny_team_readiness');
   if (!ok) return { error: `read_failed_${status}` };
@@ -1479,6 +1501,18 @@ async function execTool(name: string, args: any, ctx: Ctx): Promise<unknown> {
     }
     if (name === 'client_book') return await clientBook(url, key);
     if (name === 'team_readiness') return await teamReadiness(url, key);
+    if (name === 'onboard_client') {
+      if (!args?.email || !args?.full_name) return { error: 'email and full_name required' };
+      if (args.confirmed !== true) {
+        return { needs_confirmation: true, action: 'create a platform account for this client',
+          instruction: 'Read back their name, email and any credit before creating it.' };
+      }
+      return await onboardClient(url, key, args, staffId);
+    }
+    if (name === 'add_to_portfolio') {
+      if (!args?.investor_id || !args?.address) return { error: 'investor_id and address required' };
+      return await addToPortfolio(url, key, args, staffId);
+    }
     if (name === 'update_property') {
       if (!args?.property_id) return { error: 'property_id required' };
       return await updateProperty(url, key, args, staffId);
@@ -2231,6 +2265,43 @@ const TOOLS = [
           confirmed: { type: 'boolean' },
         },
         required: ['property_id'],
+      },
+    },
+  },
+  {
+    type: 'function',
+    function: {
+      name: 'onboard_client',
+      description: "Give a client a platform account, with credit if they have any, and get back an invite link. REFUSES if that email already has an account, because a duplicate splits their credit and portfolio in two. It does NOT send the email - use send_message or say the link needs sending. Confirm before calling.",
+      parameters: {
+        type: 'object',
+        properties: {
+          email: { type: 'string' }, full_name: { type: 'string' },
+          company: { type: 'string' }, phone: { type: 'string' },
+          credit: { type: 'number' }, credit_reason: { type: 'string' },
+          confirmed: { type: 'boolean' },
+        },
+        required: ['email', 'full_name'],
+      },
+    },
+  },
+  {
+    type: 'function',
+    function: {
+      name: 'add_to_portfolio',
+      description: "Put a property a client has acquired into their portfolio. Do this whenever somebody closes - otherwise they sign in and see nothing of the deal they just bought. Use status 'pending' while the lease is still being finalised.",
+      parameters: {
+        type: 'object',
+        properties: {
+          investor_id: { type: 'string' }, address: { type: 'string' },
+          city: { type: 'string' }, state: { type: 'string' },
+          bedrooms: { type: 'number' }, bathrooms: { type: 'number' },
+          monthly_rent: { type: 'number' },
+          acquired_on: { type: 'string', description: 'YYYY-MM-DD' },
+          status: { type: 'string', enum: ['pending', 'active', 'exited'] },
+          notes: { type: 'string' },
+        },
+        required: ['investor_id', 'address'],
       },
     },
   },
@@ -3321,7 +3392,7 @@ const TOOL_GROUPS: Record<string, { words: RegExp; tools: string[] }> = {
   },
   deals: {
     words: /deal|propert|listing|marketplace|unpublish|publish|address|release|quote|forge|price|rent|market/i,
-    tools: ['list_marketplace','unpublish_property','add_property','update_property','quote_deal','forge_status','verification_gap','record_verification',
+    tools: ['list_marketplace','unpublish_property','add_property','update_property','onboard_client','add_to_portfolio','quote_deal','forge_status','verification_gap','record_verification',
             'release_property','present_deal','property_detail','search_properties'],
   },
   clients: {

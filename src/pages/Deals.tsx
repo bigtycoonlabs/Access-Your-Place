@@ -390,7 +390,7 @@ export default function Deals() {
         try {
           console.log('[Deals] Strategy 3 (supabase-js DB query) starting...');
           const fallbackPromise = supabase
-            .from('properties')
+            .from('marketplace_public')
             .select('*')
             .order('created_at', { ascending: false })
             .limit(500);
