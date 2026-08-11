@@ -127,7 +127,10 @@ Deno.serve(async (req) => {
     const supabase = createClient(Deno.env.get('SUPABASE_URL'), Deno.env.get('SUPABASE_SERVICE_ROLE_KEY'));
     const body = await req.json();
     const { action, ...params } = body;
-    const ok = (d) => new Response(JSON.stringify(d), { headers: { 'Content-Type': 'application/json', ...corsHeaders } });
+    // Took one argument and always returned 200, so a refusal like account_required
+    // went out with a success status. Callers that check the HTTP code would have read
+    // a rejection as a success.
+    const ok = (d, status = 200) => new Response(JSON.stringify(d), { status, headers: { 'Content-Type': 'application/json', ...corsHeaders } });
 
     // â”€â”€â”€ LIST PROJECTS â”€â”€â”€
     if (action === 'list_projects') {
@@ -341,6 +344,92 @@ Deno.serve(async (req) => {
     }
 
     // â”€â”€â”€ CREATE PROJECT â”€â”€â”€
+    // OPERATOR-REQUESTED SETUP.
+    //
+    // Setup is a service in its own right: an operator can ask us to launch a property
+    // they already own, whether they found it themselves or acquired it through us.
+    // Until now the only way a setup project could exist was a staff member creating it
+    // by hand, so a client had no way to ask. There are zero setup projects in the
+    // database, which is what "no request path" looks like from the outside.
+    //
+    // Identity comes from the session, never from a form field, so nobody can raise a
+    // request in somebody else's name.
+    if (action === 'request_setup') {
+      const token = String(params.session_token || '').trim();
+      if (!token) {
+        return ok({ success: false, error: 'account_required',
+          message: 'Please sign in to request a setup.' }, 401);
+      }
+      const { data: sess } = await supabase.from('investor_sessions')
+        .select('investor_id, expires_at').eq('session_token', token).eq('is_active', true).maybeSingle();
+      if (!sess || (sess.expires_at && new Date(sess.expires_at) < new Date())) {
+        return ok({ success: false, error: 'account_required',
+          message: 'Your session has expired. Please sign in again.' }, 401);
+      }
+      const { data: inv } = await supabase.from('investors')
+        .select('id, full_name, email, phone').eq('id', sess.investor_id).maybeSingle();
+      if (!inv?.email) {
+        return ok({ success: false, error: 'account_required',
+          message: 'We could not read your account. Please sign in again.' }, 401);
+      }
+
+      const r = params.request || {};
+      if (!r.property_address || !String(r.property_address).trim()) {
+        return ok({ success: false, error: 'address_required',
+          message: 'Tell us the address of the property you want launched.' }, 400);
+      }
+
+      const { data: project, error: pe } = await supabase.from('setup_projects').insert({
+        property_address: String(r.property_address).trim(),
+        investor_id: inv.id,
+        investor_name: inv.full_name || null,
+        investor_email: inv.email,
+        investor_phone: inv.phone || null,
+        property_id: r.property_id || null,
+        status: 'requested',
+        phase: 1,
+        num_properties: Number(r.num_properties) || 1,
+        num_beds: r.num_beds ? Number(r.num_beds) : null,
+        num_baths: r.num_baths ? Number(r.num_baths) : null,
+        property_type: r.property_type || 'apartment',
+        city_state: r.city_state || null,
+        target_start_date: r.target_start_date || null,
+        setup_type: r.setup_type || null,
+        operator_notes: r.notes || null,
+        admin_fee_amount: 2500,
+        budget: 0, actual_cost: 0, checklist: [], notes: '', photos: [],
+        intake_form_fields: DEFAULT_INTAKE_FIELDS,
+        phase_history: [{ from: 0, to: 1, by: inv.full_name || inv.email, at: new Date().toISOString() }],
+        activity_log: [{ action: 'Setup requested by operator', by: inv.full_name || inv.email, at: new Date().toISOString() }],
+      }).select().single();
+
+      if (pe) {
+        console.error('request_setup insert failed', pe.message);
+        return ok({ success: false, error: 'not_saved',
+          message: 'Your request did not save, so nobody has been told. Please try again, or email success@accessyourplace.com.' }, 502);
+      }
+
+      // Tell the setup team. Reported truthfully rather than assumed.
+      let staff_notified = false;
+      const { error: ne } = await supabase.from('staff_notifications').insert({
+        type: 'setup_requested', notification_type: 'setup_requested',
+        target_role: 'setup_manager', priority: 'high',
+        title: `Setup requested: ${String(r.property_address).trim()}`,
+        message: `${inv.full_name || inv.email} asked us to launch ${String(r.property_address).trim()}`
+          + (r.city_state ? `, ${r.city_state}` : '')
+          + `. ${r.num_properties && Number(r.num_properties) > 1 ? Number(r.num_properties) + ' units.' : ''}`
+          + ` ${r.notes ? 'They said: ' + r.notes : ''} A setup manager needs to run the consultation.`,
+        investor_id: inv.id, investor_name: inv.full_name || null, investor_email: inv.email,
+        property_id: r.property_id || null,
+        metadata: { setup_project_id: project.id },
+      });
+      staff_notified = !ne;
+      if (ne) console.error('request_setup notify failed', ne.message);
+
+      return ok({ success: true, project, staff_notified,
+        message: 'Your request is in. A setup manager will contact you to run the consultation and scope the launch. Nothing is charged until you have agreed the scope.' });
+    }
+
     if (action === 'create_project') {
       const { project_data: pd, staff_name } = params;
       const { data, error } = await supabase.from('setup_projects').insert({
@@ -365,13 +454,15 @@ Deno.serve(async (req) => {
       if (fe) throw fe;
       const cp = project.phase || 1;
       let np = cp + 1;
-      if (project.package_type === 'diy') { if (np === 4) np = 5; if (np === 6) np = 8; }
-      if (np > 8) {
-        const { data, error } = await supabase.from('setup_projects').update({ phase: 8, status: 'complete', completed_at: new Date().toISOString(), actual_completion: new Date().toISOString().split('T')[0], updated_at: new Date().toISOString(), phase_history: addPhase(project.phase_history, cp, 8, params.staff_name), activity_log: addLog(project.activity_log, 'Project completed', params.staff_name) }).eq('id', params.project_id).select().single();
+      if (project.package_type === 'diy') { if (np === 4) np = 5; if (np === 6) np = 9; }
+      if (np > 9) {
+        const { data, error } = await supabase.from('setup_projects').update({ phase: 9, status: 'complete', completed_at: new Date().toISOString(), actual_completion: new Date().toISOString().split('T')[0], updated_at: new Date().toISOString(), phase_history: addPhase(project.phase_history, cp, 9, params.staff_name), activity_log: addLog(project.activity_log, 'Project completed', params.staff_name) }).eq('id', params.project_id).select().single();
         if (error) throw error;
         return ok({ success: true, project: data, completed: true });
       }
-      const sm = { 1:'pending',2:'in_progress',3:'in_progress',4:'in_progress',5:'furniture_delivery',6:'furniture_delivery',7:'final_inspection',8:'complete' };
+      // 7 is Warehouse & Transport: freight is consolidated in Texas and moved on our own
+      // truck. It was missing entirely, so the workflow jumped from purchasing to on-site.
+      const sm = { 1:'pending',2:'in_progress',3:'in_progress',4:'in_progress',5:'furniture_delivery',6:'furniture_delivery',7:'in_transit',8:'final_inspection',9:'complete' };
       const { data, error } = await supabase.from('setup_projects').update({ phase: np, status: sm[np] || 'in_progress', updated_at: new Date().toISOString(), phase_history: addPhase(project.phase_history, cp, np, params.staff_name), activity_log: addLog(project.activity_log, `Advanced to Phase ${np}: ${PHASE_NAMES[np]}`, params.staff_name) }).eq('id', params.project_id).select().single();
       if (error) throw error;
       return ok({ success: true, project: data });
