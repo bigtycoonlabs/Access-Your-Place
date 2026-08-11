@@ -239,7 +239,15 @@ export default function Deals() {
     // URL because those columns are not in it. This path queried the properties table
     // directly with the publishable key, so it was also the one place still putting every
     // address on the wire.
-    const url = `${SUPABASE_URL}/rest/v1/marketplace_public?order=is_featured.desc.nullsfirst,created_at.desc&limit=500`;
+    // Reads the SAFE VIEW, not the properties table. marketplace_public selects only
+    // is_published rows and cannot return an address, a landlord phone number or a source URL
+    // because those columns are not in it.
+    //
+    // If this returns nothing, the caller falls through to the get-properties edge function,
+    // which applies the same allowlist server side. That fallback matters: a view created
+    // after PostgREST last reloaded its schema cache is invisible to the REST API even though
+    // it exists and is granted, and the page must not go blank while that settles.
+    const url = `${SUPABASE_URL}/rest/v1/marketplace_public?select=*&order=is_featured.desc.nullsfirst,created_at.desc&limit=500`;
 
     const res = await fetch(url, {
       method: 'GET',

@@ -66,7 +66,19 @@ serve(async (req) => {
         return new Response(JSON.stringify({ success: false, error: `Could not load properties (${r.status}).` }),
           { status: 502, headers: { ...corsHeaders, 'Content-Type': 'application/json' } });
       }
-      const properties = await r.json();
+      const raw = await r.json();
+      // The list is public. Strip the address, the landlord and the source URLs unless the
+      // caller is staff, SERVER SIDE -- nulling these in the browser leaves the real values
+      // on the wire for anyone who opens devtools, which is what the deal presentation
+      // mechanic exists to prevent.
+      const isStaffList = peek.caller_type === 'staff' || peek.include_private === true;
+      const properties = Array.isArray(raw) && !isStaffList
+        ? raw.map((row: Record<string, unknown>) => ({
+            ...row,
+            address: null, landlord_name: null, landlord_phone: null,
+            landlord_email: null, original_url: null, processed_url: null,
+          }))
+        : raw;
       return new Response(JSON.stringify({ success: true, properties, count: properties?.length ?? 0 }),
         { headers: { ...corsHeaders, 'Content-Type': 'application/json' } });
     }
