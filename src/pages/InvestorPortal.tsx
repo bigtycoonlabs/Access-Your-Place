@@ -80,8 +80,7 @@ import {
   FileText, Gift, Scale, LayoutDashboard, Home, Store, Bell, 
   BellRing, MailOpen, ArrowRight, Sparkles, MapPin, AlertTriangle,
   Wallet, WifiOff, RefreshCw, Shield, Brain, BookOpen, CalendarDays,
-  Search, X, ChevronLeft, Wrench, Zap
-  Package,
+  Search, X, ChevronLeft, Wrench, Zap, Package,
 } from 'lucide-react';
 
 
