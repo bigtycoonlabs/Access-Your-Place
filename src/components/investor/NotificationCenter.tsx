@@ -116,10 +116,28 @@ const notificationTypeColors: Record<string, string> = {
 
 
 
+
+// The table grant is closed: notifications carry a client's property address and their
+// private Penny score, and a browser filter is not a permission. Everything now goes
+// through investor-notifications, which scopes to the session on the server.
+function getInvestorSessionToken(): string | null {
+  try {
+    const direct = window.localStorage.getItem('investorSessionToken');
+    if (direct) return direct;
+    const raw = window.localStorage.getItem('investorSession');
+    if (!raw) return null;
+    const parsed = JSON.parse(raw);
+    return parsed?.session_token || parsed?.token || null;
+  } catch {
+    return null;
+  }
+}
+
 export function NotificationCenter({ investorId }: { investorId: string }) {
   const [notifications, setNotifications] = useState<Notification[]>([]);
   const [preferences, setPreferences] = useState<NotificationPreferences>(defaultPreferences);
   const [loading, setLoading] = useState(true);
+  const [loadError, setLoadError] = useState<string | null>(null);
   const [savingPrefs, setSavingPrefs] = useState(false);
   const [activeTab, setActiveTab] = useState('all');
   const [settingsOpen, setSettingsOpen] = useState(false);
@@ -136,16 +154,22 @@ export function NotificationCenter({ investorId }: { investorId: string }) {
 
   const fetchNotifications = async () => {
     try {
-      const { data, error } = await supabase
-        .from('investor_notifications')
-        .select('*')
-        .eq('investor_id', investorId)
-        .order('created_at', { ascending: false });
-
+      const { data, error } = await supabase.functions.invoke('investor-notifications', {
+        body: { action: 'list', session_token: getInvestorSessionToken() },
+      });
       if (error) throw error;
-      setNotifications(data || []);
+      if (!data?.success) {
+        // A failed read is not an empty inbox, so do not render one.
+        console.error('Notifications unavailable:', data?.message);
+        setLoadError(data?.message || 'We could not load your notifications just now.');
+        setLoading(false);
+        return;
+      }
+      setLoadError(null);
+      setNotifications(data.notifications || []);
     } catch (err) {
       console.error('Error fetching notifications:', err);
+      setLoadError('We could not load your notifications just now. This is not the same as you having none.');
     }
     setLoading(false);
   };
@@ -168,14 +192,9 @@ export function NotificationCenter({ investorId }: { investorId: string }) {
 
   const markAsRead = async (notificationId: string) => {
     try {
-      const { error } = await supabase
-        .from('investor_notifications')
-        .update({
-          is_read: true,
-          read_at: new Date().toISOString()
-        })
-        .eq('id', notificationId);
-
+      const { error } = await supabase.functions.invoke('investor-notifications', {
+        body: { action: 'mark_read', session_token: getInvestorSessionToken(), notification_id: notificationId },
+      });
       if (error) throw error;
 
       setNotifications(prev =>
@@ -196,14 +215,9 @@ export function NotificationCenter({ investorId }: { investorId: string }) {
       
       if (unreadIds.length === 0) return;
 
-      const { error } = await supabase
-        .from('investor_notifications')
-        .update({
-          is_read: true,
-          read_at: new Date().toISOString()
-        })
-        .in('id', unreadIds);
-
+      const { error } = await supabase.functions.invoke('investor-notifications', {
+        body: { action: 'mark_all_read', session_token: getInvestorSessionToken() },
+      });
       if (error) throw error;
 
       setNotifications(prev =>

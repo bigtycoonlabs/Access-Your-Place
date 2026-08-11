@@ -429,6 +429,7 @@ export default function InvestorPortal() {
     return 'penny-home';
   });
   const [announcement, setAnnouncement] = useState('');
+  const [onboardingSkipped, setOnboardingSkipped] = useState(false);
   const [showGuidedTour, setShowGuidedTour] = useState(false);
   useEffect(() => {
     try {
@@ -719,8 +720,26 @@ export default function InvestorPortal() {
     catch { return false; }
   })();
 
-  if (!investor.onboarding_completed && !acquiringNow) {
-    return <GuidedOnboarding investor={investor} onComplete={handleUpdateInvestor} />;
+  // The wall showed up in a second doorway. Deferring it only for buyers mid-acquisition
+  // left everybody else trapped: somebody who signed up specifically to request a setup
+  // was asked which markets they were interested in before they could reach any tab.
+  // Onboarding is a profile survey. It should never stand between a person and the thing
+  // they came to do, so it is now skippable and it never blocks a deep link.
+  const arrivedWithIntent = (() => {
+    try {
+      const q = new URLSearchParams(window.location.search);
+      return Boolean(q.get('acquire') || q.get('tab'));
+    } catch { return false; }
+  })();
+
+  if (!investor.onboarding_completed && !acquiringNow && !arrivedWithIntent && !onboardingSkipped) {
+    return (
+      <GuidedOnboarding
+        investor={investor}
+        onComplete={handleUpdateInvestor}
+        onSkip={() => setOnboardingSkipped(true)}
+      />
+    );
   }
 
 

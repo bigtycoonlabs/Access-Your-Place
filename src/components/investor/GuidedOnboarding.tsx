@@ -590,13 +590,16 @@ export function GuidedOnboarding({ investor, onComplete, onSkip }: Props) {
             )}
           </div>
 
-          {/* Skip option */}
-          {onSkip && step === 1 && (
+          {/* Skip was only offered on step one, so somebody two questions deep was
+              trapped: no way forward without answering, no way out. It is now on every
+              step, and it is a real 44px target rather than a faint line of grey text
+              that a screen reader user has to hunt for. */}
+          {onSkip && (
             <button
               onClick={onSkip}
-              className="w-full text-center text-sm text-gray-500 hover:text-gray-700"
+              className="min-h-[44px] w-full text-center text-sm font-medium text-gray-600 underline underline-offset-2 hover:text-gray-900"
             >
-              Skip for now
+              Skip this for now and go to my account
             </button>
           )}
         </CardContent>
