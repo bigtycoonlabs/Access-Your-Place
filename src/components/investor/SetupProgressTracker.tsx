@@ -5,6 +5,7 @@ import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { useToast } from '@/hooks/use-toast';
 import { SetupIntakeForm } from './SetupIntakeForm';
+import { RequestSetupForm } from './RequestSetupForm';
 import {
   Loader2, CheckCircle, Circle, Clock, DollarSign, 
   FileText, Package, Truck, Camera, Home, Wrench,
@@ -26,8 +27,9 @@ const PHASES = [
   { num: 4, name: 'Team Activation', icon: Users, description: 'Logistics payment and Setup Pro assignment (DFY only)' },
   { num: 5, name: 'Product Sourcing', icon: ShoppingCart, description: 'Item sourcing, spreadsheet review, and furniture fee' },
   { num: 6, name: 'Purchasing & Travel', icon: Plane, description: 'Items purchased and Pro travel arranged (DFY only)' },
-  { num: 7, name: 'On-Site Setup', icon: HardHat, description: 'Delivery, assembly, and live tracking (7-14 days)' },
-  { num: 8, name: 'Final Handover', icon: Sparkles, description: 'Cleanup, photos, video walkthrough, and delivery' },
+  { num: 7, name: 'Warehouse & Transport', icon: Truck, description: 'Everything lands at our Texas warehouse, is checked against the order, and travels to your property on our own truck' },
+  { num: 8, name: 'On-Site Setup', icon: HardHat, description: 'Delivery, assembly, and live tracking' },
+  { num: 9, name: 'Final Handover', icon: Sparkles, description: 'Cleanup, photos, video walkthrough, and delivery' },
 ];
 
 export function SetupProgressTracker({ investorId, investorName, investorEmail }: Props) {
@@ -127,16 +129,24 @@ export function SetupProgressTracker({ investorId, investorName, investorEmail }
   }
 
   if (projects.length === 0) {
+    // This used to say "once you begin the setup process with your Acquisition Manager,
+    // your project will appear here", which is a wall in front of a service we sell on
+    // its own. An operator can ask us to launch any property they own, acquired through
+    // us or not, so the empty state is the request itself.
     return (
-      <Card className="border-gray-200">
-        <CardContent className="py-12 text-center">
-          <Wrench className="w-12 h-12 mx-auto text-gray-300 mb-4" />
-          <h3 className="text-lg font-semibold text-gray-700 mb-2">No Setup Projects Yet</h3>
-          <p className="text-gray-500 max-w-md mx-auto">
-            Once you begin the property setup process with your Acquisition Manager, your setup project will appear here with full progress tracking.
-          </p>
-        </CardContent>
-      </Card>
+      <div className="space-y-4">
+        <Card className="border-gray-200">
+          <CardContent className="py-8 text-center">
+            <Wrench className="w-10 h-10 mx-auto text-gray-300 mb-3" />
+            <h3 className="text-lg font-semibold text-gray-700 mb-1">No launches in progress</h3>
+            <p className="text-gray-500 max-w-md mx-auto text-sm">
+              When a launch is running you will see every stage here, from sourcing through
+              our Texas warehouse to the final walkthrough.
+            </p>
+          </CardContent>
+        </Card>
+        <RequestSetupForm onRequested={fetchProjects} />
+      </div>
     );
   }
 
