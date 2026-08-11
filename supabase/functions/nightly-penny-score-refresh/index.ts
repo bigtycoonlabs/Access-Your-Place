@@ -97,8 +97,13 @@ Deno.serve(async (req) => {
 
     let query = supabase
       .from('properties')
-      .select('id, address, city, state, zip_code, monthly_rent, bedrooms, bathrooms, operation_type, penny_scored_at, deal_status')
-      .in('deal_status', ['live', 'published', 'active', 'available']);
+      .select('id, address, city, state, zip_code, monthly_rent, bedrooms, bathrooms, operation_type, penny_scored_at, deal_status, is_published')
+      // deal_status is a FOURTH publish signal alongside is_published, status and
+      // workflow_stage, and it disagrees with them. Both genuinely live Cleveland
+      // deals carry deal_status 'new', so this filter scored 20 unpublished
+      // properties and skipped the only two a buyer can actually see. is_published
+      // is what the marketplace view uses, so it leads here.
+      .or('is_published.eq.true,deal_status.in.(live,published,active,available)');
 
     if (onlyStale) {
       // Postgrest "or" filter: penny_scored_at is null OR older than cutoff

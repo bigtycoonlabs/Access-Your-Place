@@ -18,6 +18,21 @@ interface InquiryModalProps {
   onSubmitted?: () => void;
 }
 
+
+// An inquiry requires an account. Identity is read from the session on the server.
+function getInvestorSessionToken(): string | null {
+  try {
+    const direct = window.localStorage.getItem('investorSessionToken');
+    if (direct) return direct;
+    const raw = window.localStorage.getItem('investorSession');
+    if (!raw) return null;
+    const parsed = JSON.parse(raw);
+    return parsed?.session_token || parsed?.token || null;
+  } catch {
+    return null;
+  }
+}
+
 export function InquiryModal({ open, onOpenChange, deal, onSubmitted }: InquiryModalProps) {
   const [name, setName] = useState('');
   const [email, setEmail] = useState('');
@@ -30,14 +45,28 @@ export function InquiryModal({ open, onOpenChange, deal, onSubmitted }: InquiryM
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!name || !email) return;
+    const sessionToken = getInvestorSessionToken();
+    if (!sessionToken) {
+      toast({
+        title: 'Account required',
+        description: 'Please create a free account or sign in to enquire about this deal.',
+        variant: 'destructive',
+      });
+      window.location.href = `/investor-portal?redirect=/property/${deal.id}`;
+      return;
+    }
     setSubmitting(true);
-    
-    const { error } = await supabase.functions.invoke('submit-deal-inquiry', {
-      body: { property_id: deal.id, name, email, phone, message, investment_type: investmentType }
+
+    const { data: result, error } = await supabase.functions.invoke('submit-deal-inquiry', {
+      body: { property_id: deal.id, session_token: sessionToken, message, investment_type: investmentType }
     });
-    
+
     setSubmitting(false);
+    if (result?.error === 'account_required') {
+      toast({ title: 'Account required', description: result.message, variant: 'destructive' });
+      window.location.href = `/investor-portal?redirect=/property/${deal.id}`;
+      return;
+    }
     if (error) {
       toast({ title: 'Error', description: 'Failed to submit inquiry', variant: 'destructive' });
     } else {

@@ -74,6 +74,23 @@ interface PropertyAnalytics {
 }
 
 
+
+// An inquiry now requires an account. Identity is read from the session on the
+// server, never from form fields, so a signed-out visitor is sent to sign in
+// rather than being allowed to type any name and email they like.
+function getInvestorSessionToken(): string | null {
+  try {
+    const direct = window.localStorage.getItem('investorSessionToken');
+    if (direct) return direct;
+    const raw = window.localStorage.getItem('investorSession');
+    if (!raw) return null;
+    const parsed = JSON.parse(raw);
+    return parsed?.session_token || parsed?.token || null;
+  } catch {
+    return null;
+  }
+}
+
 export default function PropertyDetail() {
   const { id } = useParams<{ id: string }>();
   const navigate = useNavigate();
@@ -276,25 +293,34 @@ export default function PropertyDetail() {
   };
 
   const handleInquirySubmit = async () => {
-    if (!inquiryForm.name || !inquiryForm.email) {
-      toast({ title: 'Missing information', description: 'Please provide your name and email', variant: 'destructive' });
+    const sessionToken = getInvestorSessionToken();
+    if (!sessionToken) {
+      toast({
+        title: 'Account required',
+        description: 'Please create a free account or sign in to enquire about this deal. Taking you there now.',
+      });
+      setTimeout(() => navigate(`/investor-portal?redirect=/property/${id}`), 1200);
       return;
     }
 
     setSubmitting(true);
     try {
-      const { error } = await supabase.functions.invoke('submit-deal-inquiry', {
+      const { data: result, error } = await supabase.functions.invoke('submit-deal-inquiry', {
         body: {
           property_id: id,
-          name: inquiryForm.name,
-          email: inquiryForm.email,
-          phone: inquiryForm.phone,
+          session_token: sessionToken,
           message: inquiryForm.message,
           property_address: `${property?.city}, ${property?.state}`,
           property_title: property?.listing_title
         }
       });
 
+      if (result?.error === 'account_required') {
+        toast({ title: 'Account required', description: result.message, variant: 'destructive' });
+        setSubmitting(false);
+        setTimeout(() => navigate(`/investor-portal?redirect=/property/${id}`), 1200);
+        return;
+      }
       if (error) throw error;
 
       toast({ title: 'Inquiry submitted!', description: 'Our team will contact you within 24 hours.' });

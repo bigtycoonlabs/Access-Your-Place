@@ -69,11 +69,55 @@ Deno.serve(async (req) => {
     const supabaseKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!
     const supabase = createClient(supabaseUrl, supabaseKey)
 
-    const { property_id, name, email, phone, message, investment_type } = await req.json()
+    const { property_id, session_token, message, investment_type } = await req.json()
 
-    if (!property_id || !name || !email) {
-      throw new Error('Property ID, name, and email are required')
+    if (!property_id) {
+      throw new Error('Property ID is required')
     }
+
+    // OWNER DECISION 11 Aug 2026: an account is required to enquire on a deal.
+    // The identity comes from the session, never from a form field, so a stranger
+    // cannot type somebody else's name and email into an inquiry.
+    if (!session_token) {
+      return new Response(JSON.stringify({
+        success: false,
+        error: 'account_required',
+        message: 'Please create an account or sign in to enquire about this deal.',
+      }), { status: 401, headers: { 'Content-Type': 'application/json', ...corsHeaders } })
+    }
+
+    const { data: session } = await supabase
+      .from('investor_sessions')
+      .select('investor_id, is_active, expires_at')
+      .eq('session_token', session_token)
+      .eq('is_active', true)
+      .maybeSingle()
+
+    if (!session || (session.expires_at && new Date(session.expires_at) < new Date())) {
+      return new Response(JSON.stringify({
+        success: false,
+        error: 'account_required',
+        message: 'Your session has expired. Please sign in again to enquire about this deal.',
+      }), { status: 401, headers: { 'Content-Type': 'application/json', ...corsHeaders } })
+    }
+
+    const { data: investor } = await supabase
+      .from('investors')
+      .select('id, full_name, email, phone')
+      .eq('id', session.investor_id)
+      .maybeSingle()
+
+    if (!investor?.email) {
+      return new Response(JSON.stringify({
+        success: false,
+        error: 'account_required',
+        message: 'We could not read your account. Please sign in again.',
+      }), { status: 401, headers: { 'Content-Type': 'application/json', ...corsHeaders } })
+    }
+
+    const name = investor.full_name || investor.email
+    const email = investor.email
+    const phone = investor.phone || null
 
     const { data, error } = await supabase.from('deal_inquiries').insert({
       property_id,
@@ -97,38 +141,12 @@ Deno.serve(async (req) => {
       is_pinned: true,
     })
 
-    // Notify the listing's owner that there's interest: the third-party seller for a seller deal,
-    // otherwise the landlord. Best-effort — the inquiry is already saved — and logged truthfully.
-    let owner_notified = false
-    try {
-      const { data: prop } = await supabase
-        .from('properties')
-        .select('is_third_party_seller, submitted_by_client_name, submitted_by_client_email, landlord_name, landlord_email, listing_title, title, community_name, address, city, state')
-        .eq('id', property_id)
-        .single()
-      if (prop) {
-        const isSeller = !!prop.is_third_party_seller && !!prop.submitted_by_client_email
-        const recipEmail: string | null = isSeller ? prop.submitted_by_client_email : prop.landlord_email
-        const recipName: string = (isSeller ? prop.submitted_by_client_name : prop.landlord_name) || 'there'
-        const role = isSeller ? 'Seller' : 'Landlord'
-        if (recipEmail) {
-          const label = prop.listing_title || prop.title || prop.community_name ||
-            [prop.address, prop.city, prop.state].filter(Boolean).join(', ') || 'your listing'
-          const buyerFirst = String(name || '').split(' ')[0] || 'Someone'
-          const sent = await sendEmail(recipEmail, 'New interest in your listing', interestHtml(recipName, label, buyerFirst, investment_type || 'general', message || ''))
-          owner_notified = sent
-          await supabase.from('outreach_notes').insert({
-            property_id,
-            content: `${role} ${recipName} ${sent ? 'notified' : 'NOT notified (email failed)'} of interest from ${name}.`,
-            note_type: 'general',
-            author_name: 'System',
-            is_pinned: false,
-          })
-        }
-      }
-    } catch (_) {
-      // Non-fatal: the inquiry itself is saved; owner notification is a bonus.
-    }
+    // OWNER DECISION 11 Aug 2026: an inquiry must NOT email the landlord.
+    // This used to email the landlord (or the third-party seller) the moment anyone
+    // enquired. Landlords are not to be contacted on interest alone. A landlord is
+    // notified only when staff approve an operator for the property.
+    // The seller/landlord notification block that lived here has been removed.
+    const owner_notified = false
 
     // NOBODY ON THE TEAM WAS TOLD. This function emailed the landlord or seller and
     // pinned a note to a property page, and that was all. No staff notification, no
