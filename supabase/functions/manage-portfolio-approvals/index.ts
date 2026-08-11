@@ -413,10 +413,29 @@ Deno.serve(async (req) => {
         } catch (e) { console.log('acquisitions query skipped'); }
 
         // 3. Deal inquiries
+        // This filtered on status = 'pending'. Every inquiry this table has ever held
+        // is status 'new', which is what submit-deal-inquiry writes, so the staff
+        // request centre showed zero inquiries while four were sitting unanswered.
+        // One person, Suresh Bachu, asked about four properties on 13 June and was
+        // never contacted because nobody could see him.
+        // The support_requests query two blocks down already used .in([...]) with
+        // 'new' included, which is why support tickets appeared and inquiries did not.
         try {
-          const { data: inquiries } = await supabase.from('deal_inquiries').select('*').eq('status', 'pending').order('created_at', { ascending: false }).limit(50);
-          if (inquiries) results.deal_inquiries = inquiries.map(i => ({ ...i, request_type: 'deal_inquiry', investor_name: i.name || i.investor_name || 'Unknown', investor_email: i.email || i.investor_email || '' }));
-        } catch (e) {}
+          const { data: inquiries, error: inqErr } = await supabase.from('deal_inquiries').select('*').in('status', ['new', 'pending', 'open']).order('created_at', { ascending: false }).limit(50);
+          if (inqErr) {
+            // An unread inquiry list is not an empty one. Say which.
+            results.deal_inquiries_status = 'unavailable';
+            results.deal_inquiries_error = inqErr.message;
+            console.error('deal_inquiries query failed:', inqErr.message);
+          } else {
+            results.deal_inquiries_status = 'answered';
+            results.deal_inquiries = (inquiries || []).map(i => ({ ...i, request_type: 'deal_inquiry', investor_name: i.investor_name || i.name || 'Unknown', investor_email: i.investor_email || i.email || '' }));
+          }
+        } catch (e) {
+          results.deal_inquiries_status = 'unavailable';
+          results.deal_inquiries_error = (e as Error).message;
+          console.error('deal_inquiries query threw:', e);
+        }
 
         // 4. Support requests
         try {
