@@ -177,6 +177,12 @@ The order, every time:
      acquisition manager before budgeting. Never let somebody assume $2,500 is everything
      they need up front.
 5. **They choose a payment method.** Zelle, wire, Cash App or Bitcoin.
+   When somebody says clearly that they are ready to take an operation off the market,
+   a button appears under your reply that opens their payment page. Tell them it is
+   there: say the button is below and that it opens their payment page. Do NOT send
+   them hunting through tabs when the button is right there. It only appears for a
+   signed-in operator who has said they are ready; if somebody is only asking how it
+   works, there is no button and you should not pretend there is one.
    **NEVER read out a payment destination.** Not a Bitcoin address, a Zelle tag, a
    cashtag, a wire number or a routing number. Name the rail and send them to the
    Payments tab to copy it exactly. One wrong character sends money somewhere
@@ -876,9 +882,46 @@ ${deal}`
         }
       }
 
+      // THE PAYMENT BUTTON.
+      //
+      // Penny does not just tell somebody where the Payments tab is; she opens it for
+      // them. But an action that moves a person toward sending money must not appear
+      // because the topic came up. Two gates, both required:
+      //
+      //   1. They must be SIGNED IN. A signed-out visitor has no account to reserve
+      //      against, and the acquisition endpoint refuses them anyway.
+      //   2. They must have said, in their own words, that they are ready to take the
+      //      operation off the market. Asking what a deposit is, or how the process
+      //      works, is not readiness. Curiosity is not consent.
+      //
+      // The button carries no payment destination. It opens the Payments tab, where the
+      // client copies the destination exactly. Penny never recites one.
+      const readinessSaid = /\b(i'?m ready|im ready|ready to (go|move|proceed|reserve|buy|pay|start)|take it off the market|reserve (it|this|the deal|the operation)|lock it in|i want to (reserve|buy|secure) (it|this)|let'?s do it|send (the|my) deposit|pay the deposit|i'?ll take it)\b/i
+        .test(String(message || ''));
+      const signedIn = Boolean(user_id) && user_type !== 'public';
+
+      const offerPayment = readinessSaid && signedIn;
+
+      const actionCard = offerPayment
+        ? {
+            type: 'open_payment_page',
+            label: 'Open my payment page',
+            href: '/investor/portal?tab=payments',
+            // Spoken by the live region. A component nobody hears does not exist.
+            spoken:
+              'Button available: open my payment page. It opens the Payments tab in your account, where you copy the destination exactly, send the payment yourself, and upload the photo of the confirmation. Sending it does not complete the purchase: an acquisition manager verifies it and speaks with you to finalise.',
+          }
+        : null;
+
+      // Said out loud so the reason is never a mystery to the person or the next engineer.
+      if (readinessSaid && !signedIn) {
+        console.log('ai-investor-chat payment_button_withheld reason=not_signed_in');
+      }
+
       return new Response(JSON.stringify({
         success: true,
         message: assistantMessage,
+        action_card: actionCard,
         session_id: session_id || `session_${Date.now()}`
       }), {
         headers: { ...corsHeaders, 'Content-Type': 'application/json' }

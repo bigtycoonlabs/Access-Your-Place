@@ -20,6 +20,9 @@ interface ChatMessage {
   role: 'user' | 'assistant';
   content: string;
   timestamp?: string;
+  // Penny can attach one action to a reply. Today that is the payment page, and only
+  // when a signed-in operator has said they are ready to take an operation off market.
+  actionCard?: { type: string; label: string; href: string; spoken?: string } | null;
 }
 
 interface ChatSession {
@@ -276,9 +279,16 @@ export function PennyChatButton({ userId, userName, userType }: PennyChatButtonP
         const assistantMessage: ChatMessage = {
           role: 'assistant',
           content: data.message,
-          timestamp: new Date().toISOString()
+          timestamp: new Date().toISOString(),
+          actionCard: data.action_card || null
         };
         setMessages(prev => [...prev, assistantMessage]);
+
+        // A component that is never spoken does not exist. The live region only ever
+        // read the message text, so a button attached to a reply was silent.
+        if (data.action_card?.spoken) {
+          announceToScreenReader(data.action_card.spoken, 'assertive');
+        }
         
         if (data.is_new_investor !== undefined) {
           setIsNewInvestor(data.is_new_investor);
@@ -622,6 +632,14 @@ export function PennyChatButton({ userId, userName, userType }: PennyChatButtonP
                         className="text-sm whitespace-pre-wrap leading-relaxed prose prose-sm max-w-none"
                         dangerouslySetInnerHTML={{ __html: formatMarkdown(msg.content) }}
                       />
+                      {msg.actionCard && (
+                        <a
+                          href={msg.actionCard.href}
+                          className="mt-3 flex min-h-[44px] w-full items-center justify-center rounded-lg bg-[#1a365d] px-4 py-3 text-sm font-semibold text-white hover:bg-[#12283f]"
+                        >
+                          {msg.actionCard.label}
+                        </a>
+                      )}
                       {msg.timestamp && (
                         <p 
                           className={`text-xs mt-1 ${msg.role === 'user' ? 'text-white/70' : 'text-gray-400'}`}

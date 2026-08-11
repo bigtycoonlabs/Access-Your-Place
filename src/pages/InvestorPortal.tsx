@@ -413,9 +413,33 @@ export default function InvestorPortal() {
   const [bookingData, setBookingData] = useState<any>(null);
   const [bookingForm, setBookingForm] = useState({ preferred_date: '', preferred_time: '', notes: '' });
   const [submitting, setSubmitting] = useState(false);
-  const [activeTab, setActiveTab] = useState('penny-home');
+  // Deep links from the marketplace. "Start Your Acquisition" on a deal sends the
+  // operator here with ?acquire=<property_id>, and ?tab=payments is how Penny opens the
+  // payment page for somebody who has said they are ready. Without this the parameter
+  // was simply dropped and people landed on the portal home wondering what happened.
+  const [activeTab, setActiveTab] = useState(() => {
+    try {
+      const q = new URLSearchParams(window.location.search);
+      if (q.get('tab') === 'payments' || q.get('acquire')) return 'payments';
+    } catch { /* no window, keep the default */ }
+    return 'penny-home';
+  });
   const [announcement, setAnnouncement] = useState('');
   const [showGuidedTour, setShowGuidedTour] = useState(false);
+  useEffect(() => {
+    try {
+      const q = new URLSearchParams(window.location.search);
+      const acquiring = q.get('acquire');
+      if (acquiring) {
+        setAnnouncement(
+          'Payments. You are here to reserve an operation. Choose how you want to send the $2,500 acquisition fee deposit, copy the destination exactly, send it from your own bank or app, then upload a photo of the confirmation.',
+        );
+      } else if (q.get('tab') === 'payments') {
+        setAnnouncement('Payments. Choose a method and copy the destination exactly.');
+      }
+    } catch { /* ignore */ }
+  }, []);
+
   const navigate = useNavigate();
   const { toast } = useToast();
 
