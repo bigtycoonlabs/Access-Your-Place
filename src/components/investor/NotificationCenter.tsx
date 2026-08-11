@@ -176,17 +176,21 @@ export function NotificationCenter({ investorId }: { investorId: string }) {
 
   const fetchPreferences = async () => {
     try {
-      const { data, error } = await supabase
-        .from('investor_notification_preferences')
-        .select('*')
-        .eq('investor_id', investorId)
-        .single();
-
-      if (data) {
-        setPreferences({ ...defaultPreferences, ...data });
+      const { data, error } = await supabase.functions.invoke('investor-notifications', {
+        body: { action: 'get_preferences', session_token: getInvestorSessionToken() },
+      });
+      if (error) throw error;
+      if (data?.success && data.preferences) {
+        setPreferences({ ...defaultPreferences, ...data.preferences });
+      }
+      // No row yet is legitimate: a new account has no saved preferences and the
+      // defaults are correct. A FAILED read is different and is logged rather than
+      // silently treated as "no preferences".
+      if (data && !data.success) {
+        console.error('Notification preferences unavailable:', data.message);
       }
     } catch (err) {
-      // No preferences yet, use defaults
+      console.error('Error loading notification preferences:', err);
     }
   };
 
@@ -278,17 +282,20 @@ export function NotificationCenter({ investorId }: { investorId: string }) {
 
     setSavingPrefs(true);
     try {
-      const { error } = await supabase
-        .from('investor_notification_preferences')
-        .upsert({
-          investor_id: investorId,
-          ...preferences,
-          updated_at: new Date().toISOString()
-        }, {
-          onConflict: 'investor_id'
-        });
-
+      const { data, error } = await supabase.functions.invoke('investor-notifications', {
+        body: { action: 'save_preferences', session_token: getInvestorSessionToken(), preferences },
+      });
       if (error) throw error;
+      // Do not say "saved" unless it saved.
+      if (!data?.success) {
+        toast({
+          title: 'Settings not saved',
+          description: data?.message || 'Please try again.',
+          variant: 'destructive',
+        });
+        setSavingPrefs(false);
+        return;
+      }
 
       toast({ 
         title: 'Preferences saved!',

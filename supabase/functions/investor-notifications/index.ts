@@ -122,6 +122,50 @@ Deno.serve(async (req) => {
       return json({ success: true, updated: r.headers.get('content-range') });
     }
 
+    // PREFERENCES. The browser read and wrote investor_notification_preferences
+    // directly and anon has no grant on it, so every load 401'd and every save failed.
+    // The load was swallowed ("no preferences yet, use defaults"), so an operator who
+    // changed a setting saw an error toast at best and, either way, nothing persisted.
+    // The table also holds sms_phone_number, which is not something a stranger should be
+    // able to read, so this goes through the session like everything else here.
+    if (action === 'get_preferences') {
+      const r = await rest(
+        `investor_notification_preferences?investor_id=eq.${encodeURIComponent(investorId)}&select=*&limit=1`,
+      );
+      if (!r.ok) {
+        console.error('get_preferences failed', await r.text());
+        return json({ success: false, error: 'unavailable',
+          message: 'We could not load your notification settings just now.' }, 502);
+      }
+      const rows = await r.json();
+      return json({ success: true, preferences: Array.isArray(rows) ? rows[0] || null : null });
+    }
+
+    if (action === 'save_preferences') {
+      const prefs = (body.preferences && typeof body.preferences === 'object')
+        ? { ...body.preferences } as Record<string, unknown> : null;
+      if (!prefs) return json({ success: false, error: 'preferences object is required' }, 400);
+
+      // The caller does not get to say whose preferences these are.
+      delete prefs.investor_id;
+      delete prefs.id;
+
+      const r = await rest('investor_notification_preferences?on_conflict=investor_id', {
+        method: 'POST',
+        headers: { Prefer: 'resolution=merge-duplicates, return=representation' },
+        body: JSON.stringify({ ...prefs, investor_id: investorId, updated_at: new Date().toISOString() }),
+      });
+      if (!r.ok) {
+        const detail = await r.text();
+        console.error('save_preferences failed', detail);
+        // Never report saved when nothing was written.
+        return json({ success: false, error: 'not_saved',
+          message: 'Your settings did not save. Please try again.' }, 502);
+      }
+      const rows = await r.json();
+      return json({ success: true, preferences: Array.isArray(rows) ? rows[0] || null : null });
+    }
+
     return json({ success: false, error: `Unknown action: ${action}` }, 400);
   } catch (e) {
     console.error('investor-notifications threw', e instanceof Error ? e.message : String(e));
