@@ -40,15 +40,19 @@ Deno.serve(async (req) => {
     if (action === 'list') {
       let query = supabase
         .from('deal_inquiries')
+        // The columns are investor_email and investor_phone. Asking for `email` and
+        // `phone` made every list request fail with "column deal_inquiries.email does
+        // not exist", so the inquiry list was empty for its whole life. There are 4
+        // real inquiries, the oldest 58 days old, and nobody has been contacted.
         .select(`
-          id, investor_name, email, phone, message, status,
+          id, investor_name, investor_email, investor_phone, message, status,
           staff_notes, created_at, contacted_at,
           properties (id, city, state, zip_code, bedrooms, bathrooms, photos)
         `)
         .order('created_at', { ascending: false });
 
       if (investor_email) {
-        query = query.eq('email', investor_email);
+        query = query.eq('investor_email', investor_email);
       }
 
       const { data, error } = await query;
