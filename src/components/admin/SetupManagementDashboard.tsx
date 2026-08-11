@@ -19,7 +19,7 @@ import {
   CheckCircle, Clock, ChevronRight, Search, RefreshCw,
   Phone, FileText, Package, Plane, Wrench, Camera,
   UserPlus, Filter, ArrowUpDown, LayoutGrid, List,
-  TrendingUp, CreditCard, AlertCircle
+  TrendingUp, CreditCard, AlertCircle, Truck,
 } from 'lucide-react';
 import { SOPHelpButton } from './SOPHelpButton';
 import { SetupProjectDetail } from './SetupProjectDetail';
@@ -31,8 +31,15 @@ const PHASES = [
   { num: 4, name: 'Logistics & Team', shortName: 'Logistics', icon: UserPlus, color: 'bg-pink-500', lightColor: 'bg-pink-50 border-pink-200 text-pink-700' },
   { num: 5, name: 'Sourcing & Approval', shortName: 'Sourcing', icon: Package, color: 'bg-orange-500', lightColor: 'bg-orange-50 border-orange-200 text-orange-700' },
   { num: 6, name: 'Purchasing & Travel', shortName: 'Purchase', icon: Plane, color: 'bg-amber-500', lightColor: 'bg-amber-50 border-amber-200 text-amber-700' },
-  { num: 7, name: 'On-Site Setup', shortName: 'On-Site', icon: Wrench, color: 'bg-emerald-500', lightColor: 'bg-emerald-50 border-emerald-200 text-emerald-700' },
-  { num: 8, name: 'Cleanup & Handover', shortName: 'Handover', icon: Camera, color: 'bg-green-600', lightColor: 'bg-green-50 border-green-200 text-green-700' },
+  // Purchasing used to hand straight to On-Site, which modelled the old way of working
+  // where furniture shipped direct to the property. It does not any more: everything
+  // lands at the Texas warehouse, is checked against the order, and travels to the
+  // launch site on our own truck. That is where compliance and security over large
+  // merchandise purchases is held, and the workflow had no stage for it, so a setup
+  // manager had nowhere to answer "has it all arrived, and is it all correct".
+  { num: 7, name: 'Warehouse & Transport', shortName: 'Freight', icon: Truck, color: 'bg-cyan-600', lightColor: 'bg-cyan-50 border-cyan-200 text-cyan-700' },
+  { num: 8, name: 'On-Site Setup', shortName: 'On-Site', icon: Wrench, color: 'bg-emerald-500', lightColor: 'bg-emerald-50 border-emerald-200 text-emerald-700' },
+  { num: 9, name: 'Cleanup & Handover', shortName: 'Handover', icon: Camera, color: 'bg-green-600', lightColor: 'bg-green-50 border-green-200 text-green-700' },
 ];
 
 interface SetupProject {
