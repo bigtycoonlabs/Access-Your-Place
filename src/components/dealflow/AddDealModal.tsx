@@ -116,6 +116,7 @@ export function AddDealModal({ open, onOpenChange, onAdd, staffId, staffName }: 
     landlord_name: '', landlord_phone: '', landlord_email: '', listing_url: '', acquisition_fee: '2500',
     is_furnished: false, is_featured: false, operation_type: 'str', selected_categories: [] as string[],
     setup_package_included: false, setup_package_tier: '', setup_package_cost: '', setup_package_summary: '', setup_package_lead_time_days: '',
+    property_deposit_required: 'unknown', property_deposit_amount: '', property_deposit_notes: '',
     source: 'acquisition_team',
     is_verified: false,
     staff_verified: false,
@@ -175,6 +176,10 @@ export function AddDealModal({ open, onOpenChange, onAdd, staffId, staffName }: 
           listing_title: form.listing_title,
           acquisition_fee: parseFloat(form.acquisition_fee) || 2500,
           is_furnished: form.is_furnished,
+        property_deposit_required: form.property_deposit_required === 'yes' ? true
+          : form.property_deposit_required === 'no' ? false : null,
+        property_deposit_amount: form.property_deposit_amount ? safeParseFloat(form.property_deposit_amount) : null,
+        property_deposit_notes: form.property_deposit_notes || null,
         setup_package_included: !!form.setup_package_included,
         setup_package_tier: form.setup_package_tier || null,
         setup_package_cost: form.setup_package_cost ? safeParseFloat(form.setup_package_cost) : null,
@@ -486,6 +491,7 @@ export function AddDealModal({ open, onOpenChange, onAdd, staffId, staffName }: 
         landlord_name: '', landlord_phone: '', landlord_email: '', listing_url: '', acquisition_fee: '2500',
         is_furnished: false, is_featured: false, operation_type: 'str', selected_categories: [], 
     setup_package_included: false, setup_package_tier: '', setup_package_cost: '', setup_package_summary: '', setup_package_lead_time_days: '',
+    property_deposit_required: 'unknown', property_deposit_amount: '', property_deposit_notes: '',
         source: 'acquisition_team', is_verified: false, staff_verified: false,
         // Reset financial projection fields
         adr_peak_season: '', adr_slow_season: '', monthly_room_rate: '',
@@ -741,6 +747,78 @@ export function AddDealModal({ open, onOpenChange, onAdd, staffId, staffName }: 
                 <Label htmlFor="is_furnished" className="cursor-pointer">Fully Furnished</Label>
               </div>
             </div>
+
+            {/* TWO DEPOSITS. The $2,500 acquisition fee deposit is company-wide and
+                comes off our fee. A property deposit is separate money paid to the
+                landlord, is additional, and does not come off our fee. Silence on this
+                reads to a buyer as "there isn't one", which is a guess. So staff state
+                it either way, including confirming there is none. */}
+            <fieldset className="p-4 bg-slate-50 border-2 border-slate-200 rounded-lg space-y-3">
+              <legend className="px-1 text-sm font-semibold text-slate-900">
+                Does the property require its own deposit?
+              </legend>
+              <p className="text-sm text-slate-700">
+                This is separate from the $2,500 acquisition fee deposit. It is paid to the
+                landlord or the property, it is additional money the operator needs, and it does
+                not come off our fee. Answer it either way. Leaving it unanswered tells the buyer
+                nobody has checked.
+              </p>
+
+              <div className="flex flex-wrap items-center gap-4">
+                <label className="flex items-center gap-2 cursor-pointer">
+                  <input
+                    type="radio"
+                    name="property_deposit_required"
+                    checked={form.property_deposit_required === 'no'}
+                    onChange={() => setForm({ ...form, property_deposit_required: 'no' })}
+                  />
+                  <span>No separate deposit</span>
+                </label>
+                <label className="flex items-center gap-2 cursor-pointer">
+                  <input
+                    type="radio"
+                    name="property_deposit_required"
+                    checked={form.property_deposit_required === 'yes'}
+                    onChange={() => setForm({ ...form, property_deposit_required: 'yes' })}
+                  />
+                  <span>Yes, the property requires a deposit</span>
+                </label>
+                <label className="flex items-center gap-2 cursor-pointer">
+                  <input
+                    type="radio"
+                    name="property_deposit_required"
+                    checked={form.property_deposit_required === 'unknown'}
+                    onChange={() => setForm({ ...form, property_deposit_required: 'unknown' })}
+                  />
+                  <span>Not confirmed yet</span>
+                </label>
+              </div>
+
+              {form.property_deposit_required === 'yes' && (
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+                  <div>
+                    <Label htmlFor="property_deposit_amount">Property deposit ($)</Label>
+                    <Input
+                      id="property_deposit_amount"
+                      type="number"
+                      min={0}
+                      value={form.property_deposit_amount}
+                      onChange={e => setForm({ ...form, property_deposit_amount: e.target.value })}
+                      placeholder="Leave blank if still being confirmed"
+                    />
+                  </div>
+                  <div>
+                    <Label htmlFor="property_deposit_notes">Deposit notes for the buyer</Label>
+                    <Input
+                      id="property_deposit_notes"
+                      value={form.property_deposit_notes}
+                      onChange={e => setForm({ ...form, property_deposit_notes: e.target.value })}
+                      placeholder="First month plus deposit due at lease signing."
+                    />
+                  </div>
+                </div>
+              )}
+            </fieldset>
 
             {/* The marketplace only lists turnkey offerings. A deal qualifies by being
                 furnished, by being an operation for sale, or by being unfurnished WITH a

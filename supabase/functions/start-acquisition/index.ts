@@ -109,7 +109,7 @@ async function resolveInvestor(sessionToken: string) {
 /** The listing as the public sees it, including the deposit and whether it is still available. */
 async function getDeal(propertyId: string) {
   const r = await rest(
-    `marketplace_public?id=eq.${encodeURIComponent(propertyId)}&select=id,listing_title,city,state,acquisition_fee,reservation_deposit,reservation_state,turnkey_label,setup_package_summary,setup_package_cost&limit=1`,
+    `marketplace_public?id=eq.${encodeURIComponent(propertyId)}&select=id,listing_title,city,state,acquisition_fee,acquisition_fee_deposit,reservation_state,turnkey_label,setup_package_summary,setup_package_cost,property_deposit_required,property_deposit_amount,property_deposit_notes,deposit_summary&limit=1`,
   );
   if (!r.ok) return null;
   const rows = await r.json();
@@ -178,12 +178,32 @@ Deno.serve(async (req) => {
           setup_package: deal.setup_package_summary,
           setup_package_cost: deal.setup_package_cost,
         },
-        deposit: {
-          amount: deal.reservation_deposit,
+        // TWO DEPOSITS, AND THEY ARE NOT THE SAME MONEY.
+        // The first is ours and comes off our fee. The second is the property's, is
+        // additional, and does not come off our fee. Presenting only the first lets a
+        // buyer think $2,500 is everything due at the start.
+        acquisition_fee_deposit: {
+          amount: deal.acquisition_fee_deposit,
+          paid_to: 'Access Your Place',
           what_it_does:
-            `A deposit of $${Number(deal.reservation_deposit).toLocaleString()} takes this operation off the market and holds it for you. ` +
-            `It comes off the total, it does not add to it.`,
+            `A deposit of $${Number(deal.acquisition_fee_deposit).toLocaleString()} takes this operation off the market and holds it for you. ` +
+            `It comes off the $${Number(deal.acquisition_fee).toLocaleString()} acquisition fee, it does not add to it.`,
         },
+        property_deposit: {
+          required: deal.property_deposit_required,
+          amount: deal.property_deposit_amount,
+          paid_to: 'the landlord or the property, not Access Your Place',
+          note:
+            deal.property_deposit_required === true
+              ? (deal.property_deposit_amount
+                  ? `This property also requires a $${Number(deal.property_deposit_amount).toLocaleString()} deposit paid to the property. That is additional money and does not come off our acquisition fee.`
+                  : 'This property also requires a deposit paid to the property. The amount is being confirmed. It is additional and does not come off our acquisition fee.')
+              : deal.property_deposit_required === false
+                ? 'This property requires no separate deposit to the landlord.'
+                : 'Whether this property requires a separate landlord deposit has not been confirmed yet. Ask your acquisition manager before you budget.',
+        },
+        // One sentence covering both, for reading aloud.
+        what_you_need_up_front: deal.deposit_summary,
         // Said plainly and early, because it is the client's right and it is easy to
         // miss when a payment screen is the next thing in front of you.
         before_you_pay:
@@ -315,7 +335,7 @@ Deno.serve(async (req) => {
         }, 409);
       }
 
-      const deposit = Number(deal.reservation_deposit);
+      const deposit = Number(deal.acquisition_fee_deposit);
       const amountRaw = body.amount_reported;
       const amount = amountRaw === undefined || amountRaw === null || amountRaw === '' ? null : Number(amountRaw);
       // The deposit floor is the rule. Say the number rather than failing vaguely.
@@ -324,7 +344,7 @@ Deno.serve(async (req) => {
           success: false,
           error: 'below_minimum',
           message:
-            `It takes at least $${deposit.toLocaleString()} to take an operation off the market. ` +
+            `It takes at least $${deposit.toLocaleString()} toward the acquisition fee to take an operation off the market. ` +
             `You entered $${amount.toLocaleString()}. If you have already sent the full amount, tell us and we will check.`,
         }, 400);
       }

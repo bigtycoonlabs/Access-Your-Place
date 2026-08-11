@@ -25,3 +25,23 @@
 --
 -- 12 unpublished properties currently read not_turnkey and will need a package stated
 -- before they can go live.
+
+-- ---------------------------------------------------------------------------
+-- LATER THE SAME DAY: two deposits, not one.
+--
+-- The $2,500 is a deposit toward the ACQUISITION FEE. It is paid to Access Your Place,
+-- it takes the operation off the market, and it comes off our fee rather than adding
+-- to it. Some properties ALSO require a deposit paid to the landlord or the property.
+-- That is separate, additional, and does not come off our fee. The two Cleveland deals
+-- require none, confirmed by the owner.
+--
+-- Added: property_deposit_required (nullable boolean), property_deposit_amount,
+-- property_deposit_notes, plus public.ayp_deposit_summary(uuid), which says both in one
+-- spoken sentence so a screen reader user hears the whole money picture at once.
+--
+-- property_deposit_required is deliberately NULLABLE and three-state. NULL means nobody
+-- has confirmed either way, and the listing says exactly that rather than implying none.
+-- Silence on a money question reads as "there isn't one", and that would be a guess
+-- presented as a fact to somebody deciding what to bring to a deal.
+--
+-- The staff listing form asks the question outright with no default answer.
