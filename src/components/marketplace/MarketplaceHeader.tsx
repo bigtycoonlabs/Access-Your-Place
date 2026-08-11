@@ -78,10 +78,17 @@ export function MarketplaceHeader({
             {totalDeals.toLocaleString()} Active Opportunities
           </Badge>
           <h1 className="text-4xl md:text-5xl font-bold mb-3">
-            Rental Arbitrage Marketplace
+            Turnkey Operations
           </h1>
-          <p className="text-lg text-white/70 max-w-2xl mx-auto">
-            Browse pre-negotiated deals across {totalStates} states. Every property is landlord-approved and ready for acquisition.
+          {/* The tagline sits inside the marketplace rather than in the nav, so the
+              first thing a visitor reads on opening it is what these actually are. */}
+          <p className="text-lg text-white/80 max-w-2xl mx-auto">
+            Rental businesses already running, or built and furnished by our team.
+          </p>
+          <p className="mt-2 text-base text-white/70 max-w-2xl mx-auto">
+            Short-term, mid-term, corporate and co-living, across {totalStates}{' '}
+            {totalStates === 1 ? 'state' : 'states'}. Every operation is landlord-approved,
+            the numbers are verified, and nothing here needs work before it earns.
           </p>
         </div>
 

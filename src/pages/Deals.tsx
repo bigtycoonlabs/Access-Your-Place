@@ -937,7 +937,7 @@ export default function Deals() {
   return (
     <div className="min-h-screen bg-gray-50">
       <SEO 
-        title="Rental Arbitrage Marketplace - Pre-Negotiated Investment Deals"
+        title="Turnkey Operations for sale - Rental businesses already running"
         description={`Browse ${properties.length} verified rental arbitrage properties with landlord approval. Find STR, co-living, and peer space investment opportunities across ${availableLocations.length} states.`}
         keywords="rental arbitrage deals, STR properties for sale, co-living investment, Airbnb arbitrage, pre-approved rental properties"
         canonicalUrl="/deals"

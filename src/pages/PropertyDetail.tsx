@@ -1019,12 +1019,53 @@ export default function PropertyDetail() {
                     </div>
                   )}
 
+                  {/* What a buyer needs before they commit anything: both deposits,
+                      said plainly. The acquisition fee deposit is ours and comes off
+                      the fee. A property deposit is separate money paid to the
+                      landlord. Silence on either reads as "there isn't one". */}
+                  {(property as any).deposit_summary && (
+                    <div className="mb-4 rounded-lg border border-[#1a365d]/15 bg-white p-3">
+                      <h2 className="text-sm font-semibold text-[#1a365d]">What it takes to reserve this</h2>
+                      <p className="mt-1 text-sm leading-relaxed text-gray-700">
+                        {(property as any).deposit_summary}
+                      </p>
+                    </div>
+                  )}
+
+                  {/* Start Your Acquisition. Signed-out visitors are sent to create an
+                      account: identity comes from the session server-side, never from a
+                      form field, so nobody can start an acquisition as somebody else. */}
+                  <Button
+                    className="w-full bg-[#1a365d] hover:bg-[#12283f] mb-3 h-12 text-lg"
+                    onClick={() => {
+                      const token = getInvestorSessionToken();
+                      if (!token) {
+                        toast({
+                          title: 'Account required',
+                          description: 'Create a free account or sign in to start an acquisition. Taking you there now.',
+                        });
+                        setTimeout(() => navigate(`/investor/login?redirect=/deals/${id}`), 1200);
+                        return;
+                      }
+                      navigate(`/investor/portal?acquire=${id}`);
+                    }}
+                  >
+                    Start Your Acquisition
+                  </Button>
+                  <p className="mb-4 text-xs leading-relaxed text-gray-600">
+                    Penny walks you through it: the terms, how you want to pay, and sending
+                    your payment proof. Nothing completes the purchase on its own. An
+                    acquisition manager verifies your payment and speaks with you to finalise.
+                    You can ask to speak to one before you send anything.
+                  </p>
+
                   <Button 
-                    className="w-full bg-[#d4a574] hover:bg-[#c49464] mb-3 h-12 text-lg"
+                    variant="outline"
+                    className="w-full mb-3 h-12"
                     onClick={() => setInquiryOpen(true)}
                   >
                     <MessageCircle className="w-5 h-5 mr-2" />
-                    Inquire About This Deal
+                    Ask a question about this deal
                   </Button>
 
                   <div className="grid grid-cols-2 gap-3">
