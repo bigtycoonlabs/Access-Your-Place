@@ -484,6 +484,20 @@ async function discardLead(url: string, key: string, a: any, staffId: string) {
   return data;
 }
 
+async function updateProperty(url: string, key: string, a: any, staffId: string) {
+  const { ok, status, data } = await rpc(url, key, 'penny_update_property', {
+    p_property_id: String(a.property_id), p_staff_id: staffId || null,
+    p_monthly_rent: a.monthly_rent ?? null, p_bedrooms: a.bedrooms ?? null,
+    p_bathrooms: a.bathrooms ?? null, p_sleeps: a.sleeps ?? null,
+    p_asking_price: a.asking_price ?? null,
+    p_peak_revenue: a.peak_revenue ?? null, p_slow_revenue: a.slow_revenue ?? null,
+    p_is_furnished: a.is_furnished ?? null, p_third_party: a.third_party ?? null,
+    p_description: a.description ?? null, p_append_description: a.append_description ?? null,
+  });
+  if (!ok) return { error: 'update_failed', http: status };
+  return data;
+}
+
 async function teamReadiness(url: string, key: string) {
   const { ok, status, data } = await rpc(url, key, 'penny_team_readiness');
   if (!ok) return { error: `read_failed_${status}` };
@@ -1465,6 +1479,10 @@ async function execTool(name: string, args: any, ctx: Ctx): Promise<unknown> {
     }
     if (name === 'client_book') return await clientBook(url, key);
     if (name === 'team_readiness') return await teamReadiness(url, key);
+    if (name === 'update_property') {
+      if (!args?.property_id) return { error: 'property_id required' };
+      return await updateProperty(url, key, args, staffId);
+    }
     if (name === 'discard_lead') {
       if (!args?.lead_id || !args?.reason) return { error: 'lead_id and reason required' };
       return await discardLead(url, key, args, staffId);
@@ -2187,6 +2205,32 @@ const TOOLS = [
         type: 'object',
         properties: { lead_id: { type: 'string' }, reason: { type: 'string' } },
         required: ['lead_id', 'reason'],
+      },
+    },
+  },
+  {
+    type: 'function',
+    function: {
+      name: 'update_property',
+      description: "Change a listing that already exists - rent, sleeps, asking price, revenue, or the description. USE THIS on a second pass rather than adding the property again. Pass only what changed. It reports the real before and after of every field, so read back what it says changed, not what you were told.",
+      parameters: {
+        type: 'object',
+        properties: {
+          property_id: { type: 'string' },
+          monthly_rent: { type: 'number' },
+          bedrooms: { type: 'number' },
+          bathrooms: { type: 'number' },
+          sleeps: { type: 'number' },
+          asking_price: { type: 'number' },
+          peak_revenue: { type: 'number' },
+          slow_revenue: { type: 'number' },
+          is_furnished: { type: 'boolean' },
+          third_party: { type: 'boolean' },
+          description: { type: 'string', description: 'Replaces the description outright.' },
+          append_description: { type: 'string', description: 'Adds to the existing description instead of replacing it.' },
+          confirmed: { type: 'boolean' },
+        },
+        required: ['property_id'],
       },
     },
   },
@@ -3277,7 +3321,7 @@ const TOOL_GROUPS: Record<string, { words: RegExp; tools: string[] }> = {
   },
   deals: {
     words: /deal|propert|listing|marketplace|unpublish|publish|address|release|quote|forge|price|rent|market/i,
-    tools: ['list_marketplace','unpublish_property','add_property','quote_deal','forge_status','verification_gap','record_verification',
+    tools: ['list_marketplace','unpublish_property','add_property','update_property','quote_deal','forge_status','verification_gap','record_verification',
             'release_property','present_deal','property_detail','search_properties'],
   },
   clients: {
