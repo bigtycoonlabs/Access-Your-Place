@@ -59,7 +59,7 @@ serve(async (req) => {
       // page shows no panel rather than a number nobody can justify.
       try {
         const sr = await fetch(
-          `${u}/rest/v1/marketplace_public?select=deal_score,deal_score_basis,slow_season_profit,average_monthly_profit,projected_annual_profit,fee_payback_months,rent_coverage_multiple&id=eq.${encodeURIComponent(String(peek.id))}&limit=1`,
+          `${u}/rest/v1/marketplace_public?select=deal_score,deal_score_basis,slow_season_profit,average_monthly_profit,projected_annual_revenue,projected_annual_profit,fee_payback_months,rent_coverage_multiple,acquisition_fee_deposit,property_deposit_required,property_deposit_amount,property_deposit_notes,deposit_summary,turnkey_status,turnkey_label,setup_package_included,setup_package_summary,setup_package_cost,setup_package_lead_time_days,reservation_state&id=eq.${encodeURIComponent(String(peek.id))}&limit=1`,
           { headers: { apikey: k, Authorization: `Bearer ${k}` } });
         if (sr.ok) {
           const srows = await sr.json();
