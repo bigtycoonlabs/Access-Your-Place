@@ -51,6 +51,26 @@ serve(async (req) => {
         property.original_url = null;
         property.processed_url = null;
       }
+      // Deal scoring and the analytics behind it. Computed in the database from figures
+      // recorded on this listing by ayp_listing_score / ayp_listing_economics. Attached
+      // here because the deal page loads through this function, not through
+      // marketplace_public, so a score added to the view alone never reaches the page.
+      // Best effort and honest: if the read fails, the score is simply absent and the
+      // page shows no panel rather than a number nobody can justify.
+      try {
+        const sr = await fetch(
+          `${u}/rest/v1/marketplace_public?select=deal_score,deal_score_basis,slow_season_profit,average_monthly_profit,projected_annual_profit,fee_payback_months,rent_coverage_multiple&id=eq.${encodeURIComponent(String(peek.id))}&limit=1`,
+          { headers: { apikey: k, Authorization: `Bearer ${k}` } });
+        if (sr.ok) {
+          const srows = await sr.json();
+          if (Array.isArray(srows) && srows[0]) Object.assign(property, srows[0]);
+        } else {
+          console.error('get-properties score_lookup_http', sr.status);
+        }
+      } catch (e) {
+        console.error('get-properties score_lookup_threw', String(e));
+      }
+
       return new Response(JSON.stringify({ success: true, property }),
         { headers: { ...corsHeaders, 'Content-Type': 'application/json' } });
     }

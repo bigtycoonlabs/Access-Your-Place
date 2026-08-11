@@ -52,7 +52,7 @@ export function InquiryModal({ open, onOpenChange, deal, onSubmitted }: InquiryM
         description: 'Please create a free account or sign in to enquire about this deal.',
         variant: 'destructive',
       });
-      window.location.href = `/investor-portal?redirect=/property/${deal.id}`;
+      window.location.href = `/investor-portal?redirect=/deals/${deal.id}`;
       return;
     }
     setSubmitting(true);
@@ -64,7 +64,7 @@ export function InquiryModal({ open, onOpenChange, deal, onSubmitted }: InquiryM
     setSubmitting(false);
     if (result?.error === 'account_required') {
       toast({ title: 'Account required', description: result.message, variant: 'destructive' });
-      window.location.href = `/investor-portal?redirect=/property/${deal.id}`;
+      window.location.href = `/investor-portal?redirect=/deals/${deal.id}`;
       return;
     }
     if (error) {
