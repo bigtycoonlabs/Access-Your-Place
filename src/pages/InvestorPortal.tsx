@@ -74,6 +74,7 @@ import { supabase } from '@/lib/supabase';
 import { useToast } from '@/hooks/use-toast';
 import Footer from '@/components/Footer';
 
+import { TermsGate } from '@/components/investor/TermsGate';
 import { 
   Loader2, Building2, Heart, MessageSquare, Mail, Calendar, 
   Settings, Briefcase, FolderOpen, FileSignature, CreditCard, 
@@ -813,7 +814,11 @@ export default function InvestorPortal() {
     );
   };
 
+  // Nobody uses the portal until they have accepted the current terms. This wraps the
+  // whole thing rather than sitting on one tab, because a person could otherwise reach a
+  // payment screen through a deep link without ever having agreed to anything.
   return (
+    <TermsGate>
     <div className="min-h-screen bg-gray-50">
       {/* Push Notification Manager - registers tokens and handles deep linking */}
       <PushNotificationManager
@@ -1656,6 +1661,7 @@ export default function InvestorPortal() {
           Separate from the investor-facing PennyChatButton (bottom-right). */}
       <PennyStaffTool />
     </div>
+    </TermsGate>
   );
 }
 
