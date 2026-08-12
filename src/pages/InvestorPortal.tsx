@@ -1310,7 +1310,50 @@ export default function InvestorPortal() {
           </TabsContent>
 
           {/* ===== PROPERTY SETUP TAB ===== */}
+          {/* THE OTHER TWO PLATFORMS.
+              An operator running furnished rentals is a small business owner with idle
+              cash and, often, a second idea they never started. Both live behind their
+              own products and neither was linked anywhere an operator actually works:
+              they were on the public marketing pages only, which the person who already
+              signed in never sees again. */}
           <TabsContent value="setup" role="tabpanel" aria-label="Property setup progress tracker">
+            <nav aria-label="Other Access YP platforms" className="mb-6 grid gap-4 md:grid-cols-2">
+              <a
+                href="https://accessypflow.com"
+                target="_blank"
+                rel="noopener noreferrer"
+                className="block min-h-[44px] rounded-xl border border-gray-200 bg-white p-5 transition-colors hover:border-[#1a365d]"
+              >
+                <span className="block font-bold text-[#1a365d]">
+                  Access YP Flow
+                  <span className="sr-only"> (opens in a new tab)</span>
+                </span>
+                <span className="mt-1 block text-sm leading-relaxed text-gray-600">
+                  Put the idle cash between bookings to work on your own exchange account,
+                  under limits you set. Non-custodial: we never hold your money. Paper mode is
+                  free with every strategy.
+                </span>
+                <span className="mt-2 block text-sm font-medium text-[#1a365d]">accessypflow.com</span>
+              </a>
+              <a
+                href="https://accessyplabs.com"
+                target="_blank"
+                rel="noopener noreferrer"
+                className="block min-h-[44px] rounded-xl border border-gray-200 bg-white p-5 transition-colors hover:border-[#1a365d]"
+              >
+                <span className="block font-bold text-[#1a365d]">
+                  Access YP Labs
+                  <span className="sr-only"> (opens in a new tab)</span>
+                </span>
+                <span className="mt-1 block text-sm leading-relaxed text-gray-600">
+                  Turn an idea you never started into a real project you own, and can keep,
+                  launch or sell. Building with Clay is free and your first project is free
+                  forever.
+                </span>
+                <span className="mt-2 block text-sm font-medium text-[#1a365d]">accessyplabs.com</span>
+              </a>
+            </nav>
+
             <InvestorTabErrorBoundary tabName="Property Setup">
               <SetupProgressTracker
                 investorId={investor.id}
