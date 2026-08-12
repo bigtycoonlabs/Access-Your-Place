@@ -773,7 +773,7 @@ function stripPhoneNumbers(text: string): string {
   return out;
 }
 
-const DESTINATION_SHAPES: { name: string; anchored: RegExp; loose: RegExp; needsPaymentContext?: boolean }[] = [
+const DESTINATION_SHAPES: { name: string; anchored: RegExp; loose: RegExp; needsPaymentContext?: boolean; looseNeedsAddressShape?: boolean }[] = [
   {
     // Bech32 BTC (bc1...). Deliberately loose on length: a truncated or
     // corrupted address is exactly what we are trying to catch.
@@ -784,9 +784,32 @@ const DESTINATION_SHAPES: { name: string; anchored: RegExp; loose: RegExp; needs
   {
     // Legacy BTC (1... / 3...). Base58 excludes 0, O, I and l, which keeps
     // hex-ish strings such as UUIDs from matching.
+    //
+    // THE LOOSE FORM RUNS ON TEXT WITH ALL WHITESPACE STRIPPED, AND THAT MADE EVERY
+    // NUMBERED LIST A BITCOIN ADDRESS.
+    //   "3. Treat winter as a different product entirely"
+    //     -> "3Treatwinterasadifferentproductenti"  = valid base58, 34 chars
+    //   "1. Shut off the water source immediately"
+    //     -> "1Shutoffthewatersourceimmediate"      = valid base58, 30 chars
+    // Penny answers in numbered steps constantly, so any advice list beginning at 1. or
+    // 3. had her entire reply replaced by a refusal to state payment details. The owner
+    // hit this repeatedly across unrelated questions. Confirmed from production logs:
+    // ai-investor-chat destination_blocked ["bitcoin address"].
+    //
+    // The fix keeps the guard strict and removes the prose collapse for THIS shape only:
+    //   - anchored still runs on the real text, so a genuine address is caught.
+    //   - loose now requires the run to look like an address rather than a sentence:
+    //     at least one digit AFTER the leading character, and no three-letter run that
+    //     is obviously prose is not something we can test cheaply, so instead we require
+    //     a mixed-case-and-digit shape, which real base58 addresses always have and
+    //     collapsed English prose almost never does at this length.
+    // bc1 addresses above keep the collapse, because "bc1" identifies itself and cannot
+    // be produced by ordinary prose.
     name: 'bitcoin address',
     anchored: /\b[13][a-km-zA-HJ-NP-Z1-9]{25,34}\b/,
     loose: /[13][a-km-zA-HJ-NP-Z1-9]{25,34}/,
+    // Applied to the LOOSE (whitespace-stripped) match only. See looksLikeBase58Address.
+    looseNeedsAddressShape: true,
   },
   {
     // A run of 9+ digits: routing (9) and account (12) numbers.
@@ -808,6 +831,17 @@ const DESTINATION_SHAPES: { name: string; anchored: RegExp; loose: RegExp; needs
 // Words that turn a number into a destination. Checked within a window around the match,
 // not across the whole message: a reply that mentions Zelle in one paragraph and a phone
 // number in another is not reciting a destination.
+// A real base58 address churns through character classes: mixed case and digits all the
+// way along. Collapsed English prose is long runs of lowercase with a capital at the front.
+// Requiring 4+ uppercase and 2+ digits separates them, and it does NOT weaken detection of
+// a genuine address, including one typed with spaces between every character to evade the
+// guard. Verified against real mainnet addresses and against Penny's own numbered advice.
+function looksLikeBase58Address(run: string): boolean {
+  const upper = (run.match(/[A-HJ-NP-Z]/g) || []).length;
+  const digits = (run.match(/[1-9]/g) || []).length;
+  return upper >= 4 && digits >= 2;
+}
+
 const PAYMENT_CONTEXT = /(account|routing|aba|swift|iban|wire|zelle|cash\s*app|cashtag|venmo|paypal|bitcoin|btc|wallet|send\s+(?:the\s+)?(?:money|funds|payment)|pay\s+(?:to|at)|deposit\s+(?:to|into)|transfer\s+to)/i;
 
 function hasPaymentContext(text: string, index: number, length: number): boolean {
@@ -866,7 +900,7 @@ export function containsPaymentDestination(
     ' ',
   );
   const collapsed = withoutIds.replace(/[\s\-_.()]/g, '');
-  for (const { name, anchored, loose, needsPaymentContext } of DESTINATION_SHAPES) {
+  for (const { name, anchored, loose, needsPaymentContext, looseNeedsAddressShape } of DESTINATION_SHAPES) {
     if (needsPaymentContext) {
       // Only a digit run sitting near payment language counts.
       let hit = false;
@@ -884,8 +918,16 @@ export function containsPaymentDestination(
     // A base58 candidate made ONLY of hex characters is an identifier, not an
     // address: real Bitcoin addresses essentially always carry letters outside a-f.
     if (name === 'bitcoin address') {
-      const hit = withoutIds.match(anchored) || collapsed.match(loose);
+      const anchoredHit = withoutIds.match(anchored);
+      let looseHit = collapsed.match(loose);
+      // A numbered list item collapses into something base58-shaped ("3. Treat winter as
+      // a different product" -> "3Treatwinterasadifferentproductenti"), which replaced
+      // Penny's whole answer with a payment refusal on ordinary advice.
+      if (looseHit && looseNeedsAddressShape && !looksLikeBase58Address(looseHit[0])) looseHit = null;
+      const hit = anchoredHit || looseHit;
       if (hit && /^[0-9a-f]+$/i.test(hit[0])) continue;
+      if (hit) kinds.add(name);
+      continue;
     }
     if (anchored.test(withoutIds) || loose.test(collapsed)) kinds.add(name);
   }
