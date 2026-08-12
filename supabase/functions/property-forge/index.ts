@@ -70,14 +70,37 @@ async function findListings(
     `Search the web for real rental units currently available in ${city}, ${state}. ` +
     `Find apartments, condos, townhomes or single family homes with at least ${minBeds} bedroom(s) ` +
     `that a company could lease and operate as a furnished rental.${budget}\n\n` +
+
+    // A find nobody can contact is not a lead, it is a photograph of a building.
+    `A CONTACT IS MANDATORY. Only include a property where you found a working EMAIL ADDRESS ` +
+    `or TELEPHONE NUMBER for the leasing office, community, property manager or owner. ` +
+    `If you cannot find a way to contact them, LEAVE THE PROPERTY OUT ENTIRELY. Do not ` +
+    `include it with the contact field blank and do not guess an address or number.\n\n` +
+
+    // Furnished and corporate-friendly places say yes far more often, so they come first.
+    `RANK BY LIKELIHOOD OF SAYING YES, best first:\n` +
+    `1. Already furnished, or advertising furnished units.\n` +
+    `2. The listing or the community website mentions corporate housing, corporate leasing, ` +
+    `corporate rentals, business travel, extended stay, or flexible or short term leases. ` +
+    `Any of those is a strong signal they will work with a company.\n` +
+    `3. Everything else.\n` +
+    `Apartment communities are often unfurnished, and that is fine, but a community that ` +
+    `says anything about corporate or furnished housing is worth far more than one that ` +
+    `does not. Put those at the top.\n\n` +
+
     `Return ONLY a JSON array, no prose and no markdown fences. Up to ${limit} objects, each with:\n` +
     `address, city, state, bedrooms (number), bathrooms (number), monthly_rent (number, no symbols), ` +
-    `property_type, listing_name, source_url, notes.\n\n` +
+    `property_type, listing_name, source_url, contact_email, contact_phone, contact_name, ` +
+    `furnished (true/false/null), corporate_friendly (true/false), corporate_signal (short quote or ` +
+    `phrase from the page that shows it, or null), notes.\n\n` +
+
     `Rules you must follow:\n` +
     `- Only include a listing you actually found on a page. Never invent one.\n` +
-    `- Omit any field the page does not state. Do NOT guess a rent or a bedroom count.\n` +
+    `- Every entry MUST have contact_email or contact_phone. No exceptions.\n` +
+    `- Omit any other field the page does not state. Do NOT guess a rent or a bedroom count.\n` +
+    `- corporate_signal must be text you actually read on the page, never a paraphrase you assumed.\n` +
     `- source_url must be the real page you read.\n` +
-    `- If you find nothing, return [].`;
+    `- If you find nothing that has a contact, return [].`;
 
   try {
     const r = await fetch('https://api.openai.com/v1/responses', {
@@ -183,8 +206,36 @@ Deno.serve(async (req) => {
       });
     }
 
+    // A property with no contact is not a lead. The prompt forbids it, but a model can
+    // still slip one through, and a client paying $62 to release something we cannot
+    // actually contact is the worst outcome here. Enforce it in code as well.
+    const contactable = listings.filter((l: any) => l.contact_email || l.contact_phone);
+    const droppedNoContact = listings.length - contactable.length;
+
+    // Never surface our own marketplace inventory through Property Forge. Those have their
+    // own address release rules: reserving the operation is what releases the address, and
+    // a $62 Forge release must never become a back door around that.
+    let ours = new Set<string>();
+    try {
+      const mr = await fetch(
+        `${SUPABASE_URL}/rest/v1/properties?select=address,city&limit=500`,
+        { headers: { apikey: SERVICE_KEY, Authorization: `Bearer ${SERVICE_KEY}`, 'Accept-Profile': DATA_SCHEMA } },
+      );
+      if (mr.ok) {
+        for (const p of await mr.json()) {
+          if (p?.address) ours.add(String(p.address).toLowerCase().replace(/[^a-z0-9]/g, ''));
+        }
+      }
+    } catch { /* if we cannot check, we do not silently publish: see below */ }
+
+    const notOurs = contactable.filter((l: any) => {
+      const k = String(l.address || '').toLowerCase().replace(/[^a-z0-9]/g, '');
+      return !k || !ours.has(k);
+    });
+    const droppedOurs = contactable.length - notOurs.length;
+
     const scored = [];
-    for (const l of listings) {
+    for (const l of notOurs) {
       const { scan, scan_status } = await scoreOne(city, state, l);
       scored.push({ ...l, scan, scan_status });
     }
@@ -202,6 +253,13 @@ Deno.serve(async (req) => {
         'These are properties found on the open web and scored from market data. Nobody has spoken to the landlord, ' +
         'the numbers have not been validated by our team, and none of these is an Access Your Place verified deal. ' +
         'They are leads. An acquisition manager verifies a property before it becomes a deal.',
+      filtered_out: {
+        no_contact: droppedNoContact,
+        already_on_our_marketplace: droppedOurs,
+        note: droppedNoContact > 0
+          ? `${droppedNoContact} result(s) were dropped because no email or phone could be found for them. A property nobody can contact is not a lead.`
+          : null,
+      },
       scoring_note: unscored > 0
         ? `${unscored} of ${scored.length} could not be scored. Those carry no projection at all rather than an estimated one.`
         : null,
