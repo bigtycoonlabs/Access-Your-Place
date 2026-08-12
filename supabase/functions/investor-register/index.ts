@@ -135,6 +135,24 @@ serve(async (req: Request) => {
     })
 
     // Return success
+    // $186 welcome credit, once per account. Covers three Property Forge releases so a
+    // new operator can use the tool before paying anything. Best effort: a failure here
+    // must not block the account being created, but it IS logged so it can be granted
+    // by hand rather than silently going missing.
+    try {
+      const gr = await fetch(`${Deno.env.get('SUPABASE_URL')}/rest/v1/rpc/ayp_grant_signup_credit`, {
+        method: 'POST',
+        headers: {
+          apikey: Deno.env.get('SUPABASE_SERVICE_ROLE_KEY') ?? '',
+          Authorization: `Bearer ${Deno.env.get('SUPABASE_SERVICE_ROLE_KEY') ?? ''}`,
+          'Content-Type': 'application/json',
+          'Accept-Profile': 'public', 'Content-Profile': 'public',
+        },
+        body: JSON.stringify({ p_investor: investor.id }),
+      })
+      if (!gr.ok) console.error('signup_credit_not_granted', investor.id, await gr.text())
+    } catch (e) { console.error('signup_credit_threw', investor.id, String(e)) }
+
     return new Response(
       JSON.stringify({
         success: true,
