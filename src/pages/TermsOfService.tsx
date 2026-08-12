@@ -308,11 +308,36 @@ export default function TermsOfService() {
               <h3 className="text-lg font-semibold text-gray-800 mb-3">Release of the property address</h3>
               <p className="text-gray-700 mb-4">
                 Marketplace listings do not display the street address, the landlord's name, or
-                the landlord's contact details. This protects the landlord relationship we have
-                built and prevents our listings being approached directly. To have an address
-                released, a client must either apply existing credit or pay the reservation
-                deposit for that operation. There is no separate fee for an address: reserving
-                the operation is what releases it.
+                the landlord's contact details. This protects the landlord relationships we have
+                built and prevents our listings being approached directly. <strong>Any client can
+                reserve a property and the address is released.</strong> There is no separate fee
+                for an address: reserving the operation is what releases it, and the deposit comes
+                off the acquisition fee.
+              </p>
+              <h3 className="text-lg font-semibold text-gray-800 mb-3">Repeat clients</h3>
+              <p className="text-gray-700 mb-4">
+                Once a client has completed their first acquisition with us, addresses can be
+                released without an advance deposit. That release is <strong>on request, and one
+                property at a time</strong>. We do not release a list of addresses, and we do not
+                release a second address while one is already out.
+              </p>
+              <p className="text-gray-700 mb-4">
+                We release an address where a client is about to reserve a deal and wants to review
+                it further with an Acquisition Manager present. The Acquisition Manager can
+                schedule a meeting, release the address, walk through the numbers in detail, and
+                the client can move forward from there. If a client does not want to proceed with
+                that property, we will want to understand fully why, so that the next property we
+                put in front of them is a better fit.
+              </p>
+              <p className="text-gray-700 mb-4">
+                <strong>Deals move quickly.</strong> If a property is taken off the market before
+                an address can be sent to a repeat client, that is not a fault or failure on the
+                part of Access Your Place and does not create any obligation or entitlement. A
+                reservation is what holds a property; a request does not.
+              </p>
+              <p className="text-gray-700 mb-4">
+                This section governs marketplace listings only. Property Forge, and property
+                research a client runs for themselves, are governed by their own rules.
               </p>
               <h3 className="text-lg font-semibold text-gray-800 mb-3">When the rest is due</h3>
               <p className="text-gray-700 mb-4">
