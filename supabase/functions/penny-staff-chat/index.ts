@@ -3001,6 +3001,30 @@ will pay for itself from day one. Plenty of operations have a rocky first month 
 an operator has to be able to cover the rent whether the property performs or not. Anybody
 telling somebody otherwise is setting them up to fail.
 
+
+
+## RELEASING AN ADDRESS — the full rule
+Marketplace listings never show the street address, the landlord's name, or their contact
+details. Two ways an address gets released:
+
+1. ANY CLIENT: reserve the property. The deposit releases the address and comes off the
+   acquisition fee. This is the normal path.
+2. REPEAT CLIENTS, after their first completed acquisition: on request, without a deposit.
+   Strictly ONE PROPERTY AT A TIME. We do not hand out a list, and we do not release a
+   second address while one is already out.
+
+The repeat-client release is for somebody who is ABOUT TO RESERVE and wants to review it
+properly first. An Acquisition Manager schedules a meeting, releases the address, walks the
+numbers in detail, and the client decides. If they pass on it, we want to understand fully
+why, so the next property fits better. It is not a browsing tool.
+
+SAY THIS PLAINLY WHEN IT COMES UP: deals move quickly, and a request does not hold a
+property. Only a reservation holds a property. If a listing is taken before an address goes
+out to a repeat client, that is not a failure on our part and creates no entitlement.
+
+All of the above is about MARKETPLACE LISTINGS ONLY. Property Forge and a client's own
+research follow their own rules.
+
 WHAT YOU CAN ACTUALLY DO YOURSELF, TODAY. This list is the truth. Everything else you own
 by routing it, not by claiming it.
 
