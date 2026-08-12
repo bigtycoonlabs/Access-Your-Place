@@ -766,13 +766,107 @@ export default function TermsOfService() {
             </div>
           </section>
 
+          <section className="mb-10">
+            <div className="flex items-center gap-3 mb-4">
+              <div className="w-10 h-10 bg-[#1a365d] rounded-full flex items-center justify-center text-white font-bold">16</div>
+              <h2 className="text-2xl font-bold text-[#1a365d]">Proprietary Analytics Methodology &amp; Liability Waiver</h2>
+            </div>
+            <div className="prose prose-gray max-w-none pl-13">
+              <h3 className="text-lg font-semibold text-gray-800 mb-3">The 80/20 micro-market valuation framework</h3>
+              <p className="text-gray-700 mb-4">YP&rsquo;s research methodology is distinct from consumer-grade algorithms. We evaluate data across the entire furnished rental landscape, including short-term rentals, mid-term corporate housing, and shared living environments.</p>
+              <p className="text-gray-700 mb-4"><strong>20% data weight, aggregated software platforms.</strong> Standard public and private third-party metric tools represent twenty percent of our research calculation.</p>
+              <p className="text-gray-700 mb-4"><strong>80% data weight, raw micro-market indices.</strong> The majority of our evaluation derives from raw, unaggregated local data: local seasonal trends, historic hotel average daily rates and occupancy, corporate and executive suite ADR and performance indices, competitive direct-booking metrics, hyper-local competitive analysis within an exact five mile radius, aesthetic analysis of layout and amenities, and municipal logistics factors such as acceptable drive times for corporate and leisure travellers.</p>
+              <h3 className="text-lg font-semibold text-gray-800 mb-3">What a deal score is, and what it is not</h3>
+              <p className="text-gray-700 mb-4">Where a listing displays a deal score, that score is arithmetic performed on figures recorded against that specific listing: the rent, the projected peak and slow season revenue, and the acquisition fee. It measures whether the operation clears its rent in the slow season, how quickly the acquisition fee is repaid, and how far revenue sits above rent.</p>
+              <p className="text-gray-700 mb-4"><strong>A deal score is not a market study and is not a projection of what you will earn.</strong> It does not evaluate hotel occupancy, nightly rates, municipal regulation, or competing listings. Where the figures required to compute a score are not recorded against a listing, no score is shown rather than an estimated one.</p>
+              <h3 className="text-lg font-semibold text-gray-800 mb-3">Investor due diligence and assumption of performance risk</h3>
+              <p className="text-gray-700 mb-4">Real estate, commercial leasing, and hospitality operations are subject to high volatility, economic shifts, platform algorithm changes, and seasonal fluctuation.</p>
+              <p className="text-gray-700 mb-4"><strong>No financial performance guarantees.</strong> Access Your Place does not guarantee, warrant, or promise any specific financial returns, revenue milestones, occupancy percentages, or cash-flow projections. Any spreadsheets, market overviews, deal scores, or case studies we provide are for educational and illustrative purposes only.</p>
+              <p className="text-gray-700 mb-4"><strong>Ultimate investor responsibility.</strong> It is the sole, absolute, and non-delegable responsibility of the Client to vet, audit, run their own calculations, and validate that a property will perform to their satisfaction before finalising an acquisition or commencing operations. By proceeding, the Client warrants they have executed comprehensive due diligence and assume all associated operational risks. YP and its personnel hold zero liability for the financial performance or underperformance of any acquired operation.</p>
+            </div>
+          </section>
+
+          <section className="mb-10">
+            <div className="flex items-center gap-3 mb-4">
+              <div className="w-10 h-10 bg-[#1a365d] rounded-full flex items-center justify-center text-white font-bold">17</div>
+              <h2 className="text-2xl font-bold text-[#1a365d]">The Standard of Truth &amp; Mandatory Information Transfer</h2>
+            </div>
+            <div className="prose prose-gray max-w-none pl-13">
+              <h3 className="text-lg font-semibold text-gray-800 mb-3">Absolute material disclosure</h3>
+              <p className="text-gray-700 mb-4">Access Your Place operates under a strict Standard of Truth. We do not manipulate data and we do not conceal market realities. Our Acquisition Managers and analysts fully disclose to the incoming Client all known material facts regarding an asset&rsquo;s past operational performance, localised history, and any prior structural or physical maintenance issues. We commit to transferring 100% of relevant collected property information to the incoming Client.</p>
+              <h3 className="text-lg font-semibold text-gray-800 mb-3">Privacy controls for previous operators</h3>
+              <p className="text-gray-700 mb-4">The transfer of operational data is scrubbed of personal identifying information. YP is authorised to share raw profit and loss statements, operational ledgers, and screenshots of upcoming reservation calendars from past or current operators where available. We redact personal names, company names, branding, financial account numbers, and identifying entity data. The data transferred belongs to the asset&rsquo;s history; the identity of the operator remains confidential.</p>
+              <h3 className="text-lg font-semibold text-gray-800 mb-3">Verification tiers</h3>
+              <p className="text-gray-700 mb-4">A verified listing means a member of our team has spoken with the landlord, validated the numbers, confirmed the landlord consents to the property being marketed, and pre-negotiated terms. For an existing operation being sold, verification additionally means the operation, the supplies, the furniture, and which vendors remain have all been evaluated.</p>
+              <p className="text-gray-700 mb-4">A calculated estimate produced from an address alone, without a human having spoken to the landlord, is a lead and not a verified Access Your Place deal, and is never presented as one.</p>
+            </div>
+          </section>
+
+          <section className="mb-10">
+            <div className="flex items-center gap-3 mb-4">
+              <div className="w-10 h-10 bg-[#1a365d] rounded-full flex items-center justify-center text-white font-bold">18</div>
+              <h2 className="text-2xl font-bold text-[#1a365d]">Global &amp; Overseas Investor Compliance</h2>
+            </div>
+            <div className="prose prose-gray max-w-none pl-13">
+              <p className="text-gray-700 mb-4">Access Your Place permits international individuals, foreign corporate entities, family offices, and overseas investors to use our platform and network to acquire commercial corporate leases within the United States and its territories. Cross-border commercial real estate transactions carry substantial structural, economic, and operational risk.</p>
+              <p className="text-gray-700 mb-4">Any international investor warrants that they operate with a sophisticated understanding of United States commercial structures, and assumes one hundred percent absolute liability for validating, conforming to, and executing all transactions in compliance with United States federal, state, and municipal law.</p>
+              <p className="text-gray-700 mb-4">This includes cross-border business entity registration, corporate tax compliance, IRS registrations, state Department of Revenue filings, banking regulations, anti-money laundering compliance, and any consular or visa requirements. All market data, analytics, and consultative insights are provided on an as-is and where-is basis. The burden of validating local property performance viability, regional economic health, and localised zoning rests entirely on the global investor. YP and its personnel are held harmless from any cross-border financial, regulatory, or tax liability.</p>
+            </div>
+          </section>
+
+          <section className="mb-10">
+            <div className="flex items-center gap-3 mb-4">
+              <div className="w-10 h-10 bg-[#1a365d] rounded-full flex items-center justify-center text-white font-bold">19</div>
+              <h2 className="text-2xl font-bold text-[#1a365d]">Licensing, Zoning, and Regulatory Mandates</h2>
+            </div>
+            <div className="prose prose-gray max-w-none pl-13">
+              <p className="text-gray-700 mb-4">While Access Your Place provides research support to help Clients analyse the regulatory environment and licensing rules within targeted markets, <strong>the legal obligation to secure, validate, uphold, and renew all required short-term rental licences, business tax receipts, hospitality permits, and zoning variances rests entirely with the Client.</strong> This applies uniformly whether the asset is held under a direct corporate lease or a YP Master Lease.</p>
+              <p className="text-gray-700 mb-4">Unless explicitly disclosed and verified in writing by an authorised YP executive, the Client must operate on the assumption that if a licence, permit, or variance is required by local law, the Client is solely responsible for acquiring it. Any regulatory shutdown, municipal fine, or operational halt resulting from a Client&rsquo;s failure to secure or maintain proper licensing does not alter the terms of the lease, does not create liability for YP, and does not form a basis for credits or financial adjustments.</p>
+            </div>
+          </section>
+
+          <section className="mb-10">
+            <div className="flex items-center gap-3 mb-4">
+              <div className="w-10 h-10 bg-[#1a365d] rounded-full flex items-center justify-center text-white font-bold">20</div>
+              <h2 className="text-2xl font-bold text-[#1a365d]">Vendor Network Registration &amp; Anti-Compete Guardrails</h2>
+            </div>
+            <div className="prose prose-gray max-w-none pl-13">
+              <h3 className="text-lg font-semibold text-gray-800 mb-3">Listing your business in the directory</h3>
+              <p className="text-gray-700 mb-4">Following account verification, active Clients may request to list their own independent business entities within the Access Your Place Vendor Network Directory. Approved vendors are visible across the platform. Authorised sectors include localised property maintenance and contracting, professional housekeeping and turnover, listing optimisation and photography, operational co-hosts, corporate wealth advisors, digital marketing specialists, business funding partners, and business formation services.</p>
+              <h3 className="text-lg font-semibold text-gray-800 mb-3">Prohibited conflicting services</h3>
+              <p className="text-gray-700 mb-4">Any entity offering services conflicting with YP&rsquo;s primary business functions is prohibited from listing. Prohibited services include independent acquisition management, corporate lease acquisition support or sourcing, launch setup administration, corporate housing design logistics, and direct furniture procurement or launch services. General furnished rental auxiliary services are permitted provided they do not mirror our corporate leasing, logistics, and consulting engine.</p>
+              <h3 className="text-lg font-semibold text-gray-800 mb-3">Educational and coaching programs</h3>
+              <p className="text-gray-700 mb-4">Any application to list intellectual property products, educational courses, consulting coaches, or mentorship programs is subject to extended evaluation. The Success Team reserves absolute authority to audit and reject any knowledge-based or coaching product to protect network users from predatory or low-quality offerings.</p>
+              <h3 className="text-lg font-semibold text-gray-800 mb-3">Vendor autonomy and your responsibility to vet</h3>
+              <p className="text-gray-700 mb-4">All entities in the directory are entirely independent operators. They do not work for Access Your Place, are not employees, and are not bound by our internal rules or standards. We make no warranties regarding the reliability, performance, or integrity of any referred vendor. It is your sole responsibility to vet, interview, contractually bind, and audit any vendor you engage. YP assumes zero liability for vendor actions, negligence, property damage, or operational failure.</p>
+              <h3 className="text-lg font-semibold text-gray-800 mb-3">Client-to-client partnerships</h3>
+              <p className="text-gray-700 mb-4">Where a Client forms a partnership with another Client, including capital partnerships, silent partners, joint funding, co-hosting, sharing guest inquiries, or splitting bulk supply inventories, all such arrangements are entered into at the sole risk and independent liability of the respective Clients. Negotiation, legal drafting, and management of these partnerships are external to YP, and our Acquisition Managers are prohibited from establishing, mediating, or arbitrating them.</p>
+            </div>
+          </section>
+
+          <section className="mb-10">
+            <div className="flex items-center gap-3 mb-4">
+              <div className="w-10 h-10 bg-[#1a365d] rounded-full flex items-center justify-center text-white font-bold">21</div>
+              <h2 className="text-2xl font-bold text-[#1a365d]">The Corporate Housing Network &amp; Referral Program</h2>
+            </div>
+            <div className="prose prose-gray max-w-none pl-13">
+              <h3 className="text-lg font-semibold text-gray-800 mb-3">The Corporate Housing Network</h3>
+              <p className="text-gray-700 mb-4">Active users may submit their live furnished rental businesses for integration into the Corporate Housing Network, allowing YP to list, feature, and promote the Client&rsquo;s brand on our public website to drive bookings and corporate traffic to their portfolio.</p>
+              <p className="text-gray-700 mb-4"><strong>The one-live-unit rule.</strong> To maintain active placement, the housing company must possess and prove at least one live, operational, furnished unit in its portfolio. That unit may be acquired through our marketplace or sourced entirely outside our ecosystem. There are no monthly subscription charges, membership dues, or listing fees to remain active in the network.</p>
+              <p className="text-gray-700 mb-4">Active membership unlocks the Collaboration Portal, through which partners may submit requests for other verified members to evaluate. Authorised requests are limited to funding and capital deployment, strategic or silent partner and co-hosting requests, peer-to-peer mentorship and operational advice, and hyper-local assistance with corporate bookings and occupancy support.</p>
+              <h3 className="text-lg font-semibold text-gray-800 mb-3">Referral Partner Program</h3>
+              <p className="text-gray-700 mb-4">Active Clients, landlords, and independent third-party property finders are eligible to act as authorised Referral Partners. To trigger an incentive, the incoming client must notify their Acquisition Manager during intake that they were referred. On verification, the Referral Partner chooses either a $300 cash referral fee or a $300 platform credit applied immediately to their portal balance.</p>
+              <p className="text-gray-700 mb-4">Cash referral fees are disbursed within thirty calendar days of the referred client finalising their initial purchase or paying their acquisition fee in full. All outward corporate payments, including staff compensation, vendor payouts, reimbursements, and referral fees, are executed on Fridays. The Success Team notifies the Referral Partner when a payout is released, and Referral Partners may contact the Success Team at any time for their position in the upcoming Friday schedule.</p>
+            </div>
+          </section>
+
           {/* GOVERNING LAW, SEVERABILITY AND EXECUTION. These were in the master document
               and had never been on the site. They are the clauses that decide where a
               dispute is heard and what survives if one provision fails, so a page people
               formally accept cannot be missing them. */}
           <section className="mb-10">
             <div className="flex items-center gap-3 mb-4">
-              <div className="w-10 h-10 bg-[#1a365d] rounded-full flex items-center justify-center text-white font-bold">16</div>
+              <div className="w-10 h-10 bg-[#1a365d] rounded-full flex items-center justify-center text-white font-bold">22</div>
               <h2 className="text-2xl font-bold text-[#1a365d]">Right of Review, Governing Law, and Severability</h2>
             </div>
             <div className="prose prose-gray max-w-none pl-13">
@@ -808,7 +902,7 @@ export default function TermsOfService() {
 
           <section className="mb-10">
             <div className="flex items-center gap-3 mb-4">
-              <div className="w-10 h-10 bg-[#1a365d] rounded-full flex items-center justify-center text-white font-bold">17</div>
+              <div className="w-10 h-10 bg-[#1a365d] rounded-full flex items-center justify-center text-white font-bold">23</div>
               <h2 className="text-2xl font-bold text-[#1a365d]">Acknowledgment &amp; Electronic Execution</h2>
             </div>
             <div className="prose prose-gray max-w-none pl-13">
