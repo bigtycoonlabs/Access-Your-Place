@@ -427,10 +427,18 @@ export default function TermsOfService() {
               </p>
               <h3 className="text-lg font-semibold text-gray-800 mb-3">Title and risk</h3>
               <p className="text-gray-700 mb-4">
-                Furniture and supplies purchased for a client's project belong to the client.
-                We hold them as bailee while they are in our warehouse or in our transport, and
-                we maintain the inventory record. Ownership does not transfer to Set Up Your
-                Place LLC at any point.
+                Furniture and supplies purchased for a client's project belong to the client. We
+                hold them as bailee while they are in our warehouse or in our transport, and we
+                maintain the inventory record. We do not take ownership of a client's inventory in
+                the ordinary course.
+              </p>
+              <p className="text-gray-700 mb-4">
+                <strong>This is subject to the default and asset forfeiture provisions of the
+                Corporate Sublease Agreement.</strong> Where a client defaults on a sublease, the
+                furnishings, electronics, linens and supplies at the premises become the property
+                of Set Up Your Place LLC to offset unpaid rent, damages and lease breakage, as set
+                out in that agreement and in Section 10 below. The two documents are read
+                together: ordinary custody does not transfer title, default does.
               </p>
             </div>
 
@@ -493,7 +501,28 @@ export default function TermsOfService() {
               <h3 className="text-lg font-semibold text-gray-800 mb-3">Visiting the property</h3>
               <p className="text-gray-700 mb-4">Operators have full access to visit a property before finalising a lease agreement, and we encourage visits after the lease is signed too, including on master lease properties. Nobody should acquire a property they have not looked at if they want to look at it.</p>
               <h3 className="text-lg font-semibold text-gray-800 mb-3">Non-payment, confiscation and liquidation</h3>
-              <p className="text-gray-700 mb-4">Where an operator does not pay, <strong>Access Your Place may confiscate the operation and liquidate assets inside the property, including furniture, in order to make the landlord whole</strong>. We avoid eviction proceedings at all cost, and in practice that often means liquidating the assets in the location to pay the landlord, or placing a long-term resident in the property.</p>
+              <p className="text-gray-700 mb-4">
+                Under a Master Lease, Access Your Place is the primary leaseholder. If a client
+                stops paying, the landlord does not pursue the client, they pursue us, and we end
+                up covering the rent or facing eviction proceedings in our own name. That is why
+                the remedy here is confiscation rather than eviction.
+              </p>
+              <p className="text-gray-700 mb-4">
+                Where a client defaults and does not cure it, <strong>Access Your Place will
+                confiscate the operation rather than pursue eviction against the client wherever
+                possible</strong>. Confiscation means taking possession of the unit and changing
+                access, taking the furniture and inventory, and then doing whatever satisfies the
+                remaining lease term: liquidating or selling the furniture, transferring the
+                operation to another operator in the network, or placing a long-term resident in
+                the property. This is the same remedy set out in the Corporate Sublease Agreement,
+                and it exists because eviction is worse for everyone, including the client.
+              </p>
+              <p className="text-gray-700 mb-4">
+                A client whose operation has been confiscated may request to reclaim it only after
+                curing every default in full and paying the <strong>$1,500 Operation Release
+                Fee</strong>. That fee is charged on top of all back rent, late fees, municipal
+                penalties, and any court or legal costs we incurred.
+              </p>
               <p className="text-gray-700 mb-4">If we ever have to confiscate an operation from a client, <strong>that client is immediately banned from the Access Your Place network</strong> and may not continue with any of our services. Any launches in progress are halted, any services being delivered are halted, and any other acquisitions in progress are halted. The client is notified that until their master lease payments are rectified, Access Your Place will not assist them with any service or action.</p>
               <h3 className="text-lg font-semibold text-gray-800 mb-3">Selling an operation</h3>
               <p className="text-gray-700 mb-4">We will only sell an operation for an operator who is <strong>current with their landlord</strong>. If an operation is not current and up to date on all payments, we refuse the sale. We cannot and will not pay out on the sale of an operation where the operator has relinquished the property to us, has been banned from our network, or has stopped paying rent to the landlord.</p>
