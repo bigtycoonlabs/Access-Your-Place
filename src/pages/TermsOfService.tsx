@@ -46,7 +46,7 @@ export default function TermsOfService() {
           {/* Effective Date & Entity Info */}
           <div className="bg-blue-50 border border-blue-200 rounded-lg p-6 mb-8">
             <p className="text-sm text-blue-800">
-              <strong>Effective Date:</strong> January 23, 2026 &nbsp;|&nbsp; <strong>Last updated:</strong> 10 August 2026
+              <strong>Effective Date:</strong> January 23, 2026 &nbsp;|&nbsp; <strong>Last updated:</strong> 12 August 2026
             </p>
             <p className="text-sm text-blue-800 mt-1">
               <strong>Entity:</strong> Set Up Your Place LLC d/b/a Access Your Place (a Cooper Family Inc. Company)
@@ -281,8 +281,108 @@ export default function TermsOfService() {
 
           {/* Section 6 */}
           <section className="mb-10">
+            {/* Added 12 August 2026: the reservation deposit, address release, and the
+                setup and logistics service. None of these existed in the terms, and all
+                three are things a client hands us money or property for. */}
             <div className="flex items-center gap-3 mb-4">
               <div className="w-10 h-10 bg-[#1a365d] rounded-full flex items-center justify-center text-white font-bold">6</div>
+              <h2 className="text-2xl font-bold text-[#1a365d]">Reserving an Operation, and Release of Property Addresses</h2>
+            </div>
+            <div className="prose prose-gray max-w-none pl-13 mb-12">
+              <h3 className="text-lg font-semibold text-gray-800 mb-3">The reservation deposit</h3>
+              <p className="text-gray-700 mb-4">
+                Every operation listed on our marketplace requires a reservation deposit of at
+                least <strong>$2,500</strong> to take it off the market, whatever the operation
+                costs and whatever package it is listed at. Some operations carry a higher
+                reservation deposit, which is stated on the listing. The deposit is paid to
+                Set Up Your Place LLC and is <strong>credited against the acquisition fee</strong>.
+                It is not an additional charge.
+              </p>
+              <p className="text-gray-700 mb-4">
+                A client holding platform credit may apply that credit toward the reservation
+                deposit instead of sending new funds.
+              </p>
+              <h3 className="text-lg font-semibold text-gray-800 mb-3">Release of the property address</h3>
+              <p className="text-gray-700 mb-4">
+                Marketplace listings do not display the street address, the landlord's name, or
+                the landlord's contact details. This protects the landlord relationship we have
+                built and prevents our listings being approached directly. To have an address
+                released, a client must either apply existing credit or pay the reservation
+                deposit for that operation. There is no separate fee for an address: reserving
+                the operation is what releases it.
+              </p>
+              <h3 className="text-lg font-semibold text-gray-800 mb-3">When the rest is due</h3>
+              <p className="text-gray-700 mb-4">
+                The reservation deposit is the only payment due up front. The balance of the
+                acquisition fee is due before lease signing and before the operation is fully
+                turned over to the client. Where a property requires a deposit paid to the
+                landlord or the property, that deposit is separate from our fee, is not paid to
+                us, and is <strong>never due until the lease is in the client's hands and they
+                have had the opportunity to review it</strong>.
+              </p>
+              <h3 className="text-lg font-semibold text-gray-800 mb-3">On reserve is not sold</h3>
+              <p className="text-gray-700 mb-4">
+                Submitting payment proof places an operation on reserve and removes it from the
+                marketplace. It does not complete a purchase. An Acquisition Manager verifies
+                the payment, speaks with the client, and finalises the acquisition. Every
+                purchase on this platform is finalised by a person. A client may request a
+                meeting with an Acquisition Manager at any time before sending any payment, at
+                no cost and with no obligation.
+              </p>
+            </div>
+
+            <div className="flex items-center gap-3 mb-4">
+              <div className="w-10 h-10 bg-[#1a365d] rounded-full flex items-center justify-center text-white font-bold">7</div>
+              <h2 className="text-2xl font-bold text-[#1a365d]">Setup and Logistics Services</h2>
+            </div>
+            <div className="prose prose-gray max-w-none pl-13 mb-12">
+              <p className="text-gray-700 mb-4">
+                Setup and logistics is a service in its own right. A client may engage us to
+                launch a property they already own or control, whether or not it was acquired
+                through Access Your Place, and whether it is a single unit, a portfolio, or an
+                entire building. We operate in the United States and in parts of Mexico.
+              </p>
+              <h3 className="text-lg font-semibold text-gray-800 mb-3">Scope and consultation</h3>
+              <p className="text-gray-700 mb-4">
+                Nothing is scoped, quoted or charged before a consultation. A Setup Manager
+                reviews the property with the client and agrees the scope in writing before any
+                work begins or any purchase is made.
+              </p>
+              <h3 className="text-lg font-semibold text-gray-800 mb-3">How a launch runs</h3>
+              <p className="text-gray-700 mb-4">
+                Furniture and supplies are sourced through wholesale suppliers. Large parcels
+                ship to our secured warehouse in Texas and are checked in against the order
+                before dispatch. We transport them to the launch site ourselves. A YP Pro
+                receives, builds, installs and styles on site, including junk removal and
+                technology installation where they form part of the agreed scope. A Setup
+                Manager oversees the project, maintains the inventory record, and holds
+                custody and compliance over large merchandise purchases from the point of
+                purchase. We also plan and execute property teardowns and portfolio moves.
+              </p>
+              <h3 className="text-lg font-semibold text-gray-800 mb-3">Timelines</h3>
+              <p className="text-gray-700 mb-4">
+                Our target is fourteen days from sourcing to guest ready. That is a target and
+                not a guarantee. Building access, elevator scheduling, supplier availability,
+                permitting, and any condition of the property outside our control can extend
+                it. We will tell the client as soon as we know a date is at risk.
+              </p>
+              <h3 className="text-lg font-semibold text-gray-800 mb-3">Payment for setup work</h3>
+              <p className="text-gray-700 mb-4">
+                On a setup project attached to an acquisition, furniture and logistics costs are
+                paid after the lease is secured, not up front. The $2,500 reservation deposit
+                remains due at the point of taking an operation off the market.
+              </p>
+              <h3 className="text-lg font-semibold text-gray-800 mb-3">Title and risk</h3>
+              <p className="text-gray-700 mb-4">
+                Furniture and supplies purchased for a client's project belong to the client.
+                We hold them as bailee while they are in our warehouse or in our transport, and
+                we maintain the inventory record. Ownership does not transfer to Set Up Your
+                Place LLC at any point.
+              </p>
+            </div>
+
+            <div className="flex items-center gap-3 mb-4">
+              <div className="w-10 h-10 bg-[#1a365d] rounded-full flex items-center justify-center text-white font-bold">8</div>
               <h2 className="text-2xl font-bold text-[#1a365d]">Payment Terms & Refund Policy</h2>
             </div>
             <div className="prose prose-gray max-w-none pl-13">

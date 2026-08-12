@@ -11,7 +11,7 @@ export default function Header() {
 
   const navItems = [
     { label: 'Home', href: '/' },
-    { label: 'Turnkey Operations for sale', href: '/deals' },
+    { label: 'Property Operations for sale', href: '/deals' },
     { label: 'How It Works', href: '/how-it-works' },
     { label: 'Core Values', href: '/core-values' },
     { label: 'Landlord Partners', href: '/landlord-partnership' },
