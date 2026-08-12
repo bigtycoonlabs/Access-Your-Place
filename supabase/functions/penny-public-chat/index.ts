@@ -434,7 +434,7 @@ If they asked about furnishing, setting up, launching, outfitting, a teardown, m
 
 If they mentioned multiple units or a whole building, say plainly that we launch entire buildings, not just single apartments.
 
-Only introduce yourself if they greeted you with no question, or asked what you do.\`;
+Only introduce yourself if they greeted you with no question, or asked what you do.`;
 
     const messages: Msg[] = history
       .filter((m) => m.role === 'user' || m.role === 'assistant')
