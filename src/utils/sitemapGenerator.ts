@@ -22,7 +22,6 @@ export const staticPages: SitemapUrl[] = [
   { loc: '/', changefreq: 'daily', priority: 1.0 },
   { loc: '/deals', changefreq: 'daily', priority: 0.9 },
   { loc: '/knowledge-library', changefreq: 'daily', priority: 0.9 },
-  { loc: '/pricing', changefreq: 'weekly', priority: 0.8 },
   { loc: '/setup-services', changefreq: 'weekly', priority: 0.8 },
   { loc: '/landlord-partnership', changefreq: 'weekly', priority: 0.7 },
   { loc: '/investor-login', changefreq: 'monthly', priority: 0.5 },

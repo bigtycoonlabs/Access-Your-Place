@@ -206,7 +206,7 @@ export default function Footer() {
                 AccessYPLabs
               </a>
               <p className="text-gray-500 text-xs mt-2 leading-relaxed">
-                Where ideas become ownable businesses. An AI named Clay shapes any idea into a complete, pre-proven concept — plan, research, demo, and build path — and the Dreamhold is its marketplace of unlaunched businesses to claim and grow.
+                Where ideas become ownable businesses. An AI named Clay shapes any idea into a complete, pre-proven concept — plan, research, demo, and build path — and the Exchange is its marketplace of unlaunched businesses to claim and grow.
               </p>
             </div>
           </div>

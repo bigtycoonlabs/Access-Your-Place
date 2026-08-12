@@ -1351,6 +1351,37 @@ async function execTool(name: string, args: any, ctx: Ctx): Promise<unknown> {
     // find_client was retired into find_client_file, which searches the WHOLE book rather
     // than accounts only. Aliased rather than removed: if the model reaches for the old
     // name it gets the better answer instead of an error.
+    // RUN THE NUMBERS ON AN ADDRESS.
+    // Staff Penny had no scan tool at all, so asked to run numbers on a property that was
+    // not yet on the marketplace she said it "is not currently listed" and then asked the
+    // staff member to supply the figures by hand. That is backwards: producing figures
+    // from an address is the single most useful thing she does, and the scan engine
+    // already existed at penny-market-scan. She just could not reach it.
+    if (name === 'run_numbers') {
+      const a = args as Record<string, unknown>;
+      const r = await fetch(`${url}/functions/v1/penny-market-scan`, {
+        method: 'POST',
+        headers: { apikey: key, Authorization: `Bearer ${key}`, 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          address: a.address || null,
+          city: a.city, state: a.state,
+          rooms: a.bedrooms || null,
+          scan_type: a.scan_type || 'str',
+        }),
+      });
+      if (!r.ok) {
+        const detail = await r.text();
+        console.error('run_numbers failed', detail);
+        return { ok: false, error: `The scan did not run: HTTP ${r.status}. Say that plainly rather than asking the staff member to supply the numbers themselves.` };
+      }
+      const scan = await r.json();
+      return {
+        ok: true,
+        ...scan,
+        note: 'These are penny_scan figures, calculated from the market. Nobody has spoken to the landlord, so this is a lead and NOT an ayp_verified deal. Say so.',
+      };
+    }
+
     if (name === 'find_client' || name === 'find_client_file') {
       if (!args?.query) return { error: 'query required' };
       return await findClientFile(url, key, String(args.query), args?.limit ? Number(args.limit) : undefined);
@@ -1449,7 +1480,7 @@ async function execTool(name: string, args: any, ctx: Ctx): Promise<unknown> {
       if (args.confirmed !== true) {
         return { needs_confirmation: true,
           action: `create a draft listing for ${args.seller_name}`,
-          instruction: 'Say the seller, the asking price, and that it starts as a draft. Get a yes, then call again with confirmed true.' };
+          instruction: 'Say the seller, the acquisition fee, and that it starts as a draft. Get a yes, then call again with confirmed true.' };
       }
       return await listThirdPartyDeal(url, key, args, staffId);
     }
@@ -1527,7 +1558,22 @@ async function execTool(name: string, args: any, ctx: Ctx): Promise<unknown> {
     if (name === 'mark_message_read') {
       if (!args?.message_id || !args?.audience) return { error: 'message_id and audience required' };
       const { ok, data } = await rpc(url, key, 'penny_mark_message_read',
-        { p_audience: String(args.audience), p_message_id: String(args.message_id) });
+        {
+      name: 'run_numbers',
+      description: "Run the numbers on ANY address or market, listed with us or not. Use this the MOMENT somebody gives you an address and wants figures: do NOT reply that it is not on the marketplace, and do NOT ask them to supply the numbers themselves. Returns projected revenue, ADR and occupancy across short-term, mid-term and shared living. Results are penny_scan: calculated, NOT landlord-verified, and you must say so. Needs city and state; pass the full address when you have it.",
+      input_schema: {
+        type: 'object',
+        properties: {
+          address: { type: 'string', description: 'Full street address if known.' },
+          city: { type: 'string', description: 'City. Required.' },
+          state: { type: 'string', description: 'Two letter state code. Required.' },
+          bedrooms: { type: 'number', description: 'Bedrooms, if known.' },
+          scan_type: { type: 'string', enum: ['str', 'mtr', 'coliving'], description: 'Which model to score. Defaults to str.' },
+        },
+        required: ['city', 'state'],
+      },
+    },
+    { p_audience: String(args.audience), p_message_id: String(args.message_id) });
       return ok ? data : { error: 'mark_failed' };
     }
     if (name === 'send_message') {
@@ -2248,7 +2294,7 @@ const TOOLS = [
     type: 'function',
     function: {
       name: 'update_property',
-      description: "Change a listing that already exists - rent, sleeps, asking price, revenue, or the description. USE THIS on a second pass rather than adding the property again. Pass only what changed. It reports the real before and after of every field, so read back what it says changed, not what you were told.",
+      description: "Change a listing that already exists - rent, sleeps, acquisition fee, revenue, or the description. USE THIS on a second pass rather than adding the property again. Pass only what changed. It reports the real before and after of every field, so read back what it says changed, not what you were told.",
       parameters: {
         type: 'object',
         properties: {
@@ -2585,7 +2631,7 @@ const TOOLS = [
     type: 'function',
     function: {
       name: 'add_property',
-      description: "Add a property or a third-party operation for sale. Pass EVERY figure you were given - asking price, rent, projected peak and slow revenue, sleeps, furnished, unit number. If you leave a figure out it is NOT saved anywhere, and saying it was recorded when it was not is the worst thing you can do here. Give the unit when there are several at one building or they cannot be told apart. Lands as pending review, never live. Confirm before calling.",
+      description: "Add a property or a third-party operation for sale. Pass EVERY figure you were given - acquisition fee, rent, projected peak and slow revenue, sleeps, furnished, unit number. There is NO asking price and no separate price field: the acquisition fee IS the price of the operation, so never ask a staff member for both. If you leave a figure out it is NOT saved anywhere, and saying it was recorded when it was not is the worst thing you can do here. Give the unit when there are several at one building or they cannot be told apart. Lands as pending review, never live. Confirm before calling.",
       parameters: {
         type: 'object',
         properties: {
@@ -3101,7 +3147,7 @@ from how the platform actually works, so if somebody asks for something it does 
 say so rather than inventing a step.
 
 A THIRD-PARTY SELLER DOES NOT NEED AN ACCOUNT TO BE LISTED. An acquisition manager meets an
-operator who wants to sell; take the name, email and asking price and list it as a draft.
+operator who wants to sell; take the name, email and acquisition fee and list it as a draft.
 Then invite them so they can track their own sale. Holding the listing hostage to a signup
 loses the deal.
 

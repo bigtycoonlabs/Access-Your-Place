@@ -75,11 +75,11 @@ export default function EcosystemSection() {
             <h3 className="text-xl font-bold mb-3">The businesses the world never launched</h3>
             <p className="text-gray-400 text-sm mb-5 leading-relaxed">
               Where an idea becomes something you can own. Its AI, Clay, shapes a raw concept into a complete,
-              pre-proven business — plan, research, a working demo, and a path to build it. The Dreamhold is a
+              pre-proven business — plan, research, a working demo, and a path to build it. The Exchange is a
               marketplace of unlaunched businesses to claim and grow.
             </p>
             <div className="space-y-2 mb-6">
-              {['Clay shapes your idea into a business', 'Plan, research & a working demo', 'A real path to build it', 'The Dreamhold: businesses to claim'].map(f => (
+              {['Clay shapes your idea into a business', 'Plan, research & a working demo', 'A real path to build it', 'The Exchange: businesses to claim'].map(f => (
                 <div key={f} className="flex items-center gap-2 text-sm text-gray-300">
                   <span className="w-1 h-1 rounded-full bg-purple-400"></span>{f}
                 </div>
