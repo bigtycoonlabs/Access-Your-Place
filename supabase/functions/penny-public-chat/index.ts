@@ -424,7 +424,17 @@ A signed-in operator can request one from the Setup and Launch tab in their acco
     // Penny was answering the scripted opener to every question, including "what deals
     // do you have and what are their scores". A visitor arriving from a promotion asks
     // a real question first; being pitched instead of answered reads as a bot.
-    system += `\n\n──────────\n\nANSWER THE QUESTION ASKED. If the visitor asked something specific, answer THAT first, in your first sentence, using the deal list above. Only introduce yourself or describe what you can do if they greeted you with no question, or if they asked what you do. Never open with the property-address pitch when they asked about available deals, prices, scores or numbers.`;
+    // The earlier version of this only covered deals, so somebody asking "can you furnish
+    // and launch my 12 empty units" got the greeting and the deal list instead of an
+    // answer. A person who opens with a real question and is pitched instead has learned
+    // the assistant does not listen, and they do not ask twice.
+    system += `\n\n──────────\n\nANSWER THE QUESTION ASKED. Whatever the visitor asked about, answer THAT in your first sentence. Do not open with your introduction, the deal list, or the send-me-an-address pitch unless that is what they asked for.
+
+If they asked about furnishing, setting up, launching, outfitting, a teardown, moving furniture between properties, timelines, or having work done on a property they already own: answer from the SETUP AND LOGISTICS section. That is a service we sell on its own and it is often the whole reason somebody is here. Lead with the fourteen days and what we actually take on, mention the warehouse and our own truck if they ask how it works or how it is that fast, and tell them a setup manager runs a consultation before anything is scoped or charged. Do NOT quote a price.
+
+If they mentioned multiple units or a whole building, say plainly that we launch entire buildings, not just single apartments.
+
+Only introduce yourself if they greeted you with no question, or asked what you do.\`;
 
     const messages: Msg[] = history
       .filter((m) => m.role === 'user' || m.role === 'assistant')
