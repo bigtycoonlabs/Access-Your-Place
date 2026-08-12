@@ -293,10 +293,13 @@ export default function TermsOfService() {
               <p className="text-gray-700 mb-4">
                 Every operation listed on our marketplace requires a reservation deposit of at
                 least <strong>$2,500</strong> to take it off the market, whatever the operation
-                costs and whatever package it is listed at. Some operations carry a higher
-                reservation deposit, which is stated on the listing. The deposit is paid to
-                Set Up Your Place LLC and is <strong>credited against the acquisition fee</strong>.
-                It is not an additional charge.
+                costs and whatever package it is listed at. That is the minimum, not the rule for
+                every deal. <strong>In some cases, and third-party seller deals in particular, up
+                to half of the acquisition fee may be required up front.</strong> Where a higher
+                deposit applies it is stated on the listing and your Acquisition Manager will
+                confirm it before you pay anything. The deposit is paid to Set Up Your Place LLC
+                and is <strong>credited against the acquisition fee</strong>. It is not an
+                additional charge.
               </p>
               <p className="text-gray-700 mb-4">
                 A client holding platform credit may apply that credit toward the reservation
@@ -319,6 +322,26 @@ export default function TermsOfService() {
                 landlord or the property, that deposit is separate from our fee, is not paid to
                 us, and is <strong>never due until the lease is in the client's hands and they
                 have had the opportunity to review it</strong>.
+              </p>
+              <h3 className="text-lg font-semibold text-gray-800 mb-3">Financial qualification, and what happens if a deal is beyond your means</h3>
+              <p className="text-gray-700 mb-4">
+                Our landlord partners trust us to bring them qualified clients, and in many cases
+                they rely on us to verify that an operator can actually afford the property. Our
+                team may ask for supporting documents validating income from the business or the
+                business owner acquiring the operation.
+              </p>
+              <p className="text-gray-700 mb-4">
+                <strong>If a client moves forward on a property and our team determines they do not
+                have sufficient funds to cover the property expenses, we will issue credit for the
+                deposit they paid and direct them to a property that fits their budget instead.</strong>
+                That is not a penalty and it is not a refusal to work with them. It is how we
+                protect our landlords and the client at the same time.
+              </p>
+              <p className="text-gray-700 mb-4">
+                The reason is simple and it is worth stating plainly: nobody should acquire a
+                property on the assumption that the property will pay for itself from day one.
+                There are many operations where the first month or two are rocky, and an operator
+                has to be able to cover the rent whether the property performs or not.
               </p>
               <h3 className="text-lg font-semibold text-gray-800 mb-3">The hold period, and what happens during it</h3>
               <p className="text-gray-700 mb-4">
