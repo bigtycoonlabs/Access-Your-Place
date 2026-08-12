@@ -1,4 +1,5 @@
 import React, { useState, useEffect, useCallback } from "react";
+import { supabase } from '@/lib/supabase';
 
 const STATUSES = [
   { id: "new",         label: "New Lead",       color: "#818CF8" },
@@ -240,6 +241,10 @@ export function InvestorLeadForge({ investorId, investorName }: InvestorLeadForg
   const [lType, setLType]     = useState("both");
   const [radius, setRadius]   = useState("25");
   const [loading, setLoading] = useState(false);
+  const [finderCity, setFinderCity] = useState("");
+  const [finderState, setFinderState] = useState("");
+  const [minBeds, setMinBeds] = useState("1");
+  const [maxRent, setMaxRent] = useState("");
   const [msgIdx, setMsgIdx]   = useState(0);
   const [results, setResults] = useState([]);
   const [searched, setSearched] = useState(false);
@@ -271,13 +276,45 @@ export function InvestorLeadForge({ investorId, investorName }: InvestorLeadForg
   }, [loading]);
 
   // ── Finder search ─────────────────────────────────────────
+  // Property Forge now searches for REAL PROPERTIES through the property-forge function,
+  // which reads live listing pages and scores each find with the same engine behind
+  // Penny's address scan. The old path asked Apollo for contacts, which returns people at
+  // companies and cannot tell you a unit is available, and it went through
+  // /api/leadforge-apollo, a route that does not exist on this deployment.
   const doSearch = async () => {
-    if (!/^\d{5}$/.test(zip)) { setFinderErr("Enter a valid 5-digit zip code."); return; }
+    const cityOk = finderCity.trim().length > 1;
+    const stateOk = /^[A-Za-z]{2}$/.test(finderState.trim());
+    if (!cityOk || !stateOk) {
+      setFinderErr("Enter a city and a two letter state, for example Myrtle Beach and SC.");
+      return;
+    }
     setFinderErr(""); setLoading(true); setResults([]); setSearched(false);
     try {
-      const leads = await searchLeads(zip, lType, radius);
-      setResults(leads); setSearched(true);
-    } catch (e) { setFinderErr(e.message); }
+      const { data, error } = await supabase.functions.invoke('property-forge', {
+        body: {
+          city: finderCity.trim(),
+          state: finderState.trim().toUpperCase(),
+          min_bedrooms: Number(minBeds) || 1,
+          max_rent: maxRent ? Number(maxRent) : null,
+          limit: 6,
+        },
+      });
+      if (error) throw error;
+      // "We looked and found nothing" and "the search never ran" must never look the same.
+      if (!data?.success) {
+        setFinderErr(data?.message || 'The search did not run. This is not the same as finding nothing.');
+        setLoading(false);
+        return;
+      }
+      setResults((data.results || []).map((r, i) => ({
+        ...r,
+        id: `pf_${Date.now()}_${i}`,
+        name: r.address || r.listing_name || 'Property',
+        company: [r.city, r.state].filter(Boolean).join(', '),
+      })));
+      setSearched(true);
+      if ((data.count || 0) === 0) setFinderErr(data.message || '');
+    } catch (e) { setFinderErr(e?.message || 'The search did not run.'); }
     setLoading(false);
   };
 
@@ -413,8 +450,8 @@ export function InvestorLeadForge({ investorId, investorName }: InvestorLeadForg
               live badge on a feature that has never worked is the worst kind of lie to
               tell an operator who cannot see the screen. */}
           <span style={{ fontSize:9, fontWeight:800, letterSpacing:"0.05em", textTransform:"uppercase",
-            color:"#FBBF24", background:"rgba(251,191,36,0.12)", border:"1px solid rgba(251,191,36,0.3)",
-            padding:"2px 8px", borderRadius:10 }}>Coming soon</span>
+            color:"#4ADE80", background:"rgba(74,222,128,0.12)", border:"1px solid rgba(74,222,128,0.25)",
+            padding:"2px 8px", borderRadius:10 }}>● Live</span>
         </div>
 
         {[["finder","🔍 Lead Finder"], ["crm", `📋 CRM${crm.length ? ` (${crm.length})` : ""}`], ["auto","⚡ Automation"]].map(([id, lbl]) => (
@@ -438,11 +475,9 @@ export function InvestorLeadForge({ investorId, investorName }: InvestorLeadForg
 
       {/* Spoken before any control, so a screen reader user is told the state of the
           feature before being offered buttons that cannot do anything yet. */}
-      <div role="status" style={{ background:"rgba(251,191,36,0.10)", borderBottom:"1px solid rgba(251,191,36,0.3)",
-        padding:"12px 20px", color:"#FDE68A", fontSize:13, lineHeight:1.6 }}>
-        <strong>Property Forge is coming soon.</strong> Lead search is not connected yet, so nothing here returns
-        real properties. What is live today is deal scoring and analytics on the marketplace: every published deal
-        carries a score out of 100 with the arithmetic behind it. Browse those under Available Deals.
+      <div role="status" style={{ background:"rgba(74,222,128,0.08)", borderBottom:"1px solid rgba(74,222,128,0.25)",
+        padding:"12px 20px", color:"#BBF7D0", fontSize:13, lineHeight:1.6 }}>
+        <strong>Property Forge searches live listings.</strong> Enter a city and state and it reads real rental listings on the open web, then scores each one with the same engine behind Penny&rsquo;s address scan. Everything it returns is a lead, not a verified deal: nobody has spoken to the landlord and the numbers are calculated, not validated. Ask an acquisition manager to verify anything worth pursuing.
       </div>
 
       {/* ═══════════ FINDER TAB ═══════════ */}
@@ -453,10 +488,33 @@ export function InvestorLeadForge({ investorId, investorName }: InvestorLeadForg
           <div style={{ background:SURF, border:`1px solid ${BDR}`, borderRadius:12, padding:20,
             marginBottom:20, display:"flex", flexWrap:"wrap", gap:12, alignItems:"flex-end" }}>
 
-            <div style={{ flex:"1 1 110px" }}>
-              <div style={{ fontSize:10, color:MUTED, fontWeight:800, textTransform:"uppercase", letterSpacing:"0.07em", marginBottom:6 }}>Zip Code</div>
-              <input aria-label="e.g. 78201" style={inpStyle} placeholder="e.g. 78201" maxLength={5} value={zip}
-                onChange={e => setZip(e.target.value.replace(/\D/g, ""))}
+            {/* City and state, because the search reads listing pages for a market rather
+                than looking up contacts by zip. */}
+            <div style={{ flex:"1 1 160px" }}>
+              <div style={{ fontSize:10, color:MUTED, fontWeight:800, textTransform:"uppercase", letterSpacing:"0.07em", marginBottom:6 }}>City</div>
+              <input aria-label="City, for example Myrtle Beach" style={inpStyle} placeholder="e.g. Myrtle Beach" value={finderCity}
+                onChange={e => setFinderCity(e.target.value)}
+                onKeyDown={e => e.key === "Enter" && doSearch()} />
+            </div>
+
+            <div style={{ flex:"0 1 80px" }}>
+              <div style={{ fontSize:10, color:MUTED, fontWeight:800, textTransform:"uppercase", letterSpacing:"0.07em", marginBottom:6 }}>State</div>
+              <input aria-label="Two letter state, for example SC" style={inpStyle} placeholder="SC" maxLength={2} value={finderState}
+                onChange={e => setFinderState(e.target.value.replace(/[^A-Za-z]/g, ""))}
+                onKeyDown={e => e.key === "Enter" && doSearch()} />
+            </div>
+
+            <div style={{ flex:"0 1 90px" }}>
+              <div style={{ fontSize:10, color:MUTED, fontWeight:800, textTransform:"uppercase", letterSpacing:"0.07em", marginBottom:6 }}>Min Beds</div>
+              <input aria-label="Minimum bedrooms" type="number" min={0} style={inpStyle} value={minBeds}
+                onChange={e => setMinBeds(e.target.value)}
+                onKeyDown={e => e.key === "Enter" && doSearch()} />
+            </div>
+
+            <div style={{ flex:"0 1 110px" }}>
+              <div style={{ fontSize:10, color:MUTED, fontWeight:800, textTransform:"uppercase", letterSpacing:"0.07em", marginBottom:6 }}>Max Rent</div>
+              <input aria-label="Maximum monthly rent, optional" type="number" min={0} style={inpStyle} placeholder="any" value={maxRent}
+                onChange={e => setMaxRent(e.target.value)}
                 onKeyDown={e => e.key === "Enter" && doSearch()} />
             </div>
 

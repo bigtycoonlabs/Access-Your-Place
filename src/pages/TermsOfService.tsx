@@ -860,13 +860,78 @@ export default function TermsOfService() {
             </div>
           </section>
 
+          <section className="mb-10">
+            <div className="flex items-center gap-3 mb-4">
+              <div className="w-10 h-10 bg-[#1a365d] rounded-full flex items-center justify-center text-white font-bold">22</div>
+              <h2 className="text-2xl font-bold text-[#1a365d]">Penny AI and Property Forge</h2>
+            </div>
+            <div className="prose prose-gray max-w-none pl-13">
+              <h3 className="text-lg font-semibold text-gray-800 mb-3">Penny is an AI, and free</h3>
+              <p className="text-gray-700 mb-4">
+                Penny is an artificial intelligence assistant available on our public site and
+                inside the operator portal. Penny is free to use and always identifies as an AI.
+                Penny is not a person, is not a licensed advisor of any kind, and Penny&rsquo;s
+                answers are not legal, tax, financial, or investment advice.
+              </p>
+              <p className="text-gray-700 mb-4">
+                Penny can analyse an address and produce projected revenue, average daily rate,
+                occupancy, monthly room rate, and mid-term rent. She can explain deals, coach on
+                operations, and help you work through problems. Figures Penny produces from an
+                address are calculated from market data and are <strong>penny_scan</strong>
+                results: nobody has spoken to the landlord and the numbers have not been
+                validated by our team. They are leads, not verified Access Your Place deals.
+              </p>
+              <p className="text-gray-700 mb-4">
+                Penny cannot see or confirm payments, cannot finalise an acquisition, and will
+                never state a payment destination. Payment destinations are shown only in the
+                Payments area of your portal, so that you copy them exactly. Every purchase on
+                this platform is finalised by a person.
+              </p>
+              <h3 className="text-lg font-semibold text-gray-800 mb-3">Conversations are recorded</h3>
+              <p className="text-gray-700 mb-4">
+                Conversations with Penny take place on an approved Access Your Place channel and
+                are retained for compliance, record-keeping, and quality assurance, on the same
+                basis as email and recorded Zoom calls. Do not send payment card details,
+                passwords, or government identification numbers through chat.
+              </p>
+              <h3 className="text-lg font-semibold text-gray-800 mb-3">Property Forge</h3>
+              <p className="text-gray-700 mb-4">
+                Property Forge searches publicly available rental listings for a market you
+                specify and scores what it finds using the same calculation engine behind
+                Penny&rsquo;s address scan. It is a research tool.
+              </p>
+              <p className="text-gray-700 mb-4">
+                <strong>Everything Property Forge returns is a lead, not a deal.</strong> The
+                listings are sourced from third-party websites that Access Your Place does not
+                own or control. We do not warrant that a listing is accurate, current, still
+                available, or that the landlord will consider a corporate lease. No member of our
+                team has contacted the landlord, and no figure shown has been validated by us.
+              </p>
+              <p className="text-gray-700 mb-4">
+                Contacting a landlord or leasing office found through Property Forge is done at
+                your own initiative and risk, and the landlord outreach rules in these terms
+                continue to apply to any property already inside the Access Your Place network.
+                Where you wish to pursue a Property Forge find, ask an Acquisition Manager to
+                verify it first.
+              </p>
+              <p className="text-gray-700 mb-4">
+                Property Forge availability, search limits, and results depend on third-party
+                search and listing providers. We may change, limit, or withdraw the tool at any
+                time, and results are provided on an as-is basis with no guarantee of
+                completeness. An empty result means the search ran and found nothing matching
+                your criteria; where a search fails to run, we say so rather than presenting it
+                as an empty market.
+              </p>
+            </div>
+          </section>
+
           {/* GOVERNING LAW, SEVERABILITY AND EXECUTION. These were in the master document
               and had never been on the site. They are the clauses that decide where a
               dispute is heard and what survives if one provision fails, so a page people
               formally accept cannot be missing them. */}
           <section className="mb-10">
             <div className="flex items-center gap-3 mb-4">
-              <div className="w-10 h-10 bg-[#1a365d] rounded-full flex items-center justify-center text-white font-bold">22</div>
+              <div className="w-10 h-10 bg-[#1a365d] rounded-full flex items-center justify-center text-white font-bold">23</div>
               <h2 className="text-2xl font-bold text-[#1a365d]">Right of Review, Governing Law, and Severability</h2>
             </div>
             <div className="prose prose-gray max-w-none pl-13">
@@ -902,7 +967,7 @@ export default function TermsOfService() {
 
           <section className="mb-10">
             <div className="flex items-center gap-3 mb-4">
-              <div className="w-10 h-10 bg-[#1a365d] rounded-full flex items-center justify-center text-white font-bold">23</div>
+              <div className="w-10 h-10 bg-[#1a365d] rounded-full flex items-center justify-center text-white font-bold">24</div>
               <h2 className="text-2xl font-bold text-[#1a365d]">Acknowledgment &amp; Electronic Execution</h2>
             </div>
             <div className="prose prose-gray max-w-none pl-13">
