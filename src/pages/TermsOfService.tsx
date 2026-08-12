@@ -59,6 +59,52 @@ export default function TermsOfService() {
             </p>
           </div>
 
+          {/* PREAMBLE. The site version had no binding-agreement language, no authority to
+              bind an entity, and no B2B mandate, while the master document has all three.
+              People accept these terms through the portal gate, so the page they accept has
+              to carry the clauses that make acceptance mean something. */}
+          <section className="mb-10">
+            <h2 className="text-2xl font-bold text-[#1a365d] mb-4">Preamble: Binding Agreement &amp; Corporate Intent</h2>
+            <div className="prose prose-gray max-w-none">
+              <p className="text-gray-700 mb-4">
+                By creating an account on the Access Your Place digital platform, interacting with
+                our staff, visiting our web applications, purchasing a corporate leasing package,
+                or funding an account, you (the &ldquo;Client&rdquo; or &ldquo;Investor
+                Client&rdquo;) enter into a legally binding contract with Set Up Your Place LLC
+                d/b/a Access Your Place (&ldquo;YP&rdquo; or the &ldquo;Company&rdquo;).
+              </p>
+              <p className="text-gray-700 mb-4">
+                If you are entering into this agreement on behalf of a company, corporation,
+                partnership, or other legal business entity, you warrant that you possess the full
+                legal authority to bind that entity. If you do not agree with any portion of these
+                Terms of Service, Privacy Policy, or Community Standards, you are prohibited from
+                using our platform, network, or advisory services.
+              </p>
+              <h3 className="text-lg font-semibold text-gray-800 mb-3">Strict Business-to-Business mandate</h3>
+              <p className="text-gray-700 mb-4">
+                Access Your Place operates exclusively under a Business-to-Business model. YP does
+                not offer services to retail consumers. All transactions, acquisitions, and
+                service packages are executed with commercial and corporate use intent for the
+                launch and scale of a corporate housing or furnished rental enterprise.
+              </p>
+              <h3 className="text-lg font-semibold text-gray-800 mb-3">Corporate entity grace period</h3>
+              <p className="text-gray-700 mb-4">
+                An individual without an established commercial entity may engage the platform
+                under a strict fourteen day corporate grace period, providing a viable intended
+                business name before any initial financial transaction. The Client assumes
+                absolute liability to file and activate their formal corporate entity within
+                fourteen calendar days of account funding. Failure to do so does not pause YP&rsquo;s
+                services and does not constitute grounds for any refund or credit extension.
+              </p>
+              <h3 className="text-lg font-semibold text-gray-800 mb-3">Acceptance of these terms</h3>
+              <p className="text-gray-700 mb-4">
+                Acceptance is recorded against your account, including the date, the time, and the
+                version accepted. Where these terms are materially updated, you will be asked to
+                accept the updated version before continuing to use the platform.
+              </p>
+            </div>
+          </section>
+
           {/* Section 1 */}
           <section className="mb-10">
             <div className="flex items-center gap-3 mb-4">
@@ -716,6 +762,63 @@ export default function TermsOfService() {
             <div className="prose prose-gray max-w-none pl-13">
               <p className="text-gray-700">
                 AYP reserves the right to modify these Terms of Service at any time. Material changes will be communicated to registered investors via email at least 30 days before taking effect. Continued use of our services after such modifications constitutes acceptance of the updated Terms.
+              </p>
+            </div>
+          </section>
+
+          {/* GOVERNING LAW, SEVERABILITY AND EXECUTION. These were in the master document
+              and had never been on the site. They are the clauses that decide where a
+              dispute is heard and what survives if one provision fails, so a page people
+              formally accept cannot be missing them. */}
+          <section className="mb-10">
+            <div className="flex items-center gap-3 mb-4">
+              <div className="w-10 h-10 bg-[#1a365d] rounded-full flex items-center justify-center text-white font-bold">16</div>
+              <h2 className="text-2xl font-bold text-[#1a365d]">Right of Review, Governing Law, and Severability</h2>
+            </div>
+            <div className="prose prose-gray max-w-none pl-13">
+              <h3 className="text-lg font-semibold text-gray-800 mb-3">Corporate autonomy and contract termination</h3>
+              <p className="text-gray-700 mb-4">
+                YP retains the right to review its ongoing relationship with any Client, Landlord,
+                or network operator at any time, and reserves the right to terminate active
+                contracts, dissolve service relationships, or sever lease agreements where a
+                Client or Landlord proves excessively obstructive or difficult for the network to
+                navigate successfully.
+              </p>
+              <h3 className="text-lg font-semibold text-gray-800 mb-3">Governing law</h3>
+              <p className="text-gray-700 mb-4">
+                These integrated Terms of Service, Privacy Policy, and Community Standards are
+                executed, interpreted, and governed in accordance with the laws of the State of
+                Florida, without regard to conflict of law principles. <strong>Any legal action,
+                civil suit, or judicial proceeding arising out of or relating to this agreement
+                must be filed exclusively in the state or federal courts located in Miami-Dade
+                County, Florida.</strong>
+              </p>
+              <h3 className="text-lg font-semibold text-gray-800 mb-3">Severability</h3>
+              <p className="text-gray-700 mb-4">
+                If any section, clause, or provision of these Terms is determined by a court of
+                competent jurisdiction to be invalid, illegal, or unenforceable in any state or
+                territory of the United States, that determination shall not affect the validity
+                or enforceability of any other provision. The remaining clauses remain in full
+                force, and the unenforceable provision shall be modified to the minimum extent
+                necessary to make it valid and enforceable while preserving the original
+                commercial intent of the parties.
+              </p>
+            </div>
+          </section>
+
+          <section className="mb-10">
+            <div className="flex items-center gap-3 mb-4">
+              <div className="w-10 h-10 bg-[#1a365d] rounded-full flex items-center justify-center text-white font-bold">17</div>
+              <h2 className="text-2xl font-bold text-[#1a365d]">Acknowledgment &amp; Electronic Execution</h2>
+            </div>
+            <div className="prose prose-gray max-w-none pl-13">
+              <p className="font-semibold text-gray-800">
+                BY CREATING AN ACCOUNT, ENGAGING AN ADVISORY SPECIALIST, FUNDING AN ACCOUNT, OR
+                PURCHASING AN ASSET THROUGH ACCESS YOUR PLACE, YOU CERTIFY THAT YOU HAVE READ,
+                UNDERSTOOD, AND VOLUNTARILY AGREE TO BE BOUND BY EVERY CLAUSE, MANDATE, AND
+                LIABILITY WAIVER CONTAINED IN THIS DOCUMENT. YOU ACKNOWLEDGE THAT YOU ARE ENTERING
+                INTO A COMMERCIAL BUSINESS-TO-BUSINESS TRANSACTION AND WAIVE ALL RIGHTS TO
+                CONSUMER PROTECTION REMEDIES.
               </p>
             </div>
           </section>
