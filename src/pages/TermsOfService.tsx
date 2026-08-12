@@ -583,6 +583,32 @@ export default function TermsOfService() {
               <h2 className="text-2xl font-bold text-[#1a365d]">Conduct, Site Safety, and Refusal of Service</h2>
             </div>
             <div className="prose prose-gray max-w-none pl-13 mb-12">
+              <h3 className="text-lg font-semibold text-gray-800 mb-3">Approved communication channels</h3>
+              <p className="text-gray-700 mb-4">
+                All communication and correspondence with Access Your Place must take place
+                through our email or an approved Access Your Place channel: our email addresses,
+                the operator portal, Penny AI inside the portal, scheduled Zoom calls which are
+                always recorded, direct messaging within the platform, or a call from an Access
+                Your Place office or business line.
+              </p>
+              <p className="text-gray-700 mb-4">
+                Our preferred channels are the portal, email and Zoom, for compliance,
+                record-keeping and quality assurance. Correspondence through approved channels is
+                recorded against your file and available to whoever on our team helps you next.
+              </p>
+              <h3 className="text-lg font-semibold text-gray-800 mb-3">Our staff will never use a personal number</h3>
+              <p className="text-gray-700 mb-4">
+                <strong>Access Your Place staff are prohibited from contacting clients from
+                personal telephone numbers or by personal text message.</strong> If a member of our
+                staff contacts you, it comes from an approved Access Your Place number or business
+                line.
+              </p>
+              <p className="text-gray-700 mb-4">
+                This protects our staff from harassment. If a staff member gives a client their
+                personal number, that staff member has broken Company rules, and Access Your Place
+                accepts no responsibility for any harassment, dispute or claim arising from
+                communications held outside approved channels.
+              </p>
               <h3 className="text-lg font-semibold text-gray-800 mb-3">No client is tied to one staff member</h3>
               <p className="text-gray-700 mb-4">Working with Access Your Place does not tie a client to any particular member of our team, and it does not tie any member of our team to a particular client. If a staff member no longer feels comfortable working with a client, that does not remove the client's access to the company. Anyone can email our success team, or reach us through Penny and their portal. No individual staff member is a requirement for using our service, and no individual staff member should be the reason a client feels unable to continue with us.</p>
               <h3 className="text-lg font-semibold text-gray-800 mb-3">Conduct</h3>
