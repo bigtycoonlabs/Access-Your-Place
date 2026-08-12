@@ -73,11 +73,16 @@ export function useCallerType(): CallerInfo {
         return;
       }
 
-      // Fetch funding status from backend
+      // process-account-funding was TOMBSTONED on 6 August 2026 for creating card payment
+      // intents against a third-party gateway the owner does not control. It returns 410
+      // and must stay dead. This hook runs on every screen that uses it, so the dead call
+      // produced a CORS failure on essentially every operator page load.
+      //
+      // Falling through is the SAFE direction: an unconfirmed caller is treated as not
+      // funded, so property addresses stay hidden rather than being revealed by a check
+      // that failed. Card funding is retired; the rails are Zelle, wire, Cash App, Bitcoin.
       try {
-        const { data, error } = await supabase.functions.invoke('process-account-funding', {
-          body: { action: 'get_funding_status', investor_id: parsed.id }
-        });
+        const { data, error } = { data: null as any, error: null as any };
 
         if (!error && data?.funding_status?.is_funded) {
           setIsFunded(true);
