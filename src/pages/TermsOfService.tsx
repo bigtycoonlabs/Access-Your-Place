@@ -925,13 +925,83 @@ export default function TermsOfService() {
             </div>
           </section>
 
+          <section className="mb-10">
+            <div className="flex items-center gap-3 mb-4">
+              <div className="w-10 h-10 bg-[#1a365d] rounded-full flex items-center justify-center text-white font-bold">23</div>
+              <h2 className="text-2xl font-bold text-[#1a365d]">Leads You Find, Outreach, and Listing a Third-Party Operation</h2>
+            </div>
+            <div className="prose prose-gray max-w-none pl-13">
+              <h3 className="text-lg font-semibold text-gray-800 mb-3">Outreach sent by Penny is sent by us</h3>
+              <p className="text-gray-700 mb-4">
+                Where you ask Penny to contact a landlord about a property you found, that outreach
+                goes out <strong>on behalf of Access Your Place</strong>, not as a message from you
+                personally. It introduces the Access Your Place network, states that one of our
+                operators is interested if the owner is open to corporate leasing, and explains
+                what working with our network involves.
+              </p>
+              <p className="text-gray-700 mb-4">
+                Every such email carries a verification tag so the landlord can confirm the
+                approach is genuinely from Access Your Place and not an impostor. The landlord is
+                invited either to contact our Success Team directly or to create a landlord portal
+                account, where an Acquisition Manager will follow up to confirm.
+              </p>
+              <p className="text-gray-700 mb-4">
+                If a landlord responds, or contacts the Success Team, <strong>Penny notifies the
+                client who found the property.</strong> You are not left wondering whether your
+                lead went anywhere.
+              </p>
+              <h3 className="text-lg font-semibold text-gray-800 mb-3">You may handle your own outreach</h3>
+              <p className="text-gray-700 mb-4">
+                You are never required to use our outreach. If you would rather keep control of
+                your own leads, contact the landlord yourself: once the full details of a find are
+                released to you, Penny will give you the email address and telephone number so you
+                can. That is a perfectly legitimate way to use the tool, and we will say so.
+              </p>
+              <h3 className="text-lg font-semibold text-gray-800 mb-3">What happens to a lead you decide against</h3>
+              <p className="text-gray-700 mb-4">
+                A property you found through Property Forge <strong>will not be listed publicly or
+                distributed to the network while you are still pursuing it.</strong> We will not
+                take your lead and sell it out from under you.
+              </p>
+              <p className="text-gray-700 mb-4">
+                If you confirm that you no longer want a property, and the landlord wishes to
+                continue working with Access Your Place, that relationship becomes an Access Your
+                Place landlord partnership. The property may then be distributed to the network or
+                listed on the marketplace. At that point it is no longer your listing to control,
+                because the landlord chose to stay with us rather than with you.
+              </p>
+              <p className="text-gray-700 mb-4">
+                You are not left out. Where a property you found is subsequently sold through our
+                marketplace, <strong>you receive a $300 referral fee</strong>, payable as cash or
+                platform credit at your election, on the same basis as referring a client who
+                purchases a deal.
+              </p>
+              <h3 className="text-lg font-semibold text-gray-800 mb-3">Listing a third-party operation: you must hold the lease</h3>
+              <p className="text-gray-700 mb-4">
+                Listing an operation for sale on our marketplace as a third-party seller is a
+                representation that <strong>you are the actual leaseholder of that property.</strong>
+                That is the only basis on which we accept third-party listings.
+              </p>
+              <p className="text-gray-700 mb-4">
+                Before any third-party operation is sold through our marketplace, the Success Team
+                verifies that a lease is genuinely in place. A listing that cannot be verified is
+                not sold.
+              </p>
+              <p className="text-gray-700 mb-4">
+                <strong>We do not accept listings from competing acquisition companies or property
+                finder services.</strong> The marketplace is for operators selling operations they
+                actually hold, not for intermediaries listing properties they do not control.
+              </p>
+            </div>
+          </section>
+
           {/* GOVERNING LAW, SEVERABILITY AND EXECUTION. These were in the master document
               and had never been on the site. They are the clauses that decide where a
               dispute is heard and what survives if one provision fails, so a page people
               formally accept cannot be missing them. */}
           <section className="mb-10">
             <div className="flex items-center gap-3 mb-4">
-              <div className="w-10 h-10 bg-[#1a365d] rounded-full flex items-center justify-center text-white font-bold">23</div>
+              <div className="w-10 h-10 bg-[#1a365d] rounded-full flex items-center justify-center text-white font-bold">24</div>
               <h2 className="text-2xl font-bold text-[#1a365d]">Right of Review, Governing Law, and Severability</h2>
             </div>
             <div className="prose prose-gray max-w-none pl-13">
@@ -967,7 +1037,7 @@ export default function TermsOfService() {
 
           <section className="mb-10">
             <div className="flex items-center gap-3 mb-4">
-              <div className="w-10 h-10 bg-[#1a365d] rounded-full flex items-center justify-center text-white font-bold">24</div>
+              <div className="w-10 h-10 bg-[#1a365d] rounded-full flex items-center justify-center text-white font-bold">25</div>
               <h2 className="text-2xl font-bold text-[#1a365d]">Acknowledgment &amp; Electronic Execution</h2>
             </div>
             <div className="prose prose-gray max-w-none pl-13">
