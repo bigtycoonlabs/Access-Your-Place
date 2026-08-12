@@ -45,6 +45,12 @@ const PHASES = [
 interface SetupProject {
   id: string;
   property_address: string;
+  // Carried on an operator-submitted request so the setup manager has what they need
+  // to make the consultation call without opening the record.
+  city_state?: string;
+  num_properties?: number;
+  target_start_date?: string;
+  operator_notes?: string;
   investor_name?: string;
   investor_email?: string;
   investor_phone?: string;
@@ -322,6 +328,54 @@ export function SetupManagementDashboard({ currentStaffId, currentStaffName }: P
           </CardContent>
         </Card>
       </div>
+
+      {/* NEW REQUESTS.
+          Operators can now ask us to launch a property themselves, and those land at
+          phase 1, which is labelled "Acquisition & Payment". A setup manager reading the
+          pipeline would see a new request filed under a payment stage when nobody has
+          paid anything and no acquisition is happening: it is somebody waiting for a
+          consultation call. Inbound work should never be something you have to go
+          looking for, so it sits at the top with everything needed to make the call. */}
+      {projects.some(p => p.status === 'requested') && (
+        <Card className="border-2 border-amber-300 bg-amber-50">
+          <CardContent className="pt-4 pb-4">
+            <h2 className="mb-1 font-bold text-amber-900">
+              {projects.filter(p => p.status === 'requested').length} setup{' '}
+              {projects.filter(p => p.status === 'requested').length === 1 ? 'request' : 'requests'} waiting for a consultation
+            </h2>
+            <p className="mb-3 text-sm text-amber-800">
+              These came in from operators. Nothing has been scoped, quoted or charged. Call
+              them, run the consultation, then move the project to Consultation.
+            </p>
+            <ul className="space-y-2">
+              {projects.filter(p => p.status === 'requested').map(p => (
+                <li key={p.id} className="rounded-lg border border-amber-200 bg-white p-3">
+                  <button
+                    onClick={() => setSelectedProject(p)}
+                    className="min-h-[44px] w-full text-left"
+                  >
+                    <span className="block font-semibold text-[#1a2332]">
+                      {p.property_address}
+                      {p.city_state ? `, ${p.city_state}` : ''}
+                    </span>
+                    <span className="block text-sm text-gray-700">
+                      {p.investor_name || p.investor_email}
+                      {p.investor_phone ? ` — ${p.investor_phone}` : ''}
+                      {p.num_properties && p.num_properties > 1 ? ` — ${p.num_properties} units` : ''}
+                      {p.target_start_date ? ` — target ${p.target_start_date}` : ''}
+                    </span>
+                    {p.operator_notes && (
+                      <span className="mt-1 block text-sm italic text-gray-600">
+                        They said: {p.operator_notes}
+                      </span>
+                    )}
+                  </button>
+                </li>
+              ))}
+            </ul>
+          </CardContent>
+        </Card>
+      )}
 
       {/* Phase Pipeline Summary (clickable filters) */}
       <Card>
