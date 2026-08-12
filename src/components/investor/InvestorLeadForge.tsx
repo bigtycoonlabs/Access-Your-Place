@@ -19,9 +19,9 @@ const TYPE = {
 const LOAD_MSGS = [
   "Connecting to Apollo database…",
   "Resolving zip to market area…",
-  "Searching 265M+ contact records…",
-  "Pulling verified contact data…",
-  "Scoring and ranking leads…",
+  "Reading live rental listings…",
+  "Pulling rents, beds and addresses…",
+  "Scoring each property…",
   "Finalizing results…",
 ];
 
@@ -562,7 +562,7 @@ export function InvestorLeadForge({ investorId, investorName }: InvestorLeadForg
               <div style={{ fontSize:15, fontWeight:600, color:TEXT, marginBottom:6, animation:"pulse 1.8s ease infinite" }}>
                 {LOAD_MSGS[msgIdx]}
               </div>
-              <div style={{ fontSize:12, color:MUTED }}>Apollo is scanning real contacts — typically 15–30 seconds</div>
+              <div style={{ fontSize:12, color:MUTED }}>Reading live listings and scoring them — this can take up to a minute</div>
             </div>
           )}
 
@@ -572,7 +572,7 @@ export function InvestorLeadForge({ investorId, investorName }: InvestorLeadForg
               <div style={{ display:"flex", justifyContent:"space-between", alignItems:"center", marginBottom:14 }}>
                 <div style={{ fontSize:13, color:MUTED }}>
                   <span style={{ color:"#4ADE80" }}>● </span>
-                  <span style={{ color:TEXT, fontWeight:700 }}>{results.length} real Apollo contacts</span> near <span style={{ color:"#60A5FA" }}>{zip}</span>
+                  <span style={{ color:TEXT, fontWeight:700 }}>{results.length} properties found</span> in <span style={{ color:"#60A5FA" }}>{finderCity}, {finderState.toUpperCase()}</span>
                   {results.filter(l=>l.type==="landlord").length > 0 &&
                     <span style={{ marginLeft:12, color:"#FBBF24" }}>🏠 {results.filter(l=>l.type==="landlord").length} landlords</span>}
                   {results.filter(l=>l.type==="corporate").length > 0 &&
