@@ -320,6 +320,35 @@ export default function TermsOfService() {
                 us, and is <strong>never due until the lease is in the client's hands and they
                 have had the opportunity to review it</strong>.
               </p>
+              <h3 className="text-lg font-semibold text-gray-800 mb-3">The hold period, and what happens during it</h3>
+              <p className="text-gray-700 mb-4">
+                A reservation is reviewed and approved by the Success Team. Once approved, the
+                operation is held for <strong>72 hours</strong> and the property address is
+                released to the operator so they can carry out their own due diligence on the
+                numbers. The operator is not expected to take our figures on trust: the hold
+                exists so they can check them.
+              </p>
+              <p className="text-gray-700 mb-4">
+                When the operator is ready to move forward, we introduce them to the landlord or
+                the community and continue with the leasing process. We do not make that
+                introduction until the operator tells us they are comfortable.
+              </p>
+              <h3 className="text-lg font-semibold text-gray-800 mb-3">Finalising an acquisition</h3>
+              <p className="text-gray-700 mb-4">
+                The <strong>full acquisition fee must be paid before an acquisition is
+                finalised</strong>. We expect payment in full before lease documents are signed
+                and before the operation is fully turned over to the operator. The reservation
+                deposit is credited toward that total.
+              </p>
+              <h3 className="text-lg font-semibold text-gray-800 mb-3">Third-party seller deals</h3>
+              <p className="text-gray-700 mb-4">
+                Where an operation is being sold by a third-party seller, funds are
+                <strong> withheld until everything is finalised</strong>. This is deliberate and
+                it is there to protect the buyer: the seller is not paid out on the strength of a
+                promise, and money does not leave our hands until the operation has actually
+                transferred.
+              </p>
+
               <h3 className="text-lg font-semibold text-gray-800 mb-3">On reserve is not sold</h3>
               <p className="text-gray-700 mb-4">
                 Submitting payment proof places an operation on reserve and removes it from the
