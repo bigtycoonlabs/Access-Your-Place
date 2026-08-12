@@ -388,12 +388,36 @@ export default function TermsOfService() {
                 custody and compliance over large merchandise purchases from the point of
                 purchase. We also plan and execute property teardowns and portfolio moves.
               </p>
-              <h3 className="text-lg font-semibold text-gray-800 mb-3">Timelines</h3>
+              <h3 className="text-lg font-semibold text-gray-800 mb-3">What the fourteen days actually means</h3>
               <p className="text-gray-700 mb-4">
-                Our target is fourteen days from sourcing to guest ready. That is a target and
-                not a guarantee. Building access, elevator scheduling, supplier availability,
-                permitting, and any condition of the property outside our control can extend
-                it. We will tell the client as soon as we know a date is at risk.
+                The window begins <strong>after the client signs their setup agreement and after
+                our team begins purchasing</strong> furniture, items and supplies from our
+                suppliers to the warehouse. From the point purchasing starts, we work to a
+                fourteen <strong>business day</strong> turnaround covering receiving every item,
+                checking and packaging it, and transporting it to the property. On arrival the
+                property is set up and staged properly within a further two to three business
+                days.
+              </p>
+              <p className="text-gray-700 mb-4">
+                The majority of that window is sourcing and delivery, not the installation
+                itself. This is a target and not a guarantee: supplier availability, building
+                access, permitting and the condition of the property can extend it, and we will
+                tell the client as soon as we know a date is at risk.
+              </p>
+              <h3 className="text-lg font-semibold text-gray-800 mb-3">Why we consolidate rather than ship to site</h3>
+              <p className="text-gray-700 mb-4">
+                Running launches through our own warehouse lets us handle several properties at
+                once and keeps client property secure. There is no risk of items going missing on
+                delivery at a community we have not worked in before, or at a building where bulk
+                deliveries are difficult to receive.
+              </p>
+              <h3 className="text-lg font-semibold text-gray-800 mb-3">Holding furniture, and when we will not ship</h3>
+              <p className="text-gray-700 mb-4">
+                Once a setup is under way and furniture is waiting at the warehouse, <strong>we
+                hold it until the launch date of the property</strong>. We do not acquire or
+                arrange delivery of items to a property unless that property is confirmed
+                available and the leases have been signed. We will not send a client's furniture
+                to a unit that is not yet theirs.
               </p>
               <h3 className="text-lg font-semibold text-gray-800 mb-3">Payment for setup work</h3>
               <p className="text-gray-700 mb-4">
@@ -436,10 +460,70 @@ export default function TermsOfService() {
             </div>
           </section>
 
-          {/* Section 7 */}
+          {/* Added 12 August 2026 on owner instruction: credit and no refunds, master
+              lease non-payment and confiscation, operator responsibility, and conduct
+              and site safety. */}
           <section className="mb-10">
             <div className="flex items-center gap-3 mb-4">
-              <div className="w-10 h-10 bg-[#1a365d] rounded-full flex items-center justify-center text-white font-bold">7</div>
+              <div className="w-10 h-10 bg-[#1a365d] rounded-full flex items-center justify-center text-white font-bold">9</div>
+              <h2 className="text-2xl font-bold text-[#1a365d]">Credit, and Our No Refund Policy</h2>
+            </div>
+            <div className="prose prose-gray max-w-none pl-13 mb-12">
+              <h3 className="text-lg font-semibold text-gray-800 mb-3">All sales are final</h3>
+              <p className="text-gray-700 mb-4"><strong>We do not offer refunds, for any reason, in any situation. All sales are final.</strong> Moving forward with our service in any form is the client agreeing that they are entering the furnished rental space to acquire a property that we are able to provide, even if the specific property they first chose is not the one they ultimately continue with.</p>
+              <h3 className="text-lg font-semibold text-gray-800 mb-3">What happens after the 72 hour hold</h3>
+              <p className="text-gray-700 mb-4">If a client does not proceed after the 72 hour hold, any amount already paid is issued as <strong>credit on their account</strong>. That credit can be applied to another property deal or to another Access Your Place service where applicable. It is credit, not a refund, and it is not returnable as cash.</p>
+              <h3 className="text-lg font-semibold text-gray-800 mb-3">What credit cannot be used for</h3>
+              <p className="text-gray-700 mb-4">Credit applies to our fees only. It <strong>does not apply</strong> to a property or landlord deposit, to rent payments, to furniture cost, or to payments owed to third-party vendors. Those are not our fees and we cannot offset them with credit.</p>
+              <h3 className="text-lg font-semibold text-gray-800 mb-3">Withdrawing after signing</h3>
+              <p className="text-gray-700 mb-4">If a client signs an acquisition agreement and a sublease agreement and has moved forward with a property, and then withdraws, they will need to pay another acquisition fee to take a different property, unless they hold enough credit to cover it. <strong>We will not release a client from that obligation because of fear, discomfort, or a misunderstanding about a deal they already agreed to.</strong></p>
+              <p className="text-gray-700 mb-4">Every client has the opportunity to do their research before committing: the 72 hour hold exists for exactly that, the address is released so the numbers can be checked independently, and any client can book a call with a person on our team before any payment is made. A client cannot sign and then say afterwards that they have done further research and are no longer comfortable with the numbers. That opportunity came first, on purpose.</p>
+              <p className="text-gray-700 mb-4">A client withdrawing at the last moment after signing is a violation of an agreement that our company, the landlord and the client have all relied on, and we treat it with the same seriousness as a client failing to pay their landlord. Integrity, responsibility and standing by your word matter here.</p>
+            </div>
+
+            <div className="flex items-center gap-3 mb-4">
+              <div className="w-10 h-10 bg-[#1a365d] rounded-full flex items-center justify-center text-white font-bold">10</div>
+              <h2 className="text-2xl font-bold text-[#1a365d]">Master Leases, Non-Payment, and Operator Responsibility</h2>
+            </div>
+            <div className="prose prose-gray max-w-none pl-13 mb-12">
+              <h3 className="text-lg font-semibold text-gray-800 mb-3">The operator is responsible for the rent, whatever the operation earns</h3>
+              <p className="text-gray-700 mb-4">By moving forward with our service, an operator states that <strong>they have the financial means to cover the rent on the properties they acquire through us, regardless of how any operation performs</strong>. That applies to master leases and to direct leases the operator signs with their own company.</p>
+              <h3 className="text-lg font-semibold text-gray-800 mb-3">The unit is the operator's responsibility, fully</h3>
+              <p className="text-gray-700 mb-4">The specific apartment or home an operator acquires or runs through our master lease program is <strong>their responsibility completely and irrevocably until the lease term ends</strong>. That includes maintenance issues, neighbourhood issues, and the relationship with the landlord.</p>
+              <h3 className="text-lg font-semibold text-gray-800 mb-3">Visiting the property</h3>
+              <p className="text-gray-700 mb-4">Operators have full access to visit a property before finalising a lease agreement, and we encourage visits after the lease is signed too, including on master lease properties. Nobody should acquire a property they have not looked at if they want to look at it.</p>
+              <h3 className="text-lg font-semibold text-gray-800 mb-3">Non-payment, confiscation and liquidation</h3>
+              <p className="text-gray-700 mb-4">Where an operator does not pay, <strong>Access Your Place may confiscate the operation and liquidate assets inside the property, including furniture, in order to make the landlord whole</strong>. We avoid eviction proceedings at all cost, and in practice that often means liquidating the assets in the location to pay the landlord, or placing a long-term resident in the property.</p>
+              <p className="text-gray-700 mb-4">If we ever have to confiscate an operation from a client, <strong>that client is immediately banned from the Access Your Place network</strong> and may not continue with any of our services. Any launches in progress are halted, any services being delivered are halted, and any other acquisitions in progress are halted. The client is notified that until their master lease payments are rectified, Access Your Place will not assist them with any service or action.</p>
+              <h3 className="text-lg font-semibold text-gray-800 mb-3">Selling an operation</h3>
+              <p className="text-gray-700 mb-4">We will only sell an operation for an operator who is <strong>current with their landlord</strong>. If an operation is not current and up to date on all payments, we refuse the sale. We cannot and will not pay out on the sale of an operation where the operator has relinquished the property to us, has been banned from our network, or has stopped paying rent to the landlord.</p>
+              <h3 className="text-lg font-semibold text-gray-800 mb-3">We facilitate, we do not guarantee</h3>
+              <p className="text-gray-700 mb-4">Access Your Place is a facilitator of rental arbitrage acquisition. <strong>We do not guarantee that there will never be turbulence with a landlord.</strong> We cannot control other parties in a transaction, or whether they get along. Where an apartment community becomes untenable or too difficult to operate in, we can help and assist with moving the operation, but <strong>Access Your Place holds no liability or fault for a property not going as planned</strong>. It is the operator's business to run. What we ask is that operators communicate their plans clearly and early, so our team can respond properly and help where help is available.</p>
+            </div>
+
+            <div className="flex items-center gap-3 mb-4">
+              <div className="w-10 h-10 bg-[#1a365d] rounded-full flex items-center justify-center text-white font-bold">11</div>
+              <h2 className="text-2xl font-bold text-[#1a365d]">Conduct, Site Safety, and Refusal of Service</h2>
+            </div>
+            <div className="prose prose-gray max-w-none pl-13 mb-12">
+              <h3 className="text-lg font-semibold text-gray-800 mb-3">No client is tied to one staff member</h3>
+              <p className="text-gray-700 mb-4">Working with Access Your Place does not tie a client to any particular member of our team, and it does not tie any member of our team to a particular client. If a staff member no longer feels comfortable working with a client, that does not remove the client's access to the company. Anyone can email our success team, or reach us through Penny and their portal. No individual staff member is a requirement for using our service, and no individual staff member should be the reason a client feels unable to continue with us.</p>
+              <h3 className="text-lg font-semibold text-gray-800 mb-3">Conduct</h3>
+              <p className="text-gray-700 mb-4">Gossip, slander, or defamation of our business, our performance or our actions is treated with the same policy as an operator failing to pay for their property: <strong>the operator is banned immediately</strong>. It violates these terms and it goes against our core values. We work with professionals.</p>
+              <h3 className="text-lg font-semibold text-gray-800 mb-3">Our right to refuse service</h3>
+              <p className="text-gray-700 mb-4">We reserve the right to refuse service to any client. We specifically reserve the right to refuse service on the grounds that a client is being difficult, disrespectful, bullying, defamatory or harassing. We also reserve the right to refuse service where our staff assess that a client does not have sufficient funds to cover the leases or operations they are acquiring.</p>
+              <h3 className="text-lg font-semibold text-gray-800 mb-3">During a setup, the property is a work site</h3>
+              <p className="text-gray-700 mb-4">An operator may visit their property <strong>before</strong> a setup begins and <strong>after</strong> it is finished. They may not visit during an active setup while our YP Pro is working and staying at the property, unless Access Your Place confirms in writing that they may.</p>
+              <p className="text-gray-700 mb-4"><strong>We reserve the right to remove our staff from the site if an operator arrives during an active setup.</strong> This is in the setup agreement signed at the start of every project, and it is stated here as well. The work should not be disturbed until it is complete and the keys are handed over. It has made our staff uncomfortable, and it is a safety matter: our team does not know every client personally.</p>
+              <p className="text-gray-700 mb-4"><strong>Our staff will not share a hotel room, a property, an apartment or a single-family home overnight with a client.</strong> That is against these terms and against our quality and safety standards, and it is not negotiable. Choosing to use our setup service is agreeing to this.</p>
+              <p className="text-gray-700 mb-4">We are glad to meet clients in person. That happens in a public place such as a restaurant or a coffee shop, or at a community or property for a general tour, supervised.</p>
+            </div>
+          </section>
+
+          {/* Section 12 */}
+          <section className="mb-10">
+            <div className="flex items-center gap-3 mb-4">
+              <div className="w-10 h-10 bg-[#1a365d] rounded-full flex items-center justify-center text-white font-bold">12</div>
               <h2 className="text-2xl font-bold text-[#1a365d]">Limitation of Liability</h2>
             </div>
             <div className="bg-red-50 border border-red-200 rounded-lg p-4 mb-4">
@@ -475,7 +559,7 @@ export default function TermsOfService() {
           {/* Section 8 */}
           <section className="mb-10">
             <div className="flex items-center gap-3 mb-4">
-              <div className="w-10 h-10 bg-[#1a365d] rounded-full flex items-center justify-center text-white font-bold">8</div>
+              <div className="w-10 h-10 bg-[#1a365d] rounded-full flex items-center justify-center text-white font-bold">13</div>
               <h2 className="text-2xl font-bold text-[#1a365d]">Intellectual Property & Confidentiality</h2>
             </div>
             <div className="prose prose-gray max-w-none pl-13">
@@ -499,7 +583,7 @@ export default function TermsOfService() {
           {/* Section 9 */}
           <section className="mb-10">
             <div className="flex items-center gap-3 mb-4">
-              <div className="w-10 h-10 bg-[#1a365d] rounded-full flex items-center justify-center text-white font-bold">9</div>
+              <div className="w-10 h-10 bg-[#1a365d] rounded-full flex items-center justify-center text-white font-bold">14</div>
               <h2 className="text-2xl font-bold text-[#1a365d]">Dispute Resolution</h2>
             </div>
             <div className="prose prose-gray max-w-none pl-13">
@@ -523,7 +607,7 @@ export default function TermsOfService() {
           {/* Section 10 */}
           <section className="mb-10">
             <div className="flex items-center gap-3 mb-4">
-              <div className="w-10 h-10 bg-[#1a365d] rounded-full flex items-center justify-center text-white font-bold">10</div>
+              <div className="w-10 h-10 bg-[#1a365d] rounded-full flex items-center justify-center text-white font-bold">15</div>
               <h2 className="text-2xl font-bold text-[#1a365d]">Modifications to Terms</h2>
             </div>
             <div className="prose prose-gray max-w-none pl-13">
