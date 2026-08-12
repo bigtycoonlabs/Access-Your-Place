@@ -1433,7 +1433,14 @@ export default function InvestorPortal() {
                   </TabsTrigger>
                 </TabsList>
                 <TabsContent value="account">
-                  <AccountCredits 
+                  {/* AccountCredits is a live CARD payment form that confirms funding
+                      through process-account-funding, which was tombstoned on 6 August
+                      2026 for routing card payments to a third-party gateway the owner
+                      does not control. Card processing is retired: the rails are Zelle,
+                      wire transfer, Cash App and Bitcoin. Rendering a card form that
+                      cannot complete invites somebody to type their card number into a
+                      dead end. It is not rendered until it is rebuilt on the real rails. */}
+                  {false && <AccountCredits 
                     investorId={investor.id} 
                     investorEmail={investor.email}
                     onFundingComplete={() => {
@@ -1443,7 +1450,27 @@ export default function InvestorPortal() {
                         setInvestor({ ...data, account_funded: true });
                       }
                     }} 
-                  />
+                  />}
+                  {/* What replaces it, so the tab is not simply empty. */}
+                  <section aria-labelledby="funding-heading" className="rounded-xl border border-gray-200 bg-white p-6">
+                    <h3 id="funding-heading" className="text-lg font-semibold text-[#1a365d]">Funding your account</h3>
+                    <p className="mt-2 text-sm leading-relaxed text-gray-700">
+                      We do not take card payments. Deposits and acquisition payments are sent
+                      by Zelle, wire transfer, Cash App or Bitcoin, from your own bank or app,
+                      so nobody here ever holds your card details.
+                    </p>
+                    <p className="mt-2 text-sm leading-relaxed text-gray-700">
+                      Open the Payments tab to see and copy the destination for the method you
+                      choose, then upload a photo of the confirmation. An acquisition manager
+                      verifies every payment and speaks with you before anything is finalised.
+                    </p>
+                    <button
+                      onClick={() => setActiveTab('financial')}
+                      className="mt-4 min-h-[44px] rounded-lg bg-[#1a365d] px-6 py-3 font-semibold text-white hover:bg-[#12283f]"
+                    >
+                      Go to Payments
+                    </button>
+                  </section>
                 </TabsContent>
                 <TabsContent value="payments">
                   {/* How to pay comes BEFORE payment history: a client opening

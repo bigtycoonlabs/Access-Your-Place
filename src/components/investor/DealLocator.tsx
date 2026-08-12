@@ -45,11 +45,15 @@ async function resolveCallerType(investorId: string): Promise<CallerType> {
       return 'funded_investor';
     }
     
-    // Fetch funding status from backend
+    // process-account-funding was TOMBSTONED on 6 August 2026: it created card payment
+    // intents against a third-party gateway the owner does not control. It returns 410 and
+    // must stay dead. Calling it produced a CORS failure on every load of this screen.
+    //
+    // Falling through to the session flag is the safe direction: an unconfirmed caller is
+    // treated as NOT funded, so addresses stay hidden rather than being revealed by a
+    // failed check. Card funding is retired; the rails are Zelle, wire, Cash App, Bitcoin.
     try {
-      const { data, error } = await supabase.functions.invoke('process-account-funding', {
-        body: { action: 'get_funding_status', investor_id: investorId }
-      });
+      const { data, error } = { data: null as any, error: null as any };
       
       if (!error && data?.funding_status?.is_funded) {
         // Cache funding status in session for future use
