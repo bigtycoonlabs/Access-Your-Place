@@ -271,7 +271,16 @@ export function InvestorLeadForge({ investorId, investorName }: InvestorLeadForg
         setReleasing(null);
         return;
       }
-      setReleasedIds(prev => ({ ...prev, [lead.id]: data.contact || {} }));
+      // The lookup returns { email, phone, contact_name }, the search returns
+      // { contact_email, contact_phone }. Reading only one shape meant the released
+      // details rendered blank and the outreach button never appeared, so a client paid
+      // $62 and saw nothing. Normalise both into one shape here.
+      const c = data.contact || {};
+      setReleasedIds(prev => ({ ...prev, [lead.id]: {
+        contact_email: c.contact_email || c.email || lead.contact_email || null,
+        contact_phone: c.contact_phone || c.phone || lead.contact_phone || null,
+        contact_name: c.contact_name || c.name || c.company || lead.contact_name || null,
+      } }));
       if (data.balance_remaining != null) {
         setCredit(c => ({ ...(c || {}), balance: data.balance_remaining }));
       }
