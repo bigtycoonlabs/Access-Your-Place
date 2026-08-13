@@ -143,6 +143,7 @@ Deno.serve(async (req) => {
         });
       }
       const expiresAt = expires_in_days ? new Date(Date.now() + expires_in_days * 24 * 60 * 60 * 1000).toISOString() : null;
+      let emailResult: any = { success: false, reason: 'not_attempted' };
       const { data: doc, error: insertError } = await supabase
         .from('document_signatures')
         .insert({
@@ -160,7 +161,10 @@ Deno.serve(async (req) => {
 
       const invInfo = await getInvestorInfo(investor_id, { investor_email, investor_name });
       if (invInfo.email) {
-        await sendEmail(invInfo.email, `Action Required: ${document_name} - Ready for Signature`,
+        // Capture the result. It used to be fired and forgotten, so the caller got no
+        // confirmation and could not tell a delivered notice from a silent failure. A
+        // document sitting in a portal nobody was told about is not delivered.
+        emailResult = await sendEmail(invInfo.email, `Action Required: ${document_name} - Ready for Signature`,
           `<div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto;">
             <div style="background: linear-gradient(135deg, #1a365d, #2d4a7c); padding: 30px; text-align: center; border-radius: 12px 12px 0 0;">
               <h1 style="color: white; margin: 0; font-size: 22px;">Document Ready for Signature</h1>
@@ -182,7 +186,7 @@ Deno.serve(async (req) => {
           </div>`
         );
       }
-      return new Response(JSON.stringify({ success: true, document: doc }), {
+      return new Response(JSON.stringify({ success: true, document: doc, email_sent: emailResult?.success === true, email_detail: emailResult?.reason || null }), {
         headers: { ...corsHeaders, 'Content-Type': 'application/json' }
       });
     }
