@@ -3961,8 +3961,11 @@ async function runAgent(messages: Array<{ role: string; content: string }>, firs
   const lastUser = String(messages[messages.length - 1]?.content || '');
   const wantsNumbers = /\b(run|pull|get|find|what|check)\b[^.?!]{0,40}\b(numbers?|figures?|scan|adr|occupancy|revenue|projection)\b/i.test(lastUser)
     || /^\s*(numbers?|scan)\b/i.test(lastUser);
-  const looksAddressy = /\d{1,6}\s+[A-Za-z][A-Za-z0-9.'-]*(\s+[A-Za-z0-9.'-]+){0,5}/.test(lastUser)
-    || /,\s*[A-Z]{2}\b/.test(lastUser);
+  // First version required a house number followed by a LETTER, so "407 23rd Ave" failed
+  // because 23rd starts with a digit, and the fast path never fired on the very message
+  // that prompted it. Now: any digit, plus either a street word or a state code.
+  const looksAddressy = /\d/.test(lastUser)
+    && /\b(ave|avenue|st|street|rd|road|blvd|dr|drive|ln|lane|way|ct|court|pl|place|hwy|pkwy)\b|,\s*[A-Za-z]{2}\b|\b[A-Z]{2}\b/.test(lastUser);
   const isFollowUp = messages.length > 2;
 
   const fastNumbers = wantsNumbers && looksAddressy && !isFollowUp;
