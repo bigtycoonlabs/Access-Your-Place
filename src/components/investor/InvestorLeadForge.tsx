@@ -26,17 +26,11 @@ const LOAD_MSGS = [
 ];
 
 // ── Core Apollo API helper ──────────────────────────────────
-async function apolloCall(prompt: string, maxTokens = 4000): Promise<string> {
-  const res = await fetch('/api/leadforge-apollo', {
-    method: 'POST',
-    headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify({ prompt, maxTokens }),
-  });
-  if (!res.ok) throw new Error(`API ${res.status}: ${await res.text()}`);
-  const d = await res.json();
-  if (!d.success) throw new Error(d.error || 'Apollo call failed');
-  return d.text ?? '';
-}
+// The Apollo lead search used to live here. It asked Apollo for CONTACTS at property
+// management companies, which is a different product to finding an available unit, and it
+// posted to /api/leadforge-apollo, a route that does not exist on this deployment. Both are
+// gone. Property Forge calls the property-forge function directly in doSearch below.
+
 
 function parseJSON(text) {
   for (const re of [/(\[[\s\S]*\])/, /(\{[\s\S]*\})/]) {
@@ -47,53 +41,6 @@ function parseJSON(text) {
 }
 
 // ── Apollo operations ───────────────────────────────────────
-async function searchLeads(zip, type, radius) {
-  const landlordBlock = type !== "corporate" ? `
-LANDLORD / RENT-BY-OWNER leads — use apollo_search_people:
-  person_titles: ["Property Manager","Real Estate Investor","Property Owner","Landlord","Rental Property Owner","Real Estate Portfolio Manager","Independent Landlord"]
-  person_locations: [city and state derived from zip ${zip}]
-  Fetch 5–7 people.` : "";
-
-  const corpBlock = type !== "landlords" ? `
-CORPORATE / CO-LIVING leads — use apollo_search_people:
-  person_titles: ["HR Director","HR Manager","Relocation Manager","Facilities Manager","Corporate Housing Manager","Director of Real Estate","Workplace Manager","Head of People Operations"]
-  Also search apollo_search_organizations for companies with keywords "co-living","furnished housing","corporate housing","extended stay","shared living" near the same city.
-  Fetch 5–7 people.` : "";
-
-  const text = await apolloCall(`
-You are a lead-search assistant for a corporate leasing and shared living company.
-
-Task: Use Apollo MCP tools to find REAL contacts near zip code ${zip} within ${radius} miles.
-First determine the city and state for zip ${zip}, then search Apollo.
-${landlordBlock}
-${corpBlock}
-
-After all searches, output ONLY a JSON array — no markdown, no explanation:
-[{
-  "id": "ap_${zip}_N",
-  "type": "landlord" or "corporate",
-  "name": "real full name from Apollo",
-  "title": "real job title",
-  "company": "company name or null",
-  "email": "email from Apollo or null",
-  "phone": "phone or null",
-  "city": "city",
-  "state": "two-letter state",
-  "linkedin": "linkedin URL or null",
-  "apolloPersonId": "Apollo person id or null",
-  "propertyType": "infer: SFR/Duplex/Multi-family/Property Mgmt for landlords; Corporate Housing/Co-living/Extended Stay for corporate",
-  "units": estimated integer,
-  "monthlyRate": estimated market rate integer in USD,
-  "score": lead quality integer 1-100,
-  "headcount": company employee count or null,
-  "note": "one specific detail from their Apollo profile"
-}]`);
-
-  const leads = parseJSON(text);
-  if (!Array.isArray(leads) || leads.length === 0)
-    throw new Error("Apollo returned no matching contacts in that area. Try a larger radius or different zip.");
-  return leads.map((l, i) => ({ ...l, id: l.id || `ap_${zip}_${i}` }));
-}
 
 async function enrichLead(lead) {
   const text = await apolloCall(`

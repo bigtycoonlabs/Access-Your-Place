@@ -73,32 +73,11 @@ if (typeof window !== 'undefined' && !(window as any).__aypLeadForgeFetchPatched
         : input.url;
     const resolvedUrl = new URL(rawUrl, window.location.origin);
 
-    if (resolvedUrl.pathname === '/api/leadforge-apollo') {
-      const response = await browserFetch(`${supabaseUrl}/functions/v1/apollo-leadforge`, {
-        ...init,
-        method: 'POST',
-        headers: {
-          ...(init?.headers || {}),
-          'Content-Type': 'application/json',
-          apikey: supabaseKey,
-          Authorization: `Bearer ${supabaseKey}`,
-        },
-      });
-      const text = await response.text();
-      let payload: Record<string, unknown> = {};
-      try {
-        payload = text ? JSON.parse(text) as Record<string, unknown> : {};
-      } catch {
-        payload = { error: text || 'Property Forge returned an invalid response' };
-      }
-      const normalized = response.ok
-        ? { success: true, text: typeof payload.text === 'string' ? payload.text : '' }
-        : { success: false, error: payload.error || `LeadForge request failed (${response.status})` };
-      return new Response(JSON.stringify(normalized), {
-        status: response.status,
-        headers: { 'Content-Type': 'application/json' },
-      });
-    }
+    // The /api/leadforge-apollo rewrite lived here, pointing at apollo-leadforge. Both are
+    // retired: Apollo returns CONTACTS at companies, not available rental units, so it was
+    // never the right engine for Property Forge, and ANTHROPIC_API_KEY was never set so it
+    // had not run in its life. Property Forge now calls the property-forge function
+    // directly. Removed so nobody wires to a dead route again.
 
     return browserFetch(input, init);
   }) as typeof window.fetch;
