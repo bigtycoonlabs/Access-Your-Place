@@ -54,157 +54,30 @@ async function verifyPasswordClient(password: string, storedHash: string): Promi
 }
 
 // Helper function for direct database login (fallback when edge function unavailable)
-async function directInvestorLogin(email: string, password: string): Promise<{
+/**
+ * The browser-side login fallback is GONE, and it is not coming back.
+ *
+ * It read the investors table straight from the browser with select('*') and compared the
+ * password itself. That only ever worked because password_hash was readable by the anon
+ * key, which is the same as publishing every client's password hash. Hashes are now
+ * revoked, so select('*') fails outright, the fallback throws, and the user is told
+ * "Database connection error" or "authentication failed using backup authentication" —
+ * which is what a real client and the owner both hit today.
+ *
+ * There is no version of this that is both working and safe: verifying a password in the
+ * browser requires the hash in the browser. Sign in goes through the edge function, and
+ * when that fails the person is told plainly rather than being dropped into a second
+ * mechanism that cannot succeed.
+ */
+async function directInvestorLogin(_email: string, _password: string): Promise<{
   success: boolean;
   error?: string;
   data?: any;
 }> {
-  try {
-    // Query the investors table directly - use ilike for case-insensitive email matching
-    const { data: investors, error: queryError } = await supabase
-      .from('investors')
-      .select('*')
-      .ilike('email', email.toLowerCase().trim())
-      .limit(1);
-
-    if (queryError) {
-      console.error('[DirectLogin] Database query error:', queryError);
-      return { success: false, error: 'Database connection error. Please try again.' };
-    }
-
-    if (!investors || investors.length === 0) {
-      console.log('[DirectLogin] No investor found with email:', email);
-      return { success: false, error: 'Invalid email or password' };
-    }
-
-    const investor = investors[0];
-    const storedPassword = investor.password_hash || investor.password;
-
-    if (!storedPassword) {
-      console.log('[DirectLogin] No password set for investor:', investor.id);
-      return { 
-        success: false, 
-        error: 'Account not set up. Please use the forgot password feature or contact support.' 
-      };
-    }
-
-    // Check password format and verify
-    let passwordValid = false;
-    
-    // Check if it's a v2$ client-side hash (from our fallback registration)
-    if (storedPassword.startsWith('v2$')) {
-      try {
-        passwordValid = await verifyPasswordClient(password, storedPassword);
-      } catch (hashErr) {
-        console.error('[DirectLogin] v2$ hash verification error:', hashErr);
-        passwordValid = false;
-      }
-    }
-    // Check if it's a v1$ salted hash (from investor-register edge function)
-    else if (storedPassword.startsWith('v1$')) {
-      // v1$ format: v1$salt$hash - try SHA-256 verification (same as edge function)
-      try {
-        const parts = storedPassword.split('$');
-        if (parts.length === 3) {
-          const salt = parts[1];
-          const expectedHash = parts[2];
-          const computedHash = await sha256Hash(salt + password);
-          passwordValid = computedHash === expectedHash;
-        }
-        if (!passwordValid) {
-          // Also try: hash(password + salt) in case edge function uses different order
-          const parts2 = storedPassword.split('$');
-          if (parts2.length === 3) {
-            const salt = parts2[1];
-            const expectedHash = parts2[2];
-            const computedHash2 = await sha256Hash(password + salt);
-            passwordValid = computedHash2 === expectedHash;
-          }
-        }
-      } catch (hashErr) {
-        console.error('[DirectLogin] v1$ hash verification error:', hashErr);
-      }
-      
-      if (!passwordValid) {
-        console.log('[DirectLogin] v1$ hash verification failed - edge function may use different algorithm');
-        return { 
-          success: false, 
-          error: 'Please try again in a moment. If the problem persists, use "Forgot Password" to reset your password.' 
-        };
-      }
-    }
-    // Check if it might be a bcrypt hash (starts with $2)
-    else if (storedPassword.startsWith('$2')) {
-      console.log('[DirectLogin] Password is bcrypt hashed - cannot verify client-side');
-      return { 
-        success: false, 
-        error: 'Please try again in a moment. If the problem persists, use "Forgot Password" to reset your password.' 
-      };
-    }
-    // Plain text comparison for legacy/fallback passwords
-    else {
-      passwordValid = storedPassword === password;
-      
-      // If plain text match succeeds, upgrade to hashed password
-      if (passwordValid) {
-        try {
-          const hashedPassword = await hashPasswordClient(password);
-          await supabase
-            .from('investors')
-            .update({ password_hash: hashedPassword })
-            .eq('id', investor.id);
-          console.log('[DirectLogin] Upgraded plain text password to v2$ hash for investor:', investor.id);
-        } catch (upgradeErr) {
-          console.warn('[DirectLogin] Password upgrade failed (non-critical):', upgradeErr);
-        }
-      }
-    }
-
-    if (!passwordValid) {
-      console.log('[DirectLogin] Password mismatch for investor:', investor.id);
-      return { success: false, error: 'Invalid email or password' };
-    }
-
-    console.log('[DirectLogin] Password match successful for:', investor.email);
-
-    // Update last login timestamp
-    await supabase
-      .from('investors')
-      .update({ last_login: new Date().toISOString() })
-      .eq('id', investor.id);
-
-    // Generate a simple session token
-    const sessionToken = `fallback_${investor.id}_${Date.now()}_${Math.random().toString(36).substring(7)}`;
-
-    return {
-      success: true,
-      data: {
-        investor: {
-          id: investor.id,
-          email: investor.email,
-          full_name: investor.full_name || investor.name || email,
-          phone: investor.phone,
-          company_name: investor.company_name,
-          portfolio_count: investor.portfolio_count || 0,
-          investment_budget_min: investor.investment_budget_min,
-          investment_budget_max: investor.investment_budget_max,
-          preferred_markets: investor.preferred_markets || [],
-          preferred_operation_types: investor.preferred_operation_types || [],
-          referral_code: investor.referral_code,
-          onboarding_completed: investor.onboarding_completed,
-          sms_opt_in: investor.sms_opt_in,
-          email_opt_in: investor.email_opt_in
-        },
-        session: {
-          token: sessionToken
-        },
-        email_verified: investor.email_verified || false
-      }
-    };
-  } catch (err: any) {
-    console.error('[DirectLogin] Exception:', err);
-    return { success: false, error: 'An unexpected error occurred. Please try again.' };
-  }
+  return {
+    success: false,
+    error: 'We could not reach the sign in service just now. Please try again in a moment. If it keeps happening, email success@accessyourplace.com and we will get you in.',
+  };
 }
 
 

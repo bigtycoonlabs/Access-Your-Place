@@ -60,29 +60,14 @@ const supabase = createClient(supabaseUrl, supabaseKey, {
   },
 });
 
-// Compatibility bridge for the investor LeadForge UI. Older builds call a
-// Railway route that does not exist. Route that exact request to the active
-// Supabase Edge Function and preserve the response shape expected by the UI.
-if (typeof window !== 'undefined' && !(window as any).__aypLeadForgeFetchPatched) {
-  const browserFetch = window.fetch.bind(window);
-  window.fetch = (async (input: RequestInfo | URL, init?: RequestInit) => {
-    const rawUrl = typeof input === 'string'
-      ? input
-      : input instanceof URL
-        ? input.toString()
-        : input.url;
-    const resolvedUrl = new URL(rawUrl, window.location.origin);
-
-    // The /api/leadforge-apollo rewrite lived here, pointing at apollo-leadforge. Both are
-    // retired: Apollo returns CONTACTS at companies, not available rental units, so it was
-    // never the right engine for Property Forge, and ANTHROPIC_API_KEY was never set so it
-    // had not run in its life. Property Forge now calls the property-forge function
-    // directly. Removed so nobody wires to a dead route again.
-
-    return browserFetch(input, init);
-  }) as typeof window.fetch;
-  (window as any).__aypLeadForgeFetchPatched = true;
-}
+// A global window.fetch patch used to live here to rewrite one dead API route. The route
+// is gone, so the patch did nothing except wrap EVERY request the page makes, including
+// sign in. That is not free: `new URL(rawUrl, origin)` throws on input shapes it does not
+// expect, and a throw inside the patch fails the request that triggered it. On the login
+// page that surfaces as the edge function appearing unavailable, which drops the user into
+// the browser-side fallback and the confusing "using backup authentication" message.
+//
+// Nothing needs intercepting. Removed rather than left as a no-op with teeth.
 
 const LEGACY_STAFF_ID = '313fb5f2-5909-4b29-8a4f-c4d29b8694ad';
 const ACTIVE_STAFF_ID = '0ff1605e-b627-4150-8e53-e22852ad1a2a';
