@@ -1357,6 +1357,30 @@ async function execTool(name: string, args: any, ctx: Ctx): Promise<unknown> {
     // staff member to supply the figures by hand. That is backwards: producing figures
     // from an address is the single most useful thing she does, and the scan engine
     // already existed at penny-market-scan. She just could not reach it.
+    // PROPERTY FORGE, for staff. Free: they are doing the work on a client's behalf.
+    if (name === 'property_forge_search') {
+      const a = args as Record<string, unknown>;
+      const r = await fetch(`${url}/functions/v1/property-forge`, {
+        method: 'POST',
+        headers: { apikey: key, Authorization: `Bearer ${key}`, 'Content-Type': 'application/json' },
+        body: JSON.stringify({ city: a.city, state: a.state, min_bedrooms: a.min_bedrooms || 1, max_rent: a.max_rent || null, limit: a.limit || 6 }),
+      });
+      if (!r.ok) return { ok: false, error: `Property Forge did not run: HTTP ${r.status}. Say that rather than saying nothing was found.` };
+      return { ok: true, ...(await r.json()) };
+    }
+
+    if (name === 'property_forge_release') {
+      const a = args as Record<string, unknown>;
+      const r = await fetch(`${url}/functions/v1/forge-release`, {
+        method: 'POST',
+        headers: { apikey: key, Authorization: `Bearer ${key}`, 'Content-Type': 'application/json' },
+        body: JSON.stringify({ action: 'release', staff_id: staffId, address: a.address, city: a.city, state: a.state, source_url: a.source_url }),
+      });
+      const out = await r.json().catch(() => ({}));
+      if (!r.ok || !out?.success) return { ok: false, error: out?.message || `Release failed: HTTP ${r.status}` };
+      return { ok: true, ...out };
+    }
+
     if (name === 'run_numbers') {
       const a = args as Record<string, unknown>;
       const r = await fetch(`${url}/functions/v1/penny-market-scan`, {
@@ -1559,6 +1583,35 @@ async function execTool(name: string, args: any, ctx: Ctx): Promise<unknown> {
       if (!args?.message_id || !args?.audience) return { error: 'message_id and audience required' };
       const { ok, data } = await rpc(url, key, 'penny_mark_message_read',
         {
+      name: 'property_forge_search',
+      description: "Search live rental listings in a market for properties an operator could take on. Free for staff. Returns real listings with rent, beds, a contact, and a corporate-friendliness signal, ranked with the likeliest yes first. Everything returned is a LEAD, not a verified deal: nobody has spoken to the landlord. Our own marketplace listings never appear here.",
+      input_schema: {
+        type: 'object',
+        properties: {
+          city: { type: 'string', description: 'City. Required.' },
+          state: { type: 'string', description: 'Two letter state code. Required.' },
+          min_bedrooms: { type: 'number', description: 'Minimum bedrooms. Defaults to 1.' },
+          max_rent: { type: 'number', description: 'Maximum monthly rent, optional.' },
+          limit: { type: 'number', description: 'How many to return, up to 10. Defaults to 6.' },
+        },
+        required: ['city', 'state'],
+      },
+    },
+    {
+      name: 'property_forge_release',
+      description: "Get the full contact details for a property found through property_forge_search. FREE FOR STAFF: nothing is charged and no client credit is touched. A client doing the same thing pays $62 of credit. Use this when you need the leasing contact so you or an acquisition manager can approach them.",
+      input_schema: {
+        type: 'object',
+        properties: {
+          address: { type: 'string', description: 'Street address exactly as the search returned it.' },
+          city: { type: 'string' },
+          state: { type: 'string' },
+          source_url: { type: 'string', description: 'The listing page the search returned, if you have it.' },
+        },
+        required: ['address', 'city', 'state'],
+      },
+    },
+    {
       name: 'run_numbers',
       description: "Run the numbers on ANY address or market, listed with us or not. Use this the MOMENT somebody gives you an address and wants figures: do NOT reply that it is not on the marketplace, and do NOT ask them to supply the numbers themselves. Returns projected revenue, ADR and occupancy across short-term, mid-term and shared living. Results are penny_scan: calculated, NOT landlord-verified, and you must say so. Needs city and state; pass the full address when you have it.",
       input_schema: {
@@ -3161,6 +3214,23 @@ longer shot and you should tell the client that rather than letting them find ou
 
 You will never be shown a property with no email or phone. If we cannot find a way to
 contact somebody, it is not a lead and it does not go in the results.
+
+
+
+## PROPERTY FORGE IS FREE FOR YOU
+You have property_forge_search and property_forge_release. Neither costs anything: staff do
+not pay to use our own tool, and no client credit is ever touched by your use of it.
+
+Say plainly what a client would pay if it comes up. Searching is free for everyone.
+Releasing full details costs a CLIENT $62 of credit; it costs you nothing.
+
+Use it when a client asks about a market we have nothing listed in, when an acquisition
+manager needs leads to work, or when somebody wants to know what is actually out there.
+Do NOT tell a staff member a market has nothing because it is not on our marketplace: search
+it first.
+
+Everything Property Forge returns is a LEAD. Nobody has spoken to the landlord and the
+numbers are calculated rather than validated. Never present a find as a verified deal.
 
 WHAT YOU CAN ACTUALLY DO YOURSELF, TODAY. This list is the truth. Everything else you own
 by routing it, not by claiming it.

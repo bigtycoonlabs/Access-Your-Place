@@ -66,6 +66,24 @@ async function rpc(fn: string, args: Record<string, unknown>) {
   return await r.json();
 }
 
+/**
+ * Staff use Property Forge free of charge. They are doing the work on a client's behalf,
+ * so charging the company for its own team's research makes no sense.
+ *
+ * Staff identity here is a staff_id checked against an ACTIVE row in the staff table.
+ * That is the same pattern the rest of the staff console uses, and it is weaker than the
+ * investor session check: there is no staff session system yet, so a leaked staff id would
+ * grant free releases. The ids are uuids so they are not practically guessable, but this
+ * should move behind a real staff session when one exists. Noted rather than hidden.
+ */
+async function resolveStaff(staffId: string) {
+  if (!staffId) return null;
+  const r = await rest(`staff?id=eq.${encodeURIComponent(staffId)}&is_active=eq.true&select=id,full_name,email,role&limit=1`);
+  if (!r.ok) return null;
+  const rows = await r.json();
+  return Array.isArray(rows) ? rows[0] : null;
+}
+
 async function resolveInvestor(token: string) {
   if (!token) return null;
   const sr = await rest(`investor_sessions?session_token=eq.${encodeURIComponent(token)}&is_active=eq.true&select=investor_id,expires_at&limit=1`);
@@ -126,13 +144,21 @@ Deno.serve(async (req) => {
   try {
     const body = await req.json().catch(() => ({}));
     const action = String(body.action || 'release');
-    const investor = await resolveInvestor(String(body.session_token || '').trim());
-    if (!investor) {
+    const staff = await resolveStaff(String(body.staff_id || '').trim());
+    const investor = staff ? null : await resolveInvestor(String(body.session_token || '').trim());
+    if (!staff && !investor) {
       return json({ success: false, error: 'account_required', message: 'Please sign in. Searching is free, but releasing a property needs an account.' }, 401);
     }
 
     if (action === 'status') {
-      return json({ success: true, ...(await rpc('ayp_forge_entitlement', { p_investor: investor.id })) });
+      if (staff) {
+        return json({
+          success: true, staff: true, balance: null, can_search: true, can_release: true,
+          release_cost: 0,
+          reason: `You are signed in as staff, so Property Forge is free for you. Searching and releasing both cost nothing. Clients pay $62 a release.`,
+        });
+      }
+      return json({ success: true, ...(await rpc('ayp_forge_entitlement', { p_investor: investor!.id })) });
     }
 
     if (action !== 'release') return json({ success: false, error: `Unknown action: ${action}` }, 400);
@@ -145,8 +171,23 @@ Deno.serve(async (req) => {
     }
     const ref = `${address}|${city}|${state}`.toLowerCase();
 
+    // STAFF: straight through. No credit checked, nothing charged, no ledger row, because
+    // there is no balance to draw on and inventing one would corrupt the client ledger.
+    if (staff) {
+      const { contact, status } = await lookupContact(address, city, state, body.source_url);
+      if (status !== 'ok' || !contact) {
+        return json({ success: false, error: 'lookup_failed', charged: 0,
+          message: 'No verified contact details could be found for that property.' }, 502);
+      }
+      return json({
+        success: true, charged: 0, staff: true, contact,
+        message: `Released for ${staff.full_name}. Staff use of Property Forge is free, so nothing was charged.`,
+        note: 'A client releasing this same property would be charged $62 of credit.',
+      });
+    }
+
     // Already paid for? Hand it back, charge nothing.
-    const already = await rpc('ayp_forge_already_released', { p_investor: investor.id, p_ref: ref });
+    const already = await rpc('ayp_forge_already_released', { p_investor: investor!.id, p_ref: ref });
     if (already === true) {
       const { contact, status } = await lookupContact(address, city, state, body.source_url);
       return json({
@@ -157,7 +198,7 @@ Deno.serve(async (req) => {
     }
 
     // Enough credit?
-    const ent = await rpc('ayp_forge_entitlement', { p_investor: investor.id });
+    const ent = await rpc('ayp_forge_entitlement', { p_investor: investor!.id });
     if (!ent?.can_release) {
       return json({ success: false, error: 'insufficient_credit', ...ent, charged: 0,
         message: ent?.reason || 'You do not have enough credit to release this property.' }, 402);
@@ -177,12 +218,12 @@ Deno.serve(async (req) => {
       method: 'POST',
       headers: { Prefer: 'return=representation' },
       body: JSON.stringify({
-        investor_id: investor.id,
+        investor_id: investor!.id,
         amount: -RELEASE_COST,
         reason: `Released full details on ${address}, ${city}, ${state}`,
         kind: 'address_release',
         property_ref: ref,
-        created_by: investor.email,
+        created_by: investor!.email,
       }),
     });
     if (!cr.ok) {
@@ -191,7 +232,7 @@ Deno.serve(async (req) => {
         message: 'We could not process the credit, so nothing was released and you have not been charged. Please try again.' }, 502);
     }
 
-    const balance = await rpc('ayp_credit_balance', { p_investor: investor.id });
+    const balance = await rpc('ayp_credit_balance', { p_investor: investor!.id });
 
     return json({
       success: true,
