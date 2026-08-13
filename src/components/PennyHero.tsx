@@ -75,30 +75,27 @@ export default function PennyHero() {
           id="penny-hero-heading"
           className="mt-6 text-4xl font-bold leading-tight text-white sm:text-5xl"
         >
-          Rent an apartment. Furnish it.{' '}
-          <span className="text-[#d4a574]">Run it like a hotel.</span>
+          Lease an apartment. Furnish it.{' '}
+          <span className="text-[#d4a574]">Rent it for more than you pay.</span>
         </h1>
 
-        {/* A client told us they did not understand what this company was until they
-            started talking to Penny. The page opened on "rental arbitrage" and "pencils",
-            which only mean something if you already know the business. Say the thing
-            first, in words somebody's mother would follow, then use the terms. */}
+        {/* A client told us they did not understand what this company was until they spoke
+            to Penny, because the page opened on "rental arbitrage" and "pencils". Say the
+            thing plainly first, then name it.
+            "Run it like a hotel" was the first attempt and it was wrong: it reads as
+            nightly stays only, and most of what we place is corporate and monthly. The
+            headline has to hold all three models, so it says rent it for more than you pay
+            and the models are named underneath. */}
         <p className="mx-auto mt-4 max-w-2xl text-lg leading-relaxed text-slate-200">
-          That is the whole business, and it is called rental arbitrage. You lease a property,
-          furnish it, and rent it out by the night, the month, or the room. The gap between your
-          rent and what guests pay is yours.
+          By the night, by the month, or by the room. The gap between your rent and what your
+          guests pay is yours. It is called rental arbitrage, and the hard part was never the
+          idea, it is getting a landlord to say yes.
         </p>
 
         <p className="mx-auto mt-3 max-w-2xl text-lg leading-relaxed text-slate-300">
-          The hard part was never the idea. It is getting a landlord to say yes. That is what we
-          do: we find the properties, speak to the landlord ourselves, agree the terms, and hand
-          you a deal that is ready to sign. We can furnish and launch it for you too, in about
+          That is our job. We find the property, speak to the landlord ourselves, agree the
+          terms, and hand you a deal ready to sign. We can furnish and launch it too, in about
           fourteen days.
-        </p>
-
-        <p className="mx-auto mt-3 max-w-2xl text-base leading-relaxed text-slate-400">
-          Ask Penny anything below. Give her an address and she runs real numbers on it, free,
-          whether you buy anything or not. When a deal does not work, she says so.
         </p>
 
         <div className="mx-auto mt-8 max-w-xl">
