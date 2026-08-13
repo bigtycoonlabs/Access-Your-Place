@@ -535,9 +535,34 @@ export default function InvestorLogin() {
               await new Promise(resolve => setTimeout(resolve, 1000));
               return attemptLogin(retryCount + 1);
             }
-            
-            // Try fallback direct database login
-            console.log('Edge function unavailable, using fallback login...');
+
+            // A WRONG PASSWORD IS NOT AN OUTAGE.
+            //
+            // supabase.functions.invoke reports any non-2xx as `error`, so a perfectly
+            // healthy 401 "Invalid email or password" landed here and was treated as the
+            // service being unavailable. The person was then shown "using backup
+            // authentication", which tells them nothing about what they did wrong and
+            // reads like the platform is broken. A real client hit this repeatedly and
+            // could not get in, because nothing ever told her the password was wrong.
+            //
+            // Sign in failures are the most common thing that happens on this page. They
+            // have to say what is actually wrong.
+            const status = (error as any)?.context?.status ?? (error as any)?.status;
+            const looksLikeBadCredentials =
+              status === 401 || status === 400 ||
+              /invalid email or password|invalid credentials/i.test(error.message || '');
+
+            if (looksLikeBadCredentials) {
+              setFailedLoginAttempts(prev => prev + 1);
+              setErrors({
+                general: 'That email and password did not match an account. Check the password, or use "Forgot password" to set a new one.',
+              });
+              setLoading(false);
+              return;
+            }
+
+            // Genuinely could not reach the service.
+            console.log('Edge function unavailable...');
             setUsingFallback(true);
             
             const fallbackResult = await directInvestorLogin(loginData.email, loginData.password);
