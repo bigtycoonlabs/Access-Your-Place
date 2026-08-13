@@ -529,29 +529,6 @@ async function askPenny(system: string, messages: Msg[], effort: Effort): Promis
   const anthropicKey = Deno.env.get('ANTHROPIC_API_KEY');
   const errors: string[] = [];
 
-  // PROVIDER ORDER IS A CAPACITY DECISION, NOT A PREFERENCE.
-  //
-  // Twenty five edge functions share one OpenAI key against a 30,000 token per minute
-  // organisation limit. A single staff turn costs about 15,600 of that, so two Penny
-  // surfaces active in the same minute means somebody gets a 429 and is answered blind.
-  // That is the ceiling on everything Penny can be taught: every new tool and every new
-  // rule competes for the same minute.
-  //
-  // Anthropic was wired as a FALLBACK, which relieves nothing: it only runs after OpenAI
-  // has already failed, by which point the client has waited through a failure. Public
-  // Penny is the highest volume surface and the least dependent on the staff toolset, so
-  // when an Anthropic key exists it goes there FIRST. That moves the busiest surface off
-  // the OpenAI budget entirely and leaves the whole 30k minute for staff and operator work.
-  //
-  // With no Anthropic key set, behaviour is exactly as before.
-  if (anthropicKey) {
-    try {
-      return { text: await callAnthropic(anthropicKey, system, messages, effort), model: 'claude-3-5-sonnet' };
-    } catch (e) {
-      errors.push(`anthropic: ${e instanceof Error ? e.message : 'failed'}`);
-    }
-  }
-
   if (openaiKey) {
     for (const m of OPENAI_MODELS) {
       try {
@@ -559,6 +536,17 @@ async function askPenny(system: string, messages: Msg[], effort: Effort): Promis
       } catch (e) {
         errors.push(`${m.id}: ${e instanceof Error ? e.message : 'failed'}`);
       }
+    }
+  }
+  // Anthropic stays a FALLBACK, not the primary. There is no ANTHROPIC_API_KEY on this
+  // project, so making it primary was dead code dressed up as a fix: it changed nothing and
+  // made the provider order harder to reason about. If a key is ever added, this catches
+  // OpenAI failures; it does not silently take over the surface.
+  if (anthropicKey) {
+    try {
+      return { text: await callAnthropic(anthropicKey, system, messages, effort), model: 'claude-3-5-sonnet' };
+    } catch (e) {
+      errors.push(`anthropic: ${e instanceof Error ? e.message : 'failed'}`);
     }
   }
   throw new Error(errors.length ? errors.join(' | ') : 'no reasoning provider configured');

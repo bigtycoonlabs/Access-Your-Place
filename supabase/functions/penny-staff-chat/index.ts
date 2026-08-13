@@ -3945,7 +3945,35 @@ async function runAgent(messages: Array<{ role: string; content: string }>, firs
     liveFacts = `\n\nWARNING: the live marketplace could not be read this turn. Say you could not check.`;
   }
 
-  const sys = systemPrompt(first, ctx.isOwner === true, ctx.identified === true, ctx.fullName || first, ctx.docText, ctx.docName, (ctx as any).memories, (ctx as any).attention);
+  // FAST PATH FOR A PLAIN NUMBERS REQUEST.
+  //
+  // "Run the numbers on 407 23rd Ave" was costing ~15,600 tokens: the entire staff persona,
+  // the live marketplace facts, the client policy, and 21 tool schemas, to call ONE tool
+  // that takes a city and a state. Against a 30,000 per minute limit that means a single
+  // question eats half the minute and the next one is refused.
+  //
+  // A scan does not need any of that. It needs the tool and a sentence. This drops the same
+  // request to a few hundred tokens, so a staff member can run ten in a row instead of one.
+  //
+  // Deliberately narrow: it only fires when the latest message is asking for figures AND
+  // carries something address-shaped, and never when the conversation is already about
+  // something else. Anything it does not recognise falls through to the full path.
+  const lastUser = String(messages[messages.length - 1]?.content || '');
+  const wantsNumbers = /\b(run|pull|get|find|what|check)\b[^.?!]{0,40}\b(numbers?|figures?|scan|adr|occupancy|revenue|projection)\b/i.test(lastUser)
+    || /^\s*(numbers?|scan)\b/i.test(lastUser);
+  const looksAddressy = /\d{1,6}\s+[A-Za-z][A-Za-z0-9.'-]*(\s+[A-Za-z0-9.'-]+){0,5}/.test(lastUser)
+    || /,\s*[A-Z]{2}\b/.test(lastUser);
+  const isFollowUp = messages.length > 2;
+
+  const fastNumbers = wantsNumbers && looksAddressy && !isFollowUp;
+
+  const sys = fastNumbers
+    ? `You are Penny, the staff-side teammate at Access Your Place. A colleague has asked you to run the numbers on a property.
+
+Call run_numbers straight away with whatever city and state you can read from their message. If they gave a full street address pass that too, and the bedroom count if they stated one. Do not ask them to supply figures themselves, and do not tell them a property is not on the marketplace: this tool works on any address anywhere.
+
+When the result comes back, give the figures plainly and say they are penny_scan: calculated from market data, nobody has spoken to the landlord, so it is a lead and not a verified deal. If the tool fails, say so rather than guessing a number.`
+    : systemPrompt(first, ctx.isOwner === true, ctx.identified === true, ctx.fullName || first, ctx.docText, ctx.docName, (ctx as any).memories, (ctx as any).attention);
   const sysWithFacts = sys + liveFacts;
   // Appended only on the no-tools fallback path.
   const FALLBACK_NOTE = `\n\nIMPORTANT RIGHT NOW: your tools are UNAVAILABLE this turn — the ` +
@@ -3962,7 +3990,11 @@ async function runAgent(messages: Array<{ role: string; content: string }>, firs
     : /acquisition/i.test(String(ctx.role || '')) ? 'acquisition'
     : /admin|management/i.test(String(ctx.role || '')) ? 'admin'
     : 'acquisition';
-  const turnTools = toolsForTurn(recentText, seat);
+  // On the fast path she gets ONE tool instead of twenty one. The schemas are the other
+  // half of the cost, so trimming the prompt alone would not have been enough.
+  const turnTools = fastNumbers
+    ? TOOLS.filter((t: any) => t?.function?.name === 'run_numbers')
+    : toolsForTurn(recentText, seat);
   console.log('penny-staff-chat tools_this_turn', turnTools.length, 'of', TOOLS.length);
   let didRetry = false;
   // Images ride on the most recent user message, as OpenAI's multimodal content array.
