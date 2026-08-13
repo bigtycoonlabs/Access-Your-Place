@@ -3722,6 +3722,15 @@ const CORE_TOOLS = new Set([
 ]);
 
 const TOOL_GROUPS: Record<string, { words: RegExp; tools: string[] }> = {
+  // NUMBERS ON AN ADDRESS, AND FINDING PROPERTIES.
+  // These were added and then not reachable: tools are picked per turn by keyword, and a
+  // tool in no group is never sent. Staff Penny was asked to run numbers on an address,
+  // had the tool defined, and answered "my tools are currently unavailable" because the
+  // selector never included it. Defining a tool is not the same as her being able to use it.
+  research: {
+    words: /\b(numbers?|run\s+(?:the\s+)?numbers|scan|adr|occupancy|revenue|projection|forecast|comps?|market|what\s+(?:would|could)\s+it\s+(?:make|earn)|worth|pencil|address|forge|find\s+(?:me\s+)?(?:a\s+)?propert|search\s+(?:for\s+)?propert|leads?|available|vacan)\b/i,
+    tools: ['run_numbers', 'property_forge_search', 'property_forge_release'],
+  },
   messages: {
     words: /message|inbox|reply|respond|wrote|unread|call|zoom|appointment|book|meeting|schedul/i,
     tools: ['inbox', 'send_message', 'mark_message_read', 'book_appointment'],
