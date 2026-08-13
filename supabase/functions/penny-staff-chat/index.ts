@@ -1409,8 +1409,30 @@ async function execTool(name: string, args: any, ctx: Ctx): Promise<unknown> {
         return { ok: false, error: `The scan did not run: HTTP ${r.status}. Say that plainly rather than asking the staff member to supply the numbers themselves.` };
       }
       const scan = await r.json();
+
+      // The scan returns 200 with scored:false when the market has not been researched
+      // yet. That is a deliberate refusal, not a failure: it would rather say nothing than
+      // print a number nobody can stand behind. Penny reported it as "unable to retrieve",
+      // which reads like a broken tool and tells the staff member nothing useful.
+      if (scan?.scored === false) {
+        return {
+          ok: true,
+          researched: false,
+          market: scan.market,
+          reason: scan.reason,
+          next_step: scan.next_step,
+          instruction:
+            'The scan RAN and deliberately declined to give figures because this market has ' +
+            'not been researched yet. Do NOT say the tool failed or that you could not ' +
+            'retrieve the numbers. Say plainly that we have not researched this market yet, ' +
+            'that we will not put a number on screen we cannot stand behind, and that an ' +
+            'acquisition manager can research it properly at no charge. Offer that.',
+        };
+      }
+
       return {
         ok: true,
+        researched: true,
         ...scan,
         note: 'These are penny_scan figures, calculated from the market. Nobody has spoken to the landlord, so this is a lead and NOT an ayp_verified deal. Say so.',
       };
