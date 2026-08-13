@@ -16,11 +16,14 @@ const EXAMPLE_PROMPTS = [
   'How much would a mid-term stay bring in at this address?…',
 ];
 
+// Plain descriptions of what she does. "Shapes your operation, then finds the fit" and
+// "the one-OTA trap" told a newcomer nothing: OTA is industry shorthand for a booking site
+// like Airbnb, and nobody outside the business has heard it.
 const CAPABILITIES = [
-  'Runs the numbers on any address',
-  'Shapes your operation, then finds the fit',
-  'Sources & negotiates through the team',
-  'Coaches you past the one-OTA trap',
+  'Runs real numbers on any address, free',
+  'Finds properties and talks to the landlord for you',
+  'Handles the negotiation and the lease',
+  'Coaches you on running it once it is yours',
 ];
 
 /**
@@ -72,14 +75,30 @@ export default function PennyHero() {
           id="penny-hero-heading"
           className="mt-6 text-4xl font-bold leading-tight text-white sm:text-5xl"
         >
-          Find a rental arbitrage deal that <span className="text-[#d4a574]">actually pencils.</span>
+          Rent an apartment. Furnish it.{' '}
+          <span className="text-[#d4a574]">Run it like a hotel.</span>
         </h1>
 
-        <p className="mx-auto mt-4 max-w-2xl text-lg leading-relaxed text-slate-300">
-          Give Penny an address and she runs the real numbers — hotel rates, occupancy, lodging
-          tax, local rules. Free, every time, whether you buy anything or not. Every deal on our
-          marketplace has had a human speak to the landlord first, so you are never cold-calling.
-          And when a deal does not work, she says so.
+        {/* A client told us they did not understand what this company was until they
+            started talking to Penny. The page opened on "rental arbitrage" and "pencils",
+            which only mean something if you already know the business. Say the thing
+            first, in words somebody's mother would follow, then use the terms. */}
+        <p className="mx-auto mt-4 max-w-2xl text-lg leading-relaxed text-slate-200">
+          That is the whole business, and it is called rental arbitrage. You lease a property,
+          furnish it, and rent it out by the night, the month, or the room. The gap between your
+          rent and what guests pay is yours.
+        </p>
+
+        <p className="mx-auto mt-3 max-w-2xl text-lg leading-relaxed text-slate-300">
+          The hard part was never the idea. It is getting a landlord to say yes. That is what we
+          do: we find the properties, speak to the landlord ourselves, agree the terms, and hand
+          you a deal that is ready to sign. We can furnish and launch it for you too, in about
+          fourteen days.
+        </p>
+
+        <p className="mx-auto mt-3 max-w-2xl text-base leading-relaxed text-slate-400">
+          Ask Penny anything below. Give her an address and she runs real numbers on it, free,
+          whether you buy anything or not. When a deal does not work, she says so.
         </p>
 
         <div className="mx-auto mt-8 max-w-xl">
