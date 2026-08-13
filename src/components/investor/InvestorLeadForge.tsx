@@ -233,6 +233,21 @@ function Spinner({ size = 40, second = false }) {
 }
 
 // ── Main app ────────────────────────────────────────────────
+
+// Session token for the paid endpoints. Identity is resolved server-side from this; it is
+// never sent as a plain investor id, because a client could then release on somebody
+// else's credit.
+function forgeSessionToken() {
+  try {
+    const direct = window.localStorage.getItem('investorSessionToken');
+    if (direct) return direct;
+    const raw = window.localStorage.getItem('investorSession');
+    if (!raw) return null;
+    const parsed = JSON.parse(raw);
+    return parsed?.session_token || parsed?.token || null;
+  } catch { return null; }
+}
+
 export function InvestorLeadForge({ investorId, investorName }: InvestorLeadForgeProps) {
   const [tab, setTab]         = useState("finder");
 
@@ -245,6 +260,11 @@ export function InvestorLeadForge({ investorId, investorName }: InvestorLeadForg
   const [finderState, setFinderState] = useState("");
   const [minBeds, setMinBeds] = useState("1");
   const [maxRent, setMaxRent] = useState("");
+  const [releasing, setReleasing] = useState(null);
+  const [releasedIds, setReleasedIds] = useState({});
+  const [outreaching, setOutreaching] = useState(null);
+  const [outreachDone, setOutreachDone] = useState({});
+  const [credit, setCredit] = useState(null);
   const [msgIdx, setMsgIdx]   = useState(0);
   const [results, setResults] = useState([]);
   const [searched, setSearched] = useState(false);
@@ -276,6 +296,70 @@ export function InvestorLeadForge({ investorId, investorName }: InvestorLeadForg
   }, [loading]);
 
   // ── Finder search ─────────────────────────────────────────
+  // Load the credit position so the price on the button is never a surprise.
+  useEffect(() => {
+    (async () => {
+      try {
+        const { data } = await supabase.functions.invoke('forge-release', {
+          body: { action: 'status', session_token: forgeSessionToken() },
+        });
+        if (data?.success) setCredit(data);
+      } catch { /* the banner just stays quiet rather than showing a wrong number */ }
+    })();
+  }, []);
+
+  const releaseOne = async (lead) => {
+    setReleasing(lead.id); setFinderErr("");
+    try {
+      const { data, error } = await supabase.functions.invoke('forge-release', {
+        body: {
+          action: 'release', session_token: forgeSessionToken(),
+          address: lead.address, city: lead.city, state: lead.state, source_url: lead.source_url,
+        },
+      });
+      if (error) throw error;
+      if (!data?.success) {
+        // Never leave somebody guessing whether they were charged.
+        setFinderErr(data?.message || 'That did not release, and you have not been charged.');
+        setReleasing(null);
+        return;
+      }
+      setReleasedIds(prev => ({ ...prev, [lead.id]: data.contact || {} }));
+      if (data.balance_remaining != null) {
+        setCredit(c => ({ ...(c || {}), balance: data.balance_remaining }));
+      }
+    } catch (e) {
+      setFinderErr(e?.message || 'That did not release, and you have not been charged.');
+    }
+    setReleasing(null);
+  };
+
+  const sendOutreach = async (lead) => {
+    setOutreaching(lead.id); setFinderErr("");
+    try {
+      const c = releasedIds[lead.id] || {};
+      const { data, error } = await supabase.functions.invoke('forge-outreach', {
+        body: {
+          action: 'send', session_token: forgeSessionToken(),
+          address: lead.address, city: lead.city, state: lead.state,
+          contact_email: c.contact_email || c.email,
+          contact_phone: c.contact_phone || c.phone,
+          contact_name: c.contact_name || c.name,
+        },
+      });
+      if (error) throw error;
+      if (!data?.success) {
+        setFinderErr(data?.message || 'The outreach did not send. Nobody has been contacted.');
+        setOutreaching(null);
+        return;
+      }
+      setOutreachDone(prev => ({ ...prev, [lead.id]: data.verification_code }));
+    } catch (e) {
+      setFinderErr(e?.message || 'The outreach did not send. Nobody has been contacted.');
+    }
+    setOutreaching(null);
+  };
+
   // Property Forge now searches for REAL PROPERTIES through the property-forge function,
   // which reads live listing pages and scores each find with the same engine behind
   // Penny's address scan. The old path asked Apollo for contacts, which returns people at
@@ -475,6 +559,14 @@ export function InvestorLeadForge({ investorId, investorName }: InvestorLeadForg
 
       {/* Spoken before any control, so a screen reader user is told the state of the
           feature before being offered buttons that cannot do anything yet. */}
+      {credit && (
+        <div role="status" style={{ background:"rgba(29,78,216,0.10)", borderBottom:"1px solid rgba(59,130,246,0.25)",
+          padding:"10px 20px", color:"#BFDBFE", fontSize:12.5 }}>
+          <strong>${Number(credit.balance || 0).toLocaleString()} in credit.</strong>{" "}
+          {credit.reason || "Searching is free. Releasing the full details on a property uses $62."}
+          {" "}Credit never expires, and you can top up any time.
+        </div>
+      )}
       <div role="status" style={{ background:"rgba(74,222,128,0.08)", borderBottom:"1px solid rgba(74,222,128,0.25)",
         padding:"12px 20px", color:"#BBF7D0", fontSize:13, lineHeight:1.6 }}>
         <strong>Property Forge searches live listings.</strong> Enter a city and state and it reads real rental listings on the open web, then scores each one with the same engine behind Penny&rsquo;s address scan. Everything it returns is a lead, not a verified deal: nobody has spoken to the landlord and the numbers are calculated, not validated. Ask an acquisition manager to verify anything worth pursuing.
@@ -603,13 +695,62 @@ export function InvestorLeadForge({ investorId, investorName }: InvestorLeadForg
 
                       <div style={{ marginBottom:10 }}><ScoreBar score={lead.score || 70} /></div>
 
+                      {/* Why this one is worth a look, in the words on the page rather than
+                          our inference. Only shown when the listing actually said it. */}
+                      {lead.corporate_signal && (
+                        <div style={{ fontSize:11, color:"#BBF7D0", background:"rgba(74,222,128,0.10)",
+                          border:"1px solid rgba(74,222,128,0.25)", borderRadius:8, padding:"6px 9px", marginBottom:10 }}>
+                          Corporate signal: {String(lead.corporate_signal).slice(0,140)}
+                        </div>
+                      )}
+
+                      {/* RELEASE. Searching is free; this is the paid step, and the price is
+                          on the button so nobody is surprised by a charge. */}
+                      {!releasedIds[lead.id] ? (
+                        <button
+                          onClick={() => releaseOne(lead)}
+                          disabled={releasing === lead.id}
+                          style={{ width:"100%", minHeight:44, borderRadius:9, border:"none", cursor:"pointer",
+                            background:"#1D4ED8", color:"#fff", fontWeight:700, fontSize:13, marginBottom:8 }}>
+                          {releasing === lead.id ? "Releasing…" : "Release full details — $62 credit"}
+                        </button>
+                      ) : (
+                        <div style={{ background:"rgba(74,222,128,0.08)", border:"1px solid rgba(74,222,128,0.25)",
+                          borderRadius:9, padding:10, marginBottom:8 }}>
+                          <div style={{ fontSize:12, color:"#BBF7D0", fontWeight:700, marginBottom:4 }}>Released — this lead is yours</div>
+                          {releasedIds[lead.id].contact_phone && (
+                            <div style={{ fontSize:12, color:"#E2E8F0" }}>Phone: {releasedIds[lead.id].contact_phone}</div>
+                          )}
+                          {releasedIds[lead.id].contact_email && (
+                            <div style={{ fontSize:12, color:"#E2E8F0", wordBreak:"break-all" }}>Email: {releasedIds[lead.id].contact_email}</div>
+                          )}
+                          <div style={{ fontSize:11, color:MUTED, marginTop:6 }}>
+                            Contact them yourself, or have us do it. We will not list this property or pass it to the network while you are pursuing it.
+                          </div>
+                          {releasedIds[lead.id].contact_email && !outreachDone[lead.id] && (
+                            <button
+                              onClick={() => sendOutreach(lead)}
+                              disabled={outreaching === lead.id}
+                              style={{ width:"100%", minHeight:44, marginTop:8, borderRadius:9, border:"none",
+                                cursor:"pointer", background:"#047857", color:"#fff", fontWeight:700, fontSize:13 }}>
+                              {outreaching === lead.id ? "Sending…" : "Have Access Your Place reach out for me"}
+                            </button>
+                          )}
+                          {outreachDone[lead.id] && (
+                            <div style={{ fontSize:11, color:"#BBF7D0", marginTop:8 }}>
+                              Sent on your behalf. Reference {outreachDone[lead.id]}. If they reply we will tell you.
+                            </div>
+                          )}
+                        </div>
+                      )}
+
                       {/* Data grid */}
                       <div style={{ display:"grid", gridTemplateColumns:"1fr 1fr", gap:"5px 8px", marginBottom:10 }}>
                         {[
                           ["📍", `${lead.city || ""}${lead.state ? `, ${lead.state}` : ""}`],
-                          ["👥", lead.headcount ? `${lead.headcount} employees` : `${lead.units||"?"} units`],
-                          ["💵", `$${(lead.monthlyRate||0).toLocaleString()}/mo`],
-                          ["🏷", lead.propertyType || "—"],
+                          ["🛏", lead.bedrooms != null ? `${lead.bedrooms} bed${lead.bathrooms != null ? ` · ${lead.bathrooms} bath` : ""}` : "beds not stated"],
+                          ["💵", lead.monthly_rent ? `$${Number(lead.monthly_rent).toLocaleString()}/mo` : "rent not stated"],
+                          ["🏷", lead.furnished === true ? "Furnished" : lead.corporate_friendly ? "Corporate friendly" : (lead.property_type || "—")],
                         ].map(([ic, v]) => (
                           <div key={ic} style={{ fontSize:11, color:"#94A3B8", display:"flex", gap:4, overflow:"hidden" }}>
                             <span style={{ flexShrink:0 }}>{ic}</span>
