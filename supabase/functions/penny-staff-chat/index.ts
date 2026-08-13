@@ -1381,6 +1381,16 @@ async function execTool(name: string, args: any, ctx: Ctx): Promise<unknown> {
       return { ok: true, ...out };
     }
 
+    // POLICY ON DEMAND.
+    // These rules used to sit in the system prompt on every single turn. That pushed one
+    // turn to ~17,800 tokens against a 30,000 per minute limit, so the SECOND question in
+    // a minute rate limited and she answered blind. They are client-facing policy a staff
+    // member needs occasionally, not on every message, so they moved here.
+    if (name === 'client_policy') {
+      return { ok: true, policy: CLIENT_POLICY,
+        note: 'Answer from this. It is the current policy as of 12 August 2026 and it overrides anything older you believe.' };
+    }
+
     if (name === 'run_numbers') {
       const a = args as Record<string, unknown>;
       const r = await fetch(`${url}/functions/v1/penny-market-scan`, {
@@ -1583,6 +1593,11 @@ async function execTool(name: string, args: any, ctx: Ctx): Promise<unknown> {
       if (!args?.message_id || !args?.audience) return { error: 'message_id and audience required' };
       const { ok, data } = await rpc(url, key, 'penny_mark_message_read',
         {
+      name: 'client_policy',
+      description: "The current client-facing rules: how an acquisition runs start to finish, the reservation deposit, financial qualification of clients, how addresses are released for marketplace listings versus Property Forge finds, what happens to a lead a client decides against, third-party listing requirements, credit, and referral fees. CALL THIS before answering any question about what a client pays, what they get, when an address is released, or who owns a lead. Do not answer those from memory.",
+      input_schema: { type: 'object', properties: {}, required: [] },
+    },
+    {
       name: 'property_forge_search',
       description: "Search live rental listings in a market for properties an operator could take on. Free for staff. Returns real listings with rent, beds, a contact, and a corporate-friendliness signal, ranked with the likeliest yes first. Everything returned is a LEAD, not a verified deal: nobody has spoken to the landlord. Our own marketplace listings never appear here.",
       input_schema: {
@@ -3065,172 +3080,6 @@ managers run custom searches by hand, and that is what to offer.
 
 
 
-## HOW AN ACQUISITION ACTUALLY RUNS, START TO FINISH
-Know this in order. Do not skip a step when explaining it, and never imply that paying is
-the end of it.
-
-1. The operator reserves the operation. At least $2,500, credited against the acquisition
-   fee, not added to it. Credit they already hold can be used instead of new funds.
-2. THE SUCCESS TEAM APPROVES THE RESERVATION. A person reviews it. It is not automatic.
-3. Once approved, the operation is HELD FOR 72 HOURS and the ADDRESS IS RELEASED to the
-   operator. The hold exists so they can do their own due diligence on the numbers. We do
-   not expect anybody to take our figures on trust.
-4. When the operator says they are ready, WE INTRODUCE THEM to the landlord or the
-   community and the leasing process continues. We do not make that introduction until they
-   tell us they are comfortable. Nobody is pushed in front of a landlord before they want
-   to be.
-5. THE FULL ACQUISITION FEE MUST BE PAID BEFORE THE ACQUISITION IS FINALISED. In practice
-   that means paid in full before lease documents are signed and before the operation is
-   fully turned over. The reservation deposit counts toward it.
-
-THIRD-PARTY SELLER DEALS: funds are withheld until everything is finalised. Say why, because
-it is the client's protection: the seller is not paid on a promise, and the money does not
-leave our hands until the operation has actually transferred.
-
-WHAT NOT TO SAY: never that a reservation completes a purchase, never that the address comes
-free, and never that a landlord introduction happens automatically.
-
-
-
-## THE DEPOSIT IS A MINIMUM, NOT A FLAT RATE
-$2,500 is the FLOOR. Some deals require more, and third-party seller deals in particular
-may require up to HALF the acquisition fee up front. The deposit on a listing is whatever
-that listing says: read it, never quote $2,500 as though it were the price on every deal.
-Whatever it is, it comes off the acquisition fee and is not an extra charge. An Acquisition
-Manager confirms the figure before anybody pays anything.
-
-## WE CHECK THAT SOMEBODY CAN ACTUALLY AFFORD THE PROPERTY
-Our landlord partners rely on us to bring qualified operators, and in many cases to verify
-that the operator can genuinely carry the rent. Our team may ask for supporting documents
-validating income from the business or the business owner.
-
-If a client moves forward and our team finds they do NOT have sufficient funds to cover the
-property expenses, we issue CREDIT for the deposit they paid and point them at a property
-that fits their budget. Say this warmly, because it is not a rejection and should never
-sound like one: they keep the value, and we find them something that works.
-
-The reason, and say it plainly if it comes up: nobody should take on a property assuming it
-will pay for itself from day one. Plenty of operations have a rocky first month or two, and
-an operator has to be able to cover the rent whether the property performs or not. Anybody
-telling somebody otherwise is setting them up to fail.
-
-
-
-## RELEASING AN ADDRESS — the full rule
-Marketplace listings never show the street address, the landlord's name, or their contact
-details. Two ways an address gets released:
-
-1. ANY CLIENT: reserve the property. The deposit releases the address and comes off the
-   acquisition fee. This is the normal path.
-2. REPEAT CLIENTS, after their first completed acquisition: on request, without a deposit.
-   Strictly ONE PROPERTY AT A TIME. We do not hand out a list, and we do not release a
-   second address while one is already out.
-
-The repeat-client release is for somebody who is ABOUT TO RESERVE and wants to review it
-properly first. An Acquisition Manager schedules a meeting, releases the address, walks the
-numbers in detail, and the client decides. If they pass on it, we want to understand fully
-why, so the next property fits better. It is not a browsing tool.
-
-SAY THIS PLAINLY WHEN IT COMES UP: deals move quickly, and a request does not hold a
-property. Only a reservation holds a property. If a listing is taken before an address goes
-out to a repeat client, that is not a failure on our part and creates no entitlement.
-
-All of the above is about MARKETPLACE LISTINGS ONLY. Property Forge and a client's own
-research follow their own rules.
-
-
-
-## LEADS THE CLIENT FINDS, AND OUTREACH
-When somebody finds a property through Property Forge, they choose how it gets approached.
-Lay out both routes and do not steer them:
-
-1. WE REACH OUT. You send it on behalf of ACCESS YOUR PLACE, never as a personal message
-   from the client. It leads with our network, says one of our operators is interested if
-   the owner is open to corporate leasing, explains what working with us involves, and
-   carries a verification tag so the landlord can confirm it is genuinely us and not an
-   impostor. The landlord is invited to email the Success Team or open a landlord portal
-   account where an Acquisition Manager follows up.
-   Our outreach has a higher success rate. Say so, but do not push.
-2. THEY REACH OUT THEMSELVES. Perfectly fine and you should say it is fine. Once the full
-   details are released, give them the landlord's email and phone so they can do it. Some
-   people want to control their own leads. Respect that.
-
-WHEN A LANDLORD RESPONDS, or contacts the Success Team, TELL THE CLIENT WHO FOUND THEM.
-Then offer two things: an acquisition manager to help, or the phone number again so they
-can call the landlord directly. Their choice.
-
-## WHAT HAPPENS TO A LEAD THEY DECIDE AGAINST — say this UNPROMPTED
-A property somebody found is NOT listed publicly or pushed to the network while they are
-still pursuing it. We do not sell a lead out from under the person who found it. Say that
-plainly, because it is the fear.
-
-If they confirm they no longer want it AND the landlord still wants to work with us, that
-landlord becomes an Access Your Place partner and the property may go to the network or the
-marketplace. At that point it is not their listing to control, because the landlord chose
-us rather than them. If it later sells, THEY GET $300, cash or credit, their choice. Lead
-with the $300 when you explain this, not with the loss of control.
-
-## LISTING A THIRD-PARTY OPERATION
-Listing an operation for sale means the person is stating THEY HOLD THE LEASE. That is the
-only basis we accept. The Success Team verifies a lease is genuinely in place before any
-third-party operation is sold: an unverifiable listing does not sell.
-
-We do NOT accept listings from competing acquisition companies or finder services. The
-marketplace is for operators selling operations they actually hold, not intermediaries
-listing properties they do not control. If somebody is asking on that basis, tell them no
-plainly and without hedging.
-
-
-
-## TWO DIFFERENT KINDS OF ADDRESS RELEASE — never mix them up
-There are two, they cost different things, and confusing them will cost somebody money or
-lose a deal. Be specific about which one you are talking about.
-
-1. PROPERTY FORGE FINDS. Properties the client discovered through Property Forge, out on
-   the open market, not ours. Releasing the full details on one of these costs $62 of
-   credit. The $186 welcome credit covers three. Searching is FREE and always will be:
-   they only pay when they decide a specific property is worth pursuing. Nobody is charged
-   twice for the same property.
-
-2. OUR MARKETPLACE LISTINGS. These are governed by the marketplace rules and NOTHING else.
-   The address is released by RESERVING the operation, or on request for a repeat client
-   after their first completed acquisition, one property at a time. A $62 Property Forge
-   release does NOT unlock a marketplace address and must never be offered as a way to get
-   one. If somebody asks, say plainly that marketplace addresses work differently and walk
-   them through reserving.
-
-Our own marketplace inventory does not appear in Property Forge results at all. If somebody
-seems to be trying to use Forge to get at one of our listings cheaply, tell them directly
-that it does not work that way and why: those landlords are our partners and the deal is
-already negotiated.
-
-If a client has the credit to reserve a marketplace deal, they can absolutely use it for
-that. Credit is credit.
-
-## ADDING CREDIT, ANY TIME
-A client can add credit to their account whenever they want. They do NOT have to be buying
-a property, releasing a Forge find, or about to do anything at all. Plenty of people top up
-so they are ready when the right property appears, which is sensible and you should say so.
-
-CREDIT NEVER EXPIRES. Say that plainly whenever the subject comes up, because people assume
-it does and that assumption stops them funding.
-
-If somebody wants to add credit, help them do it there and then. Do not make them wait for
-a reason to spend it.
-
-## WHY SOME FINDS ARE BETTER THAN OTHERS
-Property Forge puts the likeliest yes at the top. Already furnished ranks highest. Next is
-anything whose listing or community site mentions corporate housing, corporate leasing,
-business travel, extended stay, or flexible and short term leases, because any of those
-means they already work with companies. Apartment communities are often unfurnished and
-that is fine, but a community that says nothing about corporate or furnished housing is a
-longer shot and you should tell the client that rather than letting them find out.
-
-You will never be shown a property with no email or phone. If we cannot find a way to
-contact somebody, it is not a lead and it does not go in the results.
-
-
-
 ## PROPERTY FORGE IS FREE FOR YOU
 You have property_forge_search and property_forge_release. Neither costs anything: staff do
 not pay to use our own tool, and no client credit is ever touched by your use of it.
@@ -3716,6 +3565,183 @@ const SLOW_TOOLS: Record<string, number> = {
 // the rest are matched to what the person actually asked for. She keeps full AWARENESS of
 // everything through her prompt, so she can still say "I can do that" and then do it on
 // the next turn when the group loads.
+const CLIENT_POLICY = `
+## HOW AN ACQUISITION ACTUALLY RUNS, START TO FINISH
+Know this in order. Do not skip a step when explaining it, and never imply that paying is
+the end of it.
+
+1. The operator reserves the operation. At least $2,500, credited against the acquisition
+   fee, not added to it. Credit they already hold can be used instead of new funds.
+2. THE SUCCESS TEAM APPROVES THE RESERVATION. A person reviews it. It is not automatic.
+3. Once approved, the operation is HELD FOR 72 HOURS and the ADDRESS IS RELEASED to the
+   operator. The hold exists so they can do their own due diligence on the numbers. We do
+   not expect anybody to take our figures on trust.
+4. When the operator says they are ready, WE INTRODUCE THEM to the landlord or the
+   community and the leasing process continues. We do not make that introduction until they
+   tell us they are comfortable. Nobody is pushed in front of a landlord before they want
+   to be.
+5. THE FULL ACQUISITION FEE MUST BE PAID BEFORE THE ACQUISITION IS FINALISED. In practice
+   that means paid in full before lease documents are signed and before the operation is
+   fully turned over. The reservation deposit counts toward it.
+
+THIRD-PARTY SELLER DEALS: funds are withheld until everything is finalised. Say why, because
+it is the client's protection: the seller is not paid on a promise, and the money does not
+leave our hands until the operation has actually transferred.
+
+WHAT NOT TO SAY: never that a reservation completes a purchase, never that the address comes
+free, and never that a landlord introduction happens automatically.
+
+
+
+
+## THE DEPOSIT IS A MINIMUM, NOT A FLAT RATE
+$2,500 is the FLOOR. Some deals require more, and third-party seller deals in particular
+may require up to HALF the acquisition fee up front. The deposit on a listing is whatever
+that listing says: read it, never quote $2,500 as though it were the price on every deal.
+Whatever it is, it comes off the acquisition fee and is not an extra charge. An Acquisition
+Manager confirms the figure before anybody pays anything.
+
+
+## WE CHECK THAT SOMEBODY CAN ACTUALLY AFFORD THE PROPERTY
+Our landlord partners rely on us to bring qualified operators, and in many cases to verify
+that the operator can genuinely carry the rent. Our team may ask for supporting documents
+validating income from the business or the business owner.
+
+If a client moves forward and our team finds they do NOT have sufficient funds to cover the
+property expenses, we issue CREDIT for the deposit they paid and point them at a property
+that fits their budget. Say this warmly, because it is not a rejection and should never
+sound like one: they keep the value, and we find them something that works.
+
+The reason, and say it plainly if it comes up: nobody should take on a property assuming it
+will pay for itself from day one. Plenty of operations have a rocky first month or two, and
+an operator has to be able to cover the rent whether the property performs or not. Anybody
+telling somebody otherwise is setting them up to fail.
+
+
+
+
+## RELEASING AN ADDRESS — the full rule
+Marketplace listings never show the street address, the landlord's name, or their contact
+details. Two ways an address gets released:
+
+1. ANY CLIENT: reserve the property. The deposit releases the address and comes off the
+   acquisition fee. This is the normal path.
+2. REPEAT CLIENTS, after their first completed acquisition: on request, without a deposit.
+   Strictly ONE PROPERTY AT A TIME. We do not hand out a list, and we do not release a
+   second address while one is already out.
+
+The repeat-client release is for somebody who is ABOUT TO RESERVE and wants to review it
+properly first. An Acquisition Manager schedules a meeting, releases the address, walks the
+numbers in detail, and the client decides. If they pass on it, we want to understand fully
+why, so the next property fits better. It is not a browsing tool.
+
+SAY THIS PLAINLY WHEN IT COMES UP: deals move quickly, and a request does not hold a
+property. Only a reservation holds a property. If a listing is taken before an address goes
+out to a repeat client, that is not a failure on our part and creates no entitlement.
+
+All of the above is about MARKETPLACE LISTINGS ONLY. Property Forge and a client's own
+research follow their own rules.
+
+
+
+
+## LEADS THE CLIENT FINDS, AND OUTREACH
+When somebody finds a property through Property Forge, they choose how it gets approached.
+Lay out both routes and do not steer them:
+
+1. WE REACH OUT. You send it on behalf of ACCESS YOUR PLACE, never as a personal message
+   from the client. It leads with our network, says one of our operators is interested if
+   the owner is open to corporate leasing, explains what working with us involves, and
+   carries a verification tag so the landlord can confirm it is genuinely us and not an
+   impostor. The landlord is invited to email the Success Team or open a landlord portal
+   account where an Acquisition Manager follows up.
+   Our outreach has a higher success rate. Say so, but do not push.
+2. THEY REACH OUT THEMSELVES. Perfectly fine and you should say it is fine. Once the full
+   details are released, give them the landlord's email and phone so they can do it. Some
+   people want to control their own leads. Respect that.
+
+WHEN A LANDLORD RESPONDS, or contacts the Success Team, TELL THE CLIENT WHO FOUND THEM.
+Then offer two things: an acquisition manager to help, or the phone number again so they
+can call the landlord directly. Their choice.
+
+
+## WHAT HAPPENS TO A LEAD THEY DECIDE AGAINST — say this UNPROMPTED
+A property somebody found is NOT listed publicly or pushed to the network while they are
+still pursuing it. We do not sell a lead out from under the person who found it. Say that
+plainly, because it is the fear.
+
+If they confirm they no longer want it AND the landlord still wants to work with us, that
+landlord becomes an Access Your Place partner and the property may go to the network or the
+marketplace. At that point it is not their listing to control, because the landlord chose
+us rather than them. If it later sells, THEY GET $300, cash or credit, their choice. Lead
+with the $300 when you explain this, not with the loss of control.
+
+
+## LISTING A THIRD-PARTY OPERATION
+Listing an operation for sale means the person is stating THEY HOLD THE LEASE. That is the
+only basis we accept. The Success Team verifies a lease is genuinely in place before any
+third-party operation is sold: an unverifiable listing does not sell.
+
+We do NOT accept listings from competing acquisition companies or finder services. The
+marketplace is for operators selling operations they actually hold, not intermediaries
+listing properties they do not control. If somebody is asking on that basis, tell them no
+plainly and without hedging.
+
+
+
+
+## TWO DIFFERENT KINDS OF ADDRESS RELEASE — never mix them up
+There are two, they cost different things, and confusing them will cost somebody money or
+lose a deal. Be specific about which one you are talking about.
+
+1. PROPERTY FORGE FINDS. Properties the client discovered through Property Forge, out on
+   the open market, not ours. Releasing the full details on one of these costs $62 of
+   credit. The $186 welcome credit covers three. Searching is FREE and always will be:
+   they only pay when they decide a specific property is worth pursuing. Nobody is charged
+   twice for the same property.
+
+2. OUR MARKETPLACE LISTINGS. These are governed by the marketplace rules and NOTHING else.
+   The address is released by RESERVING the operation, or on request for a repeat client
+   after their first completed acquisition, one property at a time. A $62 Property Forge
+   release does NOT unlock a marketplace address and must never be offered as a way to get
+   one. If somebody asks, say plainly that marketplace addresses work differently and walk
+   them through reserving.
+
+Our own marketplace inventory does not appear in Property Forge results at all. If somebody
+seems to be trying to use Forge to get at one of our listings cheaply, tell them directly
+that it does not work that way and why: those landlords are our partners and the deal is
+already negotiated.
+
+If a client has the credit to reserve a marketplace deal, they can absolutely use it for
+that. Credit is credit.
+
+
+## ADDING CREDIT, ANY TIME
+A client can add credit to their account whenever they want. They do NOT have to be buying
+a property, releasing a Forge find, or about to do anything at all. Plenty of people top up
+so they are ready when the right property appears, which is sensible and you should say so.
+
+CREDIT NEVER EXPIRES. Say that plainly whenever the subject comes up, because people assume
+it does and that assumption stops them funding.
+
+If somebody wants to add credit, help them do it there and then. Do not make them wait for
+a reason to spend it.
+
+
+## WHY SOME FINDS ARE BETTER THAN OTHERS
+Property Forge puts the likeliest yes at the top. Already furnished ranks highest. Next is
+anything whose listing or community site mentions corporate housing, corporate leasing,
+business travel, extended stay, or flexible and short term leases, because any of those
+means they already work with companies. Apartment communities are often unfurnished and
+that is fine, but a community that says nothing about corporate or furnished housing is a
+longer shot and you should tell the client that rather than letting them find out.
+
+You will never be shown a property with no email or phone. If we cannot find a way to
+contact somebody, it is not a lead and it does not go in the results.
+
+
+`;
+
 const CORE_TOOLS = new Set([
   'my_alerts', 'claim_alert', 'my_book', 'who_to_contact', 'client_book', 'find_client_file',
   'find_client', 'log_touch', 'attention', 'remember', 'forget',
@@ -3727,6 +3753,10 @@ const TOOL_GROUPS: Record<string, { words: RegExp; tools: string[] }> = {
   // tool in no group is never sent. Staff Penny was asked to run numbers on an address,
   // had the tool defined, and answered "my tools are currently unavailable" because the
   // selector never included it. Defining a tool is not the same as her being able to use it.
+  policy: {
+    words: /\b(polic|deposit|credit|refund|fee|charge|cost|price|pay|address|release|reserve|reservation|lead|third.?party|listing|referral|qualif|afford|72|closing)\b/i,
+    tools: ['client_policy'],
+  },
   research: {
     words: /\b(numbers?|run\s+(?:the\s+)?numbers|scan|adr|occupancy|revenue|projection|forecast|comps?|market|what\s+(?:would|could)\s+it\s+(?:make|earn)|worth|pencil|address|forge|find\s+(?:me\s+)?(?:a\s+)?propert|search\s+(?:for\s+)?propert|leads?|available|vacan)\b/i,
     tools: ['run_numbers', 'property_forge_search', 'property_forge_release'],
