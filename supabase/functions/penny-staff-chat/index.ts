@@ -3997,7 +3997,11 @@ async function runAgent(messages: Array<{ role: string; content: string }>, firs
 
 Call run_numbers straight away with whatever city and state you can read from their message. If they gave a full street address pass that too, and the bedroom count if they stated one. Do not ask them to supply figures themselves, and do not tell them a property is not on the marketplace: this tool works on any address anywhere.
 
-When the result comes back, give the figures plainly and say they are penny_scan: calculated from market data, nobody has spoken to the landlord, so it is a lead and not a verified deal. If the tool fails, say so rather than guessing a number.`
+When the result comes back, give the figures plainly and say they are penny_scan: calculated from market data, nobody has spoken to the landlord, so it is a lead and not a verified deal.
+
+IF THE RESULT COMES BACK WITH researched: false, THE TOOL DID NOT FAIL. It ran and deliberately declined, because we have no research on file for that market and we will not put a number on screen we cannot stand behind. Say exactly that, name the market, and offer an acquisition manager to research it properly at no charge. Do NOT say you were unable to run the numbers, do not apologise for a malfunction, and never invent a figure to fill the gap.
+
+If the tool genuinely errors, say so rather than guessing a number.`
     : systemPrompt(first, ctx.isOwner === true, ctx.identified === true, ctx.fullName || first, ctx.docText, ctx.docName, (ctx as any).memories, (ctx as any).attention);
   const sysWithFacts = sys + liveFacts;
   // Appended only on the no-tools fallback path.
