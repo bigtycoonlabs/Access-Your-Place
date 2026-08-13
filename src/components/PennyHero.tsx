@@ -75,17 +75,17 @@ export default function PennyHero() {
           id="penny-hero-heading"
           className="mt-6 text-4xl font-bold leading-tight text-white sm:text-5xl"
         >
-          Lease an apartment. Furnish it.{' '}
-          <span className="text-[#d4a574]">Rent it for more than you pay.</span>
+          Lease a property. Set it up.{' '}
+          <span className="text-[#d4a574]">Run it like a business.</span>
         </h1>
 
         {/* A client told us they did not understand what this company was until they spoke
             to Penny, because the page opened on "rental arbitrage" and "pencils". Say the
             thing plainly first, then name it.
-            "Run it like a hotel" was the first attempt and it was wrong: it reads as
+            "Run it like a hotel" was an earlier attempt and it was wrong: it reads as
             nightly stays only, and most of what we place is corporate and monthly. The
-            headline has to hold all three models, so it says rent it for more than you pay
-            and the models are named underneath. */}
+            headline has to hold all three models and read as a business rather than a
+            side hustle, so the models are named in the line underneath instead. */}
         <p className="mx-auto mt-4 max-w-2xl text-lg leading-relaxed text-slate-200">
           By the night, by the month, or by the room. The gap between your rent and what your
           guests pay is yours. It is called rental arbitrage, and the hard part was never the
