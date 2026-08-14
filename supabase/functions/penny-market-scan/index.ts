@@ -29,6 +29,91 @@ const json = (b: unknown, status = 200) =>
 type Scan = 'str' | 'shared_living' | 'mtr' | 'all';
 const SCANS = new Set(['str', 'shared_living', 'mtr', 'all']);
 
+// LIVE MARKET RESEARCH
+// Used when we hold no researched file for a market. Asks for the four figures an operator
+// actually decides on, and requires the model to say where each came from. Anything it
+// cannot find comes back null rather than invented: a missing number is a fact, a guessed
+// one is a liability.
+async function liveMarketResearch(
+  city: string,
+  state: string,
+  address: string | null,
+  rooms: number | null,
+): Promise<Record<string, unknown> | null> {
+  const key = Deno.env.get('OPENAI_API_KEY');
+  if (!key) {
+    console.error('penny-market-scan live_research_no_key');
+    return null;
+  }
+
+  const where = address ? `${address}, ${city}, ${state}` : `${city}, ${state}`;
+  const bedHint = rooms ? `Assume a ${rooms} bedroom unit.` : 'Assume a typical 1 to 2 bedroom unit.';
+
+  const prompt =
+    `Research the short term and mid term rental market for ${where}. ${bedHint}\n\n` +
+    `Search current sources: AirDNA, AirROI, Airbtics, Rabbu, Mashvisor, local market ` +
+    `reports and recent news about local short term rental regulation.\n\n` +
+    `Return ONLY a JSON object, no prose and no markdown fences, with these keys:\n` +
+    `{"adr_peak": number|null, "adr_slow": number|null, "occupancy_percent": number|null, ` +
+    `"typical_rent": number|null, "projected_monthly_revenue_peak": number|null, ` +
+    `"projected_monthly_revenue_slow": number|null, "seasonality": string, ` +
+    `"licensing_note": string, "sources": [string], "confidence": "low"|"medium"|"high"}\n\n` +
+    `Rules:\n` +
+    `- Use figures for THIS submarket where you can find them, not a national average. ` +
+    `Say so in seasonality if you had to fall back to a wider area.\n` +
+    `- projected_monthly_revenue is the daily rate multiplied by occupancy multiplied by 30.\n` +
+    `- licensing_note must state any local rule that would stop or restrict an operator ` +
+    `running short term rentals there, including permit caps, zoning bans and pending ` +
+    `legislation. If there is no notable restriction, say so plainly.\n` +
+    `- Any figure you cannot source must be null. Never estimate to fill a gap.\n` +
+    `- sources must be real URLs you actually read.`;
+
+  try {
+    const r = await fetch('https://api.openai.com/v1/responses', {
+      method: 'POST',
+      headers: { Authorization: `Bearer ${key}`, 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        model: Deno.env.get('OPENAI_SEARCH_MODEL') || 'gpt-4o',
+        tools: [{ type: 'web_search_preview' }],
+        input: prompt,
+      }),
+    });
+    if (!r.ok) {
+      console.error('penny-market-scan live_research_http', r.status, (await r.text()).slice(0, 300));
+      return null;
+    }
+    const data = await r.json();
+    let text = '';
+    for (const item of (data.output || [])) {
+      for (const c of (item?.content || [])) {
+        if (typeof c?.text === 'string') text += c.text;
+      }
+    }
+    if (!text && typeof data.output_text === 'string') text = data.output_text;
+
+    const cleaned = text.replace(/```json|```/g, '').trim();
+    const first = cleaned.indexOf('{');
+    const last = cleaned.lastIndexOf('}');
+    if (first < 0 || last <= first) {
+      console.error('penny-market-scan live_research_unparseable', cleaned.slice(0, 200));
+      return null;
+    }
+    const parsed = JSON.parse(cleaned.slice(first, last + 1));
+
+    // A result with no usable figure is not a result. Better to report failure than to
+    // hand back an object full of nulls that reads like an answer.
+    if (parsed.adr_peak == null && parsed.adr_slow == null && parsed.occupancy_percent == null) {
+      console.error('penny-market-scan live_research_empty', where);
+      return null;
+    }
+    return parsed;
+  } catch (e) {
+    console.error('penny-market-scan live_research_threw', e instanceof Error ? e.message : String(e));
+    return null;
+  }
+}
+
+
 const CHOICES = [
   { value: 'str', label: 'Short-term rental',
     blurb: 'Nightly. What the place earns on Airbnb and the like, built from hotel occupancy and rates in that market.' },
@@ -98,8 +183,47 @@ Deno.serve(async (req) => {
     const rows = await findRes.json().catch(() => []);
     const research = Array.isArray(rows) ? rows[0] : null;
 
-    // No research at all is a real answer, not an empty result.
+    // NO RESEARCH ON FILE. Until now this was the end of the road: the scan returned a
+    // polite refusal and no market could ever be scored, because deal_research is empty.
+    // That made the whole homepage promise undeliverable.
+    //
+    // So when we hold nothing, we go and look. Live web research through the same OpenAI
+    // key Property Forge already uses, asking for the figures an operator actually needs.
+    // What comes back is clearly labelled as live research rather than AYP verified: a
+    // human has not checked it and no landlord has been spoken to. That distinction is the
+    // whole basis of our verification tiers and it does not get blurred here.
     if (!research?.id) {
+      const live = await liveMarketResearch(city, state, address, rooms);
+      if (live) {
+        return json({
+          success: true,
+          market: `${city}, ${state}`,
+          scan_type: scanType,
+          scored: true,
+          source: 'live_research',
+          researched_by: 'live web research, not yet verified by our team',
+          ...live,
+          caveat:
+            'These figures come from live market research, not from an Access Your Place ' +
+            'verified file. Nobody has spoken to the landlord and no acquisition manager ' +
+            'has checked them yet. Treat them as a starting point. An acquisition manager ' +
+            'can research the market properly at no charge.',
+        }, 200);
+      }
+      // Live research failed. Say that, rather than pretending we simply have no data.
+      return json({
+        success: true,
+        market: `${city}, ${state}`,
+        scan_type: scanType,
+        scored: false,
+        research_attempted: true,
+        reason: `I could not complete live research on ${city} just now, so I am not going to put a number on screen. That is a failure on our side rather than an absence of data.`,
+        next_step: 'An acquisition manager can research this market properly and walk it through with you. There is no charge for that.',
+        offer_call: true,
+      }, 200);
+    }
+
+    if (false) {
       return json({
         success: true,
         market: `${city}, ${state}`,
