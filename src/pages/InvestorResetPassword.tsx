@@ -89,53 +89,21 @@ export default function InvestorResetPassword() {
   };
 
   // Direct DB token validation fallback
-  const validateTokenDirectDB = async (resetToken: string): Promise<{ valid: boolean; email?: string; investorId?: string }> => {
-    try {
-      // Try password_reset_tokens table first
-      try {
-        const { data: tokenData } = await supabase
-          .from('password_reset_tokens')
-          .select('investor_id, expires_at, used')
-          .eq('token', resetToken)
-          .limit(1);
-
-        if (tokenData && tokenData.length > 0) {
-          const t = tokenData[0];
-          if (t.used) return { valid: false };
-          if (new Date(t.expires_at) < new Date()) return { valid: false };
-          
-          const { data: investor } = await supabase
-            .from('investors')
-            .select('email')
-            .eq('id', t.investor_id)
-            .limit(1);
-          
-          return { valid: true, email: investor?.[0]?.email, investorId: t.investor_id };
-        }
-      } catch (tableErr) {
-        console.log('[ValidateToken] password_reset_tokens table not available:', tableErr);
-      }
-
-      // Fallback: check reset_token field on investor record
-      const { data: investors } = await supabase
-        .from('investors')
-        .select('id, email, reset_token_expires')
-        .eq('reset_token', resetToken)
-        .limit(1);
-
-      if (investors && investors.length > 0) {
-        const inv = investors[0];
-        if (inv.reset_token_expires && new Date(inv.reset_token_expires) < new Date()) {
-          return { valid: false };
-        }
-        return { valid: true, email: inv.email, investorId: inv.id };
-      }
-
-      return { valid: false };
-    } catch (err) {
-      console.error('[ValidateToken] DB fallback error:', err);
-      return { valid: false };
-    }
+  /**
+   * The browser-side token check is GONE.
+   *
+   * It read the investors table and password_reset_tokens directly to validate a reset
+   * link. Those hold email addresses, reset tokens and password hashes, so the browser no
+   * longer has access to them: every call now 401s. The page treated that failure as an
+   * invalid token and told the person their email was invalid, over and over, on a link
+   * that was perfectly good. A client was locked out of his account and his lease by it.
+   *
+   * There is no safe version of this: validating a reset token in the browser means
+   * shipping reset tokens to the browser. The edge function does it, and when the function
+   * cannot be reached we say so honestly instead of blaming the person's email address.
+   */
+  const validateTokenDirectDB = async (_resetToken: string): Promise<{ valid: boolean; email?: string; investorId?: string }> => {
+    return { valid: false };
   };
 
   // SHA-256 hash helper for client-side password hashing
@@ -220,85 +188,18 @@ export default function InvestorResetPassword() {
   };
 
   // Direct DB password reset fallback
-  const resetPasswordDirectDB = async (resetToken: string, newPassword: string): Promise<{ success: boolean; error?: string }> => {
-    try {
-      // Hash the new password using v2$ format
-      const salt = Array.from(crypto.getRandomValues(new Uint8Array(16)), b => b.toString(16).padStart(2, '0')).join('');
-      const hash = await sha256Hash(salt + newPassword);
-      const hashedPassword = `v2$${salt}$${hash}`;
-
-      // Find investor by token - try password_reset_tokens table first
-      let investorId: string | null = null;
-
-      try {
-        const { data: tokenData } = await supabase
-          .from('password_reset_tokens')
-          .select('investor_id, expires_at, used')
-          .eq('token', resetToken)
-          .eq('used', false)
-          .limit(1);
-
-        if (tokenData && tokenData.length > 0) {
-          const t = tokenData[0];
-          if (new Date(t.expires_at) < new Date()) {
-            return { success: false, error: 'Reset link has expired. Please request a new one.' };
-          }
-          investorId = t.investor_id;
-
-          // Mark token as used
-          await supabase
-            .from('password_reset_tokens')
-            .update({ used: true })
-            .eq('token', resetToken);
-        }
-      } catch (tableErr) {
-        console.log('[ResetPassword] password_reset_tokens table not available');
-      }
-
-      // Fallback: check reset_token field on investor record
-      if (!investorId) {
-        const { data: investors } = await supabase
-          .from('investors')
-          .select('id, reset_token_expires')
-          .eq('reset_token', resetToken)
-          .limit(1);
-
-        if (!investors || investors.length === 0) {
-          return { success: false, error: 'Invalid or expired reset link.' };
-        }
-
-        const inv = investors[0];
-        if (inv.reset_token_expires && new Date(inv.reset_token_expires) < new Date()) {
-          return { success: false, error: 'Reset link has expired. Please request a new one.' };
-        }
-        investorId = inv.id;
-      }
-
-      if (!investorId) {
-        return { success: false, error: 'Invalid reset link.' };
-      }
-
-      // Update the password
-      const { error: updateError } = await supabase
-        .from('investors')
-        .update({
-          password_hash: hashedPassword,
-          reset_token: null,
-          reset_token_expires: null,
-          updated_at: new Date().toISOString()
-        })
-        .eq('id', investorId);
-
-      if (updateError) {
-        console.error('[ResetPassword] Update error:', updateError);
-        return { success: false, error: 'Failed to update password. Please try again.' };
-      }
-
-      return { success: true };
-    } catch (err: any) {
-      console.error('[ResetPassword] DB fallback error:', err);
-      return { success: false, error: 'An error occurred. Please try again.' };
-    }
+  /**
+   * The browser-side password reset is GONE, for the same reason as the token check above.
+   * It wrote a new password hash straight to the investors table from the browser, which
+   * only worked while that table was readable and writable with the public key. It is not,
+   * and it must not be. Every call 401'd, and the page reported the failure as though the
+   * person had done something wrong.
+   */
+  const resetPasswordDirectDB = async (_token: string, _newPassword: string): Promise<{ success: boolean; error?: string }> => {
+    return {
+      success: false,
+      error: 'We could not reach the password service just now. Please try again in a moment, or email success@accessyourplace.com and we will reset it for you.',
+    };
   };
 
 
