@@ -6,7 +6,6 @@ import MissionSection from './MissionSection';
 import HowWeWork from './HowWeWork';
 import EcosystemSection from './EcosystemSection';
 import FeaturedDeals from './FeaturedDeals';
-import TestimonialsSection from './TestimonialsSection';
 import FAQSection from './FAQSection';
 import BookCallSection from './BookCallSection';
 import Footer from './Footer';
@@ -82,7 +81,13 @@ const AppLayout: React.FC = () => {
         <LogisticsSection />
         <MissionSection />
         <EcosystemSection />
-        <TestimonialsSection />
+        {/* The testimonials section is removed. It carried six invented clients with
+            fabricated quotes and five star ratings: Sarah Johnson in Austin, Michael Chen
+            in Miami, and four more who do not exist. Publishing made up customer
+            endorsements is a deceptive practice, and for a company whose whole pitch is
+            that its numbers are real it was the worst possible thing to have on the page.
+            If real testimonials are wanted later, they need a named consenting client
+            behind each one. */}
         <LeadCapture />
         <FAQSection />
         <BookCallSection />

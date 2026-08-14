@@ -73,70 +73,50 @@ export default function FeaturedDeals() {
     fetchFeaturedDeals();
   }, []);
 
+  // Three chosen deals, read from marketplace_public.
+  //
+  // This used to query the properties table and property_photos directly from the browser.
+  // Those hold street addresses and landlord contact details, so the browser no longer has
+  // access and the whole section silently rendered empty. marketplace_public is the view
+  // built for exactly this: published listings with the sensitive columns already stripped.
+  //
+  // The homepage shows a SAMPLE, not the whole marketplace. Three deals that between them
+  // show the range of what we do: an international operation, a furnished beach condo, and
+  // a city apartment. Somebody who wants all of them clicks through.
+  const FEATURED_IDS = [
+    '15969352-8a22-4e11-a81a-c13c24ebeef7', // Mérida, Mexico
+    '1d6cc9bc-120d-40e5-9448-1bc783d9c39a', // Myrtle Beach, Unit 305
+    '1c8378d6-a3ef-4b11-8a7b-6b0828ef8886', // Cleveland, 2 bed
+  ];
+
   const fetchFeaturedDeals = async () => {
     try {
-      const { data: propertiesData, error } = await supabase
-        .from('properties')
-        .select('id, listing_title, city, state, zip_code, bedrooms, bathrooms, monthly_rent, acquisition_fee, is_furnished, is_verified, operation_type, photos')
-        .or('is_published.eq.true,status.eq.published')
-        .order('is_featured', { ascending: false })
-        .order('created_at', { ascending: false })
-        .limit(6);
+      const { data, error } = await supabase
+        .from('marketplace_public')
+        .select('id, listing_title, city, state, bedrooms, bathrooms, monthly_rent, acquisition_fee, is_furnished, photos, projected_yearly_revenue, verification_tier')
+        .in('id', FEATURED_IDS);
 
       if (error) throw error;
 
-      if (propertiesData && propertiesData.length > 0) {
-        setProperties(propertiesData);
+      // Keep the order above rather than whatever the database returns, so the sample
+      // reads deliberately instead of arbitrarily.
+      const ordered = FEATURED_IDS
+        .map((id) => (data || []).find((d: any) => d.id === id))
+        .filter(Boolean);
 
-        const propertyIds = propertiesData.map(p => p.id);
-        const { data: analyticsData } = await supabase
-          .from('deal_analytics')
-          .select('property_id, str_viability_score, coliving_viability_score, str_projected_yearly_revenue, coliving_projected_yearly_revenue')
-          .in('property_id', propertyIds);
+      setProperties(ordered as any[]);
 
-
-
-        if (analyticsData) {
-          const analyticsMap: Record<string, PropertyAnalytics> = {};
-          analyticsData.forEach(a => { analyticsMap[a.property_id] = a; });
-          setAnalytics(analyticsMap);
-        }
-
-        const { data: photosData } = await supabase
-          .from('property_photos')
-          .select('property_id, original_url, processed_url, is_primary')
-          .in('property_id', propertyIds)
-          .eq('is_primary', true);
-
-        const photosMap: Record<string, string> = {};
-        
-        if (photosData) {
-          photosData.forEach(photo => {
-            const url = photo.processed_url || photo.original_url;
-            if (url) photosMap[photo.property_id] = url;
-          });
-        }
-
-        
-        // Also check photos array on property if not in property_photos
-        propertiesData.forEach(property => {
-          if (!photosMap[property.id] && property.photos && Array.isArray(property.photos) && property.photos.length > 0) {
-            // Resolve storage URLs if needed
-            const photoUrl = property.photos[0];
-            photosMap[property.id] = photoUrl;
-          }
-        });
-        
-        setPhotoMap(photosMap);
-      } else {
-        setProperties([]);
+      const photosMap: Record<string, string> = {};
+      for (const d of ordered as any[]) {
+        if (Array.isArray(d.photos) && d.photos.length) photosMap[d.id] = d.photos[0];
       }
+      setPhotoMap(photosMap);
     } catch (err) {
-      console.error('Error fetching featured deals:', err);
+      // An empty section is indistinguishable from "we have no deals", which is not true.
+      console.error('Featured deals could not be loaded:', err);
       setProperties([]);
-    } finally {
-      setLoading(false);
     }
+    setLoading(false);
   };
 
   const getViabilityScore = (propertyId: string) => {
