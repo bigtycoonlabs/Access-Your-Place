@@ -594,6 +594,25 @@ export function GuidedOnboarding({ investor, onComplete, onSkip }: Props) {
               trapped: no way forward without answering, no way out. It is now on every
               step, and it is a real 44px target rather than a faint line of grey text
               that a screen reader user has to hunt for. */}
+          {/* There is no sign out anywhere on this screen, and it is the first thing a
+              client sees after signing in. Somebody who does not want to answer profile
+              questions has no exit at all: navigating to the login page while signed in
+              bounces straight back here with no login form, which reads as "I am not
+              logged in and login is broken". A client spent a day stuck in exactly that
+              loop. Skip is the way forward; sign out is the way back. */}
+          <button
+            onClick={() => {
+              try {
+                window.localStorage.removeItem('investorSession');
+                window.localStorage.removeItem('investorSessionToken');
+              } catch { /* clearing is best effort; the redirect still signs them out */ }
+              window.location.href = '/investor/login';
+            }}
+            className="min-h-[44px] w-full text-center text-sm text-gray-500 underline underline-offset-2 hover:text-gray-800"
+          >
+            Sign out
+          </button>
+
           {onSkip && (
             <button
               onClick={onSkip}
