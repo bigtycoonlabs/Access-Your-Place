@@ -93,7 +93,7 @@ export default function FeaturedDeals() {
     try {
       const { data, error } = await supabase
         .from('marketplace_public')
-        .select('id, listing_title, city, state, bedrooms, bathrooms, monthly_rent, acquisition_fee, is_furnished, photos, projected_yearly_revenue, verification_tier')
+        .select('id, listing_title, city, state, bedrooms, bathrooms, monthly_rent, acquisition_fee, is_furnished, photos, verification_tier')
         .in('id', FEATURED_IDS);
 
       if (error) throw error;
