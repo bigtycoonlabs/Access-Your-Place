@@ -78,17 +78,26 @@ export function MarketplaceHeader({
             {totalDeals.toLocaleString()} Active Opportunities
           </Badge>
           <h1 className="text-4xl md:text-5xl font-bold mb-3">
-            Turnkey Operations
+            Property Operations
           </h1>
-          {/* The tagline sits inside the marketplace rather than in the nav, so the
-              first thing a visitor reads on opening it is what these actually are. */}
+          {/* "Turnkey Operations" was not true of the whole marketplace. Some listings are
+              unfurnished and come with a setup package, so the page title contradicted a
+              listing sitting directly beneath it, and "nothing here needs work before it
+              earns" was flatly wrong for those. The header now describes what the
+              marketplace actually holds and names both routes, because the choice between
+              them is the first thing a buyer needs to understand. */}
           <p className="text-lg text-white/80 max-w-2xl mx-auto">
-            Rental businesses already running, or built and furnished by our team.
+            Leases we have already negotiated, ready for you to take over and run.
+          </p>
+          <p className="mt-2 text-base text-white/70 max-w-2xl mx-auto">
+            Some are furnished and earning from day one. Others are empty, at a lower
+            acquisition fee, and our team can furnish and launch them for you in about
+            fourteen days. Every listing says which it is.
           </p>
           <p className="mt-2 text-base text-white/70 max-w-2xl mx-auto">
             Short-term, mid-term, corporate and co-living, across {totalStates}{' '}
-            {totalStates === 1 ? 'state' : 'states'}. Every operation is landlord-approved,
-            the numbers are verified, and nothing here needs work before it earns.
+            {totalStates === 1 ? 'state' : 'states'} and into Mexico. Every operation is
+            landlord approved and the numbers are shown in full.
           </p>
         </div>
 
