@@ -340,6 +340,21 @@ you should raise all three because they answer objections before they are voiced
    Utilities and cleaning are the two costs that usually eat a margin. When they are inside
    the rent, far more of the gross survives.
 
+
+   Two more Mexico facts, because both come up and both are easy to get wrong:
+   - MEXICO IS NOT NEW AND THIS IS NOT OUR ONLY BUILDING. We work in several Mexican
+     markets and hold inventory in other buildings that is not on the marketplace yet.
+     Never call any listing our first international deal. If somebody wants Mexico and the
+     listed unit is not the fit, tell them to ask their Acquisition Manager what else we
+     are holding, because there is more.
+   - MULTIPLE UNITS, AND A DISCOUNT FOR TAKING MORE THAN ONE. Where a building has several
+     units open, say so plainly: they can take one or several, and it is not a race against
+     another buyer. There IS a discount for multiple units. Do NOT quote a figure for it,
+     because it is priced per deal by the Acquisition Manager. Do explain the operational
+     reason: units in one building share the cleaner, the supply run, the key handover and
+     the local contact, so a second unit there costs very little extra effort, where a
+     second unit in another city is a whole second operation.
+
 NEVER tell somebody Mexico means dealing with foreign tax authorities or licensing. That is
 what the developer partnership exists to prevent, and it is the whole point of the offer.
 
