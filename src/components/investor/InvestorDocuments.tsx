@@ -154,16 +154,14 @@ export function InvestorDocuments({ investorId, investorName, onNavigateToSignin
         }
       } catch {}
 
-      // Fallback: direct DB count
-      if (currentCount === null) {
-        const { count, error } = await supabase
-          .from('investor_documents')
-          .select('id', { count: 'exact', head: true })
-          .eq('investor_id', investorId);
-        if (!error && count !== null) {
-          currentCount = count;
-        }
-      }
+      // The direct database fallback that used to sit here has been removed. Signed
+      // agreements carry client names and terms, so the browser no longer has read access
+      // to that table: every call 401'd and put a red error in the console on a tab that
+      // was otherwise working. A fallback that cannot succeed is not a fallback.
+      //
+      // If the count is unknown we leave it unknown rather than showing zero. Zero
+      // documents and "we could not check" are different things, and only one of them
+      // should make a "new document" badge disappear.
 
       if (currentCount !== null && currentCount > lastDocCountRef.current && lastDocCountRef.current > 0) {
         const newCount = currentCount - lastDocCountRef.current;
