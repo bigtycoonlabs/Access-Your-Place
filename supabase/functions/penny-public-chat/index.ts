@@ -189,8 +189,16 @@ research follow their own rules.
 
 
 ## WHEN SOMEBODY GIVES YOU AN ADDRESS
-YOU HAVE NO TOOLS ON THIS SURFACE. You cannot run a scan, look anything up, or fetch a
-figure. Everything you know is in this prompt.
+YOU CAN NOW RUN A SCAN, and it happens automatically. When somebody gives you an address,
+the scan runs BEFORE you answer and the result is handed to you in a block headed
+SCAN RESULT. Use it.
+
+If a SCAN RESULT block is present, the figures in it are real and just returned. Give them
+in your reply, in plain sentences. Do not withhold them behind an account: the promise on
+our homepage is that you run real numbers for free, and that promise is now true.
+
+If NO SCAN RESULT block is present, you did not run anything. Say so honestly and never
+imply otherwise.
 
 That means one thing above all: NEVER say you have run an address, NEVER say you have
 figures, and NEVER list the figures you are supposedly holding. You would be describing
@@ -389,7 +397,8 @@ Do not ask for bedrooms, bathrooms, square footage or condition. Asking a strang
 in a form before you will help is the fastest way to lose them, and it is unnecessary: the
 address is enough to start, and the team can find the rest.
 
-You are not running the scan yourself. You have no tools here. Do not imply otherwise.
+The scan runs for you automatically when an address is present. Use what it returns and
+never state a figure it did not give you.
 
 WHAT YOU MAY SHOW THEM, AND NOTHING ELSE
 When the scan is done, tell them it is done and name the five figures you now hold FOR THEIR
@@ -559,6 +568,75 @@ async function callAnthropic(key: string, system: string, messages: Msg[], effor
 
 // One Chat Completions call. Reasoning models (gpt-5.x) take reasoning_effort +
 // max_completion_tokens; classic models (gpt-4o) take max_tokens and reject those.
+
+// GIVING PUBLIC PENNY THE ABILITY SHE WAS ALREADY CLAIMING
+//
+// She had no tools at all, which is why she was describing figures she never had. Rather
+// than a full tool-calling loop on the highest volume surface, the scan runs BEFORE the
+// model does, and the result is handed to her as fact. That is cheaper per turn, it cannot
+// be skipped, and it removes any chance of her inventing what the scan said.
+//
+// Deliberately narrow: it fires only when the latest message carries something
+// address-shaped. Anything else goes straight to the model as before.
+const US_STATES = 'AL|AK|AZ|AR|CA|CO|CT|DE|FL|GA|HI|ID|IL|IN|IA|KS|KY|LA|ME|MD|MA|MI|MN|MS|MO|MT|NE|NV|NH|NJ|NM|NY|NC|ND|OH|OK|OR|PA|RI|SC|SD|TN|TX|UT|VT|VA|WA|WV|WI|WY|DC';
+
+function parseAddress(text: string): { address: string | null; city: string; state: string } | null {
+  const m = new RegExp(`([^,\\n]{3,60}?),?\\s+([A-Za-z][A-Za-z .'-]{2,28}?),?\\s+(${US_STATES})\\b`, 'i').exec(text);
+  if (!m) return null;
+  const street = m[1].trim();
+  const city = m[2].trim();
+  const state = m[3].toUpperCase();
+  // Only treat the first part as a street if it actually looks like one.
+  const looksStreet = /\d/.test(street) || /\b(ave|avenue|st|street|rd|road|blvd|dr|drive|ln|lane|way|ct|court|pl|place|hwy|pkwy)\b/i.test(street);
+  return { address: looksStreet ? street : null, city, state };
+}
+
+async function runScanForPenny(text: string): Promise<string | null> {
+  const parsed = parseAddress(text);
+  if (!parsed) return null;
+  const url = Deno.env.get('SUPABASE_URL');
+  const key = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY');
+  if (!url || !key) return null;
+
+  try {
+    const r = await fetch(`${url}/functions/v1/penny-market-scan`, {
+      method: 'POST',
+      headers: { Authorization: `Bearer ${key}`, apikey: key, 'Content-Type': 'application/json' },
+      body: JSON.stringify({ ...parsed, scan_type: 'str' }),
+    });
+    if (!r.ok) {
+      console.error('penny-public-chat scan_http', r.status);
+      return `SCAN RESULT: the scan FAILED for ${parsed.city}, ${parsed.state}. Say plainly that you could not complete it just now and offer an acquisition manager. Do NOT give any figure.`;
+    }
+    const d = await r.json();
+    if (d?.scored !== true) {
+      return `SCAN RESULT: ran for ${parsed.city}, ${parsed.state} and returned NO usable figures. Reason: ${d?.reason || 'unknown'}. Say that plainly. Do NOT invent numbers. Offer an acquisition manager, free.`;
+    }
+    return (
+      `SCAN RESULT for ${parsed.city}, ${parsed.state} — these are REAL figures just returned. ` +
+      `Use them and do not alter them:\n` +
+      `- Peak daily rate: ${d.adr_peak ?? 'not found'}\n` +
+      `- Slow daily rate: ${d.adr_slow ?? 'not found'}\n` +
+      `- Occupancy: ${d.occupancy_percent ?? 'not found'} percent\n` +
+      `- Projected monthly revenue, peak: ${d.projected_monthly_revenue_peak ?? 'not found'}\n` +
+      `- Projected monthly revenue, slow: ${d.projected_monthly_revenue_slow ?? 'not found'}\n` +
+      `- Seasonality: ${d.seasonality ?? 'not stated'}\n` +
+      `- Licensing and restrictions: ${d.licensing_note ?? 'not stated'}\n` +
+      `- Confidence: ${d.confidence ?? 'unknown'}\n` +
+      `- Source: ${d.source === 'live_research' ? 'live market research, NOT yet verified by our team and no landlord spoken to' : 'an Access Your Place researched file'}\n\n` +
+      `HOW TO USE THIS: give them the figures now, in the reply, in plain sentences. This is ` +
+      `a penny_scan: calculated from market data, nobody has spoken to the landlord, so it ` +
+      `is a lead and not a verified Access Your Place deal. Say that. If there is a ` +
+      `licensing restriction that would stop an operator running it, lead with that before ` +
+      `the numbers, because it matters more. Then invite them to create a free account so ` +
+      `an acquisition manager can verify it and negotiate, at no charge.`
+    );
+  } catch (e) {
+    console.error('penny-public-chat scan_threw', e instanceof Error ? e.message : String(e));
+    return null;
+  }
+}
+
 async function callOpenAIModel(
   key: string, model: string, reasoning: boolean, system: string, messages: Msg[], effort: Effort,
 ): Promise<string> {
@@ -807,7 +885,14 @@ A signed-in operator can request one from the Setup and Launch tab in their acco
     if (messages.length === 0) messages.push({ role: 'user', content: query || 'Hi' });
 
     try {
-      const { text } = await askPenny(system, messages, effort);
+      // If they gave an address, run the scan first and hand Penny the result as fact.
+      // Doing it here rather than as a tool means she cannot answer without it and cannot
+      // paraphrase a scan she never saw.
+      const lastUserText = String(messages[messages.length - 1]?.content || '');
+      const scanBlock = await runScanForPenny(lastUserText);
+      const systemForTurn = scanBlock ? `${system}\n\n---\n${scanBlock}` : system;
+
+      const { text } = await askPenny(systemForTurn, messages, effort);
       const visible = await maybeEscalate(url, key, text);
       return json({ success: true, message: visible });
     } catch (e) {
