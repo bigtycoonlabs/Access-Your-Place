@@ -94,10 +94,20 @@ export function MarketplaceHeader({
             acquisition fee, and our team can furnish and launch them for you in about
             fourteen days. Every listing says which it is.
           </p>
+          {/* This used to read "across {totalStates} states", computed from whatever
+              happened to be listed that day. It understated the business badly: four
+              listings became "we operate in 4 states". What is FOR SALE right now is not
+              where we OPERATE, and conflating the two makes a national and international
+              network look like a small regional one. Reach is stated as a fact about the
+              company; the listing count stays where it belongs, on the listings. */}
           <p className="mt-2 text-base text-white/70 max-w-2xl mx-auto">
-            Short-term, mid-term, corporate and co-living, across {totalStates}{' '}
-            {totalStates === 1 ? 'state' : 'states'} and into Mexico. Every operation is
-            landlord approved and the numbers are shown in full.
+            Short-term, mid-term, corporate and co-living. We operate across roughly 21 US
+            states and three states in Mexico, in about 40 major cities and submarkets.
+            Every operation is landlord approved and the numbers are shown in full.
+          </p>
+          <p className="mt-2 text-sm text-white/60 max-w-2xl mx-auto">
+            What is listed here is what is for sale today, not the limit of where we work.
+            If you want a market you do not see, ask: we can go and find it.
           </p>
         </div>
 
@@ -174,9 +184,11 @@ export function MarketplaceHeader({
               <div className="text-2xl font-bold text-[#d4a574]">{totalDeals.toLocaleString()}</div>
               <div className="text-sm text-white/60">Active Deals</div>
             </div>
+            {/* Was totalStates, derived from current listings, which made our footprint
+                shrink every time a deal sold. */}
             <div>
-              <div className="text-2xl font-bold text-emerald-400">{totalStates}</div>
-              <div className="text-sm text-white/60">States Covered</div>
+              <div className="text-2xl font-bold text-emerald-400">21 + 3</div>
+              <div className="text-sm text-white/60">US states, and Mexican states</div>
             </div>
             <div>
               <div className="text-2xl font-bold text-blue-400">100%</div>
