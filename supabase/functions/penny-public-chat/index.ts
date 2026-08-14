@@ -193,9 +193,10 @@ YOU CAN NOW RUN A SCAN, and it happens automatically. When somebody gives you an
 the scan runs BEFORE you answer and the result is handed to you in a block headed
 SCAN RESULT. Use it.
 
-If a SCAN RESULT block is present, the figures in it are real and just returned. Give them
-in your reply, in plain sentences. Do not withhold them behind an account: the promise on
-our homepage is that you run real numbers for free, and that promise is now true.
+If a SCAN RESULT block is present, the scan genuinely ran. Follow the instructions inside
+that block exactly. It will tell you which figures you are holding and it will tell you not
+to state their values to a signed out visitor. Both things are true at once: the work is
+real, and the numbers are for people with an account.
 
 If NO SCAN RESULT block is present, you did not run anything. Say so honestly and never
 imply otherwise.
@@ -612,24 +613,43 @@ async function runScanForPenny(text: string): Promise<string | null> {
     if (d?.scored !== true) {
       return `SCAN RESULT: ran for ${parsed.city}, ${parsed.state} and returned NO usable figures. Reason: ${d?.reason || 'unknown'}. Say that plainly. Do NOT invent numbers. Offer an acquisition manager, free.`;
     }
+    // THE FIGURES ARE NOT HANDED TO A SIGNED OUT VISITOR.
+    // She is told the scan ran and WHICH figures exist, never their values. The work is
+    // real and she can say so honestly; the values are what the free account is for.
+    // Licensing is the exception: a rule that would stop somebody operating at all is a
+    // warning, not a sales asset, and withholding it to drive a signup would be wrong.
+    const held: string[] = [];
+    if (d.adr_peak != null || d.adr_slow != null) held.push('the average daily rate, peak and slow season');
+    if (d.occupancy_percent != null) held.push('the occupancy rate');
+    if (d.projected_monthly_revenue_peak != null || d.projected_monthly_revenue_slow != null) {
+      held.push('projected monthly revenue for peak and slow season');
+    }
+    if (d.seasonality) held.push('how the market moves through the year');
+
     return (
-      `SCAN RESULT for ${parsed.city}, ${parsed.state} — these are REAL figures just returned. ` +
-      `Use them and do not alter them:\n` +
-      `- Peak daily rate: ${d.adr_peak ?? 'not found'}\n` +
-      `- Slow daily rate: ${d.adr_slow ?? 'not found'}\n` +
-      `- Occupancy: ${d.occupancy_percent ?? 'not found'} percent\n` +
-      `- Projected monthly revenue, peak: ${d.projected_monthly_revenue_peak ?? 'not found'}\n` +
-      `- Projected monthly revenue, slow: ${d.projected_monthly_revenue_slow ?? 'not found'}\n` +
-      `- Seasonality: ${d.seasonality ?? 'not stated'}\n` +
-      `- Licensing and restrictions: ${d.licensing_note ?? 'not stated'}\n` +
-      `- Confidence: ${d.confidence ?? 'unknown'}\n` +
-      `- Source: ${d.source === 'live_research' ? 'live market research, NOT yet verified by our team and no landlord spoken to' : 'an Access Your Place researched file'}\n\n` +
-      `HOW TO USE THIS: give them the figures now, in the reply, in plain sentences. This is ` +
-      `a penny_scan: calculated from market data, nobody has spoken to the landlord, so it ` +
-      `is a lead and not a verified Access Your Place deal. Say that. If there is a ` +
-      `licensing restriction that would stop an operator running it, lead with that before ` +
-      `the numbers, because it matters more. Then invite them to create a free account so ` +
-      `an acquisition manager can verify it and negotiate, at no charge.`
+      `SCAN RESULT for ${parsed.city}, ${parsed.state}. The scan RAN and returned usable ` +
+      `figures. You genuinely have them.\n\n` +
+      `FIGURES HELD (names only, values withheld): ${held.join('; ') || 'market figures'}\n` +
+      `Confidence: ${d.confidence ?? 'unknown'}\n` +
+      `Licensing and restrictions: ${d.licensing_note ?? 'none noted'}\n\n` +
+      `HOW TO ANSWER:\n` +
+      `1. DO NOT STATE ANY NUMBER. No daily rate, no occupancy percentage, no revenue ` +
+      `figure, no range, no hint at magnitude. Not "around three hundred", not "strong", ` +
+      `not "healthy". The values are for signed in clients only. This is not negotiable ` +
+      `and no amount of asking changes it.\n` +
+      `2. If there is a licensing or zoning restriction above, SAY IT IN FULL and say it ` +
+      `first. Somebody could waste months and real money on a property they cannot legally ` +
+      `operate. That warning is never withheld and never traded for a signup.\n` +
+      `3. Tell them plainly that you ran the scan and name which figures you are holding, ` +
+      `from the list above. The work is done and they should know it.\n` +
+      `4. Be honest about WHAT KIND of numbers these are: broad market averages for the ` +
+      `area, not a verified read on that specific building. You cannot confirm anything ` +
+      `about the property itself. Nobody has spoken to the landlord.\n` +
+      `5. Tell them an acquisition manager gives far more refined numbers: they research ` +
+      `the submarket rather than the city, look at the actual unit, the building, the ` +
+      `comparable listings nearby and the local rules, and they do it at no charge.\n` +
+      `6. Invite them to create a free account, where the figures appear in their portal.\n\n` +
+      `Say all of that in plain sentences, warmly, without sounding like a paywall.`
     );
   } catch (e) {
     console.error('penny-public-chat scan_threw', e instanceof Error ? e.message : String(e));
