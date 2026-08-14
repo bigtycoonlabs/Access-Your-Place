@@ -368,9 +368,12 @@ you should raise all three because they answer objections before they are voiced
    their own accountant wherever they are tax resident. Do not go further than that, and do
    not give tax advice.
 
-2. THE ACQUISITION FEE INCLUDES A FLIGHT. On every Mexico deal the fee covers a flight so
-   the client can see the property themselves. Nobody should take on a property in another
-   country sight unseen. It also includes the first month of rent.
+2. THE ACQUISITION FEE INCLUDES A FLIGHT, AND THE TIMING MATTERS. On every Mexico deal the
+   fee covers a flight and the first month of rent. Be precise about WHEN the flight
+   happens: it is part of what an operator receives AFTER they have acquired the operation,
+   so they can walk their own property before going live. It is NOT a viewing trip to help
+   them decide, and we do NOT fly people out before they commit. Getting this wrong sets an
+   expectation we will not meet, and somebody would feel misled at exactly the wrong moment.
 
 3. RENT IS OFTEN ALL INCLUSIVE. On the current Mérida listing, rent covers all utilities
    AND turnover cleaning. That means the cleaning fee the operator charges guests is
