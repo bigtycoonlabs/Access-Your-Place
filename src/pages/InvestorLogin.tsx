@@ -519,7 +519,9 @@ export default function InvestorLogin() {
           const { data, error } = await supabase.functions.invoke('investor-login', {
             body: { 
               action: 'login', 
-              email: loginData.email.trim().toLowerCase(), 
+                email: loginData.email.trim().toLowerCase(), 
+              // Sent exactly as typed. A retry with the whitespace stripped happens below
+              // if this fails, so an intentional leading or trailing space still works.
               password: loginData.password,
               remember_me: loginData.rememberMe
             }
@@ -551,6 +553,45 @@ export default function InvestorLogin() {
             const looksLikeBadCredentials =
               status === 401 || status === 400 ||
               /invalid email or password|invalid credentials/i.test(error.message || '');
+
+            // A PASTED PASSWORD IS THE COMMON CASE, AND IT ARRIVES DIRTY.
+            // People copy a temporary password out of an email on a phone, and mail
+            // clients routinely carry a trailing space or newline with it. That is not a
+            // wrong password, but it fails identically to one, and the person is told
+            // their password is wrong for a character they cannot see. A real client lost
+            // two days to exactly this.
+            //
+            // So: try what they typed first, and only if that is rejected, retry once with
+            // the whitespace stripped. An intentional leading or trailing space still
+            // works, because the untrimmed attempt goes first.
+            const trimmedPassword = loginData.password.trim();
+            if (looksLikeBadCredentials && trimmedPassword !== loginData.password && retryCount < 2) {
+              const retry = await supabase.functions.invoke('investor-login', {
+                body: {
+                  action: 'login',
+                  email: loginData.email.trim().toLowerCase(),
+                  password: trimmedPassword,
+                  remember_me: loginData.rememberMe,
+                },
+              });
+              if (!retry.error && retry.data?.success) {
+                // Same session handling as the normal success path below.
+                setFailedLoginAttempts(0);
+                localStorage.setItem('investorSession', JSON.stringify({
+                  ...retry.data.investor,
+                  loginTime: Date.now(),
+                  email_verified: retry.data.email_verified,
+                }));
+                localStorage.setItem('investorSessionToken', retry.data.session.token);
+                if (loginData.rememberMe) {
+                  localStorage.setItem('investorRememberMe', 'true');
+                } else {
+                  localStorage.removeItem('investorRememberMe');
+                }
+                window.location.href = '/investor';
+                return;
+              }
+            }
 
             if (looksLikeBadCredentials) {
               setFailedLoginAttempts(prev => prev + 1);
@@ -1097,6 +1138,13 @@ export default function InvestorLogin() {
                           onChange={(e) => setLoginData({ ...loginData, password: e.target.value })}
                           placeholder="Enter your password"
                           autoComplete="current-password"
+                          // iOS capitalises the first character and autocorrects by default.
+                          // On a credential field that silently alters what the person typed
+                          // and they are told their password is wrong for something they
+                          // never typed.
+                          autoCapitalize="none"
+                          autoCorrect="off"
+                          spellCheck={false}
                         />
                         <button
                           type="button"
