@@ -173,9 +173,16 @@ export function MarketplaceHeader({
               <div className="text-2xl font-bold text-blue-400">100%</div>
               <div className="text-sm text-white/60">Pre-Approved</div>
             </div>
+            {/* "$2.5M+ Deals Closed" was a hardcoded string sitting between two figures
+                that are computed from real data. Nothing on the platform produces or
+                checks it, so it could drift from the truth in either direction and nobody
+                would know. On a marketplace whose whole claim is verified numbers, an
+                unverifiable headline number is the wrong thing to display.
+                Replaced with the landlord-approved point, which is the actual
+                differentiator and is true of every listing by construction. */}
             <div>
-              <div className="text-2xl font-bold text-purple-400">$2.5M+</div>
-              <div className="text-sm text-white/60">Deals Closed</div>
+              <div className="text-2xl font-bold text-purple-400">Landlord</div>
+              <div className="text-sm text-white/60">approved, every deal</div>
             </div>
           </div>
         </div>

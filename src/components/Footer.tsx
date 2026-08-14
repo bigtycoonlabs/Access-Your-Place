@@ -77,22 +77,13 @@ export default function Footer() {
                     Knowledge Library
                   </a>
                 </li>
-                <li>
-                  <a 
-                    href="/setup-services" 
-                    className="text-gray-400 hover:text-[#d4a574] transition-colors focus:outline-none focus:ring-2 focus:ring-[#d4a574] rounded"
-                  >
-                    Setup &amp; Logistics
-                  </a>
-                </li>
-                <li>
-                  <a 
-                    href="#resources" 
-                    className="text-gray-400 hover:text-[#d4a574] transition-colors focus:outline-none focus:ring-2 focus:ring-[#d4a574] rounded"
-                  >
-                    Free Resources
-                  </a>
-                </li>
+                {/* "Setup & Logistics" pointed at /setup-services, the same page as the
+                    "Setup Services" link three rows above it. Two names for one page reads
+                    as two different services and makes the footer look padded.
+                    "Free Resources" pointed at #resources, an anchor that exists nowhere,
+                    so it scrolled to the top of whatever page you were on. Both removed
+                    rather than renamed: a shorter footer that works beats a longer one
+                    that does not. */}
               </ul>
             </nav>
           </div>
