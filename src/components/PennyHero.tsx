@@ -71,32 +71,68 @@ export default function PennyHero() {
           <span className="sr-only">— live, our most intelligent model</span>
         </span>
 
+        {/* THE HOMEPAGE HAD ONE AUDIENCE AND SERVES TWO.
+            Every line was written at somebody who wants to operate a property, so a
+            landlord arriving found a page selling them a business they are not in. And
+            leading with "rental arbitrage" only works for people who already know the
+            term, which is the smaller half of the traffic.
+            The fix is not a better pitch. It is to state the one fact that is true for
+            both sides, then let the visitor say which one they are and get out of the
+            way. Nobody has to read the other side's copy. */}
         <h1
           id="penny-hero-heading"
           className="mt-6 text-4xl font-bold leading-tight text-white sm:text-5xl"
         >
-          Lease a property. Set it up.{' '}
-          <span className="text-[#d4a574]">Run it like a business.</span>
+          Empty property on one side.{' '}
+          <span className="text-[#d4a574]">Businesses ready to run it on the other.</span>
         </h1>
 
-        {/* A client told us they did not understand what this company was until they spoke
-            to Penny, because the page opened on "rental arbitrage" and "pencils". Say the
-            thing plainly first, then name it.
-            "Run it like a hotel" was an earlier attempt and it was wrong: it reads as
-            nightly stays only, and most of what we place is corporate and monthly. The
-            headline has to hold all three models and read as a business rather than a
-            side hustle, so the models are named in the line underneath instead. */}
         <p className="mx-auto mt-4 max-w-2xl text-lg leading-relaxed text-slate-200">
-          By the night, by the month, or by the room. The gap between your rent and what your
-          guests pay is yours. It is called rental arbitrage, and the hard part was never the
-          idea, it is getting a landlord to say yes.
+          We put the two together, and we handle everything in between: the negotiation, the
+          corporate lease, the furnishing, the launch. Furnished rentals, corporate housing,
+          extended stay and shared living, across the United States and into Mexico.
         </p>
 
-        <p className="mx-auto mt-3 max-w-2xl text-lg leading-relaxed text-slate-300">
-          That is our job. We find the property, speak to the landlord ourselves, agree the
-          terms, and hand you a deal ready to sign. We can furnish and launch it too, in about
-          fourteen days.
+        {/* Two doors, stated as a question rather than a pitch. A visitor picks their
+            side and reads only what applies to them. Each one says what we do FOR THAT
+            SIDE, in that side's language: an operator cares about landlords saying yes,
+            a landlord cares about who is going into their unit and what it costs them. */}
+        <p className="mx-auto mt-6 text-base font-medium text-slate-300">
+          Which one are you?
         </p>
+
+        <div className="mx-auto mt-4 grid max-w-2xl gap-4 text-left sm:grid-cols-2">
+          <a
+            href="/deals"
+            className="block min-h-[44px] rounded-xl border border-white/10 bg-white/[0.04] p-5 transition-colors hover:border-[#d4a574]/60"
+          >
+            <span className="block font-bold text-white">I want to run a property</span>
+            <span className="mt-1 block text-sm leading-relaxed text-slate-300">
+              We find it, talk to the landlord ourselves, negotiate the terms, and hand you a
+              deal ready to sign. Every operation on our marketplace is landlord approved, so
+              you are never cold calling. We can furnish and launch it for you in about
+              fourteen days.
+            </span>
+            <span className="mt-2 block text-sm font-semibold text-[#d4a574]">
+              See what is available
+            </span>
+          </a>
+
+          <a
+            href="/landlord-partnership"
+            className="block min-h-[44px] rounded-xl border border-white/10 bg-white/[0.04] p-5 transition-colors hover:border-[#d4a574]/60"
+          >
+            <span className="block font-bold text-white">I have property to fill</span>
+            <span className="mt-1 block text-sm leading-relaxed text-slate-300">
+              A company signs the lease, not an individual. We vet every operator before we
+              introduce them and verify they can carry the rent whatever the unit earns. It
+              costs you nothing: we charge the operator, never the owner.
+            </span>
+            <span className="mt-2 block text-sm font-semibold text-[#d4a574]">
+              List your property
+            </span>
+          </a>
+        </div>
 
         <div className="mx-auto mt-8 max-w-xl">
           <label htmlFor="penny-ask" className="sr-only">

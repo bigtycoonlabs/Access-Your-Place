@@ -554,8 +554,13 @@ export default function InvestorLogin() {
 
             if (looksLikeBadCredentials) {
               setFailedLoginAttempts(prev => prev + 1);
+              // Deliberately does not name the email. The standard "Invalid email or
+              // password" wording exists so an attacker cannot learn which half was
+              // wrong, but a real client read it as "my email address is broken", tried
+              // to fix an address that was fine, and lost a day. This keeps the same
+              // security property and points at the thing they can actually act on.
               setErrors({
-                general: 'That email and password did not match an account. Check the password, or use "Forgot password" to set a new one.',
+                general: 'That did not match. Check your password, or use "Forgot password" to set a new one. If you are not sure you have an account yet, use the Create Account tab.',
               });
               setLoading(false);
               return;
