@@ -307,10 +307,6 @@ export function QuickViewModal({
             <Tabs value={activeTab} onValueChange={setActiveTab} className="flex-1">
               <TabsList className="w-full justify-start px-6 pt-4 bg-transparent border-b" aria-label="Property detail sections">
                 <TabsTrigger value="overview" aria-label="Property overview">Overview</TabsTrigger>
-                <TabsTrigger value="penny" className="flex items-center gap-1" aria-label="Penny AI financial analysis">
-                  <Brain className="w-3 h-3" aria-hidden="true" />
-                  Penny AI
-                </TabsTrigger>
                 <TabsTrigger value="analytics" aria-label="Property analytics and projections">Analytics</TabsTrigger>
               </TabsList>
 
@@ -387,13 +383,11 @@ export function QuickViewModal({
 
               </TabsContent>
 
-              <TabsContent value="penny" className="p-6" role="tabpanel" aria-label="Penny AI Analysis">
-                <PennyAnalysisPanel 
-                  propertyId={deal.id}
-                  property={deal}
-                  isStaff={false}
-                />
-              </TabsContent>
+              {/* The Penny AI Analysis tab is removed here for the same reason as on the
+                  full deal page: PennyAnalysisPanel reads penny_deal_scores from the
+                  browser (blocked) and calls penny-deal-scoring (retired 9 August 2026,
+                  returns 410). It could not produce an analysis for any property. The
+                  Financial Analytics tab beside it holds the real, staff-entered numbers. */}
 
               <TabsContent value="analytics" className="p-6 space-y-6" role="tabpanel" aria-label="Financial Analytics">
                 {/* Staff-entered financial projections â€” these are the

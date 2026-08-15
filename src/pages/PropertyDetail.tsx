@@ -631,7 +631,6 @@ export default function PropertyDetail() {
                 <TabsList className="w-full justify-start bg-white border">
                   <TabsTrigger value="overview">Overview</TabsTrigger>
                   <TabsTrigger value="financials">Financials</TabsTrigger>
-                  <TabsTrigger value="penny">Penny AI Analysis</TabsTrigger>
                 </TabsList>
 
                 <TabsContent value="overview" className="mt-4 space-y-6">
@@ -879,80 +878,15 @@ export default function PropertyDetail() {
                 </TabsContent>
 
 
-                <TabsContent value="penny" className="mt-4 space-y-6">
-                  <Card>
-                    <CardHeader>
-                      <CardTitle className="flex items-center gap-2">
-                        <Zap className="w-5 h-5 text-purple-500" />
-                        Penny AI Deal Analysis
-                      </CardTitle>
-                    </CardHeader>
-                    <CardContent>
-                      <div className="grid md:grid-cols-2 gap-6">
-                        <div className="text-center p-6 bg-gradient-to-br from-purple-50 to-indigo-50 rounded-xl">
-                          <PennyScoreBadge 
-                            score={pennyScore} 
-                            propertyId={property.id}
-                            size="xl"
-                          />
-                          <p className="mt-4 text-gray-600">
-                            {property.penny_recommendation === 'strong_buy' && 'Penny AI strongly recommends this deal based on market data and projections.'}
-                            {property.penny_recommendation === 'buy' && 'Penny AI recommends this deal as a solid investment opportunity.'}
-                            {property.penny_recommendation === 'hold' && 'Penny AI suggests further analysis before proceeding.'}
-                            {property.penny_recommendation === 'pass' && 'Penny AI has flagged concerns with this deal.'}
-                            {!property.penny_recommendation && 'Penny AI analysis pending for this property.'}
-                          </p>
-                        </div>
-                        
-                        {analytics && (
-                          <div className="space-y-4">
-                            <div>
-                              <div className="flex justify-between mb-1">
-                                <span className="text-sm text-gray-600">STR Viability</span>
-                                <span className="text-sm font-medium">{analytics.str_viability_score || 0}%</span>
-                              </div>
-                              <div className="h-2 bg-gray-200 rounded-full overflow-hidden">
-                                <div 
-                                  className="h-full bg-blue-500 rounded-full transition-all"
-                                  style={{ width: `${analytics.str_viability_score || 0}%` }}
-                                />
-                              </div>
-                            </div>
-                            <div>
-                              <div className="flex justify-between mb-1">
-                                <span className="text-sm text-gray-600">Co-Living Viability</span>
-                                <span className="text-sm font-medium">{analytics.coliving_viability_score || 0}%</span>
-                              </div>
-                              <div className="h-2 bg-gray-200 rounded-full overflow-hidden">
-                                <div 
-                                  className="h-full bg-purple-500 rounded-full transition-all"
-                                  style={{ width: `${analytics.coliving_viability_score || 0}%` }}
-                                />
-                              </div>
-                            </div>
-                            {pennyScore !== null && (
-                              <div>
-                                <div className="flex justify-between mb-1">
-                                  <span className="text-sm text-gray-600">Overall Penny Score</span>
-                                  <span className="text-sm font-medium">{pennyScore}/100</span>
-                                </div>
-                                <div className="h-2 bg-gray-200 rounded-full overflow-hidden">
-                                  <div 
-                                    className={`h-full rounded-full transition-all ${
-                                      pennyScore >= 70 ? 'bg-green-500' :
-                                      pennyScore >= 50 ? 'bg-amber-500' : 'bg-red-500'
-                                    }`}
-                                    style={{ width: `${pennyScore}%` }}
-                                  />
-                                </div>
-                              </div>
-                            )}
-                          </div>
-                        )}
-                      </div>
-                    </CardContent>
-                  </Card>
-                </TabsContent>
+                {/* The "Penny AI Analysis" tab has been removed.
+                    It could never work: it read penny_deal_scores directly from the browser,
+                    which is blocked, and called penny-deal-scoring, which was retired on
+                    9 August 2026 and now returns HTTP 410. So every property showed
+                    "Penny AI analysis pending for this property" forever, which reads to a
+                    buyer as though an analysis is coming that never arrives.
+                    The Deal Score shown above is computed from the actual listing data and
+                    already does this job, honestly. A second scoring surface that never
+                    produces a score is worse than none. */}
               </Tabs>
             </div>
 
