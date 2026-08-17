@@ -183,10 +183,14 @@ export function PennyAnalysisPanel({
           competition_score: data.components?.completeness ?? 0,
           seasonality_score: data.components?.resilience ?? 0,
           location_score: data.components?.verification ?? 0,
+          // The panel renders these from risk_analysis, not from top level fields.
+          risk_analysis: {
+            opportunities: data.strengths ?? [],
+            risk_factors: data.risks ?? [],
+            risks: data.risks ?? [],
+          },
           strengths: data.strengths ?? [],
           risks: data.risks ?? [],
-          risk_factors: data.risks ?? [],
-          opportunities: data.strengths ?? [],
           figures: data.figures,
           basis: data.basis,
           ...data,
