@@ -18,7 +18,6 @@ import { GuidedTour } from '@/components/investor/GuidedTour';
 import { ProfileProgress } from '@/components/investor/ProfileProgress';
 import SessionTimeoutWarning from '@/components/investor/SessionTimeoutWarning';
 import { EmailPreferences } from '@/components/investor/EmailPreferences';
-import { AccountCredits } from '@/components/investor/AccountCredits';
 import { AcquisitionManagerSection } from '@/components/investor/AcquisitionManagerSection';
 import { SetupManagerSection } from '@/components/investor/SetupManagerSection';
 import { SetupProgressTracker } from '@/components/investor/SetupProgressTracker';
@@ -1445,7 +1444,7 @@ export default function InvestorPortal() {
                       wire transfer, Cash App and Bitcoin. Rendering a card form that
                       cannot complete invites somebody to type their card number into a
                       dead end. It is not rendered until it is rebuilt on the real rails. */}
-                  {false && <AccountCredits 
+                  {false && <AccountCredits /* retired card form, see note above */ 
                     investorId={investor.id} 
                     investorEmail={investor.email}
                     onFundingComplete={() => {

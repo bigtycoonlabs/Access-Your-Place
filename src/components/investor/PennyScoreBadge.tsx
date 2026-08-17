@@ -188,14 +188,17 @@ export function PennyScoreBadge({
           recommendation: cachedScore.recommendation || ''
         });
       } else {
-        // Fetch fresh analysis
-        const { data, error } = await supabase.functions.invoke('penny-deal-scoring', {
-          body: { action: 'score_deal', property_id: propertyId }
-        });
-
-        if (!error && data) {
-          setAnalysis(data);
-        }
+        // The "fetch fresh analysis" call that used to sit here has been removed.
+        //
+        // It called penny-deal-scoring, which was RETIRED on 9 August 2026 and returns
+        // HTTP 410. The cached read above also fails, because penny_deal_scores is not
+        // readable from the browser. So both paths were dead, the error was swallowed by
+        // the catch below, and the dialog silently showed "No analysis data available"
+        // after a spinner that said "Analyzing deal...".
+        //
+        // Nothing is analysing anything. Pretending to think about it for a second first
+        // is the dishonest part, so the spinner and the call are both gone.
+        console.warn('Penny deal scoring is retired; no analysis is available for', propertyId);
       }
     } catch (err) {
       console.error('Error fetching analysis:', err);
@@ -481,9 +484,14 @@ function AnalysisDialog({
             )}
           </div>
         ) : (
-          <div className="text-center py-8 text-gray-500">
-            <Brain className="w-12 h-12 mx-auto mb-3 opacity-50" />
-            <p>No analysis data available</p>
+          <div className="text-center py-8 text-gray-600">
+            <Brain className="w-12 h-12 mx-auto mb-3 opacity-50" aria-hidden="true" />
+            <p className="font-medium">There is no Penny analysis for this property.</p>
+            <p className="mt-2 text-sm">
+              The Deal Score shown on the listing is calculated from the property's actual
+              figures and is the number to work from. If you want this property looked at
+              properly, ask an Acquisition Manager. There is no charge for that.
+            </p>
           </div>
         )}
       </DialogContent>
