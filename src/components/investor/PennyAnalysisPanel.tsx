@@ -170,7 +170,27 @@ export function PennyAnalysisPanel({
         // Missing figures is a real answer, and naming them is more useful than a blank panel.
         setUnscored({ reason: data.reason, nextStep: data.next_step });
       } else if (data?.scored === true) {
-        setAnalysis(data as AnalysisData);
+        // Map the function's field names onto the shape this panel already renders.
+        // The panel was built for the old table's columns; rather than rewrite the whole
+        // display, the new result is translated into it.
+        setAnalysis({
+          penny_score: data.overall_score,
+          confidence_level: data.confidence,
+          recommendation: data.recommendation,
+          financial_score: data.components?.financial ?? 0,
+          market_score: data.components?.resilience ?? 0,
+          regulation_score: data.components?.verification ?? 0,
+          competition_score: data.components?.completeness ?? 0,
+          seasonality_score: data.components?.resilience ?? 0,
+          location_score: data.components?.verification ?? 0,
+          strengths: data.strengths ?? [],
+          risks: data.risks ?? [],
+          risk_factors: data.risks ?? [],
+          opportunities: data.strengths ?? [],
+          figures: data.figures,
+          basis: data.basis,
+          ...data,
+        } as unknown as AnalysisData);
       }
     } finally {
       setLoading(false);
