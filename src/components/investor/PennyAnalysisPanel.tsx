@@ -72,6 +72,9 @@ export function PennyAnalysisPanel({
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  // "We could not analyse this" and "this deal is bad" are different answers and must not
+  // render the same way.
+  const [unscored, setUnscored] = useState<{ reason: string; nextStep: string } | null>(null);
 
   useEffect(() => {
     fetchAnalysis();
@@ -137,126 +140,37 @@ export function PennyAnalysisPanel({
     setError(null);
 
     try {
-      // ──────────────────────────────────────────────────────────────────
-      // Step 1: Try the penny_deal_scores cache first (unless force refresh).
-      // This is FAST (single indexed read) and lets the panel render
-      // immediately without waiting on the edge function.
-      // ──────────────────────────────────────────────────────────────────
-      if (!forceRefresh) {
-        try {
-          const { data: cachedScore } = await withTimeout(
-            supabase
-              .from('penny_deal_scores')
-              .select('*')
-              .eq('property_id', propertyId)
-              .order('scored_at', { ascending: false })
-              .limit(1)
-              .maybeSingle() as any,
-            5000,
-            'penny_deal_scores cache'
-          );
+      // REBUILT. One call to ayp_deal_analysis, which computes the whole analysis in the
+      // database from this listing's own figures.
+      //
+      // What was here before: a read of penny_deal_scores (blocked from the browser) raced
+      // against penny-deal-scoring (retired 9 August 2026, returns 410), with a timeout.
+      // Two dead paths and a stopwatch. It could never produce an analysis.
+      //
+      // Nothing here is generated, so there is no figure to invent, no token budget to run
+      // out of, and the same property always reads the same.
+      const { data, error } = await supabase.rpc('ayp_deal_analysis', {
+        p_property_id: propertyId,
+      });
 
-          if (cachedScore && !isScoreExpired(cachedScore.scored_at)) {
-            console.log('[Penny] ✓ Using cached score for property', propertyId);
-            setAnalysis(cachedScore as AnalysisData);
-            setLoading(false);
-            setRefreshing(false);
-            return;
-          }
-        } catch (cacheErr: any) {
-          console.warn('[Penny] Cache lookup failed (non-fatal):', cacheErr?.message || cacheErr);
-        }
-      }
+      if (unscored) {
+    return (
+      <div className="rounded-lg border border-amber-200 bg-amber-50 p-5" role="status">
+        <p className="font-medium text-amber-900">{unscored.reason}</p>
+        <p className="mt-2 text-sm text-amber-900">{unscored.nextStep}</p>
+      </div>
+    );
+  }
 
-      // ──────────────────────────────────────────────────────────────────
-      // Step 2: Invoke the penny-deal-scoring edge function — wrapped in a
-      // 15-second timeout so a slow/unresponsive function never blocks the
-      // tab forever. On failure we fall through to the property fallback.
-      // ──────────────────────────────────────────────────────────────────
-      try {
-        console.log('[Penny] Invoking penny-deal-scoring for property', propertyId);
-        const efPromise = supabase.functions.invoke('penny-deal-scoring', {
-          body: {
-            action: 'score_property',
-            property_id: propertyId,
-            property_data: property
-          }
-        });
-        const { data, error: fetchError } = await withTimeout(efPromise as any, 15000, 'penny-deal-scoring edge function');
-
-        if (fetchError) throw fetchError;
-
-        if (data?.success) {
-          const analysisData: AnalysisData = {
-            penny_score: data.score,
-            confidence_level: data.confidence,
-            recommendation: data.recommendation,
-            market_score: data.componentScores?.market || 0,
-            regulation_score: data.componentScores?.regulation || 0,
-            financial_score: data.componentScores?.financial || 0,
-            competition_score: data.componentScores?.competition || 0,
-            seasonality_score: data.componentScores?.seasonality || 0,
-            location_score: data.componentScores?.location || 0,
-            str_analysis: data.projections?.str,
-            coliving_analysis: data.projections?.coliving,
-            mtr_analysis: data.projections?.mtr,
-            market_analysis: data.analysis?.marketInsights,
-            risk_analysis: {
-              risks: data.analysis?.risks || [],
-              opportunities: data.analysis?.opportunities || [],
-              summary: data.analysis?.summary
-            },
-            best_strategy: data.projections?.bestStrategy,
-            ml_adjusted: data.projections?.mlDataAvailable || false,
-            scored_at: new Date().toISOString(),
-            sop_hotel_occupancy_checked: data.sopVerification?.hotelOccupancyChecked || false,
-            sop_hotel_adr_checked: data.sopVerification?.hotelAdrChecked || false,
-            sop_str_performance_checked: data.sopVerification?.strPerformanceChecked || false,
-            sop_travel_trends_checked: data.sopVerification?.travelTrendsChecked || false,
-            sop_coliving_data_checked: data.sopVerification?.colivingDataChecked || false,
-            sop_regulation_checked: data.sopVerification?.regulationChecked || false,
-            sop_seasonality_checked: data.sopVerification?.seasonalityChecked || false,
-            sop_competition_checked: data.sopVerification?.competitionChecked || false
-          };
-
-          console.log('[Penny] ✓ Edge function success, score=', data.score);
-          setAnalysis(analysisData);
-          onScoreUpdate?.(data.score);
-          setLoading(false);
-          setRefreshing(false);
-          return;
-        }
-        // No success flag — fall through to property fallback below.
-        console.warn('[Penny] Edge function returned no success payload:', data);
-      } catch (efErr: any) {
-        console.warn('[Penny] Edge function failed or timed out:', efErr?.message || efErr);
-      }
-
-      // ──────────────────────────────────────────────────────────────────
-      // Step 3: Last-resort fallback — display what we already have on the
-      // property record (penny_score + penny_recommendation set by staff).
-      // This is the key fix: previously we'd just show a hard error and
-      // block the whole panel. Now we always show useful info.
-      // ──────────────────────────────────────────────────────────────────
-      const fallback = buildFallbackFromProperty();
-      if (fallback) {
-        console.log('[Penny] ✓ Using property fallback (score from property record)');
-        setAnalysis(fallback);
-        setLoading(false);
-        setRefreshing(false);
-        return;
-      }
-
-      // True dead-end: no cache, no edge function, no property score.
-      setError('Penny AI analysis is not yet available for this property. Click refresh to generate a new analysis.');
-    } catch (err: any) {
-      console.error('[Penny] Fatal error fetching analysis:', err);
-      // Even on outer errors, try the property fallback before giving up.
-      const fallback = buildFallbackFromProperty();
-      if (fallback) {
-        setAnalysis(fallback);
-      } else {
-        setError(err.message || 'Failed to load analysis');
+  if (error) {
+        setError('We could not load the analysis just now. That is a fault on our side, not a verdict on this deal.');
+      } else if (data?.ok === false) {
+        setError('We could not find this property.');
+      } else if (data?.scored === false) {
+        // Missing figures is a real answer, and naming them is more useful than a blank panel.
+        setUnscored({ reason: data.reason, nextStep: data.next_step });
+      } else if (data?.scored === true) {
+        setAnalysis(data as AnalysisData);
       }
     } finally {
       setLoading(false);

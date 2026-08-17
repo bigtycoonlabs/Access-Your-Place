@@ -188,17 +188,27 @@ export function PennyScoreBadge({
           recommendation: cachedScore.recommendation || ''
         });
       } else {
-        // The "fetch fresh analysis" call that used to sit here has been removed.
-        //
-        // It called penny-deal-scoring, which was RETIRED on 9 August 2026 and returns
-        // HTTP 410. The cached read above also fails, because penny_deal_scores is not
-        // readable from the browser. So both paths were dead, the error was swallowed by
-        // the catch below, and the dialog silently showed "No analysis data available"
-        // after a spinner that said "Analyzing deal...".
-        //
-        // Nothing is analysing anything. Pretending to think about it for a second first
-        // is the dishonest part, so the spinner and the call are both gone.
-        console.warn('Penny deal scoring is retired; no analysis is available for', propertyId);
+        // REBUILT. Calls ayp_deal_analysis, which computes the analysis in the database
+        // from this listing's own figures. Nothing is generated, so it cannot invent a
+        // number, cannot be rate limited, and returns the same result every time.
+        const { data, error } = await supabase.rpc('ayp_deal_analysis', {
+          p_property_id: propertyId,
+        });
+        if (!error && data?.ok && data?.scored) {
+          setAnalysis({
+            overall_score: data.overall_score,
+            confidence: data.confidence,
+            recommendation: data.recommendation,
+            components: data.components,
+            figures: data.figures,
+            strengths: data.strengths || [],
+            risks: data.risks || [],
+            basis: data.basis,
+          } as any);
+        } else if (!error && data?.ok && !data?.scored) {
+          // Analysable data is missing. Say which, rather than showing an empty panel.
+          setAnalysis({ unscored: true, reason: data.reason, next_step: data.next_step } as any);
+        }
       }
     } catch (err) {
       console.error('Error fetching analysis:', err);

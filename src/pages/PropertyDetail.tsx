@@ -27,6 +27,7 @@ import {
   AlertTriangle, FileText, Calculator, BarChart3, Zap, Target, Camera,
   Lock, Eye
 } from 'lucide-react';
+import { PennyAnalysisPanel } from '@/components/investor/PennyAnalysisPanel';
 
 interface Property {
   id: string;
@@ -631,6 +632,7 @@ export default function PropertyDetail() {
                 <TabsList className="w-full justify-start bg-white border">
                   <TabsTrigger value="overview">Overview</TabsTrigger>
                   <TabsTrigger value="financials">Financials</TabsTrigger>
+                  <TabsTrigger value="penny">Deal Analysis</TabsTrigger>
                 </TabsList>
 
                 <TabsContent value="overview" className="mt-4 space-y-6">
@@ -878,15 +880,27 @@ export default function PropertyDetail() {
                 </TabsContent>
 
 
-                {/* The "Penny AI Analysis" tab has been removed.
-                    It could never work: it read penny_deal_scores directly from the browser,
-                    which is blocked, and called penny-deal-scoring, which was retired on
-                    9 August 2026 and now returns HTTP 410. So every property showed
-                    "Penny AI analysis pending for this property" forever, which reads to a
-                    buyer as though an analysis is coming that never arrives.
-                    The Deal Score shown above is computed from the actual listing data and
-                    already does this job, honestly. A second scoring surface that never
-                    produces a score is worse than none. */}
+                {/* Deal Analysis, rebuilt. Reads ayp_deal_analysis, which computes the
+                    whole thing in the database from this listing's own figures. It cannot
+                    invent a number, cannot be rate limited, and gives the same answer every
+                    time. Where a figure is missing it names it instead of scoring around it. */}
+                <TabsContent value="penny" className="mt-4 space-y-6">
+                  <Card>
+                    <CardHeader>
+                      <CardTitle className="flex items-center gap-2">
+                        <Zap className="w-5 h-5 text-[#d4a574]" aria-hidden="true" />
+                        Deal Analysis
+                      </CardTitle>
+                    </CardHeader>
+                    <CardContent>
+                      <PennyAnalysisPanel
+                        propertyId={property.id}
+                        property={property}
+                        isStaff={false}
+                      />
+                    </CardContent>
+                  </Card>
+                </TabsContent>
               </Tabs>
             </div>
 
