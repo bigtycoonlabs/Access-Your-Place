@@ -1708,6 +1708,116 @@ async function execTool(name: string, args: any, ctx: Ctx): Promise<unknown> {
     }
     if (name === 'credit_requests') return await creditRequests(url, key, args?.investor_id ? String(args.investor_id) : undefined);
     if (name === 'credit_picture') return await creditPicture(url, key);
+    // ---- ADJUST A CLIENT'S CREDIT -------------------------------------------
+    // Written as a ledger entry with a reason, never as a bare number change. The balance
+    // is the sum of the entries, so a change without a reason is impossible by design.
+    if (name === 'adjust_client_credit') {
+      const investorId = String(args.investor_id || '').trim();
+      const amount = Number(args.amount);
+      const reason = String(args.reason || '').trim();
+      if (!investorId || !Number.isFinite(amount) || amount === 0 || !reason) {
+        return { ok: false, error: 'investor_id, a non zero amount and a reason are all required.' };
+      }
+      if (args.confirmed !== true) {
+        return {
+          ok: false, needs_confirmation: true,
+          message: `About to ${amount > 0 ? 'ADD' : 'REMOVE'} $${Math.abs(amount)} ${amount > 0 ? 'to' : 'from'} this client's credit, with the reason: "${reason}". This goes on the ledger permanently. Confirm with the staff member, then call again with confirmed true.`,
+        };
+      }
+      const ins = await fetch(`${url}/rest/v1/credit_ledger`, {
+        method: 'POST',
+        headers: { apikey: key, Authorization: `Bearer ${key}`, 'Content-Type': 'application/json', Prefer: 'return=representation' },
+        body: JSON.stringify({ investor_id: investorId, amount, reason, kind: 'manual', created_by: `staff: ${ctx.fullName || 'unknown'}` }),
+      });
+      if (!ins.ok) {
+        console.error('adjust_client_credit failed', await ins.text());
+        return { ok: false, error: 'not_saved', message: 'The credit was NOT changed. Nothing was written.' };
+      }
+      // Keep the stored balance in step, so the portal and the ledger never disagree.
+      const bal = await fetch(`${url}/rest/v1/rpc/ayp_credit_balance`, {
+        method: 'POST',
+        headers: { apikey: key, Authorization: `Bearer ${key}`, 'Content-Type': 'application/json' },
+        body: JSON.stringify({ p_investor_id: investorId }),
+      });
+      const newBalance = bal.ok ? await bal.json() : null;
+      if (newBalance !== null) {
+        await fetch(`${url}/rest/v1/investors?id=eq.${encodeURIComponent(investorId)}`, {
+          method: 'PATCH',
+          headers: { apikey: key, Authorization: `Bearer ${key}`, 'Content-Type': 'application/json', Prefer: 'return=minimal' },
+          body: JSON.stringify({ credit_balance: newBalance }),
+        }).catch(() => {});
+      }
+      return { ok: true, new_balance: newBalance, message: `Credit updated. Their balance is now $${newBalance}.` };
+    }
+
+    // ---- ALERT ANOTHER STAFF MEMBER -----------------------------------------
+    if (name === 'alert_staff') {
+      const staffId = String(args.staff_id || '').trim();
+      const title = String(args.title || '').trim();
+      const body = String(args.body || '').trim();
+      if (!staffId || !title || !body) {
+        return { ok: false, error: 'staff_id, title and body are all required.' };
+      }
+      const ins = await fetch(`${url}/rest/v1/staff_alerts`, {
+        method: 'POST',
+        headers: { apikey: key, Authorization: `Bearer ${key}`, 'Content-Type': 'application/json', Prefer: 'return=representation' },
+        body: JSON.stringify({
+          staff_id: staffId, title, body,
+          investor_id: args.investor_id || null,
+          kind: 'from_penny',
+          severity: String(args.severity || 'normal'),
+          dedupe_key: `penny-${Date.now()}`,
+          created_at: new Date().toISOString(),
+        }),
+      });
+      if (!ins.ok) {
+        console.error('alert_staff failed', await ins.text());
+        return { ok: false, error: 'not_saved', message: 'The alert was NOT created. Nobody has been told.' };
+      }
+      return { ok: true, message: 'It is in their portal.' };
+    }
+
+    // ---- SEND A DOCUMENT FOR SIGNATURE --------------------------------------
+    if (name === 'send_document_for_signature') {
+      const investorId = String(args.investor_id || '').trim();
+      const docName = String(args.document_name || '').trim();
+      const content = String(args.content || '').trim();
+      if (!investorId || !docName || !content) {
+        return { ok: false, error: 'investor_id, document_name and the full content are all required.' };
+      }
+      if (args.confirmed !== true) {
+        return {
+          ok: false, needs_confirmation: true,
+          message: `About to put "${docName}" in this client's portal for signature and email them about it. Read the terms back to the staff member first, then call again with confirmed true.`,
+        };
+      }
+      const inv = await fetch(`${url}/rest/v1/investors?id=eq.${encodeURIComponent(investorId)}&select=full_name,email&limit=1`, {
+        headers: { apikey: key, Authorization: `Bearer ${key}` },
+      });
+      const who = inv.ok ? (await inv.json())[0] : null;
+      const r = await fetch(`${url}/functions/v1/manage-document-signatures`, {
+        method: 'POST',
+        headers: { apikey: key, Authorization: `Bearer ${key}`, 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          action: 'send_document', investor_id: investorId,
+          investor_name: who?.full_name || null, investor_email: who?.email || null,
+          document_name: docName, document_type: String(args.document_type || 'agreement'),
+          document_content: content, expires_in_days: 7,
+          sent_by: `Penny for ${ctx.fullName || 'the Success Team'}`,
+        }),
+      });
+      if (!r.ok) {
+        console.error('send_document_for_signature failed', r.status, (await r.text()).slice(0, 300));
+        return { ok: false, error: 'not_sent', message: 'The document was NOT sent. Nothing is in their portal.' };
+      }
+      const d = await r.json();
+      return {
+        ok: true, document_id: d?.document?.id,
+        emailed: d?.email_sent === true,
+        message: `"${docName}" is in their portal awaiting signature.${d?.email_sent === true ? ' They have been emailed.' : ' They were NOT emailed, so tell them it is there.'}`,
+      };
+    }
+
     if (name === 'decide_credit_request') {
       if (!args?.request_id || args?.approve === undefined) {
         return { error: 'request_id and approve are required' };
@@ -2195,6 +2305,59 @@ const TOOLS = [
       name: 'credit_requests',
       description: "Credit requests clients have submitted, with what they asked for, why, and how long they have waited. Omit investor_id for all of them. ADMIN owns credit issuing and approving.",
       parameters: { type: 'object', properties: { investor_id: { type: 'string' } }, required: [] },
+    },
+  },
+  {
+    type: 'function',
+    function: {
+      name: 'adjust_client_credit',
+      description: "Add or remove credit on a client's account, with a reason that stays on the ledger forever. Use for carrying an acquisition fee over to a different property, correcting a balance the owner has confirmed, or removing credit from a banned client. NEVER guess an amount or a reason. Confirm the client, the amount and the reason with the staff member before calling. A negative amount removes credit.",
+      parameters: {
+        type: 'object',
+        properties: {
+          investor_id: { type: 'string', description: 'The client. Look them up first if unsure.' },
+          amount: { type: 'number', description: 'Positive to add, negative to remove.' },
+          reason: { type: 'string', description: 'Why. This is permanent and a client may read it. Be specific: what the money was, and what it is now for.' },
+          confirmed: { type: 'boolean' },
+        },
+        required: ['investor_id', 'amount', 'reason'],
+      },
+    },
+  },
+  {
+    type: 'function',
+    function: {
+      name: 'alert_staff',
+      description: "Put a task or piece of information into another staff member's portal, so it is on record rather than sitting in an inbox. Use when a colleague needs to pick something up: a setup manager needing a move scheduled, an acquisition manager needing to contact a landlord. Put the DETAIL in the body, because this is what they will act from.",
+      parameters: {
+        type: 'object',
+        properties: {
+          staff_id: { type: 'string', description: 'Who it is for. Look up the staff member first if unsure.' },
+          title: { type: 'string', description: 'One line naming the client and what is needed.' },
+          body: { type: 'string', description: 'Everything they need to act without asking. Background, deadlines, what the client has been told, what is outstanding.' },
+          investor_id: { type: 'string', description: 'The client this concerns, if any.' },
+          severity: { type: 'string', description: 'high, normal or low. Use high where a deadline or a client is waiting.' },
+        },
+        required: ['staff_id', 'title', 'body'],
+      },
+    },
+  },
+  {
+    type: 'function',
+    function: {
+      name: 'send_document_for_signature',
+      description: "Put a document into a client's portal for them to read and sign, and email them that it is there. Use for subleases, acquisition agreements and anything needing a signature. Pass the FULL text of the document as content. Never send a document you have not been given the wording for.",
+      parameters: {
+        type: 'object',
+        properties: {
+          investor_id: { type: 'string' },
+          document_name: { type: 'string', description: 'What the client will see, e.g. Corporate Sublease Agreement - 1900 The Loft, Unit 406.' },
+          content: { type: 'string', description: 'The complete document text.' },
+          document_type: { type: 'string', description: 'sublease_agreement, acquisition_agreement or agreement.' },
+          confirmed: { type: 'boolean' },
+        },
+        required: ['investor_id', 'document_name', 'content'],
+      },
     },
   },
   {
@@ -3120,6 +3283,29 @@ numbers are calculated rather than validated. Never present a find as a verified
 
 
 
+
+## THINGS YOU CAN NOW DO YOURSELF, AND THE CARE THEY NEED
+Three abilities were added because staff were having to ask an engineer to do them.
+
+ADJUST A CLIENT'S CREDIT (adjust_client_credit). Real money on a real client's account.
+Never guess an amount and never invent a reason. Confirm the client, the figure and the
+reason with the staff member first. The reason you write stays on the ledger forever and a
+client may read it, so write what the money WAS and what it is now FOR, not "adjustment".
+
+ALERT ANOTHER STAFF MEMBER (alert_staff). Put the whole picture in the body, not a summary.
+The person reading it should be able to act without asking anyone a question: background,
+deadline, what the client has already been told, and what is still outstanding. A one line
+alert that triggers three follow up questions has cost more time than it saved.
+
+SEND A DOCUMENT FOR SIGNATURE (send_document_for_signature). You must be given the full
+wording. Never compose a lease or an agreement yourself and never fill a gap in one with
+something plausible. If a term is missing, ask for it. Read the key terms back to the staff
+member before sending, and if the send reports that the client was NOT emailed, say so
+plainly so somebody tells them it is waiting.
+
+ACROSS ALL THREE: if the tool reports a failure, say the action did NOT happen. Never
+describe a credit change, an alert or a document as done when the tool said it was not.
+
 ## OUR ACTUAL REACH — do not size us by what is listed
 We operate across roughly 21 US states and three states in Mexico, in about 40 major cities
 and submarkets. We are an international network.
@@ -3879,16 +4065,19 @@ const TOOL_GROUPS: Record<string, { words: RegExp; tools: string[] }> = {
   },
   staff: {
     words: /staff|team|success team|hire|onboard|commission|escalat|dispute|legal|complaint/i,
-    tools: ['list_staff','invite_staff','list_escalations','resolve_escalation','raise_alert'],
+    tools: ['list_staff','invite_staff','list_escalations','resolve_escalation','raise_alert',
+            'alert_staff','adjust_client_credit'],
   },
   payments: {
     words: /payment|pay|invoice|wire|zelle|cash ?app|bitcoin|deposit|balance|commission|payout/i,
     tools: ['get_payment_methods','create_payment_link','list_payment_requests',
-            'payout_status','save_payout','credit_requests','decide_credit_request','credit_picture'],
+            'payout_status','save_payout','credit_requests','decide_credit_request','credit_picture',
+            'adjust_client_credit'],
   },
   agreements: {
     words: /agreement|contract|sign|document|paperwork|onboard/i,
-    tools: ['my_agreements','send_agreement','sign_agreement','list_staff','invite_staff','my_sop','team_readiness'],
+    tools: ['my_agreements','send_agreement','sign_agreement','list_staff','invite_staff','my_sop','team_readiness',
+            'send_document_for_signature'],
   },
   procedure: {
     words: /sop|procedure|responsib|what should i|my role|my job|how do i/i,
