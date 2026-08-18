@@ -4064,18 +4064,18 @@ const TOOL_GROUPS: Record<string, { words: RegExp; tools: string[] }> = {
     tools: ['seller_flow','landlord_portal','list_third_party_deal','send_account_invite'],
   },
   staff: {
-    words: /staff|team|success team|hire|onboard|commission|escalat|dispute|legal|complaint/i,
+    words: /staff|team|success team|hire|onboard|commission|escalat|dispute|legal|complaint|alert|notify|notification|portal|assign|hand ?off|let .* know|tell (her|him|them)|setup manager|acquisition manager|tonya|tania|shanyia|nyia|brandon|tyler/i,
     tools: ['list_staff','invite_staff','list_escalations','resolve_escalation','raise_alert',
             'alert_staff','adjust_client_credit'],
   },
   payments: {
-    words: /payment|pay|invoice|wire|zelle|cash ?app|bitcoin|deposit|balance|commission|payout/i,
+    words: /payment|pay|invoice|wire|zelle|cash ?app|bitcoin|deposit|balance|commission|payout|credit|refund|carry over|apply .* to/i,
     tools: ['get_payment_methods','create_payment_link','list_payment_requests',
             'payout_status','save_payout','credit_requests','decide_credit_request','credit_picture',
             'adjust_client_credit'],
   },
   agreements: {
-    words: /agreement|contract|sign|document|paperwork|onboard/i,
+    words: /agreement|contract|sign|signature|document|paperwork|onboard|sublease|lease/i,
     tools: ['my_agreements','send_agreement','sign_agreement','list_staff','invite_staff','my_sop','team_readiness',
             'send_document_for_signature'],
   },
