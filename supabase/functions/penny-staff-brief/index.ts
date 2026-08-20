@@ -184,6 +184,32 @@ Deno.serve(async (req) => {
     // What actually needs somebody, with ages, from the one function that computes it.
     // The staff home leads with this, so if it cannot be read the screen says so rather
     // than showing a reassuring blank.
+    // ALERTS ASSIGNED TO THIS PERSON.
+    //
+    // staff_alerts has been written to all week and NOTHING in the UI ever read it. A setup
+    // manager was told a client task was "in her portal" and there was no surface showing
+    // it. The generic attention feed below shows unworked leads, which is useful but is not
+    // the same as "this specific client needs you today".
+    //
+    // Assigned alerts come FIRST, because a task addressed to you by name outranks a list
+    // of everyone's stale leads.
+    let myAlerts: unknown[] = [];
+    try {
+      if (!body.staff_id) throw new Error('no staff_id on request');
+      const ar = await fetch(
+        `${url}/rest/v1/staff_alerts?staff_id=eq.${encodeURIComponent(String(body.staff_id || ''))}&seen_at=is.null` +
+        `&select=id,title,body,severity,investor_id,created_at&order=created_at.desc&limit=25`,
+        { headers: { apikey: key, Authorization: `Bearer ${key}` } },
+      );
+      if (ar.ok) {
+        myAlerts = await ar.json();
+      } else {
+        console.error('penny-staff-brief my_alerts_failed', ar.status, (await ar.text()).slice(0, 200));
+      }
+    } catch (e) {
+      console.error('penny-staff-brief my_alerts_threw', e instanceof Error ? e.message : String(e));
+    }
+
     let attention: unknown = null;
     try {
       const r = await fetch(`${url}/rest/v1/rpc/penny_attention`, {
@@ -234,6 +260,9 @@ Deno.serve(async (req) => {
 
     return json({
       success: true,
+      // Assigned to this person by name. Rendered above the generic feed.
+      my_alerts: myAlerts,
+      my_alerts_count: Array.isArray(myAlerts) ? myAlerts.length : 0,
       attention,
       operations,
       sop,
