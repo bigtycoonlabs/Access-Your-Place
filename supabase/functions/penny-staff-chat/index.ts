@@ -1711,6 +1711,10 @@ async function execTool(name: string, args: any, ctx: Ctx): Promise<unknown> {
     // ---- ADJUST A CLIENT'S CREDIT -------------------------------------------
     // Written as a ledger entry with a reason, never as a bare number change. The balance
     // is the sum of the entries, so a change without a reason is impossible by design.
+    if (name === 'mexico_facts') {
+      return { ok: true, facts: MEXICO_FACTS };
+    }
+
     if (name === 'adjust_client_credit') {
       const investorId = String(args.investor_id || '').trim();
       const amount = Number(args.amount);
@@ -2305,6 +2309,14 @@ const TOOLS = [
       name: 'credit_requests',
       description: "Credit requests clients have submitted, with what they asked for, why, and how long they have waited. Omit investor_id for all of them. ADMIN owns credit issuing and approving.",
       parameters: { type: 'object', properties: { investor_id: { type: 'string' } }, required: [] },
+    },
+  },
+  {
+    type: 'function',
+    function: {
+      name: 'mexico_facts',
+      description: "How our Mexico operations differ from a US deal: the developer partner carrying local taxes and licensing, what the all-inclusive rent covers, when the included flight happens, and multi-unit discounts. Call before answering any Mexico question rather than answering from memory.",
+      parameters: { type: 'object', properties: {}, required: [] },
     },
   },
   {
@@ -3317,50 +3329,13 @@ current listings are, and never count the listings to answer a question about ou
 If somebody asks about a market with nothing listed, the answer is not no. It is: we can go
 and find it, and an acquisition manager will start that at no charge.
 
-## MEXICO OPERATIONS — how they differ from a US deal
-We now acquire and launch in parts of Mexico. Three things make these deals different, and
-you should raise all three because they answer objections before they are voiced.
-
-1. A DEVELOPER PARTNER HANDLES ALL LOCAL OBLIGATIONS. We work with a specific developer in
-   each part of Mexico we operate in. They handle taxes, regulatory requirements and
-   licensing at the property level. The operator does not register for foreign tax, chase
-   local permits, or learn another country's rules. That is the single biggest reason
-   operators never look abroad, and here it is removed.
-   Say plainly, once, that how somebody reports their own income is still between them and
-   their own accountant wherever they are tax resident. Do not go further than that, and do
-   not give tax advice.
-
-2. THE ACQUISITION FEE INCLUDES A FLIGHT, AND THE TIMING MATTERS. On every Mexico deal the
-   fee covers a flight and the first month of rent. Be precise about WHEN the flight
-   happens: it is part of what an operator receives AFTER they have acquired the operation,
-   so they can walk their own property before going live. It is NOT a viewing trip to help
-   them decide, and we do NOT fly people out before they commit. Getting this wrong sets an
-   expectation we will not meet, and somebody would feel misled at exactly the wrong moment.
-
-3. RENT IS OFTEN ALL INCLUSIVE. On the current Mérida listing, rent covers all utilities
-   AND turnover cleaning. That means the cleaning fee the operator charges guests is
-   REVENUE, not cost recovery: at $80 to $100 across four to six turnovers a month, $500 to
-   $700 on top of nightly revenue. Count it in total revenue, exactly as US operators do.
-   Utilities and cleaning are the two costs that usually eat a margin. When they are inside
-   the rent, far more of the gross survives.
+## MEXICO
+We acquire and launch in Mexico. Before answering ANY Mexico question, call the mexico_facts
+tool. It holds the developer partner arrangement, what rent includes, when the flight
+happens, and multi-unit discounts. Never answer Mexico from memory, and never call any
+listing our first international deal.
 
 
-   Two more Mexico facts, because both come up and both are easy to get wrong:
-   - MEXICO IS NOT NEW AND THIS IS NOT OUR ONLY BUILDING. We work in several Mexican
-     markets and hold inventory in other buildings that is not on the marketplace yet.
-     Never call any listing our first international deal. If somebody wants Mexico and the
-     listed unit is not the fit, tell them to ask their Acquisition Manager what else we
-     are holding, because there is more.
-   - MULTIPLE UNITS, AND A DISCOUNT FOR TAKING MORE THAN ONE. Where a building has several
-     units open, say so plainly: they can take one or several, and it is not a race against
-     another buyer. There IS a discount for multiple units. Do NOT quote a figure for it,
-     because it is priced per deal by the Acquisition Manager. Do explain the operational
-     reason: units in one building share the cleaner, the supply run, the key handover and
-     the local contact, so a second unit there costs very little extra effort, where a
-     second unit in another city is a whole second operation.
-
-NEVER tell somebody Mexico means dealing with foreign tax authorities or licensing. That is
-what the developer partnership exists to prevent, and it is the whole point of the offer.
 
 WHAT YOU CAN ACTUALLY DO YOURSELF, TODAY. This list is the truth. Everything else you own
 by routing it, not by claiming it.
@@ -3684,7 +3659,7 @@ SCOPE: you handle the reactive desk (opportunities, follow-ups, notes, status), 
 
 DOCUMENT SHARED THIS SESSION${docName ? ` ("${docName}")` : ''} - the staff member attached this. Read it and use it as the source when they ask you to record a closing; extract the client, property, and money, and confirm every number with them before recording. Never invent a figure the document does not state:
 -----
-${String(docText).slice(0, 40000)}
+${String(docText).slice(0, 8000)}${String(docText).length > 8000 ? '\n[Document truncated. This is the first part only. If you need a figure that is not shown above, say so and ask the staff member for it rather than guessing.]' : ''}
 -----` : ''}`;
 }
 
@@ -3832,6 +3807,53 @@ const SLOW_TOOLS: Record<string, number> = {
 // the rest are matched to what the person actually asked for. She keeps full AWARENESS of
 // everything through her prompt, so she can still say "I can do that" and then do it on
 // the next turn when the group loads.
+const MEXICO_FACTS = `
+## MEXICO OPERATIONS — how they differ from a US deal
+We now acquire and launch in parts of Mexico. Three things make these deals different, and
+you should raise all three because they answer objections before they are voiced.
+
+1. A DEVELOPER PARTNER HANDLES ALL LOCAL OBLIGATIONS. We work with a specific developer in
+   each part of Mexico we operate in. They handle taxes, regulatory requirements and
+   licensing at the property level. The operator does not register for foreign tax, chase
+   local permits, or learn another country's rules. That is the single biggest reason
+   operators never look abroad, and here it is removed.
+   Say plainly, once, that how somebody reports their own income is still between them and
+   their own accountant wherever they are tax resident. Do not go further than that, and do
+   not give tax advice.
+
+2. THE ACQUISITION FEE INCLUDES A FLIGHT, AND THE TIMING MATTERS. On every Mexico deal the
+   fee covers a flight and the first month of rent. Be precise about WHEN the flight
+   happens: it is part of what an operator receives AFTER they have acquired the operation,
+   so they can walk their own property before going live. It is NOT a viewing trip to help
+   them decide, and we do NOT fly people out before they commit. Getting this wrong sets an
+   expectation we will not meet, and somebody would feel misled at exactly the wrong moment.
+
+3. RENT IS OFTEN ALL INCLUSIVE. On the current Mérida listing, rent covers all utilities
+   AND turnover cleaning. That means the cleaning fee the operator charges guests is
+   REVENUE, not cost recovery: at $80 to $100 across four to six turnovers a month, $500 to
+   $700 on top of nightly revenue. Count it in total revenue, exactly as US operators do.
+   Utilities and cleaning are the two costs that usually eat a margin. When they are inside
+   the rent, far more of the gross survives.
+
+
+   Two more Mexico facts, because both come up and both are easy to get wrong:
+   - MEXICO IS NOT NEW AND THIS IS NOT OUR ONLY BUILDING. We work in several Mexican
+     markets and hold inventory in other buildings that is not on the marketplace yet.
+     Never call any listing our first international deal. If somebody wants Mexico and the
+     listed unit is not the fit, tell them to ask their Acquisition Manager what else we
+     are holding, because there is more.
+   - MULTIPLE UNITS, AND A DISCOUNT FOR TAKING MORE THAN ONE. Where a building has several
+     units open, say so plainly: they can take one or several, and it is not a race against
+     another buyer. There IS a discount for multiple units. Do NOT quote a figure for it,
+     because it is priced per deal by the Acquisition Manager. Do explain the operational
+     reason: units in one building share the cleaner, the supply run, the key handover and
+     the local contact, so a second unit there costs very little extra effort, where a
+     second unit in another city is a whole second operation.
+
+NEVER tell somebody Mexico means dealing with foreign tax authorities or licensing. That is
+what the developer partnership exists to prevent, and it is the whole point of the offer.
+`;
+
 const CLIENT_POLICY = `
 ## HOW AN ACQUISITION ACTUALLY RUNS, START TO FINISH
 Know this in order. Do not skip a step when explaining it, and never imply that paying is
@@ -4066,7 +4088,7 @@ const TOOL_GROUPS: Record<string, { words: RegExp; tools: string[] }> = {
   staff: {
     words: /staff|team|success team|hire|onboard|commission|escalat|dispute|legal|complaint|alert|notify|notification|portal|assign|hand ?off|let .* know|tell (her|him|them)|setup manager|acquisition manager|tonya|tania|shanyia|nyia|brandon|tyler/i,
     tools: ['list_staff','invite_staff','list_escalations','resolve_escalation','raise_alert',
-            'alert_staff','adjust_client_credit'],
+            'alert_staff','adjust_client_credit','mexico_facts'],
   },
   payments: {
     words: /payment|pay|invoice|wire|zelle|cash ?app|bitcoin|deposit|balance|commission|payout|credit|refund|carry over|apply .* to/i,
