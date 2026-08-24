@@ -265,7 +265,16 @@ export default function StaffDashboard() {
   // when we simply failed to look.
   const [unreadMessages, setUnreadMessages] = useState<number | null>(0);
   const [hasInvestorBackup, setHasInvestorBackup] = useState(false);
-  const [activeTab, setActiveTab] = useState('penny-home');
+  // Staff had no way to be sent to a specific tab. A setup manager was told her tasks were
+  // "in the portal" and could not find messaging or documents among fourteen tabs, and we
+  // could not send her a link because none existed. Now ?tab=communications works.
+  const [activeTab, setActiveTab] = useState(() => {
+    try {
+      const t = new URLSearchParams(window.location.search).get('tab');
+      if (t) return t;
+    } catch { /* no window during SSR, fall through */ }
+    return 'penny-home';
+  });
   const [activeDashboard, setActiveDashboard] = useState<DashboardType>('success');
   const [announcement, setAnnouncement] = useState('');
   const [unassignedInvestorCount, setUnassignedInvestorCount] = useState(0);
