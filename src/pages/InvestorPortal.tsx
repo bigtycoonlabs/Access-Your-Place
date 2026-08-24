@@ -425,6 +425,9 @@ export default function InvestorPortal() {
       // header and footer with an empty middle: a 2,113 character page and the
       // payment methods call never fired. The outer tab must be 'financial'.
       if (q.get('tab') === 'payments' || q.get('acquire')) return 'financial';
+      // Documents is now a main navigation item, because a client with three agreements
+      // waiting could not find anywhere to sign them. Honour the deep link.
+      if (q.get('tab') === 'documents') return 'documents';
     } catch { /* no window, keep the default */ }
     return 'penny-home';
   });

@@ -201,6 +201,13 @@ export function PortalHeader({ investor, onSettingsClick, onMessagesClick }: Por
             >
               Deal Flow
             </a>
+            <a
+              href="/investor/portal"
+              onClick={(e) => { e.preventDefault(); navigate('/investor/portal?tab=documents'); }}
+              className="hover:text-[#d4a574] transition focus:outline-none focus:ring-2 focus:ring-[#d4a574] rounded px-2 py-1"
+            >
+              Documents
+            </a>
             <a 
               href="/knowledge-library"
               onClick={(e) => { e.preventDefault(); navigate('/knowledge-library'); }}
@@ -389,6 +396,13 @@ export function PortalHeader({ investor, onSettingsClick, onMessagesClick }: Por
                 className="py-2 px-3 rounded hover:bg-white/10 transition focus:outline-none focus:ring-2 focus:ring-[#d4a574]"
               >
                 Deal Flow
+              </a>
+              <a
+                href="/investor/portal"
+                onClick={(e) => { e.preventDefault(); navigate('/investor/portal?tab=documents'); setMobileMenuOpen(false); }}
+                className="py-2 px-3 rounded hover:bg-white/10 transition focus:outline-none focus:ring-2 focus:ring-[#d4a574]"
+              >
+                Documents
               </a>
               <a 
                 href="/knowledge-library"
