@@ -39,16 +39,18 @@ interface MarketAlert {
   description: string;
 }
 
+// These are QUESTIONS FOR PENNY, not places to go. They were previously nine icon buttons
+// with noun labels like "Landlord Portal" and "Sell My Operation", which a new client read
+// as the site's navigation. He reported the portal was "super messy and confusing" and that
+// he could not tell where he was supposed to go. He was right.
+//
+// Now: four, phrased as questions so they cannot be mistaken for destinations, and limited
+// to what a client actually asks in their first session.
 const QUICK_ACTIONS = [
-  { id: 'portfolio', icon: TrendingUp, label: 'My Portfolio', question: 'Show me my portfolio summary' },
-  { id: 'marketplace', icon: Building2, label: 'Deal Marketplace', question: 'How does the deal marketplace work and what deals are available?' },
-  { id: 'analyze', icon: Target, label: 'Analyze a Deal', question: 'Analyze a deal with ADR $200 and 65% occupancy in Austin' },
-  { id: 'credits', icon: Database, label: 'My Credits', question: 'Check my credit balance' },
-  { id: 'referrals', icon: Zap, label: 'Referral Program', question: 'How does the referral program work? Tell me about property referrals and client referrals.' },
-  { id: 'messaging', icon: FileText, label: 'Messages & AM', question: 'How do I message my acquisition manager?' },
-  { id: 'landlord', icon: Building2, label: 'Landlord Portal', question: 'How does the landlord partnership portal work?' },
-  { id: 'sell', icon: BarChart3, label: 'Sell My Operation', question: 'How can I sell my rental operation on the marketplace?' },
-  { id: 'setup', icon: CheckCircle2, label: 'Setup Services', question: 'What setup services are available for my property?' },
+  { id: 'portfolio', icon: TrendingUp, label: 'How is my portfolio doing?', question: 'Show me my portfolio summary' },
+  { id: 'credits', icon: Database, label: 'What is my credit balance?', question: 'Check my credit balance' },
+  { id: 'analyze', icon: Target, label: 'Can you run numbers on an address?', question: 'Run the numbers on a property for me. I will give you the address.' },
+  { id: 'messaging', icon: FileText, label: 'How do I reach my acquisition manager?', question: 'How do I message my acquisition manager?' },
 ];
 
 
@@ -871,7 +873,12 @@ export function AIChat({ investorId, investorName }: AIChatProps) {
                   <Badge variant="outline" className="text-xs">Market Intel</Badge>
                 </div>
                 
-                <div className="grid grid-cols-2 md:grid-cols-3 gap-3 w-full max-w-2xl">
+                {/* Label these plainly. Without it a client reads the buttons below as the
+                    site navigation and goes looking for pages that are not pages. */}
+                <p className="text-sm text-gray-500 w-full max-w-2xl text-left mb-1">
+                  Things you can ask me:
+                </p>
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-3 w-full max-w-2xl">
                   {QUICK_ACTIONS.map((action) => {
                     const Icon = action.icon;
                     return (
