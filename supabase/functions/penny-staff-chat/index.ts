@@ -1715,6 +1715,42 @@ async function execTool(name: string, args: any, ctx: Ctx): Promise<unknown> {
       return { ok: true, facts: MEXICO_FACTS };
     }
 
+    // ---- LOAD A REAL DOCUMENT TEMPLATE --------------------------------------
+    // These are the actual signed documents, not summaries. An agreement drafted from
+    // memory once went out looking nothing like anything this company issues, so the rule
+    // is: load the template, fill the placeholders, change nothing else.
+    if (name === 'get_template') {
+      const wanted = String(args.template_type || '').trim();
+      const filter = wanted
+        ? `&template_type=eq.${encodeURIComponent(wanted)}`
+        : '';
+      const r = await fetch(
+        `${url}/rest/v1/document_templates?is_active=eq.true${filter}` +
+        `&select=name,template_type,category,content,variables&order=name`,
+        { headers: { apikey: key, Authorization: `Bearer ${key}` } },
+      );
+      if (!r.ok) {
+        console.error('get_template failed', r.status, (await r.text()).slice(0, 200));
+        return { ok: false, error: 'unavailable', message: 'Could not load the templates. Do NOT draft the agreement from memory. Tell the staff member the template store is unreachable.' };
+      }
+      const rows = await r.json();
+      if (!Array.isArray(rows) || rows.length === 0) {
+        return { ok: false, error: 'not_found', message: `No active template for "${wanted}". Do NOT invent one. Ask the staff member which template applies.` };
+      }
+      if (!wanted) {
+        return { ok: true, available: rows.map((t: any) => ({ name: t.name, template_type: t.template_type })) };
+      }
+      const t = rows[0];
+      return {
+        ok: true,
+        name: t.name,
+        template_type: t.template_type,
+        variables: t.variables,
+        content: t.content,
+        instruction: 'This is the real document. Fill ONLY the {{PLACEHOLDER}} markers. Do not reword clauses, do not add headings, do not reformat, do not summarise. If a placeholder value is unknown, ask for it rather than guessing.',
+      };
+    }
+
     if (name === 'adjust_client_credit') {
       const investorId = String(args.investor_id || '').trim();
       const amount = Number(args.amount);
@@ -2317,6 +2353,23 @@ const TOOLS = [
       name: 'mexico_facts',
       description: "How our Mexico operations differ from a US deal: the developer partner carrying local taxes and licensing, what the all-inclusive rent covers, when the included flight happens, and multi-unit discounts. Call before answering any Mexico question rather than answering from memory.",
       parameters: { type: 'object', properties: {}, required: [] },
+    },
+  },
+  {
+    type: 'function',
+    function: {
+      name: 'get_template',
+      description: "Load one of AYP's REAL signed document templates: the Acquisition Agreement, Setup Service Agreement, Teardown and Move Agreement, Sublease Agreement, Corporate Lease Assignment, Access Transfer Document or Inventory Transfer List. You MUST call this before drafting ANY agreement. Never compose a contract from memory. The template comes back with {{PLACEHOLDER}} markers showing exactly what changes per deal; fill only those and change nothing else.",
+      parameters: {
+        type: 'object',
+        properties: {
+          template_type: {
+            type: 'string',
+            description: "One of: acquisition_agreement, setup_service_agreement, teardown_move_agreement, sublease_agreement, lease_assignment, access_transfer, inventory_list. Omit to list what is available.",
+          },
+        },
+        required: [],
+      },
     },
   },
   {
@@ -3329,6 +3382,30 @@ current listings are, and never count the listings to answer a question about ou
 If somebody asks about a market with nothing listed, the answer is not no. It is: we can go
 and find it, and an acquisition manager will start that at no charge.
 
+
+## NEVER DRAFT AN AGREEMENT FROM MEMORY
+This rule exists because it was broken. A teardown agreement was composed from scratch,
+went to the owner and to Rel, and looked nothing like anything this company issues. It had
+markdown headings and bullet summaries instead of our clause structure. It was embarrassing.
+
+Our real documents run as prose paragraphs under CAPITALISED clause names, in a fixed order,
+with the same standard body every time regardless of the job: DESCRIPTION OF SERVICES,
+PAYMENT, CONFIDENTIALITY, INDEMNIFICATION, DEFAULT, REMEDIES, FORCE MAJEURE, ARBITRATION,
+ENTIRE AGREEMENT, SEVERABILITY, AMENDMENT, GOVERNING LAW, NOTICE, WAIVER OF CONTRACTUAL
+RIGHT, SIGNATORIES.
+
+SO: before drafting ANY agreement, contract, sublease or acquisition document, call
+get_template and use what it returns. Fill only the {{PLACEHOLDER}} markers. Do not reword a
+clause, do not add a heading, do not reformat, do not summarise, do not "improve" it.
+
+If get_template is unavailable, or there is no template for what is being asked, SAY SO and
+draft nothing. A missing template is a reason to stop, not a reason to invent.
+
+NAMING, GET THIS RIGHT: Set Up Your Place LLC is the official company and the contracting
+party. Access Your Place is the DBA and the platform. Cooper Family Inc is the holding
+company and is named ONCE, on the payment line, because the bank account is in that name.
+Ariel Cooper signs setup and teardown agreements for the company.
+
 ## MEXICO
 We acquire and launch in Mexico. Before answering ANY Mexico question, call the mexico_facts
 tool. It holds the developer partner arrangement, what rent includes, when the flight
@@ -4088,7 +4165,7 @@ const TOOL_GROUPS: Record<string, { words: RegExp; tools: string[] }> = {
   staff: {
     words: /staff|team|success team|hire|onboard|commission|escalat|dispute|legal|complaint|alert|notify|notification|portal|assign|hand ?off|let .* know|tell (her|him|them)|setup manager|acquisition manager|tonya|tania|shanyia|nyia|brandon|tyler/i,
     tools: ['list_staff','invite_staff','list_escalations','resolve_escalation','raise_alert',
-            'alert_staff','adjust_client_credit','mexico_facts'],
+            'alert_staff','adjust_client_credit','mexico_facts','get_template'],
   },
   payments: {
     words: /payment|pay|invoice|wire|zelle|cash ?app|bitcoin|deposit|balance|commission|payout|credit|refund|carry over|apply .* to/i,
@@ -4099,7 +4176,7 @@ const TOOL_GROUPS: Record<string, { words: RegExp; tools: string[] }> = {
   agreements: {
     words: /agreement|contract|sign|signature|document|paperwork|onboard|sublease|lease/i,
     tools: ['my_agreements','send_agreement','sign_agreement','list_staff','invite_staff','my_sop','team_readiness',
-            'send_document_for_signature'],
+            'send_document_for_signature','get_template'],
   },
   procedure: {
     words: /sop|procedure|responsib|what should i|my role|my job|how do i/i,
