@@ -51,7 +51,7 @@ Deno.serve(async (req) => {
         method: 'POST',
         headers: { 'Authorization': `Bearer ${RESEND_API_KEY}`, 'Content-Type': 'application/json' },
         body: JSON.stringify({
-          from: 'Penny <penny@accessyourplace.com>', reply_to: ['success@accessyourplace.com'],
+          from: 'Penny at Access Your Place <success@accessyourplace.com>', reply_to: ['success@accessyourplace.com'],
           to: [to],
           subject,
           html
@@ -164,7 +164,7 @@ Deno.serve(async (req) => {
         // Capture the result. It used to be fired and forgotten, so the caller got no
         // confirmation and could not tell a delivered notice from a silent failure. A
         // document sitting in a portal nobody was told about is not delivered.
-        emailResult = await sendEmail(invInfo.email, `Action Required: ${document_name} - Ready for Signature`,
+        emailResult = await sendEmail(invInfo.email, `Your ${document_name} is ready to sign`,
           `<div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto;">
             <div style="background: linear-gradient(135deg, #1a365d, #2d4a7c); padding: 30px; text-align: center; border-radius: 12px 12px 0 0;">
               <h1 style="color: white; margin: 0; font-size: 22px;">Document Ready for Signature</h1>
@@ -179,7 +179,7 @@ Deno.serve(async (req) => {
               </div>
               <p>Please log in to your Investor Portal to review the full agreement and provide your electronic signature.</p>
               <div style="text-align: center; margin: 30px 0;">
-                <a href="https://accessyourplace.com/investor" style="background: #d4a574; color: white; padding: 14px 35px; text-decoration: none; border-radius: 6px; font-weight: bold; font-size: 16px;">Review & Sign Document</a>
+                <a href="https://accessyourplace.com/investor/portal?tab=documents" style="background: #d4a574; color: white; padding: 14px 35px; text-decoration: none; border-radius: 6px; font-weight: bold; font-size: 16px;">Review & Sign Document</a>
               </div>
               <p style="color: #666; font-size: 13px;">Sent by: ${sent_by || 'AYP Success Team'}</p>
             </div>
@@ -314,7 +314,7 @@ Deno.serve(async (req) => {
               </div>
               <p style="color: #666; font-size: 13px;">A copy is available in your Investor Portal under "Electronic Signatures".</p>
               <div style="text-align: center; margin: 30px 0;">
-                <a href="https://accessyourplace.com/investor" style="background: #d4a574; color: white; padding: 12px 30px; text-decoration: none; border-radius: 6px; font-weight: bold;">View in Portal</a>
+                <a href="https://accessyourplace.com/investor/portal?tab=documents" style="background: #d4a574; color: white; padding: 12px 30px; text-decoration: none; border-radius: 6px; font-weight: bold;">View in Portal</a>
               </div>
               <p style="color: #999; font-size: 11px; border-top: 1px solid #eee; padding-top: 12px;">
                 Electronic signature confirmed under the ESIGN Act and UETA. Document ID: ${document_id}
@@ -468,7 +468,7 @@ Deno.serve(async (req) => {
               <p>This is a friendly reminder that <strong>"${doc.document_name}"</strong> is still awaiting your electronic signature.</p>
               ${doc.expires_at ? `<p style="color: #dc2626;">This document expires on ${new Date(doc.expires_at).toLocaleDateString()}.</p>` : ''}
               <div style="text-align: center; margin: 25px 0;">
-                <a href="https://accessyourplace.com/investor" style="background: #d4a574; color: white; padding: 12px 30px; text-decoration: none; border-radius: 6px; font-weight: bold;">Sign Now</a>
+                <a href="https://accessyourplace.com/investor/portal?tab=documents" style="background: #d4a574; color: white; padding: 12px 30px; text-decoration: none; border-radius: 6px; font-weight: bold;">Sign Now</a>
               </div>
             </div>
           </div>`
@@ -583,7 +583,7 @@ Deno.serve(async (req) => {
                   <p style="color: #dc2626; font-weight: bold;">Your document "${doc.document_name}" expires in ${daysLeft} day${daysLeft !== 1 ? 's' : ''}!</p>
                   <p>Please sign it before <strong>${expiresDate.toLocaleDateString()}</strong>.</p>
                   <div style="text-align: center; margin: 25px 0;">
-                    <a href="https://accessyourplace.com/investor" style="background: #dc2626; color: white; padding: 14px 35px; text-decoration: none; border-radius: 6px; font-weight: bold;">Sign Now</a>
+                    <a href="https://accessyourplace.com/investor/portal?tab=documents" style="background: #dc2626; color: white; padding: 14px 35px; text-decoration: none; border-radius: 6px; font-weight: bold;">Sign Now</a>
                   </div>
                 </div>
               </div>`
