@@ -311,7 +311,16 @@ export default function StaffDashboard() {
   const [editDialogOpen, setEditDialogOpen] = useState(false);
   const [previewArticle, setPreviewArticle] = useState<DraftArticle | null>(null);
   const [previewDialogOpen, setPreviewDialogOpen] = useState(false);
-  const [messagesOpen, setMessagesOpen] = useState(false);
+  // Client messaging lives in a DIALOG, not a tab, opened by an icon-only button. So
+  // ?tab=communications could never reach it: that tab is Email Templates and Bulk
+  // Campaigns, not conversations. A setup manager reported she had "no way to message a
+  // client" and she was looking in exactly the place we told her to look.
+  const [messagesOpen, setMessagesOpen] = useState(() => {
+    try {
+      const t = new URLSearchParams(window.location.search).get('tab');
+      return t === 'messages' || t === 'communications';
+    } catch { return false; }
+  });
   const { toast } = useToast();
   const navigate = useNavigate();
 
@@ -1028,6 +1037,7 @@ export default function StaffDashboard() {
               }
             >
               <MessageSquare className="w-4 h-4" aria-hidden="true" />
+              <span className="ml-2 hidden sm:inline">Messages</span>
               {unreadMessages !== null && unreadMessages > 0 && (
                 <span 
                   className="absolute -top-1 -right-1 w-5 h-5 bg-red-500 text-white text-xs rounded-full flex items-center justify-center"
