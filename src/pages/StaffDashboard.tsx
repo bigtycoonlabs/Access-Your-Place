@@ -469,15 +469,23 @@ export default function StaffDashboard() {
       parsedRole === 'success_manager' ||
       parsedRole === 'admin';
     
+    // If the URL asked for a specific tab, HONOUR IT. This effect used to force
+    // 'penny-home' on every load, which silently wiped ?tab=communications. Staff were sent
+    // direct links to their messaging and documents, clicked them, and landed on the Penny
+    // console instead. A setup manager reported she had "no way to message a client" and
+    // she was right: the link we gave her could not work.
+    let urlTab = '';
+    try { urlTab = new URLSearchParams(window.location.search).get('tab') || ''; } catch { /* no window */ }
+
     if (parsedIsSuccessManager) {
       setActiveDashboard('success');
-      setActiveTab('penny-home');
+      if (!urlTab) setActiveTab('penny-home');
     } else if (parsed.department === 'acquisition_managers' || parsedRoles.includes('acquisition_managers')) {
       setActiveDashboard('acquisitions');
-      setActiveTab('penny-home');
+      if (!urlTab) setActiveTab('penny-home');
     } else if (parsed.department === 'setup_managers' || parsedRoles.includes('setup_managers')) {
       setActiveDashboard('setups');
-      setActiveTab('penny-home');
+      if (!urlTab) setActiveTab('penny-home');
     }
 
   }, [navigate]);
