@@ -394,16 +394,42 @@ async function sendMessage(url: string, key: string, a: any, staffId: string) {
   };
   const audience = AUDIENCE[String(a.audience || '').toLowerCase().trim()] || String(a.audience);
 
+  // to_id had NO description, so the model passed whatever it had, usually a name. The RPC
+  // needs a uuid and returned a bare failure. Resolving names and emails here, and refusing
+  // rather than guessing when a name is ambiguous.
+  let toId = String(a.to_id || '').trim();
+  const isUuid = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(toId);
+  if (!isUuid && audience === 'client') {
+    const q = encodeURIComponent(toId);
+    const r = await fetch(
+      `${url}/rest/v1/investors?select=id,full_name,email&or=(email.ilike.${q},full_name.ilike.*${q}*)&limit=5`,
+      { headers: { apikey: key, Authorization: `Bearer ${key}` } },
+    );
+    const rows = r.ok ? await r.json() : [];
+    if (!Array.isArray(rows) || rows.length === 0) {
+      return { error: 'recipient_not_found',
+        message: `No client matches "${toId}". Do NOT guess. Ask the staff member who they mean, or look the client up first.`,
+        draft: { audience, subject: a.subject ?? null, body: a.body } };
+    }
+    if (rows.length > 1) {
+      return { error: 'recipient_ambiguous',
+        message: `"${toId}" matches more than one client. Ask which one before sending.`,
+        matches: rows.map((x: any) => ({ id: x.id, name: x.full_name, email: x.email })),
+        draft: { audience, subject: a.subject ?? null, body: a.body } };
+    }
+    toId = rows[0].id;
+  }
+
   const { ok, status, data } = await rpc(url, key, 'penny_send_message', {
     p_from_staff_id: staffId || null, p_audience: audience,
-    p_to_id: String(a.to_id), p_subject: a.subject ?? null,
+    p_to_id: toId, p_subject: a.subject ?? null,
     p_body: String(a.body), p_parent: a.parent ?? null,
   });
   if (!ok) {
     return {
       error: 'send_failed', http: status,
       message: 'The message was NOT sent. Tell the staff member plainly that it did not send, GIVE THEM BACK THE FULL DRAFT so nothing is lost, and say you will retry.',
-      draft: { audience, to_id: a.to_id, subject: a.subject ?? null, body: a.body },
+      draft: { audience, to_id: toId, subject: a.subject ?? null, body: a.body },
     };
   }
   const r = data as Record<string, any>;
@@ -411,7 +437,7 @@ async function sendMessage(url: string, key: string, a: any, staffId: string) {
     return {
       ...r,
       message: 'The message was NOT sent. Say so plainly, give the staff member back the full draft below so nothing is lost, and state the reason.',
-      draft: { audience, to_id: a.to_id, subject: a.subject ?? null, body: a.body },
+      draft: { audience, to_id: toId, subject: a.subject ?? null, body: a.body },
     };
   }
 
@@ -2582,7 +2608,7 @@ const TOOLS = [
         type: 'object',
         properties: {
           audience: { type: 'string', enum: ['client', 'landlord', 'team'] },
-          to_id: { type: 'string' },
+          to_id: { type: 'string', description: 'The recipient. Their ID if you have it, otherwise their full name or email address and it will be looked up. A name that matches nobody, or more than one person, is refused rather than guessed.' },
           subject: { type: 'string' },
           body: { type: 'string' },
           parent: { type: 'string', description: 'The message being replied to, if this is a reply.' },
