@@ -379,14 +379,41 @@ async function inbox(url: string, key: string, staffId: string) {
 // Send, THEN email, THEN record whether the email actually went. A message marked notified
 // when the send failed is the defect this platform keeps producing, so the result is read.
 async function sendMessage(url: string, key: string, a: any, staffId: string) {
+  // A setup manager asked Penny to message a client, Penny drafted it, and the send failed
+  // with nothing but "failed to send". The cause was ONE WORD: the tool sent audience
+  // "investor" while penny_send_message only accepts client, landlord or team. The schema
+  // says so; the model ignored it. The staff member thought she had lost her draft.
+  //
+  // Normalising instead of relying on the model getting it right, because a real message to
+  // a real client should not be lost to a synonym.
+  const AUDIENCE: Record<string, string> = {
+    investor: 'client', investors: 'client', client: 'client', clients: 'client',
+    operator: 'client', customer: 'client',
+    landlord: 'landlord', landlords: 'landlord',
+    team: 'team', staff: 'team', colleague: 'team',
+  };
+  const audience = AUDIENCE[String(a.audience || '').toLowerCase().trim()] || String(a.audience);
+
   const { ok, status, data } = await rpc(url, key, 'penny_send_message', {
-    p_from_staff_id: staffId || null, p_audience: String(a.audience),
+    p_from_staff_id: staffId || null, p_audience: audience,
     p_to_id: String(a.to_id), p_subject: a.subject ?? null,
     p_body: String(a.body), p_parent: a.parent ?? null,
   });
-  if (!ok) return { error: 'send_failed', http: status };
+  if (!ok) {
+    return {
+      error: 'send_failed', http: status,
+      message: 'The message was NOT sent. Tell the staff member plainly that it did not send, GIVE THEM BACK THE FULL DRAFT so nothing is lost, and say you will retry.',
+      draft: { audience, to_id: a.to_id, subject: a.subject ?? null, body: a.body },
+    };
+  }
   const r = data as Record<string, any>;
-  if (r?.ok !== true) return r;
+  if (r?.ok !== true) {
+    return {
+      ...r,
+      message: 'The message was NOT sent. Say so plainly, give the staff member back the full draft below so nothing is lost, and state the reason.',
+      draft: { audience, to_id: a.to_id, subject: a.subject ?? null, body: a.body },
+    };
+  }
 
   const resendKey = Deno.env.get('RESEND_API_KEY');
   if (!resendKey || !r.to_email) {
