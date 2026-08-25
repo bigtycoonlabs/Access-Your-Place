@@ -602,11 +602,15 @@ export default function StaffLogin() {
           <div className="w-16 h-16 bg-gradient-to-br from-amber-400 to-amber-600 rounded-xl mx-auto mb-4 flex items-center justify-center" aria-hidden="true">
             <span className="text-white font-bold text-xl">AYP</span>
           </div>
-          <CardTitle className="text-2xl">
+          {/* CardTitle renders a div, so this page had NO h1 at all. A screen reader user
+              landing here gets no heading to orient from. Every other page has one. */}
+          <CardTitle asChild className="text-2xl">
+            <h1>
             {view === 'login' && 'Success Team Login'}
             {view === 'forgot' && 'Reset Password'}
             {view === 'reset_sent' && 'Check Your Email'}
             {view === 'invitation' && 'Complete Your Account'}
+            </h1>
           </CardTitle>
           <CardDescription>
             {view === 'login' && 'Access the staff dashboard'}
