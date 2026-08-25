@@ -2319,11 +2319,17 @@ export default function StaffDashboard() {
                 Internal messaging with SMS notifications
               </DialogDescription>
             </DialogHeader>
+            {/* StaffMessaging is lazy(), and this dialog had NO Suspense boundary. Opening it
+                threw React error #426 and the dialog never appeared, so a setup manager
+                could not reach client messages at all. She reported it repeatedly and was
+                right every time. */}
             {staffSession?.id && (
-              <StaffMessaging 
-                staffId={staffSession.id} 
-                staffName={staffDisplayName} 
-              />
+              <Suspense fallback={<div className="py-10 text-center text-sm text-gray-600">Loading your messages…</div>}>
+                <StaffMessaging
+                  staffId={staffSession.id}
+                  staffName={staffDisplayName}
+                />
+              </Suspense>
             )}
           </DialogContent>
         </Dialog>
