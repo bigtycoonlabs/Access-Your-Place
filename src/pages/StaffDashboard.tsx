@@ -1456,15 +1456,9 @@ export default function StaffDashboard() {
                         <TabsTrigger value="penny-home" className="data-[state=active]:bg-amber-100 whitespace-nowrap">
                           <span>Penny</span>
                         </TabsTrigger>
-                        <TabsTrigger value="list-a-deal" className="data-[state=active]:bg-amber-100 whitespace-nowrap">
-                          <span>List a Deal</span>
-                        </TabsTrigger>
-                        <TabsTrigger value="request-center" className="data-[state=active]:bg-amber-100 whitespace-nowrap">
-                          <span>Requests</span>
-                        </TabsTrigger>
-                        <TabsTrigger value="weekly-digest" className="data-[state=active]:bg-amber-100 whitespace-nowrap">
-                          <span>Weekly Digest</span>
-                        </TabsTrigger>
+                        {/* List a Deal, Requests and Weekly Digest were copied here from the
+                            Success Team nav. None are a Setup Manager's job and she reported
+                            the view as confusing. Removed from this block only. */}
 
                           {/* ---- Launches ---- */}
                           <span role="presentation" className="flex items-center gap-2 pl-2 pr-1 first:pl-0">
