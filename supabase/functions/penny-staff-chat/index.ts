@@ -1737,6 +1737,26 @@ async function execTool(name: string, args: any, ctx: Ctx): Promise<unknown> {
       }
       return await bookAppointment(url, key, args, staffId);
     }
+    // Penny had setup_board but no way to LIST projects, so she could not find the id it
+    // needs. Asked "what is my setup project list?" she said she had no access, while the
+    // project sat in the table with her name on it.
+    if (name === 'my_setup_projects') {
+      const r = await fetch(
+        `${url}/rest/v1/setup_projects?assigned_manager_id=eq.${staffId}` +
+        `&select=id,investor_name,property_address,city_state,status,phase,logistics_fee_amount,logistics_fee_paid` +
+        `&order=created_at.desc&limit=25`,
+        { headers: { apikey: key, Authorization: `Bearer ${key}` } },
+      );
+      if (!r.ok) {
+        return { ok: false, error: 'unavailable', message: 'Could not read the setup projects. Say so plainly rather than saying you have no access to them.' };
+      }
+      const rows = await r.json();
+      if (!Array.isArray(rows) || rows.length === 0) {
+        return { ok: true, count: 0, message: 'No setup projects are assigned to this staff member yet. That is different from having no access.' };
+      }
+      return { ok: true, count: rows.length, projects: rows };
+    }
+
     if (name === 'setup_board') {
       if (!args?.project_id) return { error: 'project_id required' };
       return await setupBoard(url, key, String(args.project_id));
@@ -2533,6 +2553,14 @@ const TOOLS = [
         },
         required: ['property_id'],
       },
+    },
+  },
+  {
+    type: 'function',
+    function: {
+      name: 'my_setup_projects',
+      description: "List the setup projects assigned to this staff member: client, address, phase, status and fee. Call this FIRST when they ask about their projects, their setups, what they are working on, or before setup_board, which needs a project id you can only get from here.",
+      parameters: { type: 'object', properties: {}, required: [] },
     },
   },
   {
