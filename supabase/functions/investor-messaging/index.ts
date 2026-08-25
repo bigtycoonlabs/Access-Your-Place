@@ -954,10 +954,48 @@ Deno.serve(async (req) => {
 
     // Get ALL investor messages (for success team - not just assigned)
     if (action === 'get_all_investor_messages') {
-      const { limit = 100 } = body;
+      const { limit = 100, staff_id } = body;
+
+      // THIS RETURNED EVERY MESSAGE ON THE PLATFORM TO ANYONE WHO ASKED.
+      // A Setup Manager assigned to one project could read conversations with seven
+      // unrelated clients, including acquisition threads that were none of her business.
+      // Scoping to the clients a staff member actually works with.
+      let scopedIds: string[] | null = null;
+      if (staff_id) {
+        const roleRes = await fetch(
+          `${SUPABASE_URL}/rest/v1/staff_users?id=eq.${encodeURIComponent(staff_id)}&select=role,department,roles`,
+          { headers }
+        );
+        const who = roleRes.ok ? (await roleRes.json())[0] : null;
+        const bag = [who?.role, who?.department, ...(Array.isArray(who?.roles) ? who.roles : [])]
+          .filter(Boolean).map((r: string) => String(r).toLowerCase()).join(' ');
+        const isPrivileged = /owner|admin|success/.test(bag);
+
+        if (!isPrivileged) {
+          // Clients this person is actually attached to: assigned on the client record,
+          // or the manager on one of their setup projects.
+          const [invRes, projRes] = await Promise.all([
+            fetch(`${SUPABASE_URL}/rest/v1/investors?or=(assigned_manager_id.eq.${staff_id},acquisition_manager_id.eq.${staff_id},setup_manager_id.eq.${staff_id})&select=id`, { headers }),
+            fetch(`${SUPABASE_URL}/rest/v1/setup_projects?assigned_manager_id=eq.${staff_id}&select=investor_id`, { headers }),
+          ]);
+          const invs = invRes.ok ? await invRes.json() : [];
+          const projs = projRes.ok ? await projRes.json() : [];
+          scopedIds = Array.from(new Set([
+            ...(Array.isArray(invs) ? invs.map((r: any) => r.id) : []),
+            ...(Array.isArray(projs) ? projs.map((r: any) => r.investor_id) : []),
+          ].filter(Boolean)));
+        }
+      }
+
+      // No staff_id, or a staff member with no assigned clients, sees nothing rather than
+      // everything. Failing closed is the only safe default on other people's messages.
+      if (scopedIds !== null && scopedIds.length === 0) {
+        return json({ messages: [], conversations: [], scoped: true });
+      }
+      const scopeFilter = scopedIds ? `&investor_id=in.(${scopedIds.join(',')})` : '';
 
       const msgRes = await fetch(
-        `${SUPABASE_URL}/rest/v1/investor_messages?select=*&order=created_at.desc&limit=${limit}`,
+        `${SUPABASE_URL}/rest/v1/investor_messages?select=*${scopeFilter}&order=created_at.desc&limit=${limit}`,
         { headers }
       );
       const messages = await msgRes.json();
