@@ -4,7 +4,7 @@ import { Badge } from '@/components/ui/badge';
 import { 
   ChevronDown, BarChart3, Target, Building, UserCog, Users, PenTool, 
   Mail, FileText, UsersRound, Wrench, Scale, HeadphonesIcon, BookOpen, 
-  Settings, UserCheck, ClipboardCheck, X, Landmark, Briefcase, Inbox, Sparkles
+  Settings, UserCheck, ClipboardCheck, X, Landmark, Briefcase, Inbox, Sparkles, MessageSquare
 } from 'lucide-react';
 
 
@@ -277,6 +277,10 @@ export function getSetupTabs(): NavItem[] {
     { value: 'penny-home', label: 'Penny', icon: Sparkles, group: 'core' },
     { value: 'setups', label: 'Setup Dashboard', icon: Wrench, group: 'core' },
     { value: 'my-setups', label: 'My Projects', icon: ClipboardCheck, group: 'core' },
+    // A Setup Manager messages clients every day and reviews agreements before they go out.
+    // Neither was in this list, which is why she reported having no messaging area.
+    { value: 'communications', label: 'Messages', icon: MessageSquare, group: 'core' },
+    { value: 'documents', label: 'Documents', icon: FileText, group: 'core' },
     { value: 'hr-commissions', label: 'HR & Pay', icon: Briefcase, group: 'operations' },
     { value: 'sops', label: 'SOPs', icon: BookOpen, group: 'system' },
     { value: 'settings', label: 'Settings', icon: Settings, group: 'system' },

@@ -275,7 +275,27 @@ export default function StaffDashboard() {
     } catch { /* no window during SSR, fall through */ }
     return 'penny-home';
   });
-  const [activeDashboard, setActiveDashboard] = useState<DashboardType>('success');
+  // Which dashboard a person lands on decides which tab set they get. This ALWAYS started
+  // as 'success', so a Setup Manager was handed the Success Team's nineteen tabs, including
+  // Acquisitions, Landlord Ops, HR, Disputes and List a Deal. None of it is her job, and she
+  // reported the view as confusing and full of things that did not work. She was right.
+  // getSetupTabs() already existed and returned the correct six. Nothing ever called it for
+  // her because of this one default.
+  const [activeDashboard, setActiveDashboard] = useState<DashboardType>(() => {
+    try {
+      const raw = localStorage.getItem('staffSession');
+      if (raw) {
+        const sess = JSON.parse(raw);
+        const roles = [sess?.role, sess?.department, ...(Array.isArray(sess?.roles) ? sess.roles : [])]
+          .filter(Boolean).map((r: string) => String(r).toLowerCase());
+        const has = (needle: string) => roles.some((r: string) => r.includes(needle));
+        if (has('owner') || has('admin') || has('success')) return 'success';
+        if (has('setup')) return 'setup';
+        if (has('acquisition')) return 'acquisitions';
+      }
+    } catch { /* unreadable session, fall through to success */ }
+    return 'success';
+  });
   const [announcement, setAnnouncement] = useState('');
   const [unassignedInvestorCount, setUnassignedInvestorCount] = useState(0);
   const [myInvestorCount, setMyInvestorCount] = useState(0);

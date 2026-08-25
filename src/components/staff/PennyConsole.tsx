@@ -5,7 +5,11 @@ import { PennyMark } from '@/components/investor/PennyMark';
 
 interface StaffLite {
   id?: string;
+  // The session stores full_name. This type only knew about `name`, so every staff member
+  // fell through to the email fallback and Penny greeted them with their address:
+  // "Getting your briefing, mlionesss72@gmail.com". Reads as broken, and it is.
   name?: string;
+  full_name?: string;
   first_name?: string;
   email?: string;
 }
@@ -68,8 +72,11 @@ function CountChip({
  */
 export function PennyConsole({ staffSession, onOpenDashboard }: { staffSession: StaffLite | null; onOpenDashboard?: () => void }) {
   const staffId = staffSession?.id || '';
-  const staffName = staffSession?.name || staffSession?.first_name || staffSession?.email || 'Staff';
-  const first = staffName.split(/\s+/)[0] || 'there';
+  const staffName = staffSession?.full_name
+    || staffSession?.name
+    || staffSession?.first_name
+    || 'there';
+  const first = String(staffName).split(/\s+/)[0] || 'there';
 
   const [brief, setBrief] = useState<Brief | null>(null);
   const [loading, setLoading] = useState(true);

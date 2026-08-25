@@ -5,6 +5,7 @@ import { supabase } from '@/lib/supabase';
 interface StaffLite {
   id?: string;
   name?: string;
+  full_name?: string;
   first_name?: string;
   email?: string;
 }
@@ -23,7 +24,9 @@ const GREETING =
  */
 export function PennyDealIntake({ staffSession, hideHeader = false, greeting }: { staffSession: StaffLite | null; hideHeader?: boolean; greeting?: string }) {
   const staffId = staffSession?.id || '';
-  const staffName = staffSession?.name || staffSession?.first_name || staffSession?.email || 'Staff';
+  // The session stores full_name; reading only `name` fell through to the email address,
+  // so Penny addressed staff by their email. Same fault was in PennyConsole.
+  const staffName = staffSession?.full_name || staffSession?.name || staffSession?.first_name || 'Staff';
 
   const [messages, setMessages] = useState<Msg[]>([{ who: 'penny', text: greeting || GREETING }]);
   const [history, setHistory] = useState<Turn[]>([]);

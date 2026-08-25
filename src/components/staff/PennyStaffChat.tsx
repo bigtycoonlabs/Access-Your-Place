@@ -6,6 +6,7 @@ import { playPennyChime } from '@/lib/pennyChime';
 interface StaffLite {
   id?: string;
   name?: string;
+  full_name?: string;
   first_name?: string;
   email?: string;
 }
@@ -57,7 +58,9 @@ export function PennyStaffChat({
   onAsked?: () => void;
 }) {
   const staffId = staffSession?.id || '';
-  const staffName = staffSession?.name || staffSession?.first_name || staffSession?.email || 'Staff';
+  // The session stores full_name; reading only `name` fell through to the email address,
+  // so Penny addressed staff by their email. Same fault was in PennyConsole.
+  const staffName = staffSession?.full_name || staffSession?.name || staffSession?.first_name || 'Staff';
 
   // Penny has now reported "your session isn't identifying you" four times running, and
   // three server-side theories for why have each been wrong. The one thing never
