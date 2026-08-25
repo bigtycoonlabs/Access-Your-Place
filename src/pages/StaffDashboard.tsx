@@ -290,7 +290,7 @@ export default function StaffDashboard() {
           .filter(Boolean).map((r: string) => String(r).toLowerCase());
         const has = (needle: string) => roles.some((r: string) => r.includes(needle));
         if (has('owner') || has('admin') || has('success')) return 'success';
-        if (has('setup')) return 'setup';
+        if (has('setup')) return 'setups';
         if (has('acquisition')) return 'acquisitions';
       }
     } catch { /* unreadable session, fall through to success */ }
