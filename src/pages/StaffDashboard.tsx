@@ -1021,6 +1021,7 @@ export default function StaffDashboard() {
               <Button
                 variant="outline"
                 size="sm"
+                className="min-h-[44px]"
                 onClick={handleSwitchToInvestor}
                 className="bg-gradient-to-r from-[#d4a574]/10 to-[#d4a574]/5 border-[#d4a574]/30 hover:bg-[#d4a574]/20"
                 aria-label="Switch to your investor account"
@@ -1034,6 +1035,7 @@ export default function StaffDashboard() {
             <Button
               variant="outline"
               size="sm"
+                className="min-h-[44px]"
               onClick={() => setMessagesOpen(true)}
               className="relative"
               aria-label={
@@ -1058,6 +1060,7 @@ export default function StaffDashboard() {
             <Button
               variant="outline"
               size="sm"
+                className="min-h-[44px]"
               onClick={() => {
                 window.location.href = 'mailto:success@accessyourplace.com?subject=Discovery%20Call%20Request&body=Hi%20Success%20Team%2C%0A%0AI%20would%20like%20to%20schedule%20a%20discovery%20call.%0A%0AClient%20name%3A%0AMarket%20of%20interest%3A%0ABest%20time%3A%0A';
               }}
@@ -1080,7 +1083,7 @@ export default function StaffDashboard() {
 
             <DropdownMenu>
               <DropdownMenuTrigger asChild>
-                <Button variant="outline" size="sm" aria-label="User menu">
+                <Button variant="outline" size="sm" className="min-h-[44px]" aria-label="User menu">
                   <UserCircle className="w-4 h-4 mr-2" aria-hidden="true" />
                   <span className="hidden sm:inline">{staffDisplayName || 'Staff'}</span>
                 </Button>
@@ -1136,6 +1139,7 @@ export default function StaffDashboard() {
                 <Button
                   variant="ghost"
                   size="sm"
+                className="min-h-[44px]"
                   onClick={() => setActiveTab(defaultTab)}
                   className="text-white hover:bg-white/20 gap-2"
                   aria-label="Close this tab and return to main dashboard"
@@ -1149,15 +1153,18 @@ export default function StaffDashboard() {
                   {staffTabLabels[activeTab] || activeTab}
                 </h2>
               </div>
+              {/* Had TWO aria-label attributes. React keeps the last, so this announced as
+                  "Close tab" while it actually returns to the dashboard. Also below the
+                  44px minimum. Both founders use VoiceOver; a wrongly named control is
+                  worse than an unnamed one because it describes the wrong action. */}
               <Button
                 variant="ghost"
                 size="icon"
                 aria-label="Back to dashboard"
                 onClick={() => setActiveTab(defaultTab)}
-                className="text-white hover:bg-white/20"
-                aria-label="Close tab"
+                className="text-white hover:bg-white/20 min-h-[44px] min-w-[44px]"
               >
-                <X className="w-5 h-5" />
+                <X className="w-5 h-5" aria-hidden="true" />
               </Button>
             </div>
           </div>
