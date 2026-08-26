@@ -88,11 +88,20 @@ export default function ProPortal() {
     setLoading(false);
   };
 
-  const handleDeliveryUpdate = async (index: number, field: 'delivered' | 'placed', value: boolean) => {
+  // Items were addressed by ARRAY POSITION. Marking index 0 delivered marked every item on
+  // the project delivered, and the write went into a JSONB blob that staff tools overwrite,
+  // so a Pro's real confirmation was silently discarded. Both faults were reproduced live.
+  // Now addressed by item id against the actual item record.
+  const handleDeliveryUpdate = async (index: number, field: 'delivered' | 'placed', value: boolean, itemId?: string) => {
     setUpdatingItem(index);
     try {
+      if (!itemId) {
+        toast({ title: 'Cannot update this item', description: 'This item has no id yet. Ask your setup manager to re-add it.', variant: 'destructive' });
+        setUpdatingItem(null);
+        return;
+      }
       const { data, error: fnError } = await supabase.functions.invoke('manage-setup-tasks', {
-        body: { action: 'pro_update_delivery', token, item_index: index, [field]: value }
+        body: { action: 'pro_mark_item', token, item_id: itemId, [field]: value }
       });
       if (fnError || data?.error) throw new Error(data?.error || 'Update failed');
       setProject((prev: any) => ({ ...prev, sourcing_spreadsheet: data.spreadsheet }));
@@ -362,7 +371,7 @@ export default function ProPortal() {
                           </div>
                           <div className="flex flex-col gap-2 flex-shrink-0">
                             <button
-                              onClick={() => handleDeliveryUpdate(idx, 'delivered', !item.delivered)}
+                              onClick={() => handleDeliveryUpdate(idx, 'delivered', !item.delivered, item.item_id)}
                               disabled={updatingItem === idx}
                               className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-medium transition-colors ${item.delivered ? 'bg-blue-500 text-white' : 'bg-gray-100 text-gray-600 hover:bg-blue-100'}`}
                             >
@@ -370,7 +379,7 @@ export default function ProPortal() {
                               Delivered
                             </button>
                             <button
-                              onClick={() => handleDeliveryUpdate(idx, 'placed', !item.placed)}
+                              onClick={() => handleDeliveryUpdate(idx, 'placed', !item.placed, item.item_id)}
                               disabled={updatingItem === idx}
                               className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-medium transition-colors ${item.placed ? 'bg-emerald-500 text-white' : 'bg-gray-100 text-gray-600 hover:bg-emerald-100'}`}
                             >

@@ -229,6 +229,21 @@ Deno.serve(async (req) => {
       return ok({ success: true, project });
     }
 
+    // Addresses the real item record instead of an array position. The old index-based
+    // path is kept below only so an unrefreshed browser tab does not hard-fail.
+    if (action === 'pro_mark_item') {
+      if (!params.token || !params.item_id) throw new Error('Token and item_id required');
+      const { data, error } = await supabase.rpc('ayp_pro_mark_item', {
+        p_token: params.token,
+        p_item_id: params.item_id,
+        p_delivered: params.delivered ?? null,
+        p_placed: params.placed ?? null,
+      });
+      if (error) return ok({ success: false, error: error.message });
+      const { data: proj } = await supabase.from('setup_projects').select('sourcing_spreadsheet').eq('pro_portal_token', params.token).single();
+      return ok({ success: (data as any)?.ok !== false, result: data, spreadsheet: proj?.sourcing_spreadsheet ?? [] });
+    }
+
     if (action === 'pro_update_delivery') {
       if (!params.token) throw new Error('Token required');
       const { data: project } = await supabase.from('setup_projects').select('*').eq('pro_portal_token', params.token).single();
