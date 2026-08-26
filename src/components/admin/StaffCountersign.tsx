@@ -102,7 +102,7 @@ export function StaffCountersign({ staffId, staffName }: { staffId: string; staf
                     id={`sig-${d.id}`}
                     placeholder="Type your full name"
                     autoCapitalize="words"
-                    value={typed[d.id] ?? staffName ?? ''}
+                    value={typed[d.id] ?? (staffName && staffName !== 'Staff' ? staffName : '')}
                     onChange={e => setTyped(t => ({ ...t, [d.id]: e.target.value }))}
                     className="min-h-[44px] sm:max-w-xs"
                   />

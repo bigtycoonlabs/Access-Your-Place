@@ -929,9 +929,14 @@ export default function StaffDashboard() {
     setProductToDelete(null);
   };
 
-  const staffDisplayName = staffSession?.first_name 
-    ? `${staffSession.first_name} ${staffSession.last_name || ''}`.trim() 
-    : staffSession?.name || 'Staff';
+  // The session stores full_name. This chain checked first_name then name and fell through
+  // to the literal string 'Staff', which then PRE-FILLED THE SIGNATURE FIELD on legal
+  // agreements. Same fault that had Penny greeting people by their email address.
+  const staffDisplayName = staffSession?.full_name
+    || (staffSession?.first_name
+        ? `${staffSession.first_name} ${staffSession.last_name || ''}`.trim()
+        : staffSession?.name)
+    || '';
 
   // Get dashboard title based on role
   const getDashboardTitle = () => {
@@ -1077,7 +1082,7 @@ export default function StaffDashboard() {
               <DropdownMenuTrigger asChild>
                 <Button variant="outline" size="sm" aria-label="User menu">
                   <UserCircle className="w-4 h-4 mr-2" aria-hidden="true" />
-                  <span className="hidden sm:inline">{staffDisplayName}</span>
+                  <span className="hidden sm:inline">{staffDisplayName || 'Staff'}</span>
                 </Button>
               </DropdownMenuTrigger>
               <DropdownMenuContent align="end">
