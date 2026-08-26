@@ -81,8 +81,10 @@ export function useDealFlowRealtime({
 
   const fetchUnverifiedCount = useCallback(async () => {
     try {
+      // Counts only. anon cannot read `properties` because it carries addresses and
+      // landlord contact details; this view exposes neither.
       const { data } = await supabase
-        .from('properties')
+        .from('properties_verification_counts')
         .select('id')
         .or('is_verified.is.null,is_verified.eq.false')
         .not('status', 'in', '("deleted","archived")');
