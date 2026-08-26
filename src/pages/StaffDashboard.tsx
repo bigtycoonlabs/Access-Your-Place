@@ -52,6 +52,7 @@ const PortfolioApprovalsTab = lazy(() => import('@/components/admin/PortfolioApp
 const MarketplaceVerificationsTab = lazy(() => import('@/components/admin/MarketplaceVerificationsTab').then(m => ({ default: m.MarketplaceVerificationsTab })));
 const TransactionManagementTab = lazy(() => import('@/components/admin/TransactionManagementTab').then(m => ({ default: m.TransactionManagementTab })));
 const StaffManagementTab = lazy(() => import('@/components/admin/StaffManagementTab').then(m => ({ default: m.StaffManagementTab })));
+const StaffCountersign = lazy(() => import('@/components/admin/StaffCountersign').then(m => ({ default: m.StaffCountersign })));
 const StaffMessaging = lazy(() => import('@/components/admin/StaffMessaging').then(m => ({ default: m.StaffMessaging })));
 const DocumentTemplatesTab = lazy(() => import('@/components/admin/DocumentTemplatesTab').then(m => ({ default: m.DocumentTemplatesTab })));
 const SuccessAgreementManager = lazy(() => import('@/components/admin/SuccessAgreementManager').then(m => ({ default: m.SuccessAgreementManager })));
@@ -2045,7 +2046,12 @@ export default function StaffDashboard() {
             <TabErrorBoundary tabName="Documents & Agreements">
               <Suspense fallback={<TabSkeleton />}>
                 {staffSession?.id ? (
-                  <DocumentsTabContent staffId={staffSession.id} staffName={staffDisplayName} />
+                  <div className="space-y-6">
+                    {/* Signing comes FIRST. Documents waiting on the company were invisible
+                        because this tab only ever handled uploads. */}
+                    <StaffCountersign staffId={staffSession.id} staffName={staffDisplayName} />
+                    <DocumentsTabContent staffId={staffSession.id} staffName={staffDisplayName} />
+                  </div>
                 ) : (
                   <Card>
                     <CardContent className="py-12 text-center text-gray-500">
