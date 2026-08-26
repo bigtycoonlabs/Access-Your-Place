@@ -117,12 +117,12 @@ export function TimeTrackerWidget({ staffId, compact = false }: TimeTrackerWidge
               <div className="w-2 h-2 bg-red-500 rounded-full animate-pulse" />
               <span className="text-sm font-mono font-semibold text-red-700">{formatTime(elapsed)}</span>
             </div>
-            <Button size="sm" variant="destructive" onClick={stopTimer} disabled={loading} className="h-8">
+            <Button size="sm" variant="destructive" onClick={stopTimer} disabled={loading} className="min-h-[44px]">
               <Square className="w-3 h-3 mr-1" /> Stop
             </Button>
           </>
         ) : (
-          <Button size="sm" variant="outline" onClick={startTimer} disabled={loading} className="h-8 bg-emerald-50 border-emerald-200 text-emerald-700 hover:bg-emerald-100">
+          <Button size="sm" variant="outline" onClick={startTimer} disabled={loading} className="min-h-[44px] bg-emerald-50 border-emerald-200 text-emerald-700 hover:bg-emerald-100">
             <Play className="w-3 h-3 mr-1" /> Clock In
           </Button>
         )}
