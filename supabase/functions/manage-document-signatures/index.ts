@@ -195,6 +195,10 @@ Deno.serve(async (req) => {
     if (action === 'get_documents') {
       const { investor_id, status, sent_by, limit: docLimit } = body;
       let query = supabase.from('document_signatures').select('*').order('created_at', { ascending: false });
+      // A company-first document (setup agreements) must NOT appear in the client's portal
+      // until a staff member has signed it. Without this filter the client would see an
+      // unsigned agreement sitting there and could sign a document the company had not.
+      query = query.not('released_to_client_at', 'is', null);
       if (investor_id) query = query.eq('investor_id', investor_id);
       if (status) query = query.eq('signature_status', status);
       if (sent_by) query = query.eq('sent_by', sent_by);
