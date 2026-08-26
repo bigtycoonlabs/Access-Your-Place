@@ -126,7 +126,8 @@ export function StaffNotifications({ onClose }: Props) {
               )}
             </DialogTitle>
             <div className="flex gap-2">
-              <Button size="sm" variant="ghost" className="text-white hover:bg-white/10" onClick={fetchNotifications}>
+              {/* Icon-only with no label: VoiceOver announced it as just "button". */}
+              <Button size="sm" variant="ghost" aria-label="Refresh notifications" className="text-white hover:bg-white/10 min-h-[44px] min-w-[44px]" onClick={fetchNotifications}>
                 <RefreshCw className={`w-4 h-4 ${loading ? 'animate-spin' : ''}`} />
               </Button>
             </div>
