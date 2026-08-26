@@ -373,17 +373,21 @@ export default function ProPortal() {
                             <button
                               onClick={() => handleDeliveryUpdate(idx, 'delivered', !item.delivered, item.item_id)}
                               disabled={updatingItem === idx}
-                              className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-medium transition-colors ${item.delivered ? 'bg-blue-500 text-white' : 'bg-gray-100 text-gray-600 hover:bg-blue-100'}`}
+                              aria-pressed={!!item.delivered}
+                              aria-label={`Mark ${item.name || item.item_name || 'item'} delivered`}
+                              className={`flex items-center justify-center gap-1.5 px-4 min-h-[44px] min-w-[110px] rounded-lg text-sm font-medium transition-colors ${item.delivered ? 'bg-blue-500 text-white' : 'bg-gray-100 text-gray-700 hover:bg-blue-100'}`}
                             >
-                              {updatingItem === idx ? <Loader2 className="w-3 h-3 animate-spin" /> : item.delivered ? <CheckCircle className="w-3 h-3" /> : <Circle className="w-3 h-3" />}
+                              {updatingItem === idx ? <Loader2 className="w-3 h-3 animate-spin" /> : item.delivered ? <CheckCircle className="w-4 h-4" /> : <Circle className="w-4 h-4" />}
                               Delivered
                             </button>
                             <button
                               onClick={() => handleDeliveryUpdate(idx, 'placed', !item.placed, item.item_id)}
                               disabled={updatingItem === idx}
-                              className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-medium transition-colors ${item.placed ? 'bg-emerald-500 text-white' : 'bg-gray-100 text-gray-600 hover:bg-emerald-100'}`}
+                              aria-pressed={!!item.placed}
+                              aria-label={`Mark ${item.name || item.item_name || 'item'} placed'`.replace("'","")}
+                              className={`flex items-center justify-center gap-1.5 px-4 min-h-[44px] min-w-[110px] rounded-lg text-sm font-medium transition-colors ${item.placed ? 'bg-emerald-500 text-white' : 'bg-gray-100 text-gray-700 hover:bg-emerald-100'}`}
                             >
-                              {updatingItem === idx ? <Loader2 className="w-3 h-3 animate-spin" /> : item.placed ? <CheckCircle className="w-3 h-3" /> : <Circle className="w-3 h-3" />}
+                              {updatingItem === idx ? <Loader2 className="w-3 h-3 animate-spin" /> : item.placed ? <CheckCircle className="w-4 h-4" /> : <Circle className="w-4 h-4" />}
                               Placed
                             </button>
                           </div>
