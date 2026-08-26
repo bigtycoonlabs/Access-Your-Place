@@ -135,7 +135,28 @@ export function PennyConsole({ staffSession, onOpenDashboard }: { staffSession: 
       </div>
 
       {onOpenDashboard && (
-        <div className="mt-6 text-center">
+        {/* After signing in, the ONLY way off this page was one small underlined link, so
+            staff could not find messages, documents or their projects. Both owners reported
+            the navigation as "all over the place". These are the four places people actually
+            need, named plainly and linked directly. */}
+        <nav aria-label="Go to" className="mt-6 grid grid-cols-2 sm:grid-cols-4 gap-2 max-w-2xl mx-auto">
+          {[
+            { href: '/staff/dashboard?tab=messages', label: 'Messages' },
+            { href: '/staff/dashboard?tab=documents', label: 'Sign documents' },
+            { href: '/staff/dashboard?tab=setups', label: 'Setup projects' },
+            { href: '/staff/dashboard?tab=investors', label: 'My clients' },
+          ].map((l) => (
+            <a
+              key={l.href}
+              href={l.href}
+              className="flex items-center justify-center min-h-[44px] px-3 rounded-lg border border-slate-300 bg-white text-sm font-medium text-slate-800 hover:bg-slate-50 hover:border-slate-400"
+            >
+              {l.label}
+            </a>
+          ))}
+        </nav>
+
+        <div className="mt-4 text-center">
           <button
             type="button"
             onClick={onOpenDashboard}
