@@ -134,11 +134,12 @@ export function PennyConsole({ staffSession, onOpenDashboard }: { staffSession: 
         <PennyStaffChat staffSession={staffSession} ask={ask} onAsked={() => setAsk('')} />
       </div>
 
+      {/* After signing in, the ONLY way off this page was one small underlined link, so
+          staff could not find messages, documents or their projects. Both owners reported
+          the navigation as "all over the place". These are the four places people actually
+          need, named plainly and linked directly. */}
       {onOpenDashboard && (
-        {/* After signing in, the ONLY way off this page was one small underlined link, so
-            staff could not find messages, documents or their projects. Both owners reported
-            the navigation as "all over the place". These are the four places people actually
-            need, named plainly and linked directly. */}
+        <>
         <nav aria-label="Go to" className="mt-6 grid grid-cols-2 sm:grid-cols-4 gap-2 max-w-2xl mx-auto">
           {[
             { href: '/staff/dashboard?tab=messages', label: 'Messages' },
@@ -165,6 +166,7 @@ export function PennyConsole({ staffSession, onOpenDashboard }: { staffSession: 
             Open the full dashboard
           </button>
         </div>
+        </>
       )}
     </div>
   );
