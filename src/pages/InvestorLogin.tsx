@@ -1109,8 +1109,8 @@ export default function InvestorLogin() {
 
               <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
                 <TabsList className="grid w-full grid-cols-2 mb-6">
-                  <TabsTrigger value="login">Sign In</TabsTrigger>
-                  <TabsTrigger value="register">Create Account</TabsTrigger>
+                  <TabsTrigger value="login" className="min-h-[44px]">Sign In</TabsTrigger>
+                  <TabsTrigger value="register" className="min-h-[44px]">Create Account</TabsTrigger>
                 </TabsList>
 
                 <TabsContent value="login">
@@ -1173,7 +1173,7 @@ export default function InvestorLogin() {
                       </button>
                     </div>
 
-                    <Button type="submit" className="w-full bg-[#d4a574] hover:bg-[#c49464]" disabled={loading}>
+                    <Button type="submit" className="w-full min-h-[44px] bg-[#d4a574] hover:bg-[#c49464]" disabled={loading}>
                       {loading && <Loader2 className="w-4 h-4 mr-2 animate-spin" />}
                       Sign In
                       <ArrowRight className="w-4 h-4 ml-2" />
@@ -1295,7 +1295,7 @@ export default function InvestorLogin() {
                       </div>
                     </div>
 
-                    <Button type="submit" className="w-full bg-[#d4a574] hover:bg-[#c49464]" disabled={loading}>
+                    <Button type="submit" className="w-full min-h-[44px] bg-[#d4a574] hover:bg-[#c49464]" disabled={loading}>
                       {loading && <Loader2 className="w-4 h-4 mr-2 animate-spin" />}
                       Create Account
                       <ArrowRight className="w-4 h-4 ml-2" />
@@ -1375,7 +1375,7 @@ export default function InvestorLogin() {
                   />
                 </div>
 
-                <Button type="submit" className="w-full bg-[#d4a574] hover:bg-[#c49464]" disabled={otpVerifying || otpCode.length !== 6}>
+                <Button type="submit" className="w-full min-h-[44px] bg-[#d4a574] hover:bg-[#c49464]" disabled={otpVerifying || otpCode.length !== 6}>
                   {otpVerifying && <Loader2 className="w-4 h-4 mr-2 animate-spin" />}
                   Verify Code
                 </Button>
@@ -1439,7 +1439,7 @@ export default function InvestorLogin() {
                     />
                   </div>
 
-                  <Button type="submit" className="w-full bg-[#d4a574] hover:bg-[#c49464]" disabled={loading || !forgotEmail}>
+                  <Button type="submit" className="w-full min-h-[44px] bg-[#d4a574] hover:bg-[#c49464]" disabled={loading || !forgotEmail}>
                     {loading && <Loader2 className="w-4 h-4 mr-2 animate-spin" />}
                     Send Reset Link
                   </Button>
@@ -1469,7 +1469,7 @@ export default function InvestorLogin() {
                     <p className="text-xs text-gray-500 mt-1">Must match the phone number on your account</p>
                   </div>
 
-                  <Button type="submit" className="w-full bg-[#d4a574] hover:bg-[#c49464]" disabled={loading || forgotPhone.replace(/\D/g, '').length < 10}>
+                  <Button type="submit" className="w-full min-h-[44px] bg-[#d4a574] hover:bg-[#c49464]" disabled={loading || forgotPhone.replace(/\D/g, '').length < 10}>
                     {loading && <Loader2 className="w-4 h-4 mr-2 animate-spin" />}
                     Send Verification Code
                   </Button>
