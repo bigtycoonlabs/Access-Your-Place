@@ -4214,7 +4214,7 @@ const TOOL_GROUPS: Record<string, { words: RegExp; tools: string[] }> = {
   },
   setup: {
     words: /setup|furnitur|furnish|deliver|room|item|sourc|vendor|assembl|launch|pro portal|inventory/i,
-    tools: ['setup_board', 'setup_add_items', 'setup_update_item'],
+    tools: ['my_setup_projects', 'setup_board', 'setup_add_items', 'setup_update_item'],
   },
   deals: {
     words: /deal|propert|listing|marketplace|unpublish|publish|address|release|quote|forge|price|rent|market/i,
