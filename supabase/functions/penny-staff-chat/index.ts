@@ -1741,8 +1741,22 @@ async function execTool(name: string, args: any, ctx: Ctx): Promise<unknown> {
     // needs. Asked "what is my setup project list?" she said she had no access, while the
     // project sat in the table with her name on it.
     if (name === 'my_setup_projects') {
+      // A project can have a manager AND contributors. Filtering on assigned_manager_id
+      // alone hid every project a person was added to rather than assigned. Rel was made a
+      // contributor on two projects and could see neither.
+      const memRes = await fetch(
+        `${url}/rest/v1/setup_project_members?staff_id=eq.${staffId}&select=project_id`,
+        { headers: { apikey: key, Authorization: `Bearer ${key}` } },
+      );
+      const memberOf: string[] = memRes.ok
+        ? (await memRes.json() || []).map((m: any) => m.project_id).filter(Boolean)
+        : [];
+      const scope = memberOf.length > 0
+        ? `or=(assigned_manager_id.eq.${staffId},id.in.(${memberOf.join(',')}))`
+        : `assigned_manager_id=eq.${staffId}`;
+
       const r = await fetch(
-        `${url}/rest/v1/setup_projects?assigned_manager_id=eq.${staffId}` +
+        `${url}/rest/v1/setup_projects?${scope}` +
         `&select=id,investor_name,property_address,city_state,status,phase,logistics_fee_amount,logistics_fee_paid` +
         `&order=created_at.desc&limit=25`,
         { headers: { apikey: key, Authorization: `Bearer ${key}` } },
