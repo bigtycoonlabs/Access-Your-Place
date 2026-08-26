@@ -1159,12 +1159,16 @@ export default function InvestorLogin() {
 
                     <div className="flex items-center justify-between">
                       <div className="flex items-center gap-2">
+                        {/* Measured 16px on a 390px phone, well under the 44px standard.
+                            The box stays visually modest; the LABEL carries the hit area,
+                            which is how a checkbox should behave anyway. */}
                         <Checkbox
                           id="remember-me"
+                          className="h-5 w-5"
                           checked={loginData.rememberMe}
                           onCheckedChange={(checked) => setLoginData({ ...loginData, rememberMe: checked as boolean })}
                         />
-                        <label htmlFor="remember-me" className="text-sm text-gray-600 cursor-pointer">
+                        <label htmlFor="remember-me" className="flex items-center min-h-[44px] text-sm text-gray-600 cursor-pointer">
                           Remember me for 30 days
                         </label>
                       </div>
