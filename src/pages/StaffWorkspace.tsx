@@ -1,5 +1,9 @@
 import { useState, useEffect, useCallback, useMemo } from 'react';
 import { supabase } from '@/lib/supabase';
+import { lazy, Suspense } from 'react';
+
+const StaffCountersign = lazy(() =>
+  import('@/components/admin/StaffCountersign').then((m) => ({ default: m.StaffCountersign })));
 
 /**
  * The redesigned staff experience, built as a SEPARATE route (/staff/workspace) so the
@@ -320,24 +324,12 @@ export default function StaffWorkspace() {
             <>
               <h1 style={{ fontSize: '1.5rem', margin: '0 0 .7em' }}>My work</h1>
               <H2>Waiting on your signature</H2>
-              <Hint>Documents where you are named as a signer.</Hint>
-              <ul style={{ listStyle: 'none', margin: 0, padding: 0 }}>
-                {toSign.length === 0 && (
-                  <li style={{ background: '#fff', border: '1px solid #dfe3e8', borderRadius: 8, padding: 16 }}>
-                    <p style={{ color: '#5b6672', margin: 0 }}>{loading ? 'Checking\u2026' : 'Nothing waiting on you.'}</p>
-                  </li>
-                )}
-                {toSign.map((d: any) => (
-                  <li key={d.id} style={{ background: '#fff', border: '1px solid #dfe3e8', borderLeft: '4px solid #9f1239', borderRadius: 8, padding: 16, marginBottom: 10 }}>
-                    <h3 style={{ margin: '0 0 .2em' }}>{d.document_name}</h3>
-                    <p style={{ color: '#5b6672', fontSize: '.92rem' }}>{d.investor_name}</p>
-                    <a href="/staff/dashboard?tab=documents"
-                       style={{ display: 'inline-flex', alignItems: 'center', minHeight: 44, padding: '0 16px', borderRadius: 6, border: '1px solid #12263f', background: '#12263f', color: '#fff', fontWeight: 600, textDecoration: 'none' }}>
-                      Sign it
-                    </a>
-                  </li>
-                ))}
-              </ul>
+              <Hint>Documents where you are named as a signer. Read it, type your name, sign.</Hint>
+              {session?.id && (
+                <Suspense fallback={<p style={{ color: '#5b6672' }}>Loading your documents\u2026</p>}>
+                  <StaffCountersign staffId={session.id} staffName={displayName} />
+                </Suspense>
+              )}
 
               <H2>Needs you now</H2>
               <Hint>Nothing moves until you deal with these.</Hint>

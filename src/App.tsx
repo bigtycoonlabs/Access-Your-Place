@@ -127,7 +127,7 @@ const App = () => (
                       dashboard's Penny tab; then /staff/home was a second, different home. That is
                       two front doors to the same building. /staff now goes to the console, and the
                       full dashboard is one link away from it. */}
-                  <Route path="/staff" element={<Navigate to="/staff/home" replace />} />
+                  <Route path="/staff" element={<Navigate to="/staff/workspace" replace />} />
                   <Route path="/knowledge" element={<KnowledgeLibrary />} />
                   <Route path="/knowledge-library" element={<KnowledgeLibrary />} />
                   <Route path="/article-demo" element={<Navigate to="/knowledge-library" replace />} />
