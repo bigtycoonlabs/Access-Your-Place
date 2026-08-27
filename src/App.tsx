@@ -19,6 +19,7 @@ import InvestorVerifyEmail from "./pages/InvestorVerifyEmail";
 import InvestorUnsubscribe from "./pages/InvestorUnsubscribe";
 import StaffLogin from "./pages/StaffLogin";
 import StaffDashboard from "./pages/StaffDashboard";
+import StaffWorkspace from "./pages/StaffWorkspace";
 import StaffHomeRoute from "./pages/StaffHomeRoute";
 import StaffLeadForge from "./pages/StaffLeadForge";
 import StaffResetPassword from "./pages/StaffResetPassword";
@@ -116,6 +117,8 @@ const App = () => (
                       ?view=full, so nothing is taken away before this has been judged. */}
                   <Route path="/staff/home" element={<StaffHomeRoute />} />
                   <Route path="/staff/dashboard" element={<StaffDashboard />} />
+                  {/* Redesign, built alongside the existing dashboard so nothing breaks. */}
+                  <Route path="/staff/workspace" element={<StaffWorkspace />} />
                   <Route path="/staff/leadforge" element={<StaffLeadForge />} />
                   <Route path="/staff/reset-password" element={<StaffResetPassword />} />
                   <Route path="/staff/quick-add" element={<StaffQuickAddContact />} />
