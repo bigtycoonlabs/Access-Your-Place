@@ -1430,13 +1430,16 @@ export default function InvestorPortal() {
                   </div>
                 </div>
                 <TabsList className="bg-white shadow">
-                  <TabsTrigger value="account" className="flex items-center gap-2">
+                  <TabsTrigger value="account" className="flex items-center gap-2 min-h-[44px]">
                     <Wallet className="w-4 h-4" />
                     Account & Credits
                   </TabsTrigger>
-                  <TabsTrigger value="payments" className="flex items-center gap-2">
-                    <CreditCard className="w-4 h-4" />
-                    Payment History
+                  {/* Was labelled "Payment History". A client looking for wire details had no
+                      reason to click it, so he saw only Account and Credits and concluded the
+                      Financial tab did nothing. It holds how to pay, not just what was paid. */}
+                  <TabsTrigger value="payments" className="flex items-center gap-2 min-h-[44px]">
+                    <CreditCard className="w-4 h-4" aria-hidden="true" />
+                    How to Pay
                   </TabsTrigger>
                 </TabsList>
                 <TabsContent value="account">
