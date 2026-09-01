@@ -208,6 +208,22 @@ export default function StaffWorkspace() {
   const Hint = ({ children }: { children: React.ReactNode }) =>
     <p style={{ color: '#5b6672', fontSize: '.88rem', margin: '0 0 .7em' }}>{children}</p>;
 
+  async function runRpc(fn: string, args: Record<string, unknown>, say: (d: any) => string) {
+    setBusy(true); setResult('');
+    try {
+      const { data, error } = await supabase.rpc(fn, args);
+      if (error) throw new Error(error.message);
+      if (data && data.ok === false) throw new Error(data.error || 'It did not save');
+      const msg = say(data);
+      setResult(msg); setAnnounce(msg);
+      await load();
+    } catch (e: any) {
+      const msg = `Not saved. ${e.message}`;
+      setResult(msg); setAnnounce(msg);
+    }
+    setBusy(false);
+  }
+
   async function run(action: string, body: Record<string, unknown>, say: (d: any) => string) {
     setBusy(true); setResult('');
     try {
@@ -264,6 +280,7 @@ export default function StaffWorkspace() {
               </p>
               <Btn kind="sec" onClick={() => { setPanel(`edit:${pr.id}`); setForm({ addr: pr.property_address || '' }); setResult(''); }}>Edit this project</Btn>
               <Btn kind="sec" onClick={() => { setPanel(`pro:${pr.id}`); setForm({}); setResult(''); }}>Create a Pro link</Btn>
+              <Btn kind="sec" onClick={() => { setPanel(`items:${pr.id}`); setForm({}); setResult(''); }}>Add items</Btn>
             </li>
           ))}
         </ul>
@@ -276,6 +293,35 @@ export default function StaffWorkspace() {
             <Btn onClick={() => run('update_project',
               { project_id: panel.slice(5), updates: { property_address: form.addr, internal_notes: form.notes } },
               () => 'Project updated.')}>Save changes</Btn>
+            <Btn kind="sec" onClick={() => { setPanel(null); setResult(''); }}>Cancel</Btn>
+          </div>
+        )}
+
+        {panel?.startsWith('items:') && (
+          <div role="region" aria-label="Add items" style={{ background: '#fff', border: '1px solid #12263f', borderRadius: 8, padding: 18, marginTop: 12 }}>
+            <h3 style={{ margin: '0 0 .2em' }}>Add items</h3>
+            <p style={{ color: '#5b6672', fontSize: '.92rem' }}>
+              One item per line: <strong>room, item, quantity</strong>. Quantity is optional and defaults to one.
+              An item with no room is refused, because an item nobody can place is not usable on the board.
+            </p>
+            <div style={{ margin: '12px 0' }}>
+              <label htmlFor="bulk" style={{ display: 'block', fontWeight: 600, fontSize: '.92rem', marginBottom: 4 }}>Items</label>
+              <textarea id="bulk" value={form.bulk || ''}
+                onChange={(e) => setForm((f) => ({ ...f, bulk: e.target.value }))}
+                placeholder={'Master Bedroom, King bed frame, 1\nKitchen, Dinner plates, 8\nLiving Room, Sofa'}
+                style={{ width: '100%', maxWidth: 560, minHeight: 130, fontSize: '1rem', padding: '10px 12px', border: '1px solid #dfe3e8', borderRadius: 6 }} />
+            </div>
+            <F id="dest" label="Destination unit" hint="For a multi-unit job, e.g. 604. Leave blank and assign later." />
+            <Btn onClick={() => {
+              const rows = (form.bulk || '').split('\n').map((l) => l.trim()).filter(Boolean).map((line) => {
+                const [room, item, qty] = line.split(',').map((x) => (x || '').trim());
+                return { room, item, quantity: Number(qty) || 1, destination_unit: form.dest || '' };
+              });
+              if (!rows.length) { setResult('Not saved. Type at least one item.'); setAnnounce('Not saved. Type at least one item.'); return; }
+              runRpc('ayp_setup_add_items',
+                { p_project_id: panel.slice(6), p_staff_id: session?.id, p_items: rows },
+                (d) => d?.note || `Added ${rows.length} item(s).`);
+            }}>Add these items</Btn>
             <Btn kind="sec" onClick={() => { setPanel(null); setResult(''); }}>Cancel</Btn>
           </div>
         )}
