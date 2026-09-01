@@ -142,6 +142,10 @@ export default function StaffWorkspace() {
   const [alerts, setAlerts] = useState<any[]>([]);
   const [projects, setProjects] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
+  const [panel, setPanel] = useState<string | null>(null);
+  const [form, setForm] = useState<Record<string, string>>({});
+  const [busy, setBusy] = useState(false);
+  const [result, setResult] = useState('');
 
   useEffect(() => {
     try {
@@ -203,6 +207,138 @@ export default function StaffWorkspace() {
     <h2 style={{ fontSize: '1rem', margin: '1.9em 0 .2em' }}>{children}</h2>;
   const Hint = ({ children }: { children: React.ReactNode }) =>
     <p style={{ color: '#5b6672', fontSize: '.88rem', margin: '0 0 .7em' }}>{children}</p>;
+
+  async function run(action: string, body: Record<string, unknown>, say: (d: any) => string) {
+    setBusy(true); setResult('');
+    try {
+      const { data, error } = await supabase.functions.invoke('manage-setup-tasks', { body: { action, ...body } });
+      if (error || data?.success === false) throw new Error(data?.error || error?.message || 'It did not save');
+      const msg = say(data);
+      setResult(msg); setAnnounce(msg);
+      await load();
+    } catch (e: any) {
+      const msg = `Not saved. ${e.message}`;
+      setResult(msg); setAnnounce(msg);
+    }
+    setBusy(false);
+  }
+
+  const F = ({ id, label, hint }: { id: string; label: string; hint?: string }) => (
+    <div style={{ margin: '12px 0' }}>
+      <label htmlFor={id} style={{ display: 'block', fontWeight: 600, fontSize: '.92rem', marginBottom: 4 }}>{label}</label>
+      {hint && <p style={{ color: '#5b6672', fontSize: '.85rem', margin: '0 0 4px' }}>{hint}</p>}
+      <input id={id} type="text" value={form[id] || ''}
+        onChange={(e) => setForm((f) => ({ ...f, [id]: e.target.value }))}
+        autoCapitalize={id.includes('email') ? 'none' : 'sentences'}
+        style={{ width: '100%', maxWidth: 440, minHeight: 44, fontSize: '1rem', padding: '8px 12px', border: '1px solid #dfe3e8', borderRadius: 6 }} />
+    </div>
+  );
+
+  const Btn = ({ onClick, children, kind = 'primary' as 'primary' | 'sec' }: any) => (
+    <button type="button" onClick={onClick} disabled={busy}
+      style={{ minHeight: 44, padding: '0 16px', borderRadius: 6, border: '1px solid #12263f',
+        background: kind === 'primary' ? '#12263f' : '#fff', color: kind === 'primary' ? '#fff' : '#12263f',
+        fontWeight: 600, fontSize: '.92rem', cursor: busy ? 'wait' : 'pointer', marginRight: 8 }}>
+      {busy ? 'Working\u2026' : children}
+    </button>
+  );
+
+  function SetupWork() {
+    return (
+      <>
+        <H2>Your projects</H2>
+        <Hint>Every job assigned to you. Open one to edit it or add items.</Hint>
+        <ul style={{ listStyle: 'none', margin: 0, padding: 0 }}>
+          {loading && <li style={{ color: '#5b6672' }}>Loading your projects\u2026</li>}
+          {!loading && projects.length === 0 && (
+            <li style={{ background: '#fff', border: '1px solid #dfe3e8', borderRadius: 8, padding: 16 }}>
+              <p style={{ color: '#5b6672', margin: 0 }}>No projects yet. Start one below.</p>
+            </li>
+          )}
+          {projects.map((pr: any) => (
+            <li key={pr.id} style={{ background: '#fff', border: '1px solid #dfe3e8', borderRadius: 8, padding: 16, marginBottom: 10 }}>
+              <h3 style={{ margin: '0 0 .2em' }}>{pr.investor_name || 'Unnamed client'}</h3>
+              <p style={{ color: '#5b6672', fontSize: '.92rem', margin: '0 0 .3em' }}>{pr.property_address}</p>
+              <p style={{ color: '#5b6672', fontSize: '.88rem', margin: '0 0 .7em' }}>
+                {pr.setup_type?.replace(/_/g, ' ')} \u00b7 phase {pr.phase} \u00b7 {pr.logistics_fee_paid ? 'fee paid' : 'fee not paid'}
+              </p>
+              <Btn kind="sec" onClick={() => { setPanel(`edit:${pr.id}`); setForm({ addr: pr.property_address || '' }); setResult(''); }}>Edit this project</Btn>
+              <Btn kind="sec" onClick={() => { setPanel(`pro:${pr.id}`); setForm({}); setResult(''); }}>Create a Pro link</Btn>
+            </li>
+          ))}
+        </ul>
+
+        {panel?.startsWith('edit:') && (
+          <div role="region" aria-label="Edit project" style={{ background: '#fff', border: '1px solid #12263f', borderRadius: 8, padding: 18, marginTop: 12 }}>
+            <h3 style={{ margin: '0 0 .2em' }}>Edit project</h3>
+            <F id="addr" label="Property address" />
+            <F id="notes" label="Add a note" hint="Appended to the project record. Optional." />
+            <Btn onClick={() => run('update_project',
+              { project_id: panel.slice(5), updates: { property_address: form.addr, internal_notes: form.notes } },
+              () => 'Project updated.')}>Save changes</Btn>
+            <Btn kind="sec" onClick={() => { setPanel(null); setResult(''); }}>Cancel</Btn>
+          </div>
+        )}
+
+        {panel?.startsWith('pro:') && (
+          <div role="region" aria-label="Create a Pro link" style={{ background: '#fff', border: '1px solid #12263f', borderRadius: 8, padding: 18, marginTop: 12 }}>
+            <h3 style={{ margin: '0 0 .2em' }}>Create a Pro link</h3>
+            <p style={{ color: '#5b6672', fontSize: '.92rem' }}>
+              Generates a private link for this job only. The Pro needs no login and no account. They see the item list, the maintenance check, photo upload and their contract. They never see client messages.
+            </p>
+            <F id="pro_name" label="Pro's name" />
+            <F id="pro_email" label="Pro's email" hint="Leave blank to copy the link instead of emailing it." />
+            <Btn onClick={() => run(form.pro_email ? 'email_pro_portal_link' : 'generate_pro_token',
+              { project_id: panel.slice(4), pro_name: form.pro_name, pro_email: form.pro_email },
+              (d) => d?.portal_url
+                ? `Link ready. ${d.portal_url}`
+                : `Link sent to ${form.pro_email}.`)}>
+              {form.pro_email ? 'Email the link' : 'Create the link'}
+            </Btn>
+            <Btn kind="sec" onClick={() => { setPanel(null); setResult(''); }}>Cancel</Btn>
+          </div>
+        )}
+
+        <H2>Start a new project</H2>
+        <Hint>Opens a job for a client and creates its item schedule.</Hint>
+        {panel === 'new' ? (
+          <div role="region" aria-label="Start a new project" style={{ background: '#fff', border: '1px solid #12263f', borderRadius: 8, padding: 18 }}>
+            <F id="client_email" label="Client's email" hint="Must match an existing client account." />
+            <F id="address" label="Property address" hint="Where the work happens. For a move, the destination." />
+            <F id="city_state" label="City and state" />
+            <F id="fee" label="Fee" hint="Numbers only, no dollar sign." />
+            <div style={{ margin: '12px 0' }}>
+              <label htmlFor="stype" style={{ display: 'block', fontWeight: 600, fontSize: '.92rem', marginBottom: 4 }}>Type of job</label>
+              <select id="stype" value={form.stype || 'full_setup'}
+                onChange={(e) => setForm((f) => ({ ...f, stype: e.target.value }))}
+                style={{ minHeight: 44, fontSize: '1rem', padding: '0 10px', border: '1px solid #dfe3e8', borderRadius: 6, maxWidth: 440, width: '100%' }}>
+                <option value="full_setup">Full setup</option>
+                <option value="teardown_move_setup">Teardown, move and setup</option>
+                <option value="teardown">Teardown only</option>
+                <option value="restock">Restock or refresh</option>
+              </select>
+            </div>
+            <Btn onClick={() => run('create_project', {
+              investor_email: form.client_email, property_address: form.address,
+              city_state: form.city_state, setup_type: form.stype || 'full_setup',
+              logistics_fee_amount: Number(form.fee) || 0,
+              assigned_manager_id: session?.id, assigned_manager_name: displayName,
+            }, () => 'Project created. It is now in your list above.')}>Create the project</Btn>
+            <Btn kind="sec" onClick={() => { setPanel(null); setResult(''); }}>Cancel</Btn>
+          </div>
+        ) : (
+          <Btn onClick={() => { setPanel('new'); setForm({}); setResult(''); }}>Start a new project</Btn>
+        )}
+
+        {result && (
+          <p style={{ marginTop: 14, padding: '12px 14px', borderRadius: 6,
+            background: result.startsWith('Not saved') ? '#fff1f2' : '#ecfdf5',
+            border: `1px solid ${result.startsWith('Not saved') ? '#9f1239' : '#065f46'}`,
+            wordBreak: 'break-all' }}>{result}</p>
+        )}
+      </>
+    );
+  }
 
   function ActionList(space: Space, kind: 'start' | 'record') {
     const items = SPACES[space][kind];
@@ -389,6 +525,7 @@ export default function StaffWorkspace() {
                 </div>
               ) : (
                 <>
+                  {view === 'setup' && SetupWork()}
                   {ActionList(view as Space, 'start')}
                   {ActionList(view as Space, 'record')}
                   <H2>Where things live</H2>
