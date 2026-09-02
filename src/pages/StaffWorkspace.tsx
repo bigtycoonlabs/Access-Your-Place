@@ -437,6 +437,19 @@ export default function StaffWorkspace() {
 
   return (
     <div style={{ background: '#f7f8fa', minHeight: '100vh' }}>
+      <style>{`
+        /* Phone: the work comes first, the menu sits underneath it. Stacking the sidebar on
+           top pushed every project and button below the fold, so a setup manager opened the
+           app and saw a menu and nothing else. */
+        @media (max-width: 760px) {
+          .ws-shell { flex-direction: column-reverse; gap: 18px; }
+          .ws-nav { width: 100% !important; flex: 1 1 auto !important;
+                    border-top: 1px solid #dfe3e8; padding-top: 12px; }
+          .ws-nav ul { display: flex; flex-wrap: wrap; gap: 6px; }
+          .ws-nav ul li a { border: 1px solid #dfe3e8; background: #fff; }
+          .ws-nav h2 { width: 100%; margin: 12px 0 4px; }
+        }
+      `}</style>
       <a href="#ws-main" style={{ position: 'absolute', left: -9999 }}
          onFocus={(e) => { e.currentTarget.style.cssText = 'position:fixed;left:8px;top:8px;z-index:99;background:#fff;padding:12px 16px;border:2px solid #12263f;border-radius:6px'; }}
          onBlur={(e) => { e.currentTarget.style.cssText = 'position:absolute;left:-9999px'; }}>
@@ -450,8 +463,8 @@ export default function StaffWorkspace() {
         </div>
       </header>
 
-      <div style={{ maxWidth: 1080, margin: '0 auto', display: 'flex', gap: 26, padding: '22px 20px 70px', alignItems: 'flex-start', flexWrap: 'wrap' }}>
-        <nav aria-label="Main" style={{ width: 196, flex: '0 0 196px' }}>
+      <div className="ws-shell" style={{ maxWidth: 1080, margin: '0 auto', display: 'flex', gap: 26, padding: '22px 20px 70px', alignItems: 'flex-start' }}>
+        <nav aria-label="Main" className="ws-nav" style={{ width: 196, flex: '0 0 196px' }}>
           <ul style={{ listStyle: 'none', margin: 0, padding: 0 }}>
             {navLink('dash', 'Dashboard')}
             {navLink('work', workCount ? `My work (${workCount})` : 'My work')}
