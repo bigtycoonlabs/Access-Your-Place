@@ -116,7 +116,11 @@ const App = () => (
                   {/* The new Success Team home. The full dashboard is still one link away at
                       ?view=full, so nothing is taken away before this has been judged. */}
                   <Route path="/staff/home" element={<StaffHomeRoute />} />
-                  <Route path="/staff/dashboard" element={<StaffDashboard />} />
+                  {/* The old dashboard is retired. It rendered two competing tab bars, showed setup
+                      managers other people's tools, and had no way to start a project. Staff now go
+                      to the workspace. Kept as a redirect rather than deleted so old links and the
+                      emails already sent still land somewhere sensible. */}
+                  <Route path="/staff/dashboard" element={<Navigate to="/staff/workspace" replace />} />
                   {/* Redesign, built alongside the existing dashboard so nothing breaks. */}
                   <Route path="/staff/workspace" element={<StaffWorkspace />} />
                   <Route path="/staff/leadforge" element={<StaffLeadForge />} />

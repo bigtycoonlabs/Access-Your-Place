@@ -567,7 +567,7 @@ export default function StaffWorkspace() {
                 Chat history and workspace selection are part of this design and are not wired up on this screen yet.
                 Penny is fully working on the existing dashboard in the meantime.
               </p>
-              <a href="/staff/dashboard"
+              <a href="#ws-main"
                  style={{ display: 'inline-flex', alignItems: 'center', minHeight: 44, padding: '0 16px', borderRadius: 6, border: '1px solid #12263f', background: '#12263f', color: '#fff', fontWeight: 600, textDecoration: 'none' }}>
                 Open Penny on the current dashboard
               </a>
@@ -592,7 +592,7 @@ export default function StaffWorkspace() {
                   <ul style={{ listStyle: 'none', margin: 0, padding: 0, display: 'grid', gridTemplateColumns: 'repeat(auto-fit,minmax(228px,1fr))', gap: 10 }}>
                     {SPACES[view as Space].where.map((w) => (
                       <li key={w.label}>
-                        <a href="/staff/dashboard"
+                        <a href="#ws-main"
                            style={{ display: 'block', background: '#fff', border: '1px solid #dfe3e8', borderRadius: 8, padding: '14px 16px', textDecoration: 'none', color: '#111827', minHeight: 44 }}>
                           <strong style={{ display: 'block' }}>{w.label}</strong>
                           <span style={{ color: '#5b6672', fontSize: '.87rem' }}>{w.hint}</span>
@@ -612,7 +612,7 @@ export default function StaffWorkspace() {
                 {['Acquisition workflow', 'Setup workflow', 'Teardown and move', 'Using the platform',
                   'Working with Penny', 'Client communication', 'Payments and payouts', 'Accessibility standards'].map((t) => (
                   <li key={t}>
-                    <a href="/staff/dashboard?tab=sops"
+                    <a href="#ws-main"
                        style={{ display: 'block', background: '#fff', border: '1px solid #dfe3e8', borderRadius: 8, padding: '14px 16px', textDecoration: 'none', color: '#111827', minHeight: 44 }}>
                       <strong>{t}</strong>
                     </a>
@@ -631,7 +631,7 @@ export default function StaffWorkspace() {
                   ['Signature', 'How your name appears on documents'],
                   ['Security', 'Password and sessions']].map(([t, h]) => (
                   <li key={t}>
-                    <a href="/staff/dashboard?tab=settings"
+                    <a href="#ws-main"
                        style={{ display: 'block', background: '#fff', border: '1px solid #dfe3e8', borderRadius: 8, padding: '14px 16px', textDecoration: 'none', color: '#111827', minHeight: 44 }}>
                       <strong style={{ display: 'block' }}>{t}</strong>
                       <span style={{ color: '#5b6672', fontSize: '.87rem' }}>{h}</span>
