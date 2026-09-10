@@ -271,14 +271,28 @@ export default function StaffWorkspace() {
   );
 
   function ItemSchedule() {
-    const rows = items;
+    const rows = form.projfilter ? items.filter((r: any) => r.project_id === form.projfilter) : items;
     const byProject: Record<string, any[]> = {};
     rows.forEach((r: any) => { (byProject[r.project_id] ||= []).push(r); });
     const nameFor = (id: string) => projects.find((p: any) => p.id === id)?.investor_name || 'Project';
     return (
       <>
         <H2>Item schedule</H2>
-        <Hint>Every item on your projects. Room is where it came from. Unit is where it is going.</Hint>
+        <Hint>Room is where it came from. Unit is where it is going.</Hint>
+        <div style={{ margin: '0 0 12px' }}>
+          <label htmlFor="projfilter" style={{ display: 'block', fontWeight: 600, fontSize: '.92rem', marginBottom: 4 }}>
+            Show items for
+          </label>
+          <select id="projfilter" value={form.projfilter || ''}
+            onChange={(e) => setForm((f) => ({ ...f, projfilter: e.target.value }))}
+            style={{ minHeight: 44, fontSize: '1rem', padding: '0 10px', border: '1px solid #dfe3e8',
+                     borderRadius: 6, width: '100%', maxWidth: 440, background: '#fff' }}>
+            <option value="">All my projects</option>
+            {projects.map((pr: any) => (
+              <option key={pr.id} value={pr.id}>{pr.investor_name}</option>
+            ))}
+          </select>
+        </div>
         {rows.length === 0 && (
           <p style={{ background: '#fff', border: '1px solid #dfe3e8', borderRadius: 8, padding: 16, color: '#5b6672' }}>
             {loading ? 'Loading…' : 'No items yet. Use Add items above.'}
@@ -346,6 +360,11 @@ export default function StaffWorkspace() {
         {panel?.startsWith('edit:') && (
           <div role="region" aria-label="Edit project" style={{ background: '#fff', border: '1px solid #12263f', borderRadius: 8, padding: 18, marginTop: 12 }}>
             <h3 style={{ margin: '0 0 .2em' }}>Edit project</h3>
+            <p style={{ background: '#12263f', color: '#fff', fontWeight: 700, borderRadius: 6,
+                         padding: '10px 12px', margin: '0 0 12px', fontSize: '.95rem' }}>
+              {(() => { const pr = projects.find((x: any) => x.id === panel?.split(':')[1]);
+                 return pr ? `${pr.investor_name} — ${pr.property_address}` : 'Project'; })()}
+            </p>
             <F id="addr" label="Property address" />
             <F id="notes" label="Add a note" hint="Appended to the project record. Optional." />
             <Btn onClick={() => run('update_project',
@@ -358,6 +377,11 @@ export default function StaffWorkspace() {
         {panel?.startsWith('items:') && (
           <div role="region" aria-label="Add items" style={{ background: '#fff', border: '1px solid #12263f', borderRadius: 8, padding: 18, marginTop: 12 }}>
             <h3 style={{ margin: '0 0 .2em' }}>Add items</h3>
+            <p style={{ background: '#12263f', color: '#fff', fontWeight: 700, borderRadius: 6,
+                         padding: '10px 12px', margin: '0 0 12px', fontSize: '.95rem' }}>
+              {(() => { const pr = projects.find((x: any) => x.id === panel?.split(':')[1]);
+                 return pr ? `${pr.investor_name} — ${pr.property_address}` : 'Project'; })()}
+            </p>
             <p style={{ color: '#5b6672', fontSize: '.92rem' }}>
               One item per line: <strong>room, item, quantity</strong>. Quantity is optional and defaults to one. You can upload a CSV above, paste rows straight from a spreadsheet, or type them.
               An item with no room is refused, because an item nobody can place is not usable on the board.
@@ -401,8 +425,16 @@ export default function StaffWorkspace() {
             <F id="dest" label="Destination unit" hint="For a multi-unit job, e.g. 604. Leave blank and assign later." />
             <Btn onClick={() => {
               const rows = (form.bulk || '').split('\n').map((l) => l.trim()).filter(Boolean).map((line) => {
-                const [room, item, qty] = line.split(',').map((x) => (x || '').trim());
-                return { room, item, quantity: Number(qty) || 1, destination_unit: form.dest || '' };
+                const parts = line.split(',').map((x) => (x || '').trim());
+                const room = parts.shift() || '';
+                // Only treat the last field as a quantity if it actually looks like one,
+                // so "Sofa, grey, 3 seat" keeps its full name.
+                let quantity = 1;
+                if (parts.length > 1 && /^\d+$/.test(parts[parts.length - 1])) {
+                  quantity = Number(parts.pop());
+                }
+                const item = parts.join(', ');
+                return { room, item, quantity, destination_unit: form.dest || '' };
               });
               if (!rows.length) { setResult('Not saved. Type at least one item.'); setAnnounce('Not saved. Type at least one item.'); return; }
               runRpc('ayp_setup_add_items',
@@ -416,6 +448,11 @@ export default function StaffWorkspace() {
         {panel?.startsWith('pro:') && (
           <div role="region" aria-label="Create a Pro link" style={{ background: '#fff', border: '1px solid #12263f', borderRadius: 8, padding: 18, marginTop: 12 }}>
             <h3 style={{ margin: '0 0 .2em' }}>Create a Pro link</h3>
+            <p style={{ background: '#12263f', color: '#fff', fontWeight: 700, borderRadius: 6,
+                         padding: '10px 12px', margin: '0 0 12px', fontSize: '.95rem' }}>
+              {(() => { const pr = projects.find((x: any) => x.id === panel?.split(':')[1]);
+                 return pr ? `${pr.investor_name} — ${pr.property_address}` : 'Project'; })()}
+            </p>
             <p style={{ color: '#5b6672', fontSize: '.92rem' }}>
               Generates a private link for this job only. The Pro needs no login and no account. They see the item list, the maintenance check, photo upload and their contract. They never see client messages.
             </p>
