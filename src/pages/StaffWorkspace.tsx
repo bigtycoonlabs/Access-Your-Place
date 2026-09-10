@@ -538,7 +538,10 @@ export default function StaffWorkspace() {
                     const iVendor = find('vendor', 'supplier', 'store');
                     const iCost = find('cost', 'price');
                     const hasHeader = iRoom >= 0 || iItem >= 0;
-                    if (!hasHeader) { iRoom = 0; iItem = 1; }
+                    // No Room column at all: column one is the item, not a room.
+                    const noRoomColumn = iRoom < 0;
+                    if (!hasHeader) { iItem = 0; iRoom = -1; }
+                    else if (noRoomColumn && iItem < 0) { iItem = 0; }
                     const body = hasHeader ? grid.slice(hRow + 1) : grid;
 
                     // Upload any embedded pictures, matched to rows in order.
@@ -558,11 +561,19 @@ export default function StaffWorkspace() {
                       }
                     }
 
-                    const parsed = body.map((r, idx) => ({
-                      room: (iRoom >= 0 ? r[iRoom] : '') || '',
+                    // A cell like "For unit 604" or "10 for each unit" is a note about
+                    // where it goes, not an item name.
+                    const unitFrom = (txt: string) => (txt.match(/\b(404|604|605)\b/) || [])[1] || '';
+                    const isNote = (txt: string) => /^(for\b|\d+\s*for\b)/i.test((txt || '').trim());
+                    const parsed = body.map((r, idx) => {
+                      const noteCell = r.find((c) => isNote(c)) || '';
+                      return {
+                      room: (iRoom >= 0 ? r[iRoom] : '') || 'Household',
                       item: (iItem >= 0 ? r[iItem] : '') || '',
                       quantity: iQty >= 0 ? r[iQty] : '',
-                      destination_unit: iUnit >= 0 ? (r[iUnit] || '') : (form.dest || ''),
+                      destination_unit: (iUnit >= 0 ? (r[iUnit] || '') : '')
+                        || unitFrom(noteCell) || (form.dest || ''),
+                      notes: noteCell,
                       vendor: iVendor >= 0 ? (r[iVendor] || '') : '',
                       unit_cost: iCost >= 0 ? (r[iCost] || '') : '',
                       // A link in a photo column wins; otherwise use an embedded picture in row order.
@@ -572,7 +583,8 @@ export default function StaffWorkspace() {
                         || (r.find((c) => /^https?:\/\/\S+\.(png|jpe?g|gif|webp)/i.test(c || '')) || '')
                         || (r.find((c) => /^https?:\/\//i.test(c || '')) || '')
                         || (urls[idx] || ''),
-                    })).filter((x) => x.item);
+                    };
+                    }).filter((x) => x.item && !isNote(x.item));
 
                     setForm((fm) => ({ ...fm, parsed: JSON.stringify(parsed),
                       bulk: parsed.map((x) => [x.room, x.item, x.quantity].filter(Boolean).join(', ')).join('\n') }));
