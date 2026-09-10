@@ -407,6 +407,7 @@ export default function StaffWorkspace() {
               <Btn kind="sec" onClick={() => { setPanel(`edit:${pr.id}`); setForm({ addr: pr.property_address || '' }); setResult(''); }}>Edit this project</Btn>
               <Btn kind="sec" onClick={() => { setPanel(`pro:${pr.id}`); setForm({}); setResult(''); }}>Create a Pro link</Btn>
               <Btn kind="sec" onClick={() => { setPanel(`items:${pr.id}`); setForm({}); setResult(''); }}>Add items</Btn>
+              <Btn kind="sec" onClick={() => { setPanel(`msg:${pr.id}`); setForm({}); setResult(''); }}>Message the client</Btn>
             </li>
           ))}
         </ul>
@@ -647,6 +648,45 @@ export default function StaffWorkspace() {
                 { p_project_id: panel.slice(6), p_staff_id: session?.id, p_items: rows },
                 (d) => { setForm((fm) => ({ ...fm, parsed: '' })); return d?.note || `Added ${rows.length} item(s).`; });
             }}>Add these items</Btn>
+            <Btn kind="sec" always onClick={() => { setPanel(null); setResult(''); setForm({}); }}>Cancel</Btn>
+          </div>
+        )}
+
+        {panel?.startsWith('msg:') && (
+          <div role="region" aria-label="Message the client" style={{ background: '#fff', border: '1px solid #12263f', borderRadius: 8, padding: 18, marginTop: 12 }}>
+            <h3 style={{ margin: '0 0 .2em' }}>Message the client</h3>
+            <p style={{ background: '#12263f', color: '#fff', fontWeight: 700, borderRadius: 6,
+                        padding: '10px 12px', margin: '0 0 12px', fontSize: '.95rem' }}>
+              {(() => { const pr = projects.find((x: any) => x.id === panel?.split(':')[1]);
+                return pr ? `${pr.investor_name} — ${pr.property_address}` : 'Client'; })()}
+            </p>
+            <p style={{ color: '#5b6672', fontSize: '.92rem' }}>
+              Goes to their portal and emails them a copy. It is logged against their record.
+            </p>
+            <F id="msgsubject" label="Subject" />
+            <div style={{ margin: '12px 0' }}>
+              <label htmlFor="msgbody" style={{ display: 'block', fontWeight: 600, fontSize: '.92rem', marginBottom: 4 }}>Message</label>
+              <textarea id="msgbody" value={form.msgbody || ''}
+                onChange={(e) => setForm((f) => ({ ...f, msgbody: e.target.value }))}
+                style={{ width: '100%', maxWidth: 560, minHeight: 130, fontSize: '1rem', padding: '10px 12px',
+                         border: '1px solid #dfe3e8', borderRadius: 6 }} />
+            </div>
+            {result && (
+              <p style={{ margin: '12px 0', padding: '12px 14px', borderRadius: 6,
+                background: /Not sent|Could not/.test(result) ? '#fff1f2' : '#ecfdf5',
+                border: `1px solid ${/Not sent|Could not/.test(result) ? '#9f1239' : '#065f46'}`,
+                fontWeight: 600 }}>{result}</p>
+            )}
+            <Btn onClick={() => {
+              const pr = projects.find((x: any) => x.id === panel?.split(':')[1]);
+              if (!form.msgbody?.trim()) { setResult('Not sent. Write a message first.'); setAnnounce('Not sent. Write a message first.'); return; }
+              if (!pr?.investor_id) { setResult('Not sent. This project has no client attached.'); return; }
+              runRpc('penny_send_message', {
+                p_from_staff_id: session?.id, p_audience: 'client', p_to_id: pr.investor_id,
+                p_subject: form.msgsubject || 'An update on your project',
+                p_body: form.msgbody, p_parent: null,
+              }, (d) => d?.note ? `Sent to ${pr.investor_name}. ${d.note}` : `Sent to ${pr.investor_name}.`);
+            }}>Send it</Btn>
             <Btn kind="sec" always onClick={() => { setPanel(null); setResult(''); setForm({}); }}>Cancel</Btn>
           </div>
         )}
@@ -896,13 +936,39 @@ export default function StaffWorkspace() {
             <>
               <h1 style={{ fontSize: '1.5rem', margin: '0 0 .7em' }}>Penny</h1>
               <p style={{ color: '#5b6672' }}>
-                Penny is not on this screen yet. Chat history and choosing a workspace for a chat
-                are part of this design and are still to be built.
+                Ask her anything about your clients, projects, deals or the numbers.
               </p>
-              <p style={{ color: '#5b6672' }}>
-                This screen used to send you to the old dashboard. That has been retired, so the
-                button was going nowhere and has been removed rather than left looking usable.
-              </p>
+              <div style={{ margin: '12px 0' }}>
+                <label htmlFor="pennyq" style={{ display: 'block', fontWeight: 600, fontSize: '.92rem', marginBottom: 4 }}>
+                  Your question
+                </label>
+                <textarea id="pennyq" value={form.pennyq || ''}
+                  onChange={(e) => setForm((f) => ({ ...f, pennyq: e.target.value }))}
+                  placeholder="How many items are outstanding on Drew's job?"
+                  style={{ width: '100%', maxWidth: 560, minHeight: 96, fontSize: '1rem', padding: '10px 12px',
+                           border: '1px solid #dfe3e8', borderRadius: 6 }} />
+              </div>
+              <Btn onClick={async () => {
+                if (!form.pennyq?.trim()) { setResult('Type a question first.'); return; }
+                setBusy(true); setResult('');
+                try {
+                  const { data, error } = await supabase.functions.invoke('penny-staff-chat', {
+                    body: { staff_id: session?.id, staff_name: displayName,
+                            messages: [{ role: 'user', content: form.pennyq }] },
+                  });
+                  if (error) throw new Error(error.message);
+                  const reply = data?.message || 'She did not come back with anything.';
+                  setResult(reply); setAnnounce(reply.slice(0, 300));
+                } catch (err: any) {
+                  const m = `Could not reach Penny. ${err?.message || ''}`;
+                  setResult(m); setAnnounce(m);
+                }
+                setBusy(false);
+              }}>Ask Penny</Btn>
+              {result && (
+                <p style={{ marginTop: 14, padding: '14px 16px', borderRadius: 8, background: '#fff',
+                            border: '1px solid #dfe3e8', whiteSpace: 'pre-wrap', lineHeight: 1.55 }}>{result}</p>
+              )}
             </>
           )}
 
