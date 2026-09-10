@@ -400,33 +400,94 @@ export default function StaffWorkspace() {
                 onChange={async (e) => {
                   const f = e.target.files?.[0];
                   if (!f) return;
-                  let rows: string[] = [];
+                  setBusy(true);
+                  setAnnounce(`Reading ${f.name}\u2026`);
                   try {
+                    let grid: string[][] = [];
+                    let media: Record<string, Uint8Array> = {};
+
                     if (/\.(xlsx|xls)$/i.test(f.name)) {
-                      // A real Excel file. Read the first sheet and turn it into lines.
+                      const buf = await f.arrayBuffer();
                       const XLSX = await import('xlsx');
-                      const wb = XLSX.read(await f.arrayBuffer(), { type: 'array' });
+                      const wb = XLSX.read(buf, { type: 'array' });
                       const sheet = wb.Sheets[wb.SheetNames[0]];
-                      const grid: any[][] = XLSX.utils.sheet_to_json(sheet, { header: 1, blankrows: false });
-                      rows = grid
-                        .map((r) => r.map((c: any) => (c === undefined || c === null ? '' : String(c).trim())))
-                        .filter((r) => r.some((c) => c !== ''))
-                        .map((r) => r.join(','));
+                      grid = (XLSX.utils.sheet_to_json(sheet, { header: 1, blankrows: false }) as any[][])
+                        .map((r) => r.map((c: any) => (c == null ? '' : String(c).trim())))
+                        .filter((r) => r.some((c) => c !== ''));
+
+                      // Pictures pasted into the sheet live inside the file as images.
+                      // Pull them out in row order so they can be matched to items.
+                      try {
+                        const { unzipSync } = await import('fflate');
+                        const files = unzipSync(new Uint8Array(buf));
+                        Object.keys(files)
+                          .filter((k) => /^xl\/media\/.+\.(png|jpe?g|gif|webp)$/i.test(k))
+                          .sort((a, b) => a.localeCompare(b, undefined, { numeric: true }))
+                          .forEach((k) => { media[k] = files[k]; });
+                      } catch { /* no images, or unreadable. Not fatal. */ }
                     } else {
                       const text = await f.text();
-                      rows = text.split(/\r?\n/).map((l) => l.trim()).filter(Boolean)
-                                 .map((l) => l.replace(/\t/g, ','));
+                      grid = text.split(/\r?\n/).map((l) => l.trim()).filter(Boolean)
+                        .map((l) => l.split(l.includes('\t') ? '\t' : ',').map((c) => c.trim()));
                     }
+
+                    if (!grid.length) throw new Error('That file had no rows in it.');
+
+                    // Map columns by their header name rather than by position.
+                    const head = grid[0].map((h) => h.toLowerCase());
+                    const find = (...names: string[]) =>
+                      head.findIndex((h) => names.some((n) => h.includes(n)));
+                    let iRoom = find('room', 'location', 'area');
+                    let iItem = find('item', 'product', 'description', 'name');
+                    const iQty = find('qty', 'quantity', 'count');
+                    const iPhoto = find('photo', 'image', 'picture', 'img');
+                    const iUnit = find('unit', 'destination', 'apartment', 'apt');
+                    const iVendor = find('vendor', 'supplier', 'store');
+                    const iCost = find('cost', 'price');
+                    const hasHeader = iRoom >= 0 || iItem >= 0;
+                    if (!hasHeader) { iRoom = 0; iItem = 1; }
+                    const body = hasHeader ? grid.slice(1) : grid;
+
+                    // Upload any embedded pictures, matched to rows in order.
+                    const urls: (string | null)[] = [];
+                    const keys = Object.keys(media);
+                    if (keys.length) {
+                      setAnnounce(`Uploading ${keys.length} picture${keys.length === 1 ? '' : 's'}\u2026`);
+                      for (let i = 0; i < keys.length; i++) {
+                        const ext = keys[i].split('.').pop() || 'png';
+                        const path = `${panel?.split(':')[1]}/${Date.now()}-${i}.${ext}`;
+                        const { error: upErr } = await supabase.storage
+                          .from('setup-item-photos')
+                          .upload(path, media[keys[i]], { contentType: `image/${ext === 'jpg' ? 'jpeg' : ext}`, upsert: true });
+                        if (upErr) { urls.push(null); continue; }
+                        const { data: pub } = supabase.storage.from('setup-item-photos').getPublicUrl(path);
+                        urls.push(pub?.publicUrl || null);
+                      }
+                    }
+
+                    const parsed = body.map((r, idx) => ({
+                      room: (iRoom >= 0 ? r[iRoom] : '') || '',
+                      item: (iItem >= 0 ? r[iItem] : '') || '',
+                      quantity: iQty >= 0 ? r[iQty] : '',
+                      destination_unit: iUnit >= 0 ? (r[iUnit] || '') : (form.dest || ''),
+                      vendor: iVendor >= 0 ? (r[iVendor] || '') : '',
+                      unit_cost: iCost >= 0 ? (r[iCost] || '') : '',
+                      // A link in a photo column wins; otherwise use an embedded picture in row order.
+                      photo_url: (iPhoto >= 0 && /^https?:\/\//i.test(r[iPhoto] || '')) ? r[iPhoto] : (urls[idx] || ''),
+                    })).filter((x) => x.item);
+
+                    setForm((fm) => ({ ...fm, parsed: JSON.stringify(parsed),
+                      bulk: parsed.map((x) => [x.room, x.item, x.quantity].filter(Boolean).join(', ')).join('\n') }));
+                    const withPics = parsed.filter((x) => x.photo_url).length;
+                    const msg = `${f.name} loaded. ${parsed.length} row${parsed.length === 1 ? '' : 's'}`
+                      + (withPics ? `, ${withPics} with a photo` : ', no photos found')
+                      + '. Check them below, then add.';
+                    setAnnounce(msg); setResult(msg);
                   } catch (err: any) {
-                    setAnnounce(`Could not read ${f.name}. ${err?.message || 'Try saving it as CSV.'}`);
-                    setResult(`Could not read that file. ${err?.message || 'Try saving it as CSV and uploading again.'}`);
-                    return;
+                    const msg = `Could not read that file. ${err?.message || 'Try saving it as CSV and uploading again.'}`;
+                    setAnnounce(msg); setResult(msg);
                   }
-                  // Drop a header row if the first line looks like column names.
-                  const first = (rows[0] || '').toLowerCase();
-                  const body = /room|item|qty|quantity/.test(first) && !/\d/.test(first) ? rows.slice(1) : rows;
-                  setForm((fm) => ({ ...fm, bulk: body.join('\n') }));
-                  setAnnounce(`${f.name} loaded. ${body.length} row${body.length === 1 ? '' : 's'} ready. Check them below, then add.`);
+                  setBusy(false);
                 }}
                 style={{ width: '100%', maxWidth: 560, minHeight: 44, fontSize: '1rem', padding: '9px 10px',
                          border: '1px solid #dfe3e8', borderRadius: 6, background: '#fff' }}
@@ -444,7 +505,13 @@ export default function StaffWorkspace() {
             </div>
             <F id="dest" label="Destination unit" hint="For a multi-unit job, e.g. 604. Leave blank and assign later." />
             <Btn onClick={() => {
-              const rows = (form.bulk || '').split('\n').map((l) => l.trim()).filter(Boolean).map((line) => {
+              // If a file was parsed, use those rows so photos, vendors and units survive.
+              // Typed lines are only used when there is no parsed file.
+              let rows: any[] = [];
+              if (form.parsed) {
+                try { rows = JSON.parse(form.parsed); } catch { rows = []; }
+              }
+              if (!rows.length) rows = (form.bulk || '').split('\n').map((l) => l.trim()).filter(Boolean).map((line) => {
                 const parts = line.split(',').map((x) => (x || '').trim());
                 const room = parts.shift() || '';
                 // Only treat the last field as a quantity if it actually looks like one,
@@ -456,10 +523,12 @@ export default function StaffWorkspace() {
                 const item = parts.join(', ');
                 return { room, item, quantity, destination_unit: form.dest || '' };
               });
+              // A destination typed in the box applies to any row that did not carry one.
+              if (form.dest) rows = rows.map((r: any) => ({ ...r, destination_unit: r.destination_unit || form.dest }));
               if (!rows.length) { setResult('Not saved. Type at least one item.'); setAnnounce('Not saved. Type at least one item.'); return; }
               runRpc('ayp_setup_add_items',
                 { p_project_id: panel.slice(6), p_staff_id: session?.id, p_items: rows },
-                (d) => d?.note || `Added ${rows.length} item(s).`);
+                (d) => { setForm((fm) => ({ ...fm, parsed: '' })); return d?.note || `Added ${rows.length} item(s).`; });
             }}>Add these items</Btn>
             <Btn kind="sec" onClick={() => { setPanel(null); setResult(''); }}>Cancel</Btn>
           </div>
