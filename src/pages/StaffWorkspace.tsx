@@ -396,12 +396,20 @@ export default function StaffWorkspace() {
               <input
                 id="sheet"
                 type="file"
-                accept=".csv,.xlsx,.xls,.tsv,text/csv,text/plain,application/vnd.ms-excel,application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"
+                accept="*/*"
                 onChange={async (e) => {
                   const f = e.target.files?.[0];
                   if (!f) return;
                   setBusy(true);
                   setAnnounce(`Reading ${f.name}\u2026`);
+                  if (!/\.(xlsx|xls|xlsm|csv|tsv|txt|numbers)$/i.test(f.name)) {
+                    const msg = `${f.name} is not a spreadsheet. Open it in Excel or Google Sheets and save it as Excel or CSV, then upload that.`;
+                    setAnnounce(msg); setResult(msg); setBusy(false); return;
+                  }
+                  if (/\.numbers$/i.test(f.name)) {
+                    const msg = 'Numbers files cannot be read directly. In Numbers choose Export To, then Excel, and upload that file.';
+                    setAnnounce(msg); setResult(msg); setBusy(false); return;
+                  }
                   try {
                     let grid: string[][] = [];
                     let media: Record<string, Uint8Array> = {};
@@ -410,10 +418,13 @@ export default function StaffWorkspace() {
                       const buf = await f.arrayBuffer();
                       const XLSX = await import('xlsx');
                       const wb = XLSX.read(buf, { type: 'array' });
-                      const sheet = wb.Sheets[wb.SheetNames[0]];
-                      grid = (XLSX.utils.sheet_to_json(sheet, { header: 1, blankrows: false }) as any[][])
-                        .map((r) => r.map((c: any) => (c == null ? '' : String(c).trim())))
-                        .filter((r) => r.some((c) => c !== ''));
+                      // Some sheets have a cover tab, or a title row above the table.
+                      for (const nm of wb.SheetNames) {
+                        const g = (XLSX.utils.sheet_to_json(wb.Sheets[nm], { header: 1, blankrows: false }) as any[][])
+                          .map((r) => (r || []).map((c: any) => (c == null ? '' : String(c).trim())))
+                          .filter((r) => r.some((c) => c !== ''));
+                        if (g.length > grid.length) grid = g;
+                      }
 
                       // Pictures pasted into the sheet live inside the file as images.
                       // Pull them out in row order so they can be matched to items.
@@ -431,10 +442,17 @@ export default function StaffWorkspace() {
                         .map((l) => l.split(l.includes('\t') ? '\t' : ',').map((c) => c.trim()));
                     }
 
-                    if (!grid.length) throw new Error('That file had no rows in it.');
+                    if (!grid.length) throw new Error('The file opened but there were no rows in it. Check the data is on the first sheet.');
 
                     // Map columns by their header name rather than by position.
-                    const head = grid[0].map((h) => h.toLowerCase());
+                    // The header might be on line 3 under a title. Look for it.
+                    let hRow = 0;
+                    for (let r = 0; r < Math.min(grid.length, 8); r++) {
+                      const cells = grid[r].map((c) => c.toLowerCase());
+                      if (cells.some((c) => /room|location|area/.test(c)) ||
+                          cells.some((c) => /item|product|description/.test(c))) { hRow = r; break; }
+                    }
+                    const head = grid[hRow].map((h) => h.toLowerCase());
                     const find = (...names: string[]) =>
                       head.findIndex((h) => names.some((n) => h.includes(n)));
                     let iRoom = find('room', 'location', 'area');
@@ -446,7 +464,7 @@ export default function StaffWorkspace() {
                     const iCost = find('cost', 'price');
                     const hasHeader = iRoom >= 0 || iItem >= 0;
                     if (!hasHeader) { iRoom = 0; iItem = 1; }
-                    const body = hasHeader ? grid.slice(1) : grid;
+                    const body = hasHeader ? grid.slice(hRow + 1) : grid;
 
                     // Upload any embedded pictures, matched to rows in order.
                     const urls: (string | null)[] = [];
