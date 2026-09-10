@@ -522,6 +522,12 @@ export default function StaffWorkspace() {
                 style={{ width: '100%', maxWidth: 560, minHeight: 130, fontSize: '1rem', padding: '10px 12px', border: '1px solid #dfe3e8', borderRadius: 6 }} />
             </div>
             <F id="dest" label="Destination unit" hint="For a multi-unit job, e.g. 604. Leave blank and assign later." />
+            {result && (
+              <p style={{ margin: '12px 0', padding: '12px 14px', borderRadius: 6,
+                background: /Not saved|Could not|not a spreadsheet|cannot be read/.test(result) ? '#fff1f2' : '#ecfdf5',
+                border: `1px solid ${/Not saved|Could not|not a spreadsheet|cannot be read/.test(result) ? '#9f1239' : '#065f46'}`,
+                fontWeight: 600 }}>{result}</p>
+            )}
             <Btn onClick={() => {
               // If a file was parsed, use those rows so photos, vendors and units survive.
               // Typed lines are only used when there is no parsed file.
