@@ -146,6 +146,18 @@ export default function StaffWorkspace() {
   const [panel, setPanel] = useState<string | null>(null);
   const [form, setForm] = useState<Record<string, string>>({});
   const [busy, setBusy] = useState(false);
+
+  // Nothing here should take 45 seconds. If it does, unlock the screen and say so, rather
+  // than leaving every button disabled with no explanation.
+  useEffect(() => {
+    if (!busy) return;
+    const t = setTimeout(() => {
+      setBusy(false);
+      setResult('That took too long and was stopped. Nothing was saved. Try again, or Cancel.');
+      setAnnounce('That took too long and was stopped. Nothing was saved.');
+    }, 45000);
+    return () => clearTimeout(t);
+  }, [busy]);
   const [result, setResult] = useState('');
 
   useEffect(() => {
@@ -261,14 +273,21 @@ export default function StaffWorkspace() {
     </div>
   );
 
-  const Btn = ({ onClick, children, kind = 'primary' as 'primary' | 'sec' }: any) => (
-    <button type="button" onClick={onClick} disabled={busy}
-      style={{ minHeight: 44, padding: '0 16px', borderRadius: 6, border: '1px solid #12263f',
-        background: kind === 'primary' ? '#12263f' : '#fff', color: kind === 'primary' ? '#fff' : '#12263f',
-        fontWeight: 600, fontSize: '.92rem', cursor: busy ? 'wait' : 'pointer', marginRight: 8 }}>
-      {busy ? 'Working…' : children}
-    </button>
-  );
+  const Btn = ({ onClick, children, kind = 'primary' as 'primary' | 'sec', always = false }: any) => {
+    // `always` buttons (Cancel, Close) are never disabled. A person must always be able to
+    // back out, whatever the screen thinks it is doing.
+    const blocked = busy && !always;
+    return (
+      <button type="button" disabled={blocked}
+        onClick={() => { if (always) setBusy(false); onClick?.(); }}
+        style={{ minHeight: 44, padding: '0 16px', borderRadius: 6, border: '1px solid #12263f',
+          background: kind === 'primary' ? '#12263f' : '#fff', color: kind === 'primary' ? '#fff' : '#12263f',
+          fontWeight: 600, fontSize: '.92rem', cursor: blocked ? 'wait' : 'pointer', marginRight: 8,
+          opacity: blocked ? 0.6 : 1 }}>
+        {blocked ? 'Working…' : children}
+      </button>
+    );
+  };
 
   function ItemSchedule() {
     const rows = form.projfilter ? items.filter((r: any) => r.project_id === form.projfilter) : items;
@@ -370,7 +389,7 @@ export default function StaffWorkspace() {
             <Btn onClick={() => run('update_project',
               { project_id: panel.slice(5), updates: { property_address: form.addr, internal_notes: form.notes } },
               () => 'Project updated.')}>Save changes</Btn>
-            <Btn kind="sec" onClick={() => { setPanel(null); setResult(''); }}>Cancel</Btn>
+            <Btn kind="sec" always onClick={() => { setPanel(null); setResult(''); setForm({}); }}>Cancel</Btn>
           </div>
         )}
 
@@ -581,7 +600,7 @@ export default function StaffWorkspace() {
                 { p_project_id: panel.slice(6), p_staff_id: session?.id, p_items: rows },
                 (d) => { setForm((fm) => ({ ...fm, parsed: '' })); return d?.note || `Added ${rows.length} item(s).`; });
             }}>Add these items</Btn>
-            <Btn kind="sec" onClick={() => { setPanel(null); setResult(''); }}>Cancel</Btn>
+            <Btn kind="sec" always onClick={() => { setPanel(null); setResult(''); setForm({}); }}>Cancel</Btn>
           </div>
         )}
 
@@ -605,7 +624,7 @@ export default function StaffWorkspace() {
                 : `Link sent to ${form.pro_email}.`)}>
               {form.pro_email ? 'Email the link' : 'Create the link'}
             </Btn>
-            <Btn kind="sec" onClick={() => { setPanel(null); setResult(''); }}>Cancel</Btn>
+            <Btn kind="sec" always onClick={() => { setPanel(null); setResult(''); setForm({}); }}>Cancel</Btn>
           </div>
         )}
 
@@ -634,7 +653,7 @@ export default function StaffWorkspace() {
               logistics_fee_amount: Number(form.fee) || 0,
               assigned_manager_id: session?.id, assigned_manager_name: displayName,
             }, () => 'Project created. It is now in your list above.')}>Create the project</Btn>
-            <Btn kind="sec" onClick={() => { setPanel(null); setResult(''); }}>Cancel</Btn>
+            <Btn kind="sec" always onClick={() => { setPanel(null); setResult(''); setForm({}); }}>Cancel</Btn>
           </div>
         ) : (
           <Btn onClick={() => { setPanel('new'); setForm({}); setResult(''); }}>Start a new project</Btn>
