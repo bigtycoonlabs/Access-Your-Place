@@ -301,11 +301,40 @@ export default function StaffWorkspace() {
           <div role="region" aria-label="Add items" style={{ background: '#fff', border: '1px solid #12263f', borderRadius: 8, padding: 18, marginTop: 12 }}>
             <h3 style={{ margin: '0 0 .2em' }}>Add items</h3>
             <p style={{ color: '#5b6672', fontSize: '.92rem' }}>
-              One item per line: <strong>room, item, quantity</strong>. Quantity is optional and defaults to one.
+              One item per line: <strong>room, item, quantity</strong>. Quantity is optional and defaults to one. You can upload a CSV above, paste rows straight from a spreadsheet, or type them.
               An item with no room is refused, because an item nobody can place is not usable on the board.
             </p>
             <div style={{ margin: '12px 0' }}>
-              <label htmlFor="bulk" style={{ display: 'block', fontWeight: 600, fontSize: '.92rem', marginBottom: 4 }}>Items</label>
+              <label htmlFor="sheet" style={{ display: 'block', fontWeight: 600, fontSize: '.92rem', marginBottom: 4 }}>
+                Upload a spreadsheet
+              </label>
+              <p style={{ color: '#5b6672', fontSize: '.85rem', margin: '0 0 6px' }}>
+                A CSV file. Columns: room, item, quantity. In Excel or Google Sheets choose File, then Download, then CSV.
+              </p>
+              <input
+                id="sheet"
+                type="file"
+                accept=".csv,text/csv,text/plain"
+                onChange={async (e) => {
+                  const f = e.target.files?.[0];
+                  if (!f) return;
+                  const text = await f.text();
+                  const rows = text.split(/\r?\n/).map((l) => l.trim()).filter(Boolean);
+                  // Drop a header row if the first line looks like column names.
+                  const first = (rows[0] || '').toLowerCase();
+                  const body = /room|item|qty|quantity/.test(first) && !/\d/.test(first) ? rows.slice(1) : rows;
+                  setForm((fm) => ({ ...fm, bulk: body.join('\n') }));
+                  setAnnounce(`${f.name} loaded. ${body.length} row${body.length === 1 ? '' : 's'} ready. Check them below, then add.`);
+                }}
+                style={{ width: '100%', maxWidth: 560, minHeight: 44, fontSize: '1rem', padding: '9px 10px',
+                         border: '1px solid #dfe3e8', borderRadius: 6, background: '#fff' }}
+              />
+            </div>
+
+            <div style={{ margin: '12px 0' }}>
+              <label htmlFor="bulk" style={{ display: 'block', fontWeight: 600, fontSize: '.92rem', marginBottom: 4 }}>
+                Items — type them, paste them, or check what the file loaded
+              </label>
               <textarea id="bulk" value={form.bulk || ''}
                 onChange={(e) => setForm((f) => ({ ...f, bulk: e.target.value }))}
                 placeholder={'Master Bedroom, King bed frame, 1\nKitchen, Dinner plates, 8\nLiving Room, Sofa'}
