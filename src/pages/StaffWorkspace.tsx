@@ -328,16 +328,51 @@ export default function StaffWorkspace() {
               </p>
               <ul style={{ listStyle: 'none', margin: '10px 0 0', padding: 0 }}>
                 {list.slice(0, 40).map((r: any) => (
-                  <li key={r.id} style={{ borderTop: '1px solid #eef1f4', padding: '8px 0', fontSize: '.92rem' }}>
+                  <li key={r.id} style={{ borderTop: '1px solid #eef1f4', padding: '8px 0', fontSize: '.92rem',
+                                          display: 'flex', gap: 10, alignItems: 'flex-start', justifyContent: 'space-between' }}>
+                    <span style={{ flex: 1 }}>
                     <strong>{r.item_name}</strong>
                     {r.quantity > 1 && <span style={{ color: '#5b6672' }}> ×{r.quantity}</span>}
                     <span style={{ color: '#5b6672' }}>
                       {' '}· {r.room || 'no room'}{r.destination_unit ? ` · unit ${r.destination_unit}` : ''}
                       {' '}· {r.delivered_at ? 'arrived' : r.status}
                     </span>
+                    </span>
+                    <button type="button" aria-label={`Remove ${r.item_name}`}
+                      onClick={() => runRpc('ayp_setup_remove_items',
+                        { p_staff_id: session?.id, p_item_ids: [r.id], p_project_id: null, p_all: false },
+                        (d) => d?.note || 'Removed.')}
+                      style={{ minHeight: 44, minWidth: 78, padding: '0 12px', borderRadius: 6,
+                               border: '1px solid #9f1239', background: '#fff', color: '#9f1239',
+                               fontWeight: 600, fontSize: '.85rem', cursor: 'pointer', flex: '0 0 auto' }}>
+                      Remove
+                    </button>
                   </li>
                 ))}
               </ul>
+              <div style={{ marginTop: 12 }}>
+                {form.clearing === pid ? (
+                  <>
+                    <p style={{ color: '#9f1239', fontWeight: 600, fontSize: '.9rem' }}>
+                      Remove all {list.length} items from {nameFor(pid)}? Anything a Pro has already
+                      confirmed, or that has arrived, will be kept.
+                    </p>
+                    <Btn onClick={() => runRpc('ayp_setup_remove_items',
+                      { p_staff_id: session?.id, p_item_ids: null, p_project_id: pid, p_all: true },
+                      (d) => { setForm((f) => ({ ...f, clearing: '' })); return d?.note || 'Cleared.'; })}>
+                      Yes, clear the list
+                    </Btn>
+                    <Btn kind="sec" always onClick={() => setForm((f) => ({ ...f, clearing: '' }))}>Keep them</Btn>
+                  </>
+                ) : (
+                  <button type="button"
+                    onClick={() => setForm((f) => ({ ...f, clearing: pid }))}
+                    style={{ minHeight: 44, padding: '0 14px', borderRadius: 6, border: '1px solid #9f1239',
+                             background: '#fff', color: '#9f1239', fontWeight: 600, fontSize: '.88rem', cursor: 'pointer' }}>
+                    Clear this list and start again
+                  </button>
+                )}
+              </div>
               {list.length > 40 && (
                 <p style={{ color: '#5b6672', fontSize: '.86rem', marginTop: 8 }}>
                   Showing the first 40 of {list.length}.
