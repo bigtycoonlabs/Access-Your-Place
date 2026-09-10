@@ -413,6 +413,7 @@ export default function StaffWorkspace() {
                   try {
                     let grid: string[][] = [];
                     let media: Record<string, Uint8Array> = {};
+                    const cellUrls: Record<number, string> = {};
 
                     if (/\.(xlsx|xls)$/i.test(f.name)) {
                       const buf = await f.arrayBuffer();
@@ -425,6 +426,26 @@ export default function StaffWorkspace() {
                           .filter((r) => r.some((c) => c !== ''));
                         if (g.length > grid.length) grid = g;
                       }
+
+                      // Google Sheets stores photos as =IMAGE("url") formulas, or as a
+                      // hyperlink on the cell. Read both out of the raw cells.
+                      try {
+                        const target = wb.SheetNames.find((nm) =>
+                          (XLSX.utils.sheet_to_json(wb.Sheets[nm], { header: 1, blankrows: false }) as any[][]).length === grid.length)
+                          || wb.SheetNames[0];
+                        const sh: any = wb.Sheets[target];
+                        Object.keys(sh).filter((k) => !k.startsWith('!')).forEach((addr) => {
+                          const cell = sh[addr];
+                          const fromFormula = typeof cell?.f === 'string'
+                            ? (cell.f.match(/https?:\/\/[^"')\s]+/i) || [])[0] : null;
+                          const fromLink = cell?.l?.Target && /^https?:\/\//i.test(cell.l.Target) ? cell.l.Target : null;
+                          const url = fromFormula || fromLink;
+                          if (url) {
+                            const rc = XLSX.utils.decode_cell(addr);
+                            cellUrls[rc.r] = cellUrls[rc.r] || url;
+                          }
+                        });
+                      } catch { /* no formulas or links. Not fatal. */ }
 
                       // Pictures pasted into the sheet live inside the file as images.
                       // Pull them out in row order so they can be matched to items.
@@ -491,14 +512,20 @@ export default function StaffWorkspace() {
                       vendor: iVendor >= 0 ? (r[iVendor] || '') : '',
                       unit_cost: iCost >= 0 ? (r[iCost] || '') : '',
                       // A link in a photo column wins; otherwise use an embedded picture in row order.
-                      photo_url: (iPhoto >= 0 && /^https?:\/\//i.test(r[iPhoto] || '')) ? r[iPhoto] : (urls[idx] || ''),
+                      photo_url:
+                        (iPhoto >= 0 && /^https?:\/\//i.test(r[iPhoto] || '')) ? r[iPhoto]
+                        : (cellUrls[(hasHeader ? hRow + 1 : 0) + idx] || '')
+                        || (r.find((c) => /^https?:\/\/\S+\.(png|jpe?g|gif|webp)/i.test(c || '')) || '')
+                        || (r.find((c) => /^https?:\/\//i.test(c || '')) || '')
+                        || (urls[idx] || ''),
                     })).filter((x) => x.item);
 
                     setForm((fm) => ({ ...fm, parsed: JSON.stringify(parsed),
                       bulk: parsed.map((x) => [x.room, x.item, x.quantity].filter(Boolean).join(', ')).join('\n') }));
                     const withPics = parsed.filter((x) => x.photo_url).length;
                     const msg = `${f.name} loaded. ${parsed.length} row${parsed.length === 1 ? '' : 's'}`
-                      + (withPics ? `, ${withPics} with a photo` : ', no photos found')
+                      + (withPics ? `, ${withPics} with a photo`
+                          : ', no photos found. If your photos are links, put them in a column called Photo. If they are pictures in the sheet, save it as Excel rather than CSV.')
                       + '. Check them below, then add.';
                     setAnnounce(msg); setResult(msg);
                   } catch (err: any) {
