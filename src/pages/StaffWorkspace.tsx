@@ -266,7 +266,7 @@ export default function StaffWorkspace() {
       style={{ minHeight: 44, padding: '0 16px', borderRadius: 6, border: '1px solid #12263f',
         background: kind === 'primary' ? '#12263f' : '#fff', color: kind === 'primary' ? '#fff' : '#12263f',
         fontWeight: 600, fontSize: '.92rem', cursor: busy ? 'wait' : 'pointer', marginRight: 8 }}>
-      {busy ? 'Working\u2026' : children}
+      {busy ? 'Working…' : children}
     </button>
   );
 
@@ -281,7 +281,7 @@ export default function StaffWorkspace() {
         <Hint>Every item on your projects. Room is where it came from. Unit is where it is going.</Hint>
         {rows.length === 0 && (
           <p style={{ background: '#fff', border: '1px solid #dfe3e8', borderRadius: 8, padding: 16, color: '#5b6672' }}>
-            {loading ? 'Loading\u2026' : 'No items yet. Use Add items above.'}
+            {loading ? 'Loading…' : 'No items yet. Use Add items above.'}
           </p>
         )}
         {Object.keys(byProject).map((pid) => {
@@ -323,7 +323,7 @@ export default function StaffWorkspace() {
         <H2>Your projects</H2>
         <Hint>Every job assigned to you. Open one to edit it or add items.</Hint>
         <ul style={{ listStyle: 'none', margin: 0, padding: 0 }}>
-          {loading && <li style={{ color: '#5b6672' }}>Loading your projects\u2026</li>}
+          {loading && <li style={{ color: '#5b6672' }}>Loading your projects…</li>}
           {!loading && projects.length === 0 && (
             <li style={{ background: '#fff', border: '1px solid #dfe3e8', borderRadius: 8, padding: 16 }}>
               <p style={{ color: '#5b6672', margin: 0 }}>No projects yet. Start one below.</p>
@@ -334,7 +334,7 @@ export default function StaffWorkspace() {
               <h3 style={{ margin: '0 0 .2em' }}>{pr.investor_name || 'Unnamed client'}</h3>
               <p style={{ color: '#5b6672', fontSize: '.92rem', margin: '0 0 .3em' }}>{pr.property_address}</p>
               <p style={{ color: '#5b6672', fontSize: '.88rem', margin: '0 0 .7em' }}>
-                {pr.setup_type?.replace(/_/g, ' ')} \u00b7 phase {pr.phase} \u00b7 {pr.logistics_fee_paid ? 'fee paid' : 'fee not paid'}
+                {pr.setup_type?.replace(/_/g, ' ')} · phase {pr.phase} · {pr.logistics_fee_paid ? 'fee paid' : 'fee not paid'}
               </p>
               <Btn kind="sec" onClick={() => { setPanel(`edit:${pr.id}`); setForm({ addr: pr.property_address || '' }); setResult(''); }}>Edit this project</Btn>
               <Btn kind="sec" onClick={() => { setPanel(`pro:${pr.id}`); setForm({}); setResult(''); }}>Create a Pro link</Btn>
@@ -577,7 +577,7 @@ export default function StaffWorkspace() {
               <h1 style={{ fontSize: '1.5rem', margin: '0 0 .7em' }}>Dashboard</h1>
               <div style={{ background: '#fff', border: '1px solid #dfe3e8', borderRadius: 8, padding: 16, marginBottom: 10 }}>
                 <h3 style={{ margin: '0 0 .2em' }}>
-                  {loading ? 'Checking what is waiting\u2026' : `${workCount} thing${workCount === 1 ? '' : 's'} need${workCount === 1 ? 's' : ''} you`}
+                  {loading ? 'Checking what is waiting…' : `${workCount} thing${workCount === 1 ? '' : 's'} need${workCount === 1 ? 's' : ''} you`}
                 </h3>
                 <p style={{ color: '#5b6672', fontSize: '.92rem' }}>
                   {toSign.length} document{toSign.length === 1 ? '' : 's'} awaiting your signature. {projects.length} project{projects.length === 1 ? '' : 's'} running.
@@ -608,7 +608,7 @@ export default function StaffWorkspace() {
               <H2>Waiting on your signature</H2>
               <Hint>Documents where you are named as a signer. Read it, type your name, sign.</Hint>
               {session?.id && (
-                <Suspense fallback={<p style={{ color: '#5b6672' }}>Loading your documents\u2026</p>}>
+                <Suspense fallback={<p style={{ color: '#5b6672' }}>Loading your documents…</p>}>
                   <StaffCountersign staffId={session.id} staffName={displayName} />
                 </Suspense>
               )}
