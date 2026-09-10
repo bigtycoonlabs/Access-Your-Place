@@ -507,7 +507,9 @@ export default function StaffWorkspace() {
                   <h3 style={{ margin: '0 0 .2em' }}>{a.label}</h3>
                   <p style={{ color: '#5b6672', fontSize: '.92rem' }}>{a.does}</p>
                   <p style={{ color: '#5b6672', fontSize: '.9rem' }}>
-                    This screen is the new design. The action itself still runs on the existing dashboard until it is moved across.
+                    {['Start a new project','Send a Pro the job link','Add items to a project','Sign a document'].includes(a.label)
+                      ? 'This one is live. Use the controls higher up this page to do it.'
+                      : 'Not built into this screen yet. Ask Penny to do it, or tell the Success Team and it will be picked up.'}
                   </p>
                   <button type="button" onClick={() => setOpenAction(null)}
                     style={{ minHeight: 44, padding: '0 16px', borderRadius: 6, border: '1px solid #12263f', background: '#fff', color: '#12263f', fontWeight: 600, cursor: 'pointer' }}>
