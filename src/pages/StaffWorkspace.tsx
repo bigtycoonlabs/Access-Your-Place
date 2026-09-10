@@ -391,17 +391,37 @@ export default function StaffWorkspace() {
                 Upload a spreadsheet
               </label>
               <p style={{ color: '#5b6672', fontSize: '.85rem', margin: '0 0 6px' }}>
-                A CSV file. Columns: room, item, quantity. In Excel or Google Sheets choose File, then Download, then CSV.
+                Excel, Numbers or CSV. Columns: room, item, quantity. From Google Sheets, File then Download then either Excel or CSV.
               </p>
               <input
                 id="sheet"
                 type="file"
-                accept=".csv,text/csv,text/plain"
+                accept=".csv,.xlsx,.xls,.tsv,text/csv,text/plain,application/vnd.ms-excel,application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"
                 onChange={async (e) => {
                   const f = e.target.files?.[0];
                   if (!f) return;
-                  const text = await f.text();
-                  const rows = text.split(/\r?\n/).map((l) => l.trim()).filter(Boolean);
+                  let rows: string[] = [];
+                  try {
+                    if (/\.(xlsx|xls)$/i.test(f.name)) {
+                      // A real Excel file. Read the first sheet and turn it into lines.
+                      const XLSX = await import('xlsx');
+                      const wb = XLSX.read(await f.arrayBuffer(), { type: 'array' });
+                      const sheet = wb.Sheets[wb.SheetNames[0]];
+                      const grid: any[][] = XLSX.utils.sheet_to_json(sheet, { header: 1, blankrows: false });
+                      rows = grid
+                        .map((r) => r.map((c: any) => (c === undefined || c === null ? '' : String(c).trim())))
+                        .filter((r) => r.some((c) => c !== ''))
+                        .map((r) => r.join(','));
+                    } else {
+                      const text = await f.text();
+                      rows = text.split(/\r?\n/).map((l) => l.trim()).filter(Boolean)
+                                 .map((l) => l.replace(/\t/g, ','));
+                    }
+                  } catch (err: any) {
+                    setAnnounce(`Could not read ${f.name}. ${err?.message || 'Try saving it as CSV.'}`);
+                    setResult(`Could not read that file. ${err?.message || 'Try saving it as CSV and uploading again.'}`);
+                    return;
+                  }
                   // Drop a header row if the first line looks like column names.
                   const first = (rows[0] || '').toLowerCase();
                   const body = /room|item|qty|quantity/.test(first) && !/\d/.test(first) ? rows.slice(1) : rows;
