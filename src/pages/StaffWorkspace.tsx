@@ -593,13 +593,13 @@ export default function StaffWorkspace() {
             <>
               <h1 style={{ fontSize: '1.5rem', margin: '0 0 .7em' }}>Penny</h1>
               <p style={{ color: '#5b6672' }}>
-                Chat history and workspace selection are part of this design and are not wired up on this screen yet.
-                Penny is fully working on the existing dashboard in the meantime.
+                Penny is not on this screen yet. Chat history and choosing a workspace for a chat
+                are part of this design and are still to be built.
               </p>
-              <a href="#ws-main"
-                 style={{ display: 'inline-flex', alignItems: 'center', minHeight: 44, padding: '0 16px', borderRadius: 6, border: '1px solid #12263f', background: '#12263f', color: '#fff', fontWeight: 600, textDecoration: 'none' }}>
-                Open Penny on the current dashboard
-              </a>
+              <p style={{ color: '#5b6672' }}>
+                This screen used to send you to the old dashboard. That has been retired, so the
+                button was going nowhere and has been removed rather than left looking usable.
+              </p>
             </>
           )}
 
@@ -620,12 +620,13 @@ export default function StaffWorkspace() {
                   <Hint>Browse and search the records themselves.</Hint>
                   <ul style={{ listStyle: 'none', margin: 0, padding: 0, display: 'grid', gridTemplateColumns: 'repeat(auto-fit,minmax(228px,1fr))', gap: 10 }}>
                     {SPACES[view as Space].where.map((w) => (
-                      <li key={w.label}>
-                        <a href="#ws-main"
-                           style={{ display: 'block', background: '#fff', border: '1px solid #dfe3e8', borderRadius: 8, padding: '14px 16px', textDecoration: 'none', color: '#111827', minHeight: 44 }}>
-                          <strong style={{ display: 'block' }}>{w.label}</strong>
-                          <span style={{ color: '#5b6672', fontSize: '.87rem' }}>{w.hint}</span>
-                        </a>
+                      <li key={w.label}
+                          style={{ background: '#fff', border: '1px dashed #c9ced6', borderRadius: 8, padding: '14px 16px', color: '#111827' }}>
+                        <strong style={{ display: 'block' }}>{w.label}</strong>
+                        <span style={{ color: '#5b6672', fontSize: '.87rem' }}>{w.hint}</span>
+                        <span style={{ display: 'block', color: '#8a6a44', fontSize: '.8rem', marginTop: 6, fontWeight: 600 }}>
+                          Not moved across yet. Ask Penny for it in the meantime.
+                        </span>
                       </li>
                     ))}
                   </ul>
@@ -640,11 +641,11 @@ export default function StaffWorkspace() {
               <ul style={{ listStyle: 'none', margin: 0, padding: 0, display: 'grid', gridTemplateColumns: 'repeat(auto-fit,minmax(228px,1fr))', gap: 10 }}>
                 {['Acquisition workflow', 'Setup workflow', 'Teardown and move', 'Using the platform',
                   'Working with Penny', 'Client communication', 'Payments and payouts', 'Accessibility standards'].map((t) => (
-                  <li key={t}>
-                    <a href="#ws-main"
-                       style={{ display: 'block', background: '#fff', border: '1px solid #dfe3e8', borderRadius: 8, padding: '14px 16px', textDecoration: 'none', color: '#111827', minHeight: 44 }}>
-                      <strong>{t}</strong>
-                    </a>
+                  <li key={t} style={{ background: '#fff', border: '1px dashed #c9ced6', borderRadius: 8, padding: '14px 16px' }}>
+                    <strong>{t}</strong>
+                    <span style={{ display: 'block', color: '#8a6a44', fontSize: '.8rem', marginTop: 6, fontWeight: 600 }}>
+                      Not written yet
+                    </span>
                   </li>
                 ))}
               </ul>
@@ -659,12 +660,12 @@ export default function StaffWorkspace() {
                   ['Screen reader and display', 'Announcements, contrast, text size'],
                   ['Signature', 'How your name appears on documents'],
                   ['Security', 'Password and sessions']].map(([t, h]) => (
-                  <li key={t}>
-                    <a href="#ws-main"
-                       style={{ display: 'block', background: '#fff', border: '1px solid #dfe3e8', borderRadius: 8, padding: '14px 16px', textDecoration: 'none', color: '#111827', minHeight: 44 }}>
-                      <strong style={{ display: 'block' }}>{t}</strong>
-                      <span style={{ color: '#5b6672', fontSize: '.87rem' }}>{h}</span>
-                    </a>
+                  <li key={t} style={{ background: '#fff', border: '1px dashed #c9ced6', borderRadius: 8, padding: '14px 16px' }}>
+                    <strong style={{ display: 'block' }}>{t}</strong>
+                    <span style={{ color: '#5b6672', fontSize: '.87rem' }}>{h}</span>
+                    <span style={{ display: 'block', color: '#8a6a44', fontSize: '.8rem', marginTop: 6, fontWeight: 600 }}>
+                      Not built yet
+                    </span>
                   </li>
                 ))}
               </ul>
