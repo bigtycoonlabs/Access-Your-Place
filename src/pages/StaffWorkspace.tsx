@@ -141,6 +141,7 @@ export default function StaffWorkspace() {
   const [toSign, setToSign] = useState<any[]>([]);
   const [alerts, setAlerts] = useState<any[]>([]);
   const [projects, setProjects] = useState<any[]>([]);
+  const [items, setItems] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
   const [panel, setPanel] = useState<string | null>(null);
   const [form, setForm] = useState<Record<string, string>>({});
@@ -168,7 +169,17 @@ export default function StaffWorkspace() {
       ]);
       setToSign((sigRes?.data?.documents || []).filter((d: any) => d.can_sign));
       setAlerts(alertRes?.data?.my_alerts || []);
-      setProjects(projRes?.data?.projects || []);
+      const proj = projRes?.data?.projects || [];
+      setProjects(proj);
+      // The item schedule is real data, not a placeholder. Read it for the projects she runs.
+      if (proj.length) {
+        const { data: rows } = await supabase
+          .from('setup_items')
+          .select('id,project_id,room,destination_unit,item_name,quantity,status,delivered_at')
+          .in('project_id', proj.map((x: any) => x.id))
+          .order('room', { ascending: true });
+        setItems(rows || []);
+      } else setItems([]);
     } catch { /* shown as empty, not as zero */ }
     setLoading(false);
   }, [session?.id]);
@@ -258,6 +269,53 @@ export default function StaffWorkspace() {
       {busy ? 'Working\u2026' : children}
     </button>
   );
+
+  function ItemSchedule() {
+    const rows = items;
+    const byProject: Record<string, any[]> = {};
+    rows.forEach((r: any) => { (byProject[r.project_id] ||= []).push(r); });
+    const nameFor = (id: string) => projects.find((p: any) => p.id === id)?.investor_name || 'Project';
+    return (
+      <>
+        <H2>Item schedule</H2>
+        <Hint>Every item on your projects. Room is where it came from. Unit is where it is going.</Hint>
+        {rows.length === 0 && (
+          <p style={{ background: '#fff', border: '1px solid #dfe3e8', borderRadius: 8, padding: 16, color: '#5b6672' }}>
+            {loading ? 'Loading\u2026' : 'No items yet. Use Add items above.'}
+          </p>
+        )}
+        {Object.keys(byProject).map((pid) => {
+          const list = byProject[pid];
+          const arrived = list.filter((r: any) => r.delivered_at).length;
+          return (
+            <div key={pid} style={{ background: '#fff', border: '1px solid #dfe3e8', borderRadius: 8, padding: 16, marginBottom: 10 }}>
+              <h3 style={{ margin: '0 0 .2em' }}>{nameFor(pid)}</h3>
+              <p style={{ color: '#5b6672', fontSize: '.9rem' }}>
+                {list.length} item{list.length === 1 ? '' : 's'} · {arrived} arrived · {list.length - arrived} outstanding
+              </p>
+              <ul style={{ listStyle: 'none', margin: '10px 0 0', padding: 0 }}>
+                {list.slice(0, 40).map((r: any) => (
+                  <li key={r.id} style={{ borderTop: '1px solid #eef1f4', padding: '8px 0', fontSize: '.92rem' }}>
+                    <strong>{r.item_name}</strong>
+                    {r.quantity > 1 && <span style={{ color: '#5b6672' }}> ×{r.quantity}</span>}
+                    <span style={{ color: '#5b6672' }}>
+                      {' '}· {r.room || 'no room'}{r.destination_unit ? ` · unit ${r.destination_unit}` : ''}
+                      {' '}· {r.delivered_at ? 'arrived' : r.status}
+                    </span>
+                  </li>
+                ))}
+              </ul>
+              {list.length > 40 && (
+                <p style={{ color: '#5b6672', fontSize: '.86rem', marginTop: 8 }}>
+                  Showing the first 40 of {list.length}.
+                </p>
+              )}
+            </div>
+          );
+        })}
+      </>
+    );
+  }
 
   function SetupWork() {
     return (
@@ -616,6 +674,7 @@ export default function StaffWorkspace() {
                   {view === 'setup' && SetupWork()}
                   {ActionList(view as Space, 'start')}
                   {ActionList(view as Space, 'record')}
+                  {view === 'setup' && ItemSchedule()}
                   <H2>Where things live</H2>
                   <Hint>Browse and search the records themselves.</Hint>
                   <ul style={{ listStyle: 'none', margin: 0, padding: 0, display: 'grid', gridTemplateColumns: 'repeat(auto-fit,minmax(228px,1fr))', gap: 10 }}>
@@ -624,9 +683,16 @@ export default function StaffWorkspace() {
                           style={{ background: '#fff', border: '1px dashed #c9ced6', borderRadius: 8, padding: '14px 16px', color: '#111827' }}>
                         <strong style={{ display: 'block' }}>{w.label}</strong>
                         <span style={{ color: '#5b6672', fontSize: '.87rem' }}>{w.hint}</span>
-                        <span style={{ display: 'block', color: '#8a6a44', fontSize: '.8rem', marginTop: 6, fontWeight: 600 }}>
-                          Not moved across yet. Ask Penny for it in the meantime.
-                        </span>
+                        {!['Item schedule', 'Projects'].includes(w.label) && (
+                          <span style={{ display: 'block', color: '#8a6a44', fontSize: '.8rem', marginTop: 6, fontWeight: 600 }}>
+                            Not moved across yet. Ask Penny for it in the meantime.
+                          </span>
+                        )}
+                        {['Item schedule', 'Projects'].includes(w.label) && (
+                          <span style={{ display: 'block', color: '#065f46', fontSize: '.8rem', marginTop: 6, fontWeight: 600 }}>
+                            Shown above on this page
+                          </span>
+                        )}
                       </li>
                     ))}
                   </ul>
