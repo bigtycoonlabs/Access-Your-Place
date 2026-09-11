@@ -516,6 +516,8 @@ export default function StaffWorkspace() {
                     let grid: string[][] = [];
                     let media: Record<string, Uint8Array> = {};
                     const cellUrls: Record<number, string> = {};
+                    let rowNums: number[] = [];
+                    let sheetName = '';
 
                     if (/\.(xlsx|xls)$/i.test(f.name)) {
                       const buf = await f.arrayBuffer();
@@ -523,19 +525,19 @@ export default function StaffWorkspace() {
                       const wb = XLSX.read(buf, { type: 'array' });
                       // Some sheets have a cover tab, or a title row above the table.
                       for (const nm of wb.SheetNames) {
-                        const g = (XLSX.utils.sheet_to_json(wb.Sheets[nm], { header: 1, blankrows: false }) as any[][])
-                          .map((r) => (r || []).map((c: any) => (c == null ? '' : String(c).trim())))
-                          .filter((r) => r.some((c) => c !== ''));
-                        if (g.length > grid.length) grid = g;
+                        const raw = XLSX.utils.sheet_to_json(wb.Sheets[nm], { header: 1, blankrows: true }) as any[][];
+                        const g: string[][] = []; const rn: number[] = [];
+                        raw.forEach((r, i) => {
+                          const cells = (r || []).map((c: any) => (c == null ? '' : String(c).trim()));
+                          if (cells.some((c) => c !== '')) { g.push(cells); rn.push(i); }
+                        });
+                        if (g.length > grid.length) { grid = g; rowNums = rn; sheetName = nm; }
                       }
 
                       // Google Sheets stores photos as =IMAGE("url") formulas, or as a
                       // hyperlink on the cell. Read both out of the raw cells.
                       try {
-                        const target = wb.SheetNames.find((nm) =>
-                          (XLSX.utils.sheet_to_json(wb.Sheets[nm], { header: 1, blankrows: false }) as any[][]).length === grid.length)
-                          || wb.SheetNames[0];
-                        const sh: any = wb.Sheets[target];
+                        const sh: any = wb.Sheets[sheetName || wb.SheetNames[0]];
                         Object.keys(sh).filter((k) => !k.startsWith('!')).forEach((addr) => {
                           const cell = sh[addr];
                           const fromFormula = typeof cell?.f === 'string'
@@ -627,12 +629,37 @@ export default function StaffWorkspace() {
                       // A link in a photo column wins; otherwise use an embedded picture in row order.
                       photo_url:
                         (iPhoto >= 0 && /^https?:\/\//i.test(r[iPhoto] || '')) ? r[iPhoto]
-                        : (cellUrls[(hasHeader ? hRow + 1 : 0) + idx] || '')
+                        : (cellUrls[rowNums[(hasHeader ? hRow + 1 : 0) + idx]] || '')
                         || (r.find((c) => /^https?:\/\/\S+\.(png|jpe?g|gif|webp)/i.test(c || '')) || '')
                         || (r.find((c) => /^https?:\/\//i.test(c || '')) || '')
                         || (urls[idx] || ''),
                     };
                     }).filter((x) => x.item && !isNote(x.item));
+
+                    // Pull each linked photo into our own storage so it cannot rot or go private.
+                    const linked = parsed.filter((x: any) => /^https?:\/\//i.test(x.photo_url));
+                    if (linked.length) {
+                      setAnnounce(`Fetching ${linked.length} photo${linked.length === 1 ? '' : 's'}\u2026`);
+                      for (let i = 0; i < linked.length; i++) {
+                        const src = linked[i].photo_url;
+                        try {
+                          // Google Drive share links need converting before they return an image.
+                          const gd = src.match(/drive\.google\.com\/(?:file\/d\/|open\?id=|uc\?id=)([\w-]{20,})/);
+                          const url = gd ? `https://drive.google.com/uc?export=download&id=${gd[1]}` : src;
+                          const res = await fetch(url);
+                          if (!res.ok) continue;
+                          const blob = await res.blob();
+                          if (!/^image\//.test(blob.type) || blob.size < 100) continue;
+                          const ext = (blob.type.split('/')[1] || 'jpg').replace('jpeg', 'jpg');
+                          const path = `${panel?.split(':')[1]}/link-${Date.now()}-${i}.${ext}`;
+                          const { error: upErr } = await supabase.storage
+                            .from('setup-item-photos').upload(path, blob, { contentType: blob.type, upsert: true });
+                          if (upErr) continue;
+                          const { data: pub } = supabase.storage.from('setup-item-photos').getPublicUrl(path);
+                          if (pub?.publicUrl) linked[i].photo_url = pub.publicUrl;
+                        } catch { /* keep the original link rather than losing it */ }
+                      }
+                    }
 
                     setForm((fm) => ({ ...fm, parsed: JSON.stringify(parsed),
                       bulk: parsed.map((x) => [x.room, x.item, x.quantity].filter(Boolean).join(', ')).join('\n') }));
