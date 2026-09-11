@@ -304,7 +304,11 @@ export default function StaffWorkspace() {
   };
 
   function ItemSchedule() {
-    const rows = form.projfilter ? items.filter((r: any) => r.project_id === form.projfilter) : items;
+    const q = (form.itemsearch || '').trim().toLowerCase();
+    const rows = items
+      .filter((r: any) => !form.projfilter || r.project_id === form.projfilter)
+      .filter((r: any) => !q || [r.item_name, r.room, r.destination_unit, r.status]
+        .some((v: any) => String(v || '').toLowerCase().includes(q)));
     const byProject: Record<string, any[]> = {};
     rows.forEach((r: any) => { (byProject[r.project_id] ||= []).push(r); });
     const nameFor = (id: string) => projects.find((p: any) => p.id === id)?.investor_name || 'Project';
@@ -312,6 +316,16 @@ export default function StaffWorkspace() {
       <>
         <H2>Item schedule</H2>
         <Hint>Room is where it came from. Unit is where it is going.</Hint>
+        <div style={{ margin: '0 0 12px' }}>
+          <label htmlFor="itemsearch" style={{ display: 'block', fontWeight: 600, fontSize: '.92rem', marginBottom: 4 }}>
+            Find an item
+          </label>
+          <input id="itemsearch" type="text" value={form.itemsearch || ''}
+            onChange={(e) => setForm((f) => ({ ...f, itemsearch: e.target.value }))}
+            placeholder="Type part of a name, a room, or a unit number"
+            style={{ width: '100%', maxWidth: 440, minHeight: 44, fontSize: '1rem', padding: '8px 12px',
+                     border: '1px solid #dfe3e8', borderRadius: 6 }} />
+        </div>
         <div style={{ margin: '0 0 12px' }}>
           <label htmlFor="projfilter" style={{ display: 'block', fontWeight: 600, fontSize: '.92rem', marginBottom: 4 }}>
             Show items for
@@ -338,10 +352,10 @@ export default function StaffWorkspace() {
             <div key={pid} style={{ background: '#fff', border: '1px solid #dfe3e8', borderRadius: 8, padding: 16, marginBottom: 10 }}>
               <h3 style={{ margin: '0 0 .2em' }}>{nameFor(pid)}</h3>
               <p style={{ color: '#5b6672', fontSize: '.9rem' }}>
-                {list.length} item{list.length === 1 ? '' : 's'} · {arrived} arrived · {list.length - arrived} outstanding
+                {list.length} item{list.length === 1 ? '' : 's'}{q ? ' matching' : ''} · {arrived} arrived · {list.length - arrived} outstanding
               </p>
               <ul style={{ listStyle: 'none', margin: '10px 0 0', padding: 0 }}>
-                {list.slice(0, 40).map((r: any) => (
+                {list.map((r: any) => (
                   <li key={r.id} style={{ borderTop: '1px solid #eef1f4', padding: '8px 0', fontSize: '.92rem',
                                           display: 'flex', gap: 10, alignItems: 'flex-start', justifyContent: 'space-between' }}>
                     <span style={{ flex: 1 }}>
@@ -410,11 +424,7 @@ export default function StaffWorkspace() {
                   </button>
                 )}
               </div>
-              {list.length > 40 && (
-                <p style={{ color: '#5b6672', fontSize: '.86rem', marginTop: 8 }}>
-                  Showing the first 40 of {list.length}.
-                </p>
-              )}
+
             </div>
           );
         })}
