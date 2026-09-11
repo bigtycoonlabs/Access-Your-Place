@@ -23,7 +23,7 @@ const StaffCountersign = lazy(() =>
  */
 
 type Space = 'admin' | 'acq' | 'setup';
-type View = 'dash' | 'work' | 'penny' | Space | 'sop' | 'settings' | 'profile';
+type View = 'dash' | 'work' | 'penny' | 'clients' | Space | 'sop' | 'settings' | 'profile';
 
 interface StaffSession {
   id?: string; full_name?: string; name?: string; email?: string;
@@ -142,6 +142,7 @@ export default function StaffWorkspace() {
   const [alerts, setAlerts] = useState<any[]>([]);
   const [projects, setProjects] = useState<any[]>([]);
   const [items, setItems] = useState<any[]>([]);
+  const [clients, setClients] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
   const [panel, setPanel] = useState<string | null>(null);
   const [form, setForm] = useState<Record<string, string>>({});
@@ -192,6 +193,19 @@ export default function StaffWorkspace() {
           .order('room', { ascending: true });
         setItems(rows || []);
       } else setItems([]);
+
+      // Everyone she looks after: clients on her projects, plus any client assigned to her.
+      const ids = Array.from(new Set(proj.map((x: any) => x.investor_id).filter(Boolean)));
+      const { data: cl } = await supabase
+        .from('investors')
+        .select('id,full_name,email,phone,company_name,credit_balance,status')
+        .or([
+          ids.length ? `id.in.(${ids.join(',')})` : '',
+          `assigned_success_manager_id.eq.${session.id}`,
+          `assigned_setup_manager_id.eq.${session.id}`,
+        ].filter(Boolean).join(','))
+        .limit(200);
+      setClients(cl || []);
     } catch { /* shown as empty, not as zero */ }
     setLoading(false);
   }, [session?.id]);
@@ -841,6 +855,7 @@ export default function StaffWorkspace() {
             {navLink('dash', 'Dashboard')}
             {navLink('work', workCount ? `My work (${workCount})` : 'My work')}
             {navLink('penny', 'Penny')}
+            {navLink('clients', 'Clients')}
           </ul>
           <h2 style={{ fontSize: '.75rem', textTransform: 'uppercase', letterSpacing: '.06em', color: '#5b6672', margin: '18px 0 6px' }}>Spaces</h2>
           <ul style={{ listStyle: 'none', margin: 0, padding: 0 }}>
@@ -1009,6 +1024,64 @@ export default function StaffWorkspace() {
                   </ul>
                 </>
               )}
+            </>
+          )}
+
+          {view === 'clients' && (
+            <>
+              <h1 style={{ fontSize: '1.5rem', margin: '0 0 .7em' }}>Clients</h1>
+              <Hint>Everyone you look after. Tap a name to message them.</Hint>
+              {loading && <p style={{ color: '#5b6672' }}>Loading\u2026</p>}
+              {!loading && clients.length === 0 && (
+                <p style={{ background: '#fff', border: '1px solid #dfe3e8', borderRadius: 8, padding: 16, color: '#5b6672' }}>
+                  No clients are assigned to you yet. Ask an owner to assign some.
+                </p>
+              )}
+              <ul style={{ listStyle: 'none', margin: 0, padding: 0 }}>
+                {clients.map((c: any) => (
+                  <li key={c.id} style={{ background: '#fff', border: '1px solid #dfe3e8', borderRadius: 8, padding: 16, marginBottom: 10 }}>
+                    <h3 style={{ margin: '0 0 .2em' }}>{c.full_name}</h3>
+                    <p style={{ color: '#5b6672', fontSize: '.9rem', margin: '0 0 .2em' }}>
+                      {c.company_name ? `${c.company_name} · ` : ''}{c.email}{c.phone ? ` · ${c.phone}` : ''}
+                    </p>
+                    {Number(c.credit_balance) > 0 && (
+                      <p style={{ color: '#065f46', fontSize: '.88rem', fontWeight: 600, margin: '0 0 .6em' }}>
+                        Credit held: ${Number(c.credit_balance).toLocaleString()}
+                      </p>
+                    )}
+                    {panel === `cmsg:${c.id}` ? (
+                      <div style={{ marginTop: 10 }}>
+                        <F id="csubject" label="Subject" />
+                        <div style={{ margin: '12px 0' }}>
+                          <label htmlFor="cbody" style={{ display: 'block', fontWeight: 600, fontSize: '.92rem', marginBottom: 4 }}>Message</label>
+                          <textarea id="cbody" value={form.cbody || ''}
+                            onChange={(e) => setForm((f) => ({ ...f, cbody: e.target.value }))}
+                            style={{ width: '100%', maxWidth: 560, minHeight: 120, fontSize: '1rem', padding: '10px 12px',
+                                     border: '1px solid #dfe3e8', borderRadius: 6 }} />
+                        </div>
+                        {result && (
+                          <p style={{ margin: '10px 0', padding: '12px 14px', borderRadius: 6, fontWeight: 600,
+                            background: /Not sent|Could not/.test(result) ? '#fff1f2' : '#ecfdf5',
+                            border: `1px solid ${/Not sent|Could not/.test(result) ? '#9f1239' : '#065f46'}` }}>{result}</p>
+                        )}
+                        <Btn onClick={() => {
+                          if (!form.cbody?.trim()) { setResult('Not sent. Write a message first.'); return; }
+                          runRpc('penny_send_message', {
+                            p_from_staff_id: session?.id, p_audience: 'client', p_to_id: c.id,
+                            p_subject: form.csubject || 'A message from Access Your Place',
+                            p_body: form.cbody, p_parent: null,
+                          }, () => `Sent to ${c.full_name}.`);
+                        }}>Send it</Btn>
+                        <Btn kind="sec" always onClick={() => { setPanel(null); setResult(''); setForm({}); }}>Cancel</Btn>
+                      </div>
+                    ) : (
+                      <Btn kind="sec" onClick={() => { setPanel(`cmsg:${c.id}`); setForm({}); setResult(''); }}>
+                        Message {c.full_name?.split(' ')[0]}
+                      </Btn>
+                    )}
+                  </li>
+                ))}
+              </ul>
             </>
           )}
 
