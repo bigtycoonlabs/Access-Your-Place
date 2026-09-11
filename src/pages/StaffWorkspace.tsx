@@ -352,6 +352,20 @@ export default function StaffWorkspace() {
                       {' '}· {r.delivered_at ? 'arrived' : r.status}
                     </span>
                     </span>
+                    <button type="button"
+                      aria-label={r.delivered_at ? `Mark ${r.item_name} as not arrived` : `Mark ${r.item_name} arrived`}
+                      onClick={() => runRpc('ayp_staff_mark_items',
+                        { p_staff_id: session?.id, p_item_ids: [r.id],
+                          p_arrived: !r.delivered_at, p_placed: false },
+                        (d) => d?.note || 'Updated.')}
+                      style={{ minHeight: 44, minWidth: 84, padding: '0 12px', borderRadius: 6,
+                               border: `1px solid ${r.delivered_at ? '#065f46' : '#12263f'}`,
+                               background: r.delivered_at ? '#065f46' : '#fff',
+                               color: r.delivered_at ? '#fff' : '#12263f',
+                               fontWeight: 600, fontSize: '.85rem', cursor: 'pointer', flex: '0 0 auto',
+                               marginRight: 6 }}>
+                      {r.delivered_at ? 'Arrived' : 'Mark arrived'}
+                    </button>
                     <button type="button" aria-label={`Remove ${r.item_name}`}
                       onClick={() => runRpc('ayp_setup_remove_items',
                         { p_staff_id: session?.id, p_item_ids: [r.id], p_project_id: null, p_all: false },
@@ -364,6 +378,15 @@ export default function StaffWorkspace() {
                   </li>
                 ))}
               </ul>
+              <div style={{ marginTop: 12, marginBottom: 8 }}>
+                <Btn kind="sec" onClick={() => {
+                  const ids = list.filter((x: any) => !x.delivered_at).map((x: any) => x.id);
+                  if (!ids.length) { setResult('Everything on this job is already marked arrived.'); return; }
+                  runRpc('ayp_staff_mark_items',
+                    { p_staff_id: session?.id, p_item_ids: ids, p_arrived: true, p_placed: false },
+                    (d) => d?.note || `${ids.length} marked arrived.`);
+                }}>Mark all {list.filter((x: any) => !x.delivered_at).length} outstanding as arrived</Btn>
+              </div>
               <div style={{ marginTop: 12 }}>
                 {form.clearing === pid ? (
                   <>
