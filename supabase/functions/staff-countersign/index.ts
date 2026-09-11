@@ -34,9 +34,23 @@ Deno.serve(async (req) => {
         .select('*').order('signed_at', { ascending: false });
       if (error) return json({ success: false, error: error.message });
 
-      // Show everything so nobody wonders where a document went, but say plainly which ones
-      // this person may sign and which belong to someone else.
-      const rows = (data || []).map((d: any) => ({
+      // A setup manager was seeing every document in the company, including clients she has
+      // nothing to do with. Scope it: documents she can sign, plus documents for clients
+      // whose projects she runs. An owner or admin still sees everything.
+      let mine: string[] = [];
+      if (!isOwner) {
+        const { data: projs } = await supabase
+          .from('setup_projects')
+          .select('investor_id')
+          .or(`assigned_manager_id.eq.${staff_id},assigned_manager.eq.${staff_id}`);
+        mine = (projs || []).map((p: any) => p.investor_id).filter(Boolean);
+      }
+
+      const scoped = isOwner ? (data || []) : (data || []).filter((d: any) =>
+        mine.includes(d.investor_id) ||
+        (d.countersign_role !== 'owner' && d.signature_status === 'signed' && !d.countersigned_at));
+
+      const rows = scoped.map((d: any) => ({
         ...d,
         can_sign: !d.company_signed && d.signature_status === 'signed' &&
           (d.countersign_role === 'owner' ? isOwner : (isOwner || canSetup)),
