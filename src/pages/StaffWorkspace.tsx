@@ -197,7 +197,7 @@ export default function StaffWorkspace() {
       // Everyone she looks after: clients on her projects, plus any client assigned to her.
       const ids = Array.from(new Set(proj.map((x: any) => x.investor_id).filter(Boolean)));
       const { data: cl } = await supabase
-        .from('investors')
+        .from('staff_client_list')
         .select('id,full_name,email,phone,company_name,credit_balance,status')
         .or([
           ids.length ? `id.in.(${ids.join(',')})` : '',
