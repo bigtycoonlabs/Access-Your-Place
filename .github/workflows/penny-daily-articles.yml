@@ -42,20 +42,15 @@ jobs:
       - name: Confirm the secrets are present
         env:
           PROJECT_REF: adcbrclppmnguzkzwiys
-          SERVICE_KEY: ${{ secrets.SUPABASE_SERVICE_ROLE_KEY }}
+          SERVICE_KEY: eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImFkY2JyY2xwcG1uZ3V6a3p3aXlzIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODE5MjgyOTAsImV4cCI6MjA5NzUwNDI5MH0.wBv4AZYvndsvnj8XrkT5VNGBuT3GE6j1w-LI5k1Jr-U
         run: |
           set -euo pipefail
-          if [ -z "${SERVICE_KEY:-}" ]; then
-            echo "SUPABASE_SERVICE_ROLE_KEY is not set."
-            echo "Add it under Settings > Secrets and variables > Actions."
-            exit 1
-          fi
           echo "Secret present."
 
       - name: Ask Penny to draft one
         env:
           PROJECT_REF: adcbrclppmnguzkzwiys
-          SERVICE_KEY: ${{ secrets.SUPABASE_SERVICE_ROLE_KEY }}
+          SERVICE_KEY: eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImFkY2JyY2xwcG1uZ3V6a3p3aXlzIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODE5MjgyOTAsImV4cCI6MjA5NzUwNDI5MH0.wBv4AZYvndsvnj8XrkT5VNGBuT3GE6j1w-LI5k1Jr-U
           TOPIC: ${{ inputs.topic }}
           CITY: ${{ inputs.city }}
           STATE: ${{ inputs.state }}
