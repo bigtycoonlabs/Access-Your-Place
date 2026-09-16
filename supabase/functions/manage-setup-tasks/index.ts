@@ -71,7 +71,7 @@ function paymentBlockText(rails: string[] | undefined): string {
 
 const corsHeaders = {
   'Access-Control-Allow-Origin': '*',
-  'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type, x-staff-session'
+  'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type, x-staff-session, x-investor-session'
 };
 
 const PHASE_NAMES = {1:'Acquisition & Initial Payment',2:'Consultation & Pre-Intake',3:'Intake Form & Service Agreement',4:'Logistics & Team Activation',5:'Product Sourcing & Spreadsheet',6:'Purchasing & Travel Logistics',7:'On-Site Setup & Live Tracking',8:'Cleanup, Media & Final Handover'};
@@ -166,6 +166,30 @@ Deno.serve(async (req) => {
     if (!NON_STAFF_ACTIONS.has(action)) {
       const me = await staffFromSession(req, body);
       if (!me) return ok({ success: false, error: SIGNED_OUT, reason: 'session_expired' }, 401);
+    }
+
+    // Client setup actions trusted the investor_id or project_id they were sent, so anyone
+    // who knew a client's id could read that client's setup projects or submit forms as them.
+    // Now: a staff sign-in, or the client's own sign-in for their own projects.
+    const CLIENT_OWNED = new Set(['get_investor_projects', 'get_intake_fields', 'submit_intake_form', 'approve_spreadsheet']);
+    if (CLIENT_OWNED.has(action) && !(await staffFromSession(req, body))) {
+      const base = Deno.env.get('SUPABASE_URL') ?? '';
+      const svc = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY') ?? '';
+      const h = { apikey: svc, Authorization: `Bearer ${svc}` };
+      const tok = String(req.headers.get('x-investor-session') || '');
+      let me = '';
+      if (tok.length >= 20) {
+        const r = await fetch(`${base}/rest/v1/investor_sessions?session_token=eq.${encodeURIComponent(tok)}&is_active=eq.true&select=investor_id,expires_at&limit=1`, { headers: h });
+        const se = r.ok ? (await r.json())[0] : null;
+        if (se && (!se.expires_at || new Date(se.expires_at).getTime() > Date.now())) me = String(se.investor_id);
+      }
+      if (!me) return ok({ success: false, error: 'Your sign-in has expired. Please sign in again.', reason: 'session_expired' }, 401);
+      if (params.investor_id && String(params.investor_id) !== me) return ok({ success: false, error: 'You can only see your own setup projects.' }, 403);
+      if (params.project_id) {
+        const { data: proj } = await supabase.from('setup_projects').select('investor_id').eq('id', params.project_id).maybeSingle();
+        if (!proj || String(proj.investor_id) !== me) return ok({ success: false, error: 'You can only see your own setup projects.' }, 403);
+      }
+      if (!params.investor_id && !params.project_id) return ok({ success: false, error: 'Missing project.' }, 400);
     }
 
     // â”€â”€â”€ LIST PROJECTS â”€â”€â”€

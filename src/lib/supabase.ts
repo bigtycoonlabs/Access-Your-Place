@@ -57,7 +57,7 @@ const staffAwareFetch: typeof fetch = (input, init = {}) => {
     const url = typeof input === 'string' ? input : (input as Request)?.url || String(input);
     const fn = url.split('/functions/v1/')[1]?.split(/[/?]/)[0];
     // Client and landlord Penny prove who is asking with the sign-in token, not the id.
-    if (fn && typeof window !== 'undefined' && (fn === 'ai-investor-chat' || fn === 'penny-landlord-chat' || fn === 'manage-acquisition-requests' || fn === 'manage-investor-documents')) {
+    if (fn && typeof window !== 'undefined' && (fn === 'ai-investor-chat' || fn === 'penny-landlord-chat' || fn === 'manage-acquisition-requests' || fn === 'manage-investor-documents' || fn === 'manage-setup-tasks')) {
       const headers = new Headers(init.headers || (input instanceof Request ? input.headers : undefined));
       const inv = window.localStorage.getItem('investorSessionToken');
       const ll = window.localStorage.getItem('landlord_session');
