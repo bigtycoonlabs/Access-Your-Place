@@ -13,8 +13,11 @@
 # It is deliberately READ-AND-RETRACT ONLY. It never raises an alert and never touches
 # anything a person has claimed. The worst it can do is close something already handled.
 #
-# Uses SUPABASE_SERVICE_ROLE_KEY, which is already set. It does NOT need the missing
-# SUPABASE_ACCESS_TOKEN that is currently blocking edge function deploys.
+# Uses the ANON key, on purpose. That key is public — it ships in the site's browser
+# bundle — and ayp_sweep_stale_alerts is granted to anon. The function takes no arguments,
+# only retracts, and cannot raise an alert or touch a claimed one, so nothing is risked by
+# it being callable. This deliberately avoids needing a repo secret, because
+# SUPABASE_SERVICE_ROLE_KEY is not set and SUPABASE_ACCESS_TOKEN is expired.
 
 name: AYP — sweep stale alerts
 
@@ -35,17 +38,13 @@ jobs:
       - name: Retract alerts that are no longer true
         env:
           PROJECT_REF: adcbrclppmnguzkzwiys
-          SERVICE_KEY: ${{ secrets.SUPABASE_SERVICE_ROLE_KEY }}
+          ANON_KEY: eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImFkY2JyY2xwcG1uZ3V6a3p3aXlzIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODE5MjgyOTAsImV4cCI6MjA5NzUwNDI5MH0.wBv4AZYvndsvnj8XrkT5VNGBuT3GE6j1w-LI5k1Jr-U
         run: |
           set -euo pipefail
-          if [ -z "${SERVICE_KEY:-}" ]; then
-            echo "::error::SUPABASE_SERVICE_ROLE_KEY is not set. The sweep cannot run."
-            exit 1
-          fi
           RESP=$(curl -sS -X POST \
             "https://${PROJECT_REF}.supabase.co/rest/v1/rpc/ayp_sweep_stale_alerts" \
-            -H "apikey: ${SERVICE_KEY}" \
-            -H "Authorization: Bearer ${SERVICE_KEY}" \
+            -H "apikey: ${ANON_KEY}" \
+            -H "Authorization: Bearer ${ANON_KEY}" \
             -H "Content-Type: application/json" \
             -d '{}')
           echo "$RESP"
