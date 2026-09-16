@@ -1,3 +1,4 @@
+import { gate } from '../_shared/identity.ts';
 // Schema pointed at 'public' (was prj_X-ZoVQv6LKXT). PostgREST only exposes `public`, and the
 // investors view plus every table this function touches now live in `public`, readable/writable
 // by the service role. Forcing the prj profile caused every query to be rejected -> empty lists.
@@ -21,7 +22,7 @@ globalThis.fetch = (input: any, init: any = {}) => {
 // manage-investor-admin v17.4 - schema fix (public). v17.3: createNotification uses 'data' column
 const corsHeaders = {
   'Access-Control-Allow-Origin': '*',
-  'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type'
+  'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type, x-staff-session, x-investor-session'
 };
 
 Deno.serve(async (req) => {
@@ -44,6 +45,12 @@ Deno.serve(async (req) => {
     const mutH = { 'apikey': SUPABASE_KEY, 'Authorization': `Bearer ${SUPABASE_KEY}`, 'Content-Type': 'application/json', 'Prefer': 'return=representation' };
 
     const body = await req.json();
+
+    // Sign-in check: see _shared/identity.ts. This function used to trust ids in the body.
+
+    const denied = await gate(req, body, String(body?.action || ''), corsHeaders, { publicActions: [], clientActions: ['add_portfolio_property', 'get_assigned_managers', 'get_investor', 'notify_am_investor_action'], ownRow: {} });
+
+    if (denied) return denied;
     const { action, investor_id } = body;
     console.log('[v17.4] Action:', action);
 

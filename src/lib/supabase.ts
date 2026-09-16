@@ -51,13 +51,18 @@ function safeRealtimeDecode(
 // Staff functions check who is calling from the session token staff-login issued. Only the
 // functions below accept this header; sending it to any other function would fail its
 // CORS preflight, so the list is explicit.
+// Functions that check who is asking from the sign-in token. Every request to them carries
+// whichever sign-in this browser holds.
+const SIGNED_IN_FUNCTIONS = ['ai-investor-chat', 'penny-landlord-chat', 'manage-acquisition-requests',
+  'manage-investor-documents', 'manage-setup-tasks', 'manage-investor-admin', 'investor-messaging',
+  'manage-support-requests', 'manage-document-signatures', 'get-portfolio'];
 const STAFF_SESSION_FUNCTIONS = ['get-leads', 'penny-staff-chat', 'staff-countersign', 'penny-staff-brief', 'manage-setup-tasks'];
 const staffAwareFetch: typeof fetch = (input, init = {}) => {
   try {
     const url = typeof input === 'string' ? input : (input as Request)?.url || String(input);
     const fn = url.split('/functions/v1/')[1]?.split(/[/?]/)[0];
     // Client and landlord Penny prove who is asking with the sign-in token, not the id.
-    if (fn && typeof window !== 'undefined' && (fn === 'ai-investor-chat' || fn === 'penny-landlord-chat' || fn === 'manage-acquisition-requests' || fn === 'manage-investor-documents' || fn === 'manage-setup-tasks')) {
+    if (fn && typeof window !== 'undefined' && SIGNED_IN_FUNCTIONS.includes(fn)) {
       const headers = new Headers(init.headers || (input instanceof Request ? input.headers : undefined));
       const inv = window.localStorage.getItem('investorSessionToken');
       const ll = window.localStorage.getItem('landlord_session');

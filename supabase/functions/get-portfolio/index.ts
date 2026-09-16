@@ -1,3 +1,4 @@
+import { whoIsAsking } from '../_shared/identity.ts';
 // get-portfolio — one investor's holdings, and only theirs.
 //
 // investor_portfolio was readable by anon, which meant every client's addresses, rent and
@@ -11,7 +12,7 @@
 
 const corsHeaders = {
   'Access-Control-Allow-Origin': '*',
-  'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
+  'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type, x-staff-session, x-investor-session',
 };
 
 const json = (b: unknown, s = 200) =>
@@ -26,6 +27,17 @@ Deno.serve(async (req) => {
 
   try {
     const body = await req.json().catch(() => ({}));
+
+    // Identity from the sign-in token. The staff path used to trust a staff_id in the body
+    // and the client path any investor_id, so anyone could read any portfolio.
+    const who = await whoIsAsking(req);
+    if (who.kind === 'none') return json({ success: false, error: 'Your sign-in has expired. Please sign in again.' }, 401);
+    if (who.kind === 'staff') body.staff_id = who.id;
+    else {
+      delete body.staff_id;
+      if (body.investor_id && String(body.investor_id) !== who.id) return json({ success: false, error: 'You can only see your own portfolio.' }, 403);
+      body.investor_id = who.id;
+    }
 
     // STAFF READ. Staff legitimately view portfolios they do not own, and one screen reads
     // ACROSS investors. That cannot go through the client path — which is scoped to one id
