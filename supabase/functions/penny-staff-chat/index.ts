@@ -47,7 +47,7 @@ const ACCOUNT_LINKS = {
 
 const corsHeaders = {
   'Access-Control-Allow-Origin': '*',
-  'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
+  'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type, x-staff-session',
   'Access-Control-Allow-Methods': 'POST, OPTIONS',
 };
 const json = (d: unknown, s = 200) =>
@@ -4754,9 +4754,25 @@ Deno.serve(async (req) => {
     const key = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY');
     if (!url || !key) return json({ success: false, error: 'Server not configured' }, 500);
 
-    const staffName = String(body.staff_name || '').trim();
+    // IDENTITY COMES FROM THE SESSION, NEVER THE BODY. This surface holds tools that email
+    // clients, record payments and change listings. It used to accept a staff_id in the
+    // request body, and with no id at all it still answered, so anyone holding the public
+    // key could talk to the staff desk. Now: no valid staff session, no Penny.
+    const sessTok = String(req.headers.get('x-staff-session') || body.session_token || '');
+    let sessionStaff: any = null;
+    if (sessTok.length >= 20) {
+      const sr = await fetch(`${url}/rest/v1/staff_users?session_token=eq.${encodeURIComponent(sessTok)}&select=id,name,is_active,session_expires&limit=1`,
+        { headers: { apikey: key, Authorization: `Bearer ${key}` } });
+      const row = sr.ok ? (await sr.json().catch(() => []))[0] : null;
+      if (row && row.is_active !== false && row.session_expires && new Date(row.session_expires).getTime() > Date.now()) sessionStaff = row;
+    }
+    if (!sessionStaff) {
+      console.log('penny-staff-chat refused_no_session');
+      return json({ success: false, error: 'Your staff sign-in has expired. Please sign in again to talk to Penny.' }, 401);
+    }
+    const staffName = String(sessionStaff.name || body.staff_name || '').trim();
     const first = staffName.split(' ').filter(Boolean)[0] || 'there';
-    const staffId = String(body.staff_id || '');
+    const staffId = String(sessionStaff.id);
 
     const raw = Array.isArray(body.messages) ? body.messages : [];
     const messages = raw

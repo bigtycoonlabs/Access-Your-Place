@@ -51,7 +51,7 @@ function safeRealtimeDecode(
 // Staff functions check who is calling from the session token staff-login issued. Only the
 // functions below accept this header; sending it to any other function would fail its
 // CORS preflight, so the list is explicit.
-const STAFF_SESSION_FUNCTIONS = ['get-leads', 'staff-countersign', 'penny-staff-brief', 'manage-setup-tasks'];
+const STAFF_SESSION_FUNCTIONS = ['get-leads', 'penny-staff-chat', 'staff-countersign', 'penny-staff-brief', 'manage-setup-tasks'];
 const staffAwareFetch: typeof fetch = (input, init = {}) => {
   try {
     const url = typeof input === 'string' ? input : (input as Request)?.url || String(input);

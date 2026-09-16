@@ -230,7 +230,10 @@ export function PennyStaffChat({
       const res = await fetch(`${SUPABASE_URL}/functions/v1/penny-staff-chat`, {
         method: 'POST',
         signal: controller.signal,
-        headers: { 'Content-Type': 'application/json', apikey: SUPABASE_ANON_KEY, Authorization: `Bearer ${SUPABASE_ANON_KEY}` },
+        headers: {
+          'Content-Type': 'application/json', apikey: SUPABASE_ANON_KEY, Authorization: `Bearer ${SUPABASE_ANON_KEY}`,
+          'x-staff-session': (() => { try { return String(JSON.parse(localStorage.getItem('staffSession') || '{}')?.session_token || ''); } catch { return ''; } })(),
+        },
         body: JSON.stringify({
           messages: next,
           staff_id: staffId,
@@ -241,6 +244,10 @@ export function PennyStaffChat({
           document_name: docs.map((d) => d.name).join(', ') || undefined,
         }),
       });
+      if (res.status === 401) {
+        const why = await res.json().catch(() => null);
+        throw new Error(why?.error || 'Your staff sign-in has expired. Please sign in again to talk to Penny.');
+      }
       if (!res.ok || !res.body) throw new Error(`stream ${res.status}`);
 
       const reader = res.body.getReader();
