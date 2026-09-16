@@ -702,6 +702,44 @@ export default function SetupServices() {
       </section>
 
       {/* Pricing Examples */}
+
+      {/* Teardown is half of what this service actually is, and the page mentioned it once.
+          It is the reason a client can leave a property without losing their furniture. */}
+      <section className="py-16 px-4 bg-white">
+        <div className="max-w-5xl mx-auto">
+          <h2 className="text-3xl font-bold text-[#1a2332] mb-3">Teardown &amp; Move</h2>
+          <p className="text-lg text-slate-600 mb-8 max-w-3xl">
+            Setups end. Leases finish, markets change, and a unit that made sense last year
+            may not this year. We take the operation apart as carefully as we built it, so
+            what you paid for comes with you instead of being left behind.
+          </p>
+          <div className="grid md:grid-cols-2 gap-6">
+            <div className="border border-slate-200 rounded-lg p-6">
+              <h3 className="text-xl font-bold text-[#1a2332] mb-3">What we do</h3>
+              <ul className="space-y-2 text-slate-700">
+                <li>Every item inventoried at collection, in writing, before anything moves</li>
+                <li>Packed, loaded and transported by our own team</li>
+                <li>Stored in our Texas warehouse, or set up again at your next property</li>
+                <li>Photographed at collection and on arrival</li>
+              </ul>
+            </div>
+            <div className="border border-slate-200 rounded-lg p-6">
+              <h3 className="text-xl font-bold text-[#1a2332] mb-3">Why the inventory matters</h3>
+              <p className="text-slate-700">
+                The collection inventory is the record of what we took custody of. It protects
+                you if a community disputes what was in a unit, and it protects us from being
+                asked about items we never handled. It is written down every time, with a name
+                and a date against it.
+              </p>
+            </div>
+          </div>
+          <p className="mt-8 text-slate-600">
+            Teardown and move is quoted per job, based on the unit count, the distance and
+            whether the contents are going into storage or straight into a new setup.
+          </p>
+        </div>
+      </section>
+
       <section id="pricing-examples" className="py-20 bg-white">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="text-center mb-16">
