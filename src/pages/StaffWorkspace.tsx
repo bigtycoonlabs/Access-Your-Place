@@ -1,3 +1,4 @@
+import { StartSubmissions } from '@/components/staff/StartSubmissions';
 import { useState, useEffect, useCallback, useMemo } from 'react';
 import { supabase } from '@/lib/supabase';
 import { lazy, Suspense } from 'react';
@@ -23,7 +24,7 @@ const StaffCountersign = lazy(() =>
  */
 
 type Space = 'admin' | 'acq' | 'setup';
-type View = 'dash' | 'work' | 'penny' | 'clients' | Space | 'sop' | 'settings' | 'profile';
+type View = 'dash' | 'work' | 'penny' | 'clients' | 'intake' | Space | 'sop' | 'settings' | 'profile';
 
 interface StaffSession {
   id?: string; full_name?: string; name?: string; email?: string;
@@ -214,7 +215,7 @@ export default function StaffWorkspace() {
     setView(v);
     setOpenAction(null);
     const label = v === 'dash' ? 'Dashboard' : v === 'work' ? 'My work'
-      : v === 'penny' ? 'Penny' : (SPACES as any)[v]?.name || v;
+      : v === 'penny' ? 'Penny' : v === 'intake' ? 'New submissions' : v === 'clients' ? 'Clients' : (SPACES as any)[v]?.name || v;
     setAnnounce(`${label}.`);
     document.getElementById('ws-main')?.focus();
   }
@@ -912,6 +913,7 @@ export default function StaffWorkspace() {
             {navLink('work', workCount ? `My work (${workCount})` : 'My work')}
             {navLink('penny', 'Penny')}
             {navLink('clients', 'Clients')}
+            {navLink('intake', 'New submissions')}
           </ul>
           <h2 style={{ fontSize: '.75rem', textTransform: 'uppercase', letterSpacing: '.06em', color: '#5b6672', margin: '18px 0 6px' }}>Spaces</h2>
           <ul style={{ listStyle: 'none', margin: 0, padding: 0 }}>
@@ -927,6 +929,14 @@ export default function StaffWorkspace() {
 
         <main id="ws-main" tabIndex={-1} style={{ flex: 1, minWidth: 0 }}>
           <div aria-live="polite" style={{ position: 'absolute', width: 1, height: 1, overflow: 'hidden', clip: 'rect(0 0 0 0)' }}>{announce}</div>
+
+          {view === 'intake' && (
+            <>
+              <h1 style={{ fontSize: '1.5rem', margin: '0 0 .7em' }}>New submissions</h1>
+              <p>Everything sent through accessyourplace.com/start: sellers, acquisitions, landlords, setup and teardown requests.</p>
+              <StartSubmissions />
+            </>
+          )}
 
           {view === 'dash' && (
             <>
