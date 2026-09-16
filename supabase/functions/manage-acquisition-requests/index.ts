@@ -20,7 +20,7 @@ globalThis.fetch = (input: any, init: any = {}) => {
 
 export const corsHeaders = {
   'Access-Control-Allow-Origin': '*',
-  'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type'
+  'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type, x-investor-session, x-staff-session'
 };
 
 const supabaseUrl = Deno.env.get('SUPABASE_URL')!;
@@ -125,6 +125,38 @@ Deno.serve(async (req) => {
   try {
     const body = await req.json();
     const { action, investor_id, request_id } = body;
+
+    // WHO IS ASKING. This function had no sign-in check at all: any caller holding the public
+    // key could list every client's requests with name, email and phone, approve or decline
+    // requests, reassign managers, or act on a client's behalf by sending their id. Client
+    // actions now need that client's own sign-in (or a staff sign-in); everything else needs
+    // a staff sign-in.
+    const CLIENT_ACTIONS = new Set(['get_investor_reservations', 'reserve_deal_no_am', 'submit_request', 'get_my_requests', 'accept_first_refusal', 'decline_first_refusal']);
+    const base = Deno.env.get('SUPABASE_URL') ?? '';
+    const svc = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY') ?? '';
+    const h = { apikey: svc, Authorization: `Bearer ${svc}` };
+    const now = Date.now();
+    let isStaff = false;
+    const staffTok = String(req.headers.get('x-staff-session') || '');
+    if (staffTok.length >= 20) {
+      const r = await fetch(`${base}/rest/v1/staff_users?session_token=eq.${encodeURIComponent(staffTok)}&select=id,is_active,session_expires&limit=1`, { headers: h });
+      const st = r.ok ? (await r.json())[0] : null;
+      isStaff = !!st && st.is_active !== false && !!st.session_expires && new Date(st.session_expires).getTime() > now;
+    }
+    if (CLIENT_ACTIONS.has(action)) {
+      if (!isStaff) {
+        const tok = String(req.headers.get('x-investor-session') || '');
+        let ok = false;
+        if (tok.length >= 20 && investor_id) {
+          const r = await fetch(`${base}/rest/v1/investor_sessions?session_token=eq.${encodeURIComponent(tok)}&is_active=eq.true&select=investor_id,expires_at&limit=1`, { headers: h });
+          const se = r.ok ? (await r.json())[0] : null;
+          ok = !!se && se.investor_id === investor_id && (!se.expires_at || new Date(se.expires_at).getTime() > now);
+        }
+        if (!ok) return new Response(JSON.stringify({ success: false, error: 'Your sign-in has expired. Please sign in again.' }), { status: 401, headers: { ...corsHeaders, 'Content-Type': 'application/json' } });
+      }
+    } else if (!isStaff) {
+      return new Response(JSON.stringify({ success: false, error: 'Please sign in to the staff area to do that.' }), { status: 401, headers: { ...corsHeaders, 'Content-Type': 'application/json' } });
+    }
 
     // INVESTOR ACTIONS
 
