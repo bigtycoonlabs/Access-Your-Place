@@ -1,0 +1,54 @@
+# Retract alerts that have stopped being true.
+#
+# WHY THIS EXISTS: the alert generators raise but never take anything back. Eighteen of
+# thirty-one urgent alerts on the desk were things that had stopped being true — clients
+# who since got a manager, messages since read, an enquiry that had actually been answered
+# and never logged. Staff were not ignoring the desk out of neglect; they had learned it
+# was wrong, and a queue you cannot trust is worse than no queue because the real items
+# underneath get skipped too.
+#
+# This calls ayp_sweep_stale_alerts, which annotates every alert it clears with the reason
+# rather than deleting it, so the history stays honest.
+#
+# It is deliberately READ-AND-RETRACT ONLY. It never raises an alert and never touches
+# anything a person has claimed. The worst it can do is close something already handled.
+#
+# Uses SUPABASE_SERVICE_ROLE_KEY, which is already set. It does NOT need the missing
+# SUPABASE_ACCESS_TOKEN that is currently blocking edge function deploys.
+
+name: AYP — sweep stale alerts
+
+on:
+  schedule:
+    # 11:00 UTC, before the US working day, so the desk is honest when it is opened.
+    - cron: '0 11 * * *'
+  workflow_dispatch:
+
+concurrency:
+  group: ayp-alert-sweep
+  cancel-in-progress: false
+
+jobs:
+  sweep:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Retract alerts that are no longer true
+        env:
+          PROJECT_REF: adcbrclppmnguzkzwiys
+          SERVICE_KEY: ${{ secrets.SUPABASE_SERVICE_ROLE_KEY }}
+        run: |
+          set -euo pipefail
+          if [ -z "${SERVICE_KEY:-}" ]; then
+            echo "::error::SUPABASE_SERVICE_ROLE_KEY is not set. The sweep cannot run."
+            exit 1
+          fi
+          RESP=$(curl -sS -X POST \
+            "https://${PROJECT_REF}.supabase.co/rest/v1/rpc/ayp_sweep_stale_alerts" \
+            -H "apikey: ${SERVICE_KEY}" \
+            -H "Authorization: Bearer ${SERVICE_KEY}" \
+            -H "Content-Type: application/json" \
+            -d '{}')
+          echo "$RESP"
+          # A sweep that silently did nothing is indistinguishable from a sweep that failed,
+          # so insist on the shape of a real answer rather than trusting a 200.
+          echo "$RESP" | grep -q '"ok":true' || { echo "::error::Sweep did not report ok"; exit 1; }
