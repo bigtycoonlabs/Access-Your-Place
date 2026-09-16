@@ -2,12 +2,35 @@ import { createClient } from 'https://esm.sh/@supabase/supabase-js@2';
 
 const cors = {
   'Access-Control-Allow-Origin': '*',
-  'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
+  'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type, x-staff-session',
 };
 
 // Staff had NO way to countersign anything. The Documents tab is an upload screen and never
 // touched document_signatures, so clients signed and the company side stayed open forever.
 // Permission lives in the database function, not in whether a button renders.
+
+// Staff identity comes from the session token staff-login issued, never from a staff_id
+// in the request body. A body staff_id is only a claim; anyone with the public key could
+// send one and read client records.
+async function staffFromSession(req: Request, body: any): Promise<any | null> {
+  const tok = String(req.headers.get('x-staff-session') || body?.session_token || '');
+  if (tok.length < 20) return null;
+  const base = Deno.env.get('SUPABASE_URL') ?? '';
+  const key = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY') ?? '';
+  try {
+    const r = await fetch(`${base}/rest/v1/staff_users?session_token=eq.${encodeURIComponent(tok)}` +
+      `&select=id,name,role,department,roles,is_active,session_expires&limit=1`,
+      { headers: { apikey: key, Authorization: `Bearer ${key}`, 'Accept-Profile': 'public' } });
+    if (!r.ok) return null;
+    const rows = await r.json();
+    const s = Array.isArray(rows) ? rows[0] : null;
+    if (!s || s.is_active === false || !s.session_expires) return null;
+    if (new Date(s.session_expires).getTime() < Date.now()) return null;
+    return s;
+  } catch { return null; }
+}
+const SIGNED_OUT = 'Your sign-in has expired. Sign out and sign in again.';
+
 Deno.serve(async (req) => {
   if (req.method === 'OPTIONS') return new Response('ok', { headers: cors });
   const json = (d: unknown, s = 200) =>
@@ -19,8 +42,10 @@ Deno.serve(async (req) => {
       Deno.env.get('SUPABASE_SERVICE_ROLE_KEY') ?? '',
     );
     const body = await req.json();
-    const { action, staff_id } = body;
-    if (!staff_id) return json({ success: false, error: 'staff_id required' }, 400);
+    const { action } = body;
+    const me = await staffFromSession(req, body);
+    if (!me) return json({ success: false, error: SIGNED_OUT, reason: 'session_expired' }, 401);
+    const staff_id = me.id;
 
     if (action === 'list') {
       const { data: who } = await supabase.from('staff_users')

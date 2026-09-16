@@ -15,7 +15,7 @@ const APP_SCHEMA = 'prj_X-ZoVQv6LKXT';
 
 const corsHeaders = {
   'Access-Control-Allow-Origin': '*',
-  'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
+  'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type, x-staff-session',
   'Access-Control-Allow-Methods': 'POST, OPTIONS',
 };
 const json = (d: unknown, s = 200) =>
@@ -78,6 +78,29 @@ function ago(iso: string): string {
 
 const plural = (n: number, one: string, many: string) => (n === 1 ? one : many);
 
+
+// Staff identity comes from the session token staff-login issued, never from a staff_id
+// in the request body. A body staff_id is only a claim; anyone with the public key could
+// send one and read client records.
+async function staffFromSession(req: Request, body: any): Promise<any | null> {
+  const tok = String(req.headers.get('x-staff-session') || body?.session_token || '');
+  if (tok.length < 20) return null;
+  const base = Deno.env.get('SUPABASE_URL') ?? '';
+  const key = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY') ?? '';
+  try {
+    const r = await fetch(`${base}/rest/v1/staff_users?session_token=eq.${encodeURIComponent(tok)}` +
+      `&select=id,name,role,department,roles,is_active,session_expires&limit=1`,
+      { headers: { apikey: key, Authorization: `Bearer ${key}`, 'Accept-Profile': 'public' } });
+    if (!r.ok) return null;
+    const rows = await r.json();
+    const s = Array.isArray(rows) ? rows[0] : null;
+    if (!s || s.is_active === false || !s.session_expires) return null;
+    if (new Date(s.session_expires).getTime() < Date.now()) return null;
+    return s;
+  } catch { return null; }
+}
+const SIGNED_OUT = 'Your sign-in has expired. Sign out and sign in again.';
+
 Deno.serve(async (req) => {
   if (req.method === 'OPTIONS') return new Response('ok', { headers: corsHeaders });
   try {
@@ -85,6 +108,8 @@ Deno.serve(async (req) => {
     const url = Deno.env.get('SUPABASE_URL');
     const key = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY');
     if (!url || !key) return json({ success: false, error: 'Server not configured' }, 500);
+    const me = await staffFromSession(req, body);
+    if (!me) return json({ success: false, error: SIGNED_OUT, reason: 'session_expired' }, 401);
 
     const staffName = String(body.staff_name || '').trim();
     const first = staffName.split(' ').filter(Boolean)[0] || 'there';
@@ -195,9 +220,8 @@ Deno.serve(async (req) => {
     // of everyone's stale leads.
     let myAlerts: unknown[] = [];
     try {
-      if (!body.staff_id) throw new Error('no staff_id on request');
-      const ar = await fetch(
-        `${url}/rest/v1/staff_alerts?staff_id=eq.${encodeURIComponent(String(body.staff_id || ''))}&seen_at=is.null` +
+            const ar = await fetch(
+        `${url}/rest/v1/staff_alerts?staff_id=eq.${encodeURIComponent(String(me.id))}&seen_at=is.null` +
         `&select=id,title,body,severity,investor_id,created_at&order=created_at.desc&limit=25`,
         { headers: { apikey: key, Authorization: `Bearer ${key}` } },
       );
@@ -244,12 +268,12 @@ Deno.serve(async (req) => {
     // consuming a field the endpoint never sends would show an empty tab — and somebody
     // reading an empty procedures tab concludes they have no responsibilities.
     let sop: unknown = null;
-    if (body.staff_id) {
+    if (me.id) {
       try {
         const r = await fetch(`${url}/rest/v1/rpc/penny_my_sop`, {
           method: 'POST',
           headers: { apikey: key, Authorization: `Bearer ${key}`, 'Content-Type': 'application/json' },
-          body: JSON.stringify({ p_staff_id: body.staff_id }),
+          body: JSON.stringify({ p_staff_id: me.id }),
         });
         if (r.ok) sop = await r.json();
         else console.error('penny-staff-brief sop_failed', r.status);

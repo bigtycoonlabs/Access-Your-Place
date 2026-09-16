@@ -71,7 +71,7 @@ function paymentBlockText(rails: string[] | undefined): string {
 
 const corsHeaders = {
   'Access-Control-Allow-Origin': '*',
-  'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type'
+  'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type, x-staff-session'
 };
 
 const PHASE_NAMES = {1:'Acquisition & Initial Payment',2:'Consultation & Pre-Intake',3:'Intake Form & Service Agreement',4:'Logistics & Team Activation',5:'Product Sourcing & Spreadsheet',6:'Purchasing & Travel Logistics',7:'On-Site Setup & Live Tracking',8:'Cleanup, Media & Final Handover'};
@@ -120,6 +120,38 @@ async function notifyManager(supabase, managerId, subject, html) {
   } catch (e) { console.error('Notify manager error:', e); }
 }
 
+
+// Staff identity comes from the session token staff-login issued, never from a staff_id
+// in the request body. A body staff_id is only a claim; anyone with the public key could
+// send one and read client records.
+async function staffFromSession(req: Request, body: any): Promise<any> {
+  const tok = String(req.headers.get('x-staff-session') || body?.session_token || '');
+  if (tok.length < 20) return null;
+  const base = Deno.env.get('SUPABASE_URL') ?? '';
+  const key = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY') ?? '';
+  try {
+    const r = await fetch(`${base}/rest/v1/staff_users?session_token=eq.${encodeURIComponent(tok)}` +
+      `&select=id,name,role,department,roles,is_active,session_expires&limit=1`,
+      { headers: { apikey: key, Authorization: `Bearer ${key}`, 'Accept-Profile': 'public' } });
+    if (!r.ok) return null;
+    const rows = await r.json();
+    const s = Array.isArray(rows) ? rows[0] : null;
+    if (!s || s.is_active === false || !s.session_expires) return null;
+    if (new Date(s.session_expires).getTime() < Date.now()) return null;
+    return s;
+  } catch { return null; }
+}
+const SIGNED_OUT = 'Your sign-in has expired. Sign out and sign in again.';
+
+// Actions a pro (holding a portal token) or a client may call. Everything else is staff work
+// and needs a signed-in staff member. list_projects alone returned every client's project,
+// email and address to anyone holding the public key.
+const NON_STAFF_ACTIONS = new Set([
+  'pro_portal_access', 'pro_mark_item', 'pro_update_delivery', 'pro_submit_maintenance',
+  'pro_sign_contract', 'pro_upload_media',
+  'get_investor_projects', 'get_intake_fields', 'submit_intake_form', 'request_setup',
+  'approve_spreadsheet',
+]);
 Deno.serve(async (req) => {
   if (req.method === 'OPTIONS') return new Response('ok', { headers: corsHeaders });
   try {
@@ -131,6 +163,10 @@ Deno.serve(async (req) => {
     // went out with a success status. Callers that check the HTTP code would have read
     // a rejection as a success.
     const ok = (d, status = 200) => new Response(JSON.stringify(d), { status, headers: { 'Content-Type': 'application/json', ...corsHeaders } });
+    if (!NON_STAFF_ACTIONS.has(action)) {
+      const me = await staffFromSession(req, body);
+      if (!me) return ok({ success: false, error: SIGNED_OUT, reason: 'session_expired' }, 401);
+    }
 
     // â”€â”€â”€ LIST PROJECTS â”€â”€â”€
     if (action === 'list_projects') {

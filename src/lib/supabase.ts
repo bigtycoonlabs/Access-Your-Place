@@ -47,7 +47,29 @@ function safeRealtimeDecode(
   }
 }
 
+
+// Staff functions check who is calling from the session token staff-login issued. Only the
+// functions below accept this header; sending it to any other function would fail its
+// CORS preflight, so the list is explicit.
+const STAFF_SESSION_FUNCTIONS = ['staff-countersign', 'penny-staff-brief', 'manage-setup-tasks'];
+const staffAwareFetch: typeof fetch = (input, init = {}) => {
+  try {
+    const url = typeof input === 'string' ? input : (input as Request)?.url || String(input);
+    const fn = url.split('/functions/v1/')[1]?.split(/[/?]/)[0];
+    if (fn && STAFF_SESSION_FUNCTIONS.includes(fn) && typeof window !== 'undefined') {
+      const tok = JSON.parse(window.localStorage.getItem('staffSession') || '{}')?.session_token;
+      if (tok) {
+        const headers = new Headers(init.headers || (input instanceof Request ? input.headers : undefined));
+        headers.set('x-staff-session', String(tok));
+        init = { ...init, headers };
+      }
+    }
+  } catch { /* no session: the function answers that the sign-in has expired */ }
+  return fetch(input, init);
+};
+
 const supabase = createClient(supabaseUrl, supabaseKey, {
+  global: { fetch: staffAwareFetch },
   db: { schema: DATA_SCHEMA },
   auth: {
     persistSession: true,
