@@ -945,8 +945,10 @@ serve(async (req) => {
     const body = await req.json()
     const { action, user_id: claimedUserId, user_type, user_name, message, session_id, conversation_history } = body
     const user_id = await verifiedUserId(req, Deno.env.get('SUPABASE_URL') ?? '', Deno.env.get('SUPABASE_SERVICE_ROLE_KEY') ?? '',
-      String(claimedUserId || ''), user_type === 'staff' ? 'staff' : 'investor')
-    if (claimedUserId && !user_id) console.log('ai-investor-chat unverified_user_id_dropped', JSON.stringify({ user_type: user_type || 'investor' }))
+      String(claimedUserId || body.investor_id || ''), user_type === 'staff' ? 'staff' : 'investor')
+    // The portal chat box sends the id as investor_id; nothing read that name, so portal Penny
+    // never knew which client she was talking to.
+    if ((claimedUserId || body.investor_id) && !user_id) console.log('ai-investor-chat unverified_user_id_dropped', JSON.stringify({ user_type: user_type || 'investor' }))
 
     const supabaseUrl = Deno.env.get('SUPABASE_URL')!
     const supabaseKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!
