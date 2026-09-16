@@ -184,28 +184,24 @@ export default function StaffWorkspace() {
       setAlerts(alertRes?.data?.my_alerts || []);
       const proj = projRes?.data?.projects || [];
       setProjects(proj);
-      // The item schedule is real data, not a placeholder. Read it for the projects she runs.
-      if (proj.length) {
-        const { data: rows } = await supabase
-          .from('setup_items')
-          .select('id,project_id,room,destination_unit,item_name,quantity,status,delivered_at')
-          .in('project_id', proj.map((x: any) => x.id))
-          .order('room', { ascending: true });
-        setItems(rows || []);
-      } else setItems([]);
-
-      // Everyone she looks after: clients on her projects, plus any client assigned to her.
-      const ids = Array.from(new Set(proj.map((x: any) => x.investor_id).filter(Boolean)));
-      const { data: cl } = await supabase
-        .from('staff_client_list')
-        .select('id,full_name,email,phone,company_name,credit_balance,status')
-        .or([
-          ids.length ? `id.in.(${ids.join(',')})` : '',
-          `assigned_success_manager_id.eq.${session.id}`,
-          `assigned_setup_manager_id.eq.${session.id}`,
-        ].filter(Boolean).join(','))
-        .limit(200);
-      setClients(cl || []);
+      // Items and client records come through a function that checks the staff sign-in.
+      // They used to be read straight from views that anyone with the public key could open.
+      const { data: ws, error: wsErr } = await supabase.rpc('ayp_staff_workspace_data', {
+        p_session_token: session.session_token || '',
+        p_project_ids: proj.map((x: any) => x.id),
+      });
+      if (wsErr || !ws?.ok) {
+        setItems([]);
+        setClients([]);
+        const why = ws?.reason === 'session_expired' || ws?.reason === 'not_signed_in'
+          ? 'Not loaded. Your sign-in has expired, so your items and clients could not be loaded. Sign out and sign in again.'
+          : 'Not loaded. Your items and clients could not be read. Nothing was changed. Try again shortly.';
+        setResult(why);
+        setAnnounce(why);
+      } else {
+        setItems(ws.items || []);
+        setClients(ws.clients || []);
+      }
     } catch { /* shown as empty, not as zero */ }
     setLoading(false);
   }, [session?.id]);
@@ -822,8 +818,8 @@ export default function StaffWorkspace() {
 
         {result && (
           <p style={{ marginTop: 14, padding: '12px 14px', borderRadius: 6,
-            background: result.startsWith('Not saved') ? '#fff1f2' : '#ecfdf5',
-            border: `1px solid ${result.startsWith('Not saved') ? '#9f1239' : '#065f46'}`,
+            background: /^Not (saved|loaded)/.test(result) ? '#fff1f2' : '#ecfdf5',
+            border: `1px solid ${/^Not (saved|loaded)/.test(result) ? '#9f1239' : '#065f46'}`,
             wordBreak: 'break-all' }}>{result}</p>
         )}
       </>

@@ -357,27 +357,22 @@ app.get('/conn-check', async (req, res) => {
   res.json({ v: '1783810139', ef_url: EF_URL, ping: ping.ok, staff: {ok:s.ok,count:s.data?.length}, investors: {ok:inv.ok,count:inv.data?.length}, properties: {ok:pr.ok,count:pr.data?.length} });
 });
 app.get('/__diag', async (req, res) => {
-  const out = { v: '1783799248', env: {} };
-  out.env.SUPABASE_URL = (process.env.SUPABASE_URL || 'MISSING').slice(0, 45);
-  out.env.POSTGREST_URL = (process.env.POSTGREST_URL || 'unset').slice(0, 45);
-  out.env.has_SERVICE_ROLE = !!process.env.SUPABASE_SERVICE_ROLE_KEY;
-  out.env.SERVICE_ROLE_len = (process.env.SUPABASE_SERVICE_ROLE_KEY || '').length;
-  out.rpcBase = rpcBase();
-  // Raw RPC probe
+  // Public endpoint: report only whether the connection works. It used to return staff ids,
+  // staff emails and the length of the service key to anyone who opened the URL.
+  const out = { v: '1783799248', has_SERVICE_ROLE: !!process.env.SUPABASE_SERVICE_ROLE_KEY };
   try {
     const res2 = await fetch(rpcBase() + '/rpc/ayp_query', {
       method: 'POST',
       headers: { ...dbHeaders(), 'Accept-Profile': 'public', 'Prefer': '' },
-      body: JSON.stringify({ p_table: 'staff_users', p_filter: '', p_limit: 2, p_select: 'id,email', p_order: 'created_at.desc' }),
+      body: JSON.stringify({ p_table: 'staff_users', p_filter: '', p_limit: 1, p_select: 'id', p_order: 'created_at.desc' }),
     });
     out.rpc_status = res2.status;
-    out.rpc_body = (await res2.text()).slice(0, 500);
-  } catch(e) { out.rpc_error = e.message; }
-  // dbGet probe
+    await res2.text();
+  } catch (e) { out.rpc_status = 'unreachable'; }
   try {
-    const g = await dbGet('/staff_users?limit=2&select=id,email');
-    out.dbGet = { ok: g.ok, count: g.data?.length, sample: g.data?.[0] };
-  } catch(e) { out.dbGet_error = e.message; }
+    const g = await dbGet('/staff_users?limit=1&select=id');
+    out.dbGet_ok = !!g.ok;
+  } catch (e) { out.dbGet_ok = false; }
   res.json(out);
 });
 
