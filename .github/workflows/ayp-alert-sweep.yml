@@ -50,4 +50,4 @@ jobs:
           echo "$RESP"
           # A sweep that silently did nothing is indistinguishable from a sweep that failed,
           # so insist on the shape of a real answer rather than trusting a 200.
-          echo "$RESP" | grep -q '"ok":true' || { echo "::error::Sweep did not report ok"; exit 1; }
+          echo "$RESP" | grep -qE '"ok" *: *true' || { echo "::error::Sweep did not report ok"; exit 1; }
