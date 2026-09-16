@@ -21,7 +21,7 @@ globalThis.fetch = (input: any, init: any = {}) => {
 // manage-investor-documents v2.1 - REST API approach for reliability
 const corsHeaders = {
   'Access-Control-Allow-Origin': '*',
-  'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type'
+  'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type, x-investor-session, x-staff-session'
 };
 
 Deno.serve(async (req) => {
@@ -46,6 +46,52 @@ Deno.serve(async (req) => {
 
     const body = await req.json();
     const { action, ...params } = body;
+
+    // WHO IS ASKING. Every action here used to trust the investor_id, document_id or file path
+    // it was sent, so anyone who knew a client's id could list and download that client's
+    // signed agreements. Staff sign-in: everything. Client sign-in: only their own files.
+    // Nothing else gets in.
+    const denied = (msg = 'Your sign-in has expired. Please sign in again to see your documents.') =>
+      json({ success: false, error: msg, documents: [] }, 401);
+    const nowMs = Date.now();
+    let isStaff = false;
+    const sTok = String(req.headers.get('x-staff-session') || '');
+    if (sTok.length >= 20) {
+      const r = await fetch(`${SUPABASE_URL}/rest/v1/staff_users?session_token=eq.${encodeURIComponent(sTok)}&select=is_active,session_expires&limit=1`, { headers: getH });
+      const st = r.ok ? (await r.json())[0] : null;
+      isStaff = !!st && st.is_active !== false && !!st.session_expires && new Date(st.session_expires).getTime() > nowMs;
+    }
+    if (!isStaff) {
+      const iTok = String(req.headers.get('x-investor-session') || '');
+      if (iTok.length < 20) return denied();
+      const r = await fetch(`${SUPABASE_URL}/rest/v1/investor_sessions?session_token=eq.${encodeURIComponent(iTok)}&is_active=eq.true&select=investor_id,expires_at&limit=1`, { headers: getH });
+      const se = r.ok ? (await r.json())[0] : null;
+      if (!se || (se.expires_at && new Date(se.expires_at).getTime() < nowMs)) return denied();
+      const me = String(se.investor_id);
+      const mine = (path: unknown) => typeof path === 'string' && path.startsWith(`${me}/`) && !path.includes('..');
+      const ownDoc = async (id: unknown) => {
+        if (typeof id !== 'string' || !/^[0-9a-f-]{36}$/i.test(id)) return false;
+        const d = await fetch(`${SUPABASE_URL}/rest/v1/investor_documents?id=eq.${id}&select=investor_id&limit=1`, { headers: getH });
+        const row = d.ok ? (await d.json())[0] : null;
+        return !!row && String(row.investor_id) === me;
+      };
+      switch (action) {
+        case 'list': case 'get_documents': case 'list_by_type': case 'count': case 'upload': case 'add_document': case 'list_acquisition_docs':
+          if (String(params.investor_id || '') !== me) return denied('You can only see your own documents.');
+          break;
+        case 'download': case 'get_signed_url':
+          if (!mine(params.file_path)) return denied('You can only open your own documents.');
+          break;
+        case 'bulk_download':
+          if (!Array.isArray(params.file_paths) || !params.file_paths.every(mine)) return denied('You can only open your own documents.');
+          break;
+        case 'get': case 'get_document': case 'mark_viewed': case 'mark_signed':
+          if (!(await ownDoc(params.document_id))) return denied('You can only open your own documents.');
+          break;
+        default:
+          return denied('Please sign in to the staff area to do that.');
+      }
+    }
     console.log('[manage-investor-documents v2.1] Action:', action);
 
     // Helper: send email
