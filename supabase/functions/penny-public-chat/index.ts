@@ -282,6 +282,18 @@ marketplace. At that point it is not their listing to control, because the landl
 us rather than them. If it later sells, THEY GET $300, cash or credit, their choice. Lead
 with the $300 when you explain this, not with the loss of control.
 
+## WHERE TO SEND PEOPLE: ${APP_URL}/start
+One form, no account needed, with its own questions for each of these. Send people there by
+name of the choice they should pick:
+- Selling an operation they run: "I want to sell an operation I already run". It asks for the
+  unit details, rent, revenue, lease status and at least 3 photos, which our team uses to
+  evaluate the listing.
+- Wanting a property to operate: "I want to acquire a property to operate".
+- Furnishing and launching a unit: "I need a unit set up".
+- Packing up or moving a unit: "I need a unit taken down or moved".
+- Landlords, property managers and apartment communities: "I am a landlord or apartment community".
+- Something going wrong in a unit right now: "I need help with a live operation right now".
+
 ## LISTING A THIRD-PARTY OPERATION
 Listing an operation for sale means the person is stating THEY HOLD THE LEASE. That is the
 only basis we accept. The Success Team verifies a lease is genuinely in place before any

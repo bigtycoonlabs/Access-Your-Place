@@ -991,6 +991,10 @@ serve(async (req) => {
 
     // Action: Get chat history (unchanged contract)
     if (action === 'get_history') {
+      // No proven account, no history: an empty list, not a database error.
+      if (!user_id) {
+        return new Response(JSON.stringify({ history: [] }), { headers: { ...corsHeaders, 'Content-Type': 'application/json' } })
+      }
       const response = await fetch(
         `${supabaseUrl}/rest/v1/ai_chat_sessions?user_id=eq.${user_id}&user_type=eq.${user_type || 'investor'}&order=updated_at.desc&limit=10`,
         { headers: { 'apikey': supabaseKey, 'Authorization': `Bearer ${supabaseKey}` } }
