@@ -26,7 +26,7 @@ import {
 
 const corsHeaders = {
   'Access-Control-Allow-Origin': '*',
-  'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
+  'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type, x-landlord-session',
 }
 
 // The authoritative AYP landlord model, from the founder. Everything here is a real offering.
@@ -113,6 +113,42 @@ type PennyMsg = { role: string; content: string }
 type Effort = 'low' | 'medium'
 
 // Shared RPC helper: calls a public SECURITY DEFINER accessor with the service role key.
+
+// WHO IS ASKING comes from a sign-in token, never from the request body. This surface used
+// to trust whatever user_id it was sent, so anyone who knew a client's id could ask Penny
+// about that client's deals, credit and history, or read their past chats. An unproven id
+// is dropped and the conversation continues as an anonymous visitor.
+async function verifiedUserId(req: Request, url: string, key: string, claimed: string, kind: 'investor' | 'landlord' | 'staff'): Promise<string> {
+  if (!claimed || !/^[0-9a-f-]{36}$/i.test(claimed)) return ''
+  const h = { apikey: key, Authorization: `Bearer ${key}` }
+  const now = Date.now()
+  try {
+    if (kind === 'investor') {
+      const tok = String(req.headers.get('x-investor-session') || '')
+      if (tok.length < 20) return ''
+      const r = await fetch(`${url}/rest/v1/investor_sessions?session_token=eq.${encodeURIComponent(tok)}&is_active=eq.true&select=investor_id,expires_at&limit=1`, { headers: h })
+      const s = r.ok ? (await r.json())[0] : null
+      if (!s || s.investor_id !== claimed) return ''
+      if (s.expires_at && new Date(s.expires_at).getTime() < now) return ''
+      return claimed
+    }
+    if (kind === 'landlord') {
+      const tok = String(req.headers.get('x-landlord-session') || '')
+      if (tok.length < 20) return ''
+      const r = await fetch(`${url}/rest/v1/landlord_contacts?id=eq.${claimed}&session_token=eq.${encodeURIComponent(tok)}&select=id,session_expires_at&limit=1`, { headers: h })
+      const s = r.ok ? (await r.json())[0] : null
+      if (!s || (s.session_expires_at && new Date(s.session_expires_at).getTime() < now)) return ''
+      return claimed
+    }
+    const tok = String(req.headers.get('x-staff-session') || '')
+    if (tok.length < 20) return ''
+    const r = await fetch(`${url}/rest/v1/staff_users?id=eq.${claimed}&session_token=eq.${encodeURIComponent(tok)}&select=id,is_active,session_expires&limit=1`, { headers: h })
+    const s = r.ok ? (await r.json())[0] : null
+    if (!s || s.is_active === false || !s.session_expires || new Date(s.session_expires).getTime() < now) return ''
+    return claimed
+  } catch { return '' }
+}
+
 async function rpc(url: string, key: string, fn: string, args: Record<string, unknown> = {}): Promise<any> {
   try {
     const res = await fetch(`${url}/rest/v1/rpc/${fn}`, {
@@ -218,7 +254,9 @@ serve(async (req) => {
 
   try {
     const body = await req.json()
-    const { action, user_id, user_name, message, session_id, conversation_history } = body
+    const { action, user_id: claimedUserId, user_name, message, session_id, conversation_history } = body
+    const user_id = await verifiedUserId(req, Deno.env.get('SUPABASE_URL') ?? '', Deno.env.get('SUPABASE_SERVICE_ROLE_KEY') ?? '', String(claimedUserId || ''), 'landlord')
+    if (claimedUserId && !user_id) console.log('penny-landlord-chat unverified_user_id_dropped')
     const user_type = 'landlord'
 
     const supabaseUrl = Deno.env.get('SUPABASE_URL')!

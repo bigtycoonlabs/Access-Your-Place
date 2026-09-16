@@ -56,6 +56,17 @@ const staffAwareFetch: typeof fetch = (input, init = {}) => {
   try {
     const url = typeof input === 'string' ? input : (input as Request)?.url || String(input);
     const fn = url.split('/functions/v1/')[1]?.split(/[/?]/)[0];
+    // Client and landlord Penny prove who is asking with the sign-in token, not the id.
+    if (fn && typeof window !== 'undefined' && (fn === 'ai-investor-chat' || fn === 'penny-landlord-chat')) {
+      const headers = new Headers(init.headers || (input instanceof Request ? input.headers : undefined));
+      const inv = window.localStorage.getItem('investorSessionToken');
+      const ll = window.localStorage.getItem('landlord_session');
+      if (fn === 'ai-investor-chat' && inv) headers.set('x-investor-session', inv);
+      if (fn === 'penny-landlord-chat' && ll) headers.set('x-landlord-session', ll);
+      const st = JSON.parse(window.localStorage.getItem('staffSession') || '{}')?.session_token;
+      if (fn === 'ai-investor-chat' && st) headers.set('x-staff-session', String(st));
+      init = { ...init, headers };
+    }
     if (fn && STAFF_SESSION_FUNCTIONS.includes(fn) && typeof window !== 'undefined') {
       const tok = JSON.parse(window.localStorage.getItem('staffSession') || '{}')?.session_token;
       if (tok) {
