@@ -4487,7 +4487,12 @@ If the tool genuinely errors, say so rather than guessing a number.`
   // Tools whose action truly COMPLETED this turn — the backing the truth spine trusts.
   const toolsRun: string[] = [];
 
-  for (let round = 0; round < 5; round++) {
+  // Reads are cheap and reversible, writes are not. Give research room to finish rather
+  // than cutting it off at five and apologising.
+  const WRITEY = /add|create|update|remove|delete|send|sign|publish|assign|mark|record/i;
+  const asksForWrite = WRITEY.test(convo.map((m: any) => typeof m.content === 'string' ? m.content : '').join(' ').slice(-2000));
+  const MAX_ROUNDS = asksForWrite ? 6 : 12;
+  for (let round = 0; round < MAX_ROUNDS; round++) {
     emit?.({ type: 'status', phase: 'thinking', text: round === 0 ? 'Thinking' : 'Working through that' });
 
     // TRUE TEXT STREAMING when someone is watching.
@@ -4703,10 +4708,19 @@ If the tool genuinely errors, say so rather than guessing a number.`
   // Out of rounds. Usually a request covering many items at once — "fix them all" across
   // 46 articles cannot finish in one turn. Say what actually happened and what to do
   // instead, rather than asking someone to rephrase a request that was perfectly clear.
+  // Out of rounds. Do NOT throw the work away: summarise what was actually gathered and
+  // say plainly what is still outstanding. A partial answer with its edges named beats a
+  // refusal that discards everything already done.
+  if (toolsRun.length) {
+    const partial = await finalize(key, convo, '', toolsRun);
+    return {
+      message: `${partial}\n\nThat is as far as I could get in one turn. I ran: ${toolsRun.join(', ')}. `
+        + `Ask me to carry on and I will pick up from here.`,
+    };
+  }
   return {
-    message: `That needs more steps than I can take in one turn${
-      toolsRun.length ? `, though I did complete: ${toolsRun.join(', ')}` : ''
-    }. If you asked me to do something across many items, give me a few at a time — name them or say "the first three" — and I will work through them.`,
+    message: 'I could not get anywhere on that in one turn, and I do not want to guess. '
+      + 'Tell me the one part you want first and I will start there.',
   };
 }
 
