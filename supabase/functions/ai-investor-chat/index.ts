@@ -1131,6 +1131,31 @@ ${deal}`
         assistantMessage = destinationRefusal()
       }
 
+      // ESCALATION. A client asking for a person must always reach one. This runs on the
+      // message they sent, not on Penny's answer, so a confident-sounding reply can never
+      // swallow a request for help. It is additive: she still answers, and a human is told.
+      const wantsHuman = /\b(speak|talk|chat)\s+(to|with)\s+(a\s+)?(human|person|someone|staff|manager|team)\b|\b(real|actual)\s+(person|human)\b|\bcall me\b|\bhuman\b|\bescalate\b|\bcomplaint\b|\brefund\b|\blawyer\b|\battorney\b|\bnot happy\b|\bunacceptable\b|\bno one has\b|\bnobody has\b|\bstill waiting\b/i
+        .test(message || '')
+      if (user_id && wantsHuman) {
+        const escP = rpc(supabaseUrl, supabaseKey, 'ayp_penny_escalate', {
+          p_investor_id: user_id,
+          p_question: String(message || '').slice(0, 500),
+          p_reason: 'client asked for a person in Penny chat',
+        }).then(() => {
+          console.log('ai-investor-chat escalated_to_staff', user_id)
+        }).catch((e: unknown) => {
+          // Never silent. If the desk cannot be told, that must be visible in the logs.
+          console.error('ai-investor-chat ESCALATION FAILED', user_id, String(e))
+        })
+        const er2 = (globalThis as any).EdgeRuntime
+        if (er2 && typeof er2.waitUntil === 'function') er2.waitUntil(escP)
+        else await escP
+        // Say so plainly, so the client knows a person is coming and does not have to ask twice.
+        assistantMessage += '\n\nI have passed this to a person on the Success Team, and they have '
+          + 'been alerted. You will get a reply in your messages here. If it is urgent, email '
+          + 'success@accessyourplace.com as well.'
+      }
+
       // MEMORY (write): if the operator disclosed durable facts, enrich their memory in the
       // background so it never adds reply latency and never changes this answer. Records only real,
       // stated facts — never invents. Best-effort: a failure here is silently ignored.
