@@ -16,12 +16,13 @@ const EVENT_NAMES: Record<string, string> = {
   start_form_submitted: 'Start form sent', login_success: 'Signed in', login_failed: 'Sign-in failed',
   account_created: 'Account created', signup_failed: 'Sign-up failed', penny_chat_started: 'Penny chat started',
   penny_chat_message: 'Penny message sent', call_clicked: 'Phone number tapped', email_clicked: 'Email link tapped',
-  outbound_clicked: 'Link to another site clicked',
+  outbound_clicked: 'Link to another site clicked', press_request_sent: 'Press request sent', career_interest_sent: 'Careers form sent',
 };
 const DOORS: Record<string, string> = {
   sell_operation: 'Selling an operation', need_property: 'Acquisition', setup_services: 'Setup services',
   teardown_services: 'Teardown and moves', have_property: 'Landlords and communities',
   live_operation_help: 'Urgent live operation', verify_scan: 'Verify a Penny scan',
+  career_interest: 'Careers', press_inquiry: 'Press and media',
 };
 
 function Funnel({ title, steps }: { title: string; steps: Step[] }) {

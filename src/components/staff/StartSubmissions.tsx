@@ -13,8 +13,10 @@ const DOOR_NAMES: Record<string, string> = {
   have_property: 'Landlords and communities',
   live_operation_help: 'Urgent: live operation',
   verify_scan: 'Verify a Penny scan',
+  career_interest: 'Careers',
+  press_inquiry: 'Press and media',
 };
-const ORDER = ['live_operation_help', 'sell_operation', 'need_property', 'have_property', 'setup_services', 'teardown_services', 'verify_scan'];
+const ORDER = ['live_operation_help', 'press_inquiry', 'career_interest', 'sell_operation', 'need_property', 'have_property', 'setup_services', 'teardown_services', 'verify_scan'];
 
 const LABELS: Record<string, string> = {
   role: 'They are', company: 'Company or community', unit_type: 'Unit', bedrooms: 'Bedrooms', bathrooms: 'Bathrooms',
@@ -26,7 +28,7 @@ const LABELS: Record<string, string> = {
   markets: 'Markets', budget: 'Budget', strategy: 'Strategy', timeline: 'Timeline', experience: 'Units run today',
   has_llc: 'Has an LLC', property_preference: 'Looking for', unit_status: 'Condition', lease_start: 'Lease start',
   style: 'Style', service_needed: 'Service needed', destination: 'Moving to', needed_by: 'Needed by',
-  rent_range: 'Rent range', allowed_uses: 'Uses allowed', furnished: 'Furnished', amenities: 'Amenities', issue: 'What is wrong',
+  rent_range: 'Rent range', interest: 'Interested in', platform: 'Platform', experience_summary: 'Experience', links: 'Links', outlet: 'Outlet or show', media_type: 'Type of request', who: 'Would like to speak with', deadline: 'Deadline or recording date', audience: 'Audience', topic: 'Topic', allowed_uses: 'Uses allowed', furnished: 'Furnished', amenities: 'Amenities', issue: 'What is wrong',
 };
 const MONEY = new Set(['monthly_rent', 'avg_monthly_revenue', 'peak_month_revenue', 'slow_month_revenue', 'asking_price']);
 

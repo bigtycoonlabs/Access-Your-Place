@@ -41,7 +41,10 @@ import TermsOfService from "./pages/TermsOfService";
 import PrivacyPolicy from "./pages/PrivacyPolicy";
 import HowItWorks from "./pages/HowItWorks";
 import CoreValues from "./pages/CoreValues";
-import SetUpYourPlace from "./pages/SetUpYourPlace";
+import CompanyAbout from "./pages/company/CompanyAbout";
+import CompanyAccessibility from "./pages/company/CompanyAccessibility";
+import CompanyCareers from "./pages/company/CompanyCareers";
+import CompanyPress from "./pages/company/CompanyPress";
 import Careers from "./pages/Careers";
 import ProPortal from "./pages/ProPortal";
 import CommunityStandards from "./pages/CommunityStandards";
@@ -154,7 +157,12 @@ const App = () => (
                   <Route path="/privacy-policy" element={<PrivacyPolicy />} />
                   <Route path="/how-it-works" element={<HowItWorks />} />
                   <Route path="/core-values" element={<CoreValues />} />
-                  <Route path="/setupyourplace" element={<SetUpYourPlace />} />
+                  <Route path="/setupyourplace" element={<CompanyAbout />} />
+                  <Route path="/setupyourplace/accessibility" element={<CompanyAccessibility />} />
+                  <Route path="/setupyourplace/careers" element={<CompanyCareers />} />
+                  <Route path="/setupyourplace/press" element={<CompanyPress />} />
+                  <Route path="/accessibility" element={<Navigate to="/setupyourplace/accessibility" replace />} />
+                  <Route path="/press" element={<Navigate to="/setupyourplace/press" replace />} />
                   <Route path="/set-up-your-place" element={<Navigate to="/setupyourplace" replace />} />
                   <Route path="/company" element={<Navigate to="/setupyourplace" replace />} />
                   <Route path="/am-agreement/:agreementId" element={<AMAgreementSign />} />

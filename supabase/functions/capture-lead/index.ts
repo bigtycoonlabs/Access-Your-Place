@@ -42,7 +42,7 @@ const SUCCESS_INBOX = 'success@accessyourplace.com';
 // A scan is honest work but nobody has spoken to the landlord yet, and the free
 // verification call is how a scan becomes an Access Your Place verified deal. It is also
 // the warmest lead the platform produces -- they have already found a property they like.
-const KINDS = new Set(['need_property', 'have_property', 'live_operation_help', 'sell_operation', 'verify_scan', 'setup_services', 'teardown_services']);
+const KINDS = new Set(['need_property', 'have_property', 'live_operation_help', 'sell_operation', 'verify_scan', 'setup_services', 'teardown_services', 'career_interest', 'press_inquiry']);
 
 // Doors that can attach photos after the lead is saved.
 const PHOTO_KINDS = new Set(['sell_operation', 'have_property', 'setup_services', 'teardown_services', 'live_operation_help']);
@@ -78,6 +78,9 @@ const DETAIL_LABELS: Record<string, string> = {
   style: 'Style', service_needed: 'Service needed', destination: 'Moving to', needed_by: 'Needed by',
   rent_range: 'Rent range', allowed_uses: 'Uses allowed', furnished: 'Furnished', amenities: 'Amenities',
   property_name: 'Property name', issue: 'What is wrong',
+  interest: 'Interested in', platform: 'Platform', experience_summary: 'Experience', links: 'Links',
+  outlet: 'Outlet or show', media_type: 'Type of request', who: 'Would like to speak with',
+  deadline: 'Deadline or recording date', audience: 'Audience', topic: 'Topic',
 };
 
 function detailLines(d: Record<string, unknown>): string[] {
@@ -124,6 +127,8 @@ const LABELS: Record<string, string> = {
   live_operation_help: 'LIVE OPERATION — needs help now',
   sell_operation: 'Wants to sell an existing operation',
   verify_scan: 'Wants an acquisition manager to verify a Penny scan',
+  career_interest: 'Careers: wants to join the team',
+  press_inquiry: 'Press or media request',
 };
 
 Deno.serve(async (req) => {
@@ -163,7 +168,9 @@ Deno.serve(async (req) => {
     // PHONE IS ALSO REQUIRED, but for a different reason: an acquisition manager rings
     // clients, and a lead with no number is a lead the team cannot work.
     if (!email) return json({ success: false, error: 'Please add your email address — that is how we reply and send your sign-in link.' }, 400);
-    if (!phone) return json({ success: false, error: 'Please add a phone number so the team can call you.' }, 400);
+    // Careers and press come from the company site, where a phone number is optional.
+    const phoneOptional = kind === 'career_interest' || kind === 'press_inquiry';
+    if (!phone && !phoneOptional) return json({ success: false, error: 'Please add a phone number so the team can call you.' }, 400);
 
     const urgency = kind === 'live_operation_help' ? 'emergency' : 'normal';
 
@@ -292,7 +299,21 @@ Deno.serve(async (req) => {
         let subject: string;
         let lines: string[];
 
-        if (recognised) {
+        if (kind === 'career_interest') {
+          subject = 'Thank you for your interest in joining us';
+          lines = [
+            `Hi ${first},`, '',
+            'Thank you for wanting to build with us. Your note is with the team at Set Up Your Place, and someone will reply by email once they have read it properly.',
+            '', 'You can read more about the company at https://accessyourplace.com/setupyourplace',
+          ];
+        } else if (kind === 'press_inquiry') {
+          subject = 'We have your media request';
+          lines = [
+            `Hi ${first},`, '',
+            'Thank you for reaching out to Set Up Your Place. Your request is with the team, and we will reply by email to confirm who is available and when.',
+            '', 'Our press page, with background on the company and the founders, is at https://accessyourplace.com/setupyourplace/press',
+          ];
+        } else if (recognised) {
           subject = 'Picking this up for you — sign in to continue';
           lines = [
             `Hi ${first},`, '',
