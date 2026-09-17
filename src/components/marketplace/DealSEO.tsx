@@ -106,7 +106,7 @@ export function DealSEO({ deal }: { deal: Deal | null }) {
       .join(' ')
       .slice(0, 300);
 
-    const url = `https://accessyourplace.com/property/${deal.id}`;
+    const url = `https://accessyourplace.com/deals/${deal.id}`;
     const image = deal.photos?.[0] || 'https://accessyourplace.com/og-image.jpg';
 
     document.title = title;

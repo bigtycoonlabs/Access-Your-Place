@@ -72,6 +72,7 @@ export default function HowItWorks() {
           <span className="text-white/50 text-sm">How It Works</span>
         </div>
       </header>
+      <main id="main-content">
 
       {/* Hero */}
       <section className="py-16 border-b border-white/10">
@@ -212,6 +213,7 @@ export default function HowItWorks() {
         </div>
       </section>
 
+      </main>
       <Footer />
     </div>
   );

@@ -26,7 +26,7 @@ export default function LandlordPartnership() {
   return (
     <div className="min-h-screen bg-gray-50">
       <SEO 
-        title="Landlord Partnership Program - Maximize Your Rental Income"
+        title="Landlord and Apartment Community Partnerships"
         description="Partner with Access Your Place to earn more from your rental property. We connect landlords with vetted investors for short-term rental and co-living arrangements. Guaranteed rent, professional management, and higher returns."
         keywords="landlord partnership, rental income, property owner program, STR landlord, co-living landlord, guaranteed rent, property management, rental arbitrage landlord"
         canonicalUrl="/landlord-partnership"
@@ -34,10 +34,12 @@ export default function LandlordPartnership() {
         structuredData={pageSchema}
       />
       <Header />
+      <main id="main-content">
       <LandlordHero />
       <LandlordBenefits />
       <LandlordProcess />
       <LandlordInquiryForm />
+      </main>
       <Footer />
     </div>
   );

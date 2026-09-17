@@ -3,7 +3,6 @@ import { useParams, useNavigate, Link } from 'react-router-dom';
 import { trackEvent } from '@/lib/analytics';
 import Header from '@/components/Header';
 import Footer from '@/components/Footer';
-import SEO from '@/components/SEO';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
@@ -429,12 +428,6 @@ export default function PropertyDetail() {
       {/* Deal pages had no title, no meta and no structured data, so twelve distinct
           listings looked like twelve copies of the homepage. */}
       <DealSEO deal={property as never} />
-      <SEO 
-        title={`${displayTitle} | Rental Arbitrage Deal`}
-        description={`${property.bedrooms} bed, ${property.bathrooms} bath property in ${property.city}, ${property.state}. Monthly rent: $${property.monthly_rent?.toLocaleString()}. Acquisition fee: $${property.acquisition_fee?.toLocaleString()}.`}
-        canonicalUrl={`/deals/${id}`}
-        ogType="article"
-      />
       <Header />
       
       <main className="pt-20 pb-12">

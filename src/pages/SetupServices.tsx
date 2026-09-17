@@ -332,7 +332,7 @@ export default function SetupServices() {
       </a>
 
       <SEO 
-        title="Property Setup Services - Professional Furnishing & Installation"
+        title="Furnished Rental Setup Services"
         description="Fourteen days from sourcing to guest ready. Furniture, freight, junk removal, technology install and styling for one unit or an entire building, across the US and Mexico. Consolidated through our Texas warehouse and delivered by our own team."
         keywords="property setup services, Airbnb setup, vacation rental furnishing, STR setup, co-living setup, furniture installation, rental property design, turnkey rental setup"
         canonicalUrl="/setup-services"

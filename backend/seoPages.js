@@ -192,11 +192,6 @@ Object.assign(PAGES, {
     'We\u2019re hiring Acquisition Managers and Setup Managers',
     ['Get certified, cross-train in both roles, and build your own book. Commission is tied to deals sourced, deals closed and operations launched.',
      ['p', 'More about the company: accessyourplace.com/setupyourplace/careers']]),
-  '/community-standards': page('/community-standards',
-    'Community Standards | Access Your Place',
-    'How operators, landlords, vendors and staff are expected to work together across the Access Your Place network.',
-    'Community standards',
-    ['How operators, landlords, vendors and staff are expected to work together across our network.']),
   '/knowledge-library': page('/knowledge-library',
     'Knowledge Library: Furnished Rental Guides and Local Regulations | Access Your Place',
     'Free guides on furnished rentals, rental arbitrage, co-living and corporate housing, including city-by-city short-term rental regulations with sources.',
@@ -210,14 +205,6 @@ Object.assign(PAGES, {
     'Terms of Service | Access Your Place',
     'Terms of Service for Access Your Place: acquisition services, payment terms, refunds and user responsibilities.',
     'Terms of service', ['Our terms for acquisition services, payments, refunds and user responsibilities.']),
-  '/investor/login': page('/investor/login',
-    'Client Sign In | Access Your Place',
-    'Sign in or create a free Access Your Place account to track deals, documents and your furnished rental operations.',
-    'Sign in to Access Your Place', ['Sign in or create a free account.']),
-  '/landlord/login': page('/landlord/login',
-    'Landlord Sign In | Access Your Place',
-    'Sign in to the Access Your Place landlord portal.',
-    'Landlord sign in', ['Sign in to the landlord portal.']),
 });
 PAGES['/'] = {
   ...page('/',
@@ -237,12 +224,13 @@ const REDIRECTS = {
   '/press': '/setupyourplace/press', '/set-up-your-place': '/setupyourplace', '/company': '/setupyourplace',
   '/investor-login': '/investor/login', '/staff-login': '/staff/login', '/staff': '/staff/workspace',
   '/staff/dashboard': '/staff/workspace',
+  '/community-standards': '/pages/community-standards.html',
 };
 
 // Real pages that are private or one-time: served normally, kept out of search results.
 const PRIVATE = [
   /^\/staff(\/|$)/, /^\/admin(\/|$)/, /^\/investor\/?$/, /^\/investor\/(portal|reset-password|unsubscribe|verify-email)/,
-  /^\/landlord\/(portal|reset-password)/, /^\/pro-portal\//, /^\/am-agreement\//, /^\/oauth\//, /^\/legal-agreement-gate/,
+  /^\/landlord\/(portal|reset-password|login)/, /^\/investor\/login/, /^\/pro-portal\//, /^\/am-agreement\//, /^\/oauth\//, /^\/legal-agreement-gate/,
 ];
 
 // ── Deals and articles, read live ──────────────────────────────────────────────
@@ -268,13 +256,17 @@ const clip = (s, n) => { const t = String(s || '').replace(/\s+/g, ' ').trim(); 
 
 async function dealPage(id) {
   if (!/^[0-9a-f-]{36}$/i.test(id)) return { notFound: true };
-  const rows = await readJson(`marketplace_public?id=eq.${id}&select=id,listing_title,city,state,bedrooms,bathrooms,monthly_rent,acquisition_fee,description,photos,is_third_party_seller,verification_tier,projected_monthly_revenue_peak,projected_monthly_revenue_slow,created_at&limit=1`);
+  const rows = await readJson(`marketplace_public?id=eq.${id}&select=id,listing_title,operation_type,city,state,bedrooms,bathrooms,monthly_rent,acquisition_fee,description,photos,is_third_party_seller,verification_tier,projected_monthly_revenue_peak,projected_monthly_revenue_slow,created_at&limit=1`);
   if (rows === undefined) return null; // could not look: serve the plain shell, never a false 404
   const d = rows[0];
   if (!d) return { notFound: true };
   const where = [d.city, d.state].filter(Boolean).join(', ');
   const kind = d.is_third_party_seller ? 'Running furnished rental operation for sale' : 'Furnished rental deal';
-  const title = `${d.listing_title || `${d.bedrooms || ''} bedroom furnished rental`}${where ? ` in ${where}` : ''} | Access Your Place`;
+  // Same shape as the page's own title (src/components/marketplace/DealSEO.tsx), so the two agree.
+  const shape = d.operation_type === 'coliving' ? 'shared living' : d.operation_type === 'mtr' ? 'mid-term rental'
+    : d.operation_type === 'str' ? 'short-term rental' : 'furnished rental';
+  const title = [d.bedrooms ? `${d.bedrooms} bed` : '', d.bathrooms ? `${d.bathrooms} bath` : '', shape,
+    where ? `in ${where}` : '', '| Access Your Place'].filter(Boolean).join(' ');
   const facts = [
     d.bedrooms != null && `${d.bedrooms} bedroom${d.bedrooms === 1 ? '' : 's'}`,
     d.bathrooms != null && `${d.bathrooms} bath${d.bathrooms === 1 ? '' : 's'}`,
@@ -388,13 +380,30 @@ function renderPage(html, page) {
 }
 
 function noindex(html) {
-  return html.replace(/<meta name="robots"[^>]*>/, '<meta name="robots" content="noindex, nofollow" />');
+  return html
+    .replace(/<meta name="robots"[^>]*>/, '<meta name="robots" content="noindex, nofollow" />')
+    .replace(/<link rel="canonical"[^>]*>\s*/, '');
 }
 function notFoundHtml(html, pathname) {
   html = noindex(html);
-  html = html.replace(/<title>[\s\S]*?<\/title>/, '<title>Page not found | Access Your Place</title>');
-  html = html.replace(/<link rel="canonical"[^>]*>\s*/, '');
-  return html;
+  return html.replace(/<title>[\s\S]*?<\/title>/, '<title>Page not found | Access Your Place</title>');
 }
 
-module.exports = { resolve, renderPage, noindex, notFoundHtml, deals, PAGES, REDIRECTS };
+// Older static copies under /pages/. Most duplicate an app page, so they point search
+// engines at it; community standards only exists here, so it points at itself.
+const STATIC_CANONICAL = {
+  'index.html': '/', 'how-it-works.html': '/how-it-works', 'core-values.html': '/core-values',
+  'careers.html': '/careers', 'privacy-policy.html': '/privacy-policy', 'terms-of-service.html': '/terms-of-service',
+  'community-standards.html': '/pages/community-standards.html',
+};
+function staticPageHeaders(req, res, next) {
+  const m = req.path.match(/^\/pages\/([a-z0-9-]+\.html)$/);
+  if (m) {
+    const c = STATIC_CANONICAL[m[1]];
+    if (c) res.set('Link', `<${SITE}${c}>; rel="canonical"`);
+    else res.set('X-Robots-Tag', 'noindex');
+  }
+  next();
+}
+
+module.exports = { staticPageHeaders, resolve, renderPage, noindex, notFoundHtml, deals, PAGES, REDIRECTS };

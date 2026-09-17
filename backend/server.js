@@ -80,6 +80,7 @@ app.use('/rest/v1', createProxyMiddleware({
 
 // â”€â”€ Serve built React frontend (static files) â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 const DIST_DIR = path.join(__dirname, 'dist');
+app.use(require('./seoPages').staticPageHeaders);
 app.use(express.static(DIST_DIR, { index: false }));
 
 // ── DB helpers — Edge Function proxy v1783810139 ───────────────────────────────────

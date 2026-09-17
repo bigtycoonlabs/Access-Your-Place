@@ -178,7 +178,7 @@ export default function KnowledgeLibrary() {
   return (
     <div className="min-h-screen flex flex-col">
       <SEO 
-        title="Knowledge Library - Free Rental Arbitrage Guides & Market Data"
+        title="Furnished Rental Guides and Regulations"
         description={`Access ${allArticles.length}+ free articles on rental arbitrage, STR regulations, co-living strategies, and market data. The most comprehensive resource for short-term rental investors.`}
         keywords="rental arbitrage guide, STR regulations, co-living tips, Airbnb business guide, short-term rental market data, property management tips, vacation rental strategies, real estate investment education"
         canonicalUrl="/knowledge-library"

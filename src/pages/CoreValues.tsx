@@ -110,6 +110,7 @@ export default function CoreValues() {
           <span className="text-white/50 text-sm">Core Values</span>
         </div>
       </header>
+      <main id="main-content">
 
       {/* Hero */}
       <section className="py-16 border-b border-white/10">
@@ -194,6 +195,7 @@ export default function CoreValues() {
         </div>
       </section>
 
+      </main>
       <Footer />
     </div>
   );

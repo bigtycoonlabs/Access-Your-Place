@@ -56,6 +56,7 @@ export default function Careers() {
           <span className="text-white/50 text-sm">Careers</span>
         </div>
       </header>
+      <main id="main-content">
 
       {/* Hero */}
       <section className="py-16 border-b border-white/10">
@@ -221,6 +222,7 @@ export default function Careers() {
         </div>
       </section>
 
+      </main>
       <Footer />
     </div>
   );
