@@ -136,7 +136,7 @@ Week 2: Furnishing
 □ Order decor and artwork
 □ Arrange furniture delivery
 
-OR use Access Your Place setup services - your setup manager sources the furniture, books the vendors and runs the install in your market.
+OR use Access Your Place setup services - your setup manager sources the furniture and flies our YP pros in to install it, wherever the unit is.
 
 Week 3: Final Setup
 □ Install smart lock

@@ -126,7 +126,7 @@ Bathroom ($200-$400):
 • Basic toiletries (shampoo, soap)
 
 Access Your Place Setup Services:
-Skip the hassle - our setup team can furnish a property quickly by matching you with vendors and pros already working in your market, and a setup manager runs the launch and takes inventory as product arrives.
+Skip the hassle - our YP pros handle the whole launch. We fly our own pros into the city, they drive the truck, build the furniture and style the unit, and your setup manager coordinates the travel, the vendors and the inventory as product arrives.
 
 III. Week 3-4: Amenities and Supplies
 
