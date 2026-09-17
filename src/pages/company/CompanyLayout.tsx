@@ -6,6 +6,8 @@ import Footer from '@/components/Footer';
 // with the current page marked, one main landmark, and the site footer. Moving between pages
 // puts focus on the new page's heading so a screen reader announces where you arrived.
 
+let companyPageShown = false;
+
 export const COMPANY_PAGES = [
   { to: '/setupyourplace', label: 'About' },
   { to: '/setupyourplace/accessibility', label: 'Accessibility' },
@@ -24,10 +26,12 @@ export default function CompanyLayout({ eyebrow, title, intro, children }: {
 }) {
   const { pathname } = useLocation();
   const headingRef = useRef<HTMLHeadingElement>(null);
-  const first = useRef(true);
+  // Each company page mounts its own layout, so "have we already shown a company page this
+  // visit" lives at module level. The first page loads normally; every page after that moves
+  // focus to its heading.
   useEffect(() => {
-    if (first.current) { first.current = false; return; }
-    headingRef.current?.focus();
+    if (companyPageShown) headingRef.current?.focus();
+    companyPageShown = true;
   }, [pathname]);
 
   return (
