@@ -6,6 +6,7 @@ import { supabase } from '@/lib/supabase';
 // each figure is a sentence, not a chart.
 
 type Step = { step: string; visitors: number };
+const people = (n: number) => `${n} ${n === 1 ? 'visitor' : 'visitors'}`;
 const pct = (n: number, of: number) => (of > 0 ? `${Math.round((n / of) * 100)}%` : '0%');
 const EVENT_NAMES: Record<string, string> = {
   page_time: 'Time on page recorded', cta_clicked: 'Main button clicked', deal_opened: 'Deal opened',
@@ -82,7 +83,7 @@ export function StaffAnalytics() {
             <p style={{ margin: '0 0 6px' }}>"Direct" means typed in, bookmarked, or from an app that does not say where it sent them.</p>
             <ul style={{ margin: 0, paddingLeft: 22 }}>
               {data.sources.map((s: any) => (
-                <li key={s.source}>{s.source}: {s.visitors} visitors, {s.leads} sent the start form, {s.accounts} created an account.</li>
+                <li key={s.source}>{s.source}: {people(s.visitors)}, {s.leads} sent the start form, {s.accounts} created an account.</li>
               ))}
             </ul>
           </section>
@@ -107,7 +108,7 @@ export function StaffAnalytics() {
           <section style={{ marginTop: 18 }}>
             <h2 style={{ fontSize: '1.1rem', margin: '0 0 6px' }}>Pages people arrived on</h2>
             <ol style={{ margin: 0, paddingLeft: 22 }}>
-              {data.landing_pages.map((p: any) => <li key={p.page}>{p.page}: {p.visitors} visitors.</li>)}
+              {data.landing_pages.map((p: any) => <li key={p.page}>{p.page}: {people(p.visitors)}.</li>)}
             </ol>
           </section>
 
@@ -122,7 +123,7 @@ export function StaffAnalytics() {
             <h2 style={{ fontSize: '1.1rem', margin: '0 0 6px' }}>Actions</h2>
             {data.events.length === 0 ? <p>No actions recorded yet in this period. Action tracking started on 16 September 2026.</p> : (
               <ul style={{ margin: 0, paddingLeft: 22 }}>
-                {data.events.map((e: any) => <li key={e.name}>{EVENT_NAMES[e.name] || e.name}: {e.count} times by {e.visitors} visitors.</li>)}
+                {data.events.map((e: any) => <li key={e.name}>{EVENT_NAMES[e.name] || e.name}: {e.count} {e.count === 1 ? 'time' : 'times'} by {people(e.visitors)}.</li>)}
               </ul>
             )}
           </section>
