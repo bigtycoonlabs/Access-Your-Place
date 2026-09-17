@@ -1,4 +1,5 @@
 import { useState, useEffect, useCallback } from 'react';
+import { trackEvent } from '@/lib/analytics';
 import { useNavigate, useSearchParams, Link, useLocation } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -582,7 +583,7 @@ export default function InvestorLogin() {
                   loginTime: Date.now(),
                   email_verified: retry.data.email_verified,
                 }));
-                localStorage.setItem('investorSessionToken', retry.data.session.token);
+                localStorage.setItem('investorSessionToken', retry.data.session.token); trackEvent('login_success');
                 if (loginData.rememberMe) {
                   localStorage.setItem('investorRememberMe', 'true');
                 } else {
@@ -619,7 +620,7 @@ export default function InvestorLogin() {
                 loginTime: Date.now(),
                 email_verified: fallbackResult.data.email_verified 
               }));
-              localStorage.setItem('investorSessionToken', fallbackResult.data.session.token);
+              localStorage.setItem('investorSessionToken', fallbackResult.data.session.token); trackEvent('login_success');
               
               if (loginData.rememberMe) {
                 localStorage.setItem('investorRememberMe', 'true');
@@ -645,7 +646,7 @@ export default function InvestorLogin() {
             } else {
               setErrors({ general: data.error });
             }
-            toast({ title: 'Login Failed', description: data.error, variant: 'destructive' });
+            trackEvent('login_failed'); toast({ title: 'Login Failed', description: data.error, variant: 'destructive' });
             return;
           }
           
@@ -656,7 +657,7 @@ export default function InvestorLogin() {
               loginTime: Date.now(),
               email_verified: data.email_verified 
             }));
-            localStorage.setItem('investorSessionToken', data.session.token);
+            localStorage.setItem('investorSessionToken', data.session.token); trackEvent('login_success');
             
             if (loginData.rememberMe) {
               localStorage.setItem('investorRememberMe', 'true');
@@ -685,7 +686,7 @@ export default function InvestorLogin() {
               loginTime: Date.now(),
               email_verified: fallbackResult.data.email_verified 
             }));
-            localStorage.setItem('investorSessionToken', fallbackResult.data.session.token);
+            localStorage.setItem('investorSessionToken', fallbackResult.data.session.token); trackEvent('login_success');
             
             toast({ title: 'Welcome back!', description: `Logged in as ${fallbackResult.data.investor.full_name}` });
             navigate('/investor');
@@ -784,7 +785,7 @@ export default function InvestorLogin() {
             }));
             
             if (fallbackResult.data.session?.token) {
-              localStorage.setItem('investorSessionToken', fallbackResult.data.session.token);
+              localStorage.setItem('investorSessionToken', fallbackResult.data.session.token); trackEvent('account_created');
             }
             
             setVerificationEmailSent(true);
@@ -796,20 +797,20 @@ export default function InvestorLogin() {
             return; // Early return is fine now because finally block will handle setLoading(false)
           } else {
             setErrors({ general: fallbackResult.error || 'Registration failed. Please try again.' });
-            toast({ title: 'Registration Failed', description: fallbackResult.error, variant: 'destructive' });
+            trackEvent('signup_failed'); toast({ title: 'Registration Failed', description: fallbackResult.error, variant: 'destructive' });
             return;
           }
         }
         
         // Non-network error from edge function
         setErrors({ general: error.message || 'Registration failed. Please try again.' });
-        toast({ title: 'Registration Failed', description: error.message, variant: 'destructive' });
+        trackEvent('signup_failed'); toast({ title: 'Registration Failed', description: error.message, variant: 'destructive' });
         return;
       }
       
       if (data?.error) {
         setErrors({ general: data.error });
-        toast({ title: 'Registration Failed', description: data.error, variant: 'destructive' });
+        trackEvent('signup_failed'); toast({ title: 'Registration Failed', description: data.error, variant: 'destructive' });
         return;
       }
 
@@ -822,7 +823,7 @@ export default function InvestorLogin() {
         }));
         
         if (data.session?.token) {
-          localStorage.setItem('investorSessionToken', data.session.token);
+          localStorage.setItem('investorSessionToken', data.session.token); trackEvent('account_created');
         }
         
         setVerificationEmailSent(true);
@@ -864,7 +865,7 @@ export default function InvestorLogin() {
           }));
           
           if (fallbackResult.data.session?.token) {
-            localStorage.setItem('investorSessionToken', fallbackResult.data.session.token);
+            localStorage.setItem('investorSessionToken', fallbackResult.data.session.token); trackEvent('account_created');
           }
           
           setVerificationEmailSent(true);

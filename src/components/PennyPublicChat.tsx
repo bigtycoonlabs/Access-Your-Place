@@ -1,4 +1,5 @@
 import { useEffect, useRef, useState, useCallback } from 'react';
+import { trackEvent, trackOnce } from '@/lib/analytics';
 import { useNavigate } from 'react-router-dom';
 import { Sparkles, Send, X, ArrowRight } from 'lucide-react';
 import { supabase } from '@/lib/supabase';
@@ -35,6 +36,8 @@ export default function PennyPublicChat({ open, initialQuery, onClose }: Props) 
     async (text: string) => {
       const trimmed = text.trim();
       if (!trimmed || loading) return;
+      trackOnce('penny_chat_started', { surface: 'public' });
+      trackEvent('penny_chat_message', { surface: 'public', turn: messagesRef.current.filter((m) => m.role === 'user').length + 1 });
       const next: Msg[] = [...messagesRef.current, { role: 'user', content: trimmed }];
       setMessages(next);
       setInput('');

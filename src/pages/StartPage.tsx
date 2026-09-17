@@ -4,6 +4,7 @@ import { supabase } from '@/lib/supabase';
 // lead-capture page, which is exactly what a promotion drives traffic to, and for a
 // screen reader every page announcing the same sentence is no title at all.
 import SEO from '@/components/SEO';
+import { trackEvent, trackOnce } from '@/lib/analytics';
 
 /**
  * /start — the front door.
@@ -203,7 +204,7 @@ export default function StartPage() {
     setPhotos((p) => [...p, ...imgs].slice(0, 30));
   }
 
-  function fail(msg: string) { setStatus('error'); setNote(msg); }
+  function fail(msg: string) { setStatus('error'); setNote(msg); trackEvent('start_form_error', { kind: kind || 'none', reason: msg.slice(0, 80) }); }
 
   async function submit(e: React.FormEvent) {
     e.preventDefault();
@@ -273,6 +274,7 @@ export default function StartPage() {
         ? ` ${sent} of ${photos.length} photos uploaded. These did not: ${failed.join(', ')}. Please email them to success@accessyourplace.com.`
         : ` All ${sent} photos uploaded.`;
     }
+    trackEvent('start_form_submitted', { kind, photos: photos.length, photos_uploaded: sent, photos_failed: failed.length });
     setStatus('done');
     setProgress('');
     setNote(reply + photoNote);
@@ -308,14 +310,14 @@ export default function StartPage() {
             Choose what you need, and the questions for it appear below. No account required. We reply by email, and someone from the team may call.
           </p>
 
-          <form onSubmit={submit} className="mt-6 space-y-6" noValidate>
+          <form onSubmit={submit} className="mt-6 space-y-6" noValidate onFocusCapture={() => trackOnce('start_form_started', { kind: kind || 'none' })}>
             <fieldset className="space-y-2">
               <legend className="text-base font-medium text-slate-900">What do you need?</legend>
               {DOORS.map((d) => (
                 <label key={d.kind} htmlFor={d.kind}
                   className="flex min-h-[44px] cursor-pointer gap-3 rounded-lg border border-slate-300 bg-white p-3 hover:border-slate-500">
                   <input type="radio" id={d.kind} name="kind" value={d.kind} checked={kind === d.kind}
-                    onChange={() => { setKind(d.kind); setStatus('idle'); setNote(''); }} className="mt-1 h-5 w-5 shrink-0" />
+                    onChange={() => { setKind(d.kind); setStatus('idle'); setNote(''); trackEvent('start_door_selected', { kind: d.kind }); }} className="mt-1 h-5 w-5 shrink-0" />
                   <span>
                     <span className="block font-medium text-slate-900">{d.title}</span>
                     <span className="block text-sm text-slate-600">{d.blurb}</span>

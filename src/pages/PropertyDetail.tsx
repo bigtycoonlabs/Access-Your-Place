@@ -1,5 +1,6 @@
 import { useState, useEffect, useMemo } from 'react';
 import { useParams, useNavigate, Link } from 'react-router-dom';
+import { trackEvent } from '@/lib/analytics';
 import Header from '@/components/Header';
 import Footer from '@/components/Footer';
 import SEO from '@/components/SEO';
@@ -94,6 +95,7 @@ function getInvestorSessionToken(): string | null {
 
 export default function PropertyDetail() {
   const { id } = useParams<{ id: string }>();
+  useEffect(() => { if (id) trackEvent('deal_opened', { deal_id: id }); }, [id]);
   const navigate = useNavigate();
   const { toast } = useToast();
   const { callerType, isFunded, loading: callerLoading } = useCallerType();
@@ -987,6 +989,7 @@ export default function PropertyDetail() {
                     className="w-full bg-[#1a365d] hover:bg-[#12283f] mb-3 h-12 text-lg"
                     onClick={() => {
                       const token = getInvestorSessionToken();
+                      trackEvent('acquire_clicked', { deal_id: id, signed_in: !!token });
                       if (!token) {
                         toast({
                           title: 'Account required',
@@ -1011,6 +1014,8 @@ export default function PropertyDetail() {
                     variant="outline"
                     className="w-full mb-3 h-12"
                     onClick={() => setInquiryOpen(true)}
+                    data-track="deal_question_opened"
+                    data-track-deal={id}
                   >
                     <MessageCircle className="w-5 h-5 mr-2" />
                     Ask a question about this deal
