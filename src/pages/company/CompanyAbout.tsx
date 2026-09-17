@@ -14,7 +14,7 @@ const platforms = [
     cta: 'Visit Access Your Place',
   },
   {
-    name: 'Access YP Labs', assistant: 'With Penny', href: 'https://accessyplabs.com', external: true,
+    name: 'Access YP Labs', assistant: 'The back office, with Penny', href: 'https://accessyplabs.com', external: true,
     lines: [
       'The back office for a small business. Penny keeps track of filings, licences and renewals in all fifty states and DC, the documents that should be on file, what is owed to and by customers, and who on the team can see what, and warns you before anything is late.',
       'She also builds sites, customer portals and tools for the business, with a free mock-up first.',
@@ -22,10 +22,10 @@ const platforms = [
     cta: 'Visit Access YP Labs',
   },
   {
-    name: 'Access YP Flow', assistant: 'With Arbo', href: 'https://accessypflow.com', external: true,
+    name: 'Access YP Flow', assistant: 'Money and cash flow, with Arbo', href: 'https://accessypflow.com', external: true,
     lines: [
-      'Puts a business’s idle cash to work on the owner’s own exchange account, under limits the owner sets, with Arbo explaining every decision.',
-      'We never hold anyone’s money. Practice mode is free, with every strategy, for as long as you like.',
+      'Bookkeeping that answers questions. Arbo keeps the books for every business and property you run: bills, wages, rent, tax, and who owes you, each with the date it lands.',
+      'He works out what is genuinely spare and how long it would last, bills customers and chases late payments, and, only if you want, puts the spare cash to work under your own limits. Your money never leaves your own accounts. Asking Arbo is free, forever.',
     ],
     cta: 'Visit Access YP Flow',
   },
@@ -81,7 +81,7 @@ export default function CompanyAbout() {
             </p>
             <p>
               Running real operations taught us what business owners actually carry: the filings nobody reminds you about,
-              the paperwork that should be on file and is not, and cash sitting idle between bookings. Our tools grew out of
+              the paperwork that should be on file and is not, money that comes in lumps weeks apart while the bills keep their own schedule. Our tools grew out of
               that. They now serve far more people than rental operators, and each one stands on its own.
             </p>
           </div>

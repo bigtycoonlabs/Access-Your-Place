@@ -7,14 +7,15 @@ const topics = [
   'Furnished rental operations without owning the property',
   'Accessible and honest AI: software that says what it actually did',
   'Small business back offices and compliance across fifty states',
-  'Putting idle business cash to work without handing it over',
+  'Bookkeeping that plans ahead: cash flow for businesses that get paid in lumps',
+  'Putting spare business cash to work without handing it over',
   'A husband-and-wife company, from service business to software',
 ];
 
 const facts = [
   ['Company', 'Set Up Your Place LLC, a technology company.'],
   ['Founders', 'Vission Cooper and Rel Cooper.'],
-  ['Platforms', 'Access Your Place, Access YP Labs (with Penny) and Access YP Flow (with Arbo).'],
+  ['Platforms', 'Access Your Place (furnished rental operations), Access YP Labs (the small business back office, with Penny) and Access YP Flow (bookkeeping and cash flow, with Arbo).'],
   ['Operations', 'United States and Mexico.'],
   ['Track record', 'Five years serving hundreds of business owners, landlords, operators and service providers.'],
   ['Mission', 'Access for everyone.'],
@@ -40,7 +41,7 @@ export default function CompanyPress() {
         <div className={wrap}>
           <h2 id="about-heading" className={h2}>About us, in brief</h2>
           <div className={prose}>
-            <p>Set Up Your Place LLC is a technology company founded by Vission and Rel Cooper, a husband and wife who are both blind. It began with Access Your Place, which helps people run full-service furnished rental operations without buying the property, and grew into software built from what its clients asked for: Access YP Labs, a small business back office run by an assistant named Penny, and Access YP Flow, where an assistant named Arbo puts a business's idle cash to work on the owner's own account.</p>
+            <p>Set Up Your Place LLC is a technology company founded by Vission and Rel Cooper, a husband and wife who are both blind. It began with Access Your Place, which helps people run full-service furnished rental operations without buying the property, and grew into software built from what its clients asked for: Access YP Labs, a small business back office run by an assistant named Penny, and Access YP Flow, bookkeeping and cash-flow software where an assistant named Arbo keeps the books, plans what is genuinely spare, gets customers to pay, and can put spare cash to work in the owner's own accounts.</p>
           </div>
           <dl className="mt-6 grid sm:grid-cols-2 gap-4">
             {facts.map(([k, v]) => (

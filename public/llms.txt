@@ -21,7 +21,7 @@ Street addresses of listings are private until a client commits. Every listing m
 - [Careers](https://accessyourplace.com/setupyourplace/careers)
 - [Press](https://accessyourplace.com/setupyourplace/press)
 - [Access YP Labs](https://accessyplabs.com): a small business back office run by Penny
-- [Access YP Flow](https://accessypflow.com): idle business cash put to work on the owner's own exchange account, with Arbo
+- [Access YP Flow](https://accessypflow.com): bookkeeping and cash flow with Arbo. Keeps the books for every business and property, works out what is genuinely spare, bills and chases customers, and can put spare cash to work in the owner's own accounts
 
 ## Contact
 

@@ -183,7 +183,7 @@ export default function Footer() {
                 AccessYPFlow
               </a>
               <p className="text-gray-500 text-xs mt-2 leading-relaxed">
-                Arbitrage applied to the markets. An automated crypto trading platform that puts a business's idle cash to honest work, guided by an AI named Arbo — the same idea as Your Place, pointed at exchanges instead of real estate.
+                Bookkeeping and cash flow, run by Arbo. The books for every business and property you run, what is genuinely spare and how long it lasts, customers billed and chased, and spare cash put to work in your own accounts if you want.
               </p>
             </div>
             <div className="bg-white/5 rounded-xl p-5 hover:bg-white/10 transition-colors">
