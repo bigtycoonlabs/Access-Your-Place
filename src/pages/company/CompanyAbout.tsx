@@ -52,20 +52,17 @@ export default function CompanyAbout() {
   };
   return (
     <CompanyLayout
-      eyebrow="About Set Up Your Place LLC"
-      title="We give people access before they have earned it."
-      intro={<>
-        <p>Because that is the only way access is real. It is the expensive part, and we have been paying it for five years.</p>
-        <p className="mt-4">Set Up Your Place LLC is a technology company. Our three platforms came from the work: five years of real operations, the data they produced, and the things people kept asking us for.</p>
-      </>}
+      eyebrow="About the company"
+      title="Built from the work, not from a plan."
+      intro={<p>Set Up Your Place LLC is a technology company. Our three platforms came from five years of real operations: the data they produced, and the things the people we served kept asking us for.</p>}
     >
       <SEO
-        title="About Set Up Your Place LLC | Access Your Place, YP Labs and YP Flow"
-        description="We give people access before they have earned it. Set Up Your Place LLC, founded by Vission and Rel Cooper: five years, 2,000+ closings, and three platforms built from the work."
+        title="About Set Up Your Place LLC | Our story and track record"
+        description="How Set Up Your Place LLC got here: furnished housing, then acquisitions, then the software. Founded by Vission and Rel Cooper. 2,000+ closings since 2020."
         keywords="Set Up Your Place LLC, Vission Cooper, Rel Cooper, Access Your Place, Access YP Labs, Access YP Flow"
-        canonicalUrl="/setupyourplace"
+        canonicalUrl="/setupyourplace/about"
         ogType="website"
-        structuredData={[getBreadcrumbSchema([{ name: 'Home', url: '/' }, { name: 'Set Up Your Place', url: '/setupyourplace' }]), orgSchema]}
+        structuredData={[getBreadcrumbSchema([{ name: 'Home', url: '/' }, { name: 'Set Up Your Place', url: '/setupyourplace' }, { name: 'About', url: '/setupyourplace/about' }]), orgSchema]}
       />
 
       <section className={section} aria-labelledby="idea-heading">

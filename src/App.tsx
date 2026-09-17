@@ -41,6 +41,7 @@ import TermsOfService from "./pages/TermsOfService";
 import PrivacyPolicy from "./pages/PrivacyPolicy";
 import HowItWorks from "./pages/HowItWorks";
 import CoreValues from "./pages/CoreValues";
+import CompanyHome from "./pages/company/CompanyHome";
 import CompanyAbout from "./pages/company/CompanyAbout";
 import CompanyAccessibility from "./pages/company/CompanyAccessibility";
 import CompanyCareers from "./pages/company/CompanyCareers";
@@ -157,7 +158,8 @@ const App = () => (
                   <Route path="/privacy-policy" element={<PrivacyPolicy />} />
                   <Route path="/how-it-works" element={<HowItWorks />} />
                   <Route path="/core-values" element={<CoreValues />} />
-                  <Route path="/setupyourplace" element={<CompanyAbout />} />
+                  <Route path="/setupyourplace" element={<CompanyHome />} />
+                  <Route path="/setupyourplace/about" element={<CompanyAbout />} />
                   <Route path="/setupyourplace/accessibility" element={<CompanyAccessibility />} />
                   <Route path="/setupyourplace/careers" element={<CompanyCareers />} />
                   <Route path="/setupyourplace/press" element={<CompanyPress />} />

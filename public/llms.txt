@@ -16,7 +16,8 @@ Street addresses of listings are private until a client commits. Every listing m
 
 ## The company
 
-- [Set Up Your Place LLC](https://accessyourplace.com/setupyourplace): the technology company behind Access Your Place, Access YP Labs and Access YP Flow, founded by Vission and Rel Cooper
+- [Set Up Your Place LLC](https://accessyourplace.com/setupyourplace): the technology company behind Access Your Place, Access YP Labs and Access YP Flow, founded by Vission and Rel Cooper. Since 2020: 2,000+ closings, 400+ master leases signed in its own name
+- [About the company](https://accessyourplace.com/setupyourplace/about): how it started and its track record
 - [Accessibility](https://accessyourplace.com/setupyourplace/accessibility)
 - [Careers](https://accessyourplace.com/setupyourplace/careers)
 - [Press](https://accessyourplace.com/setupyourplace/press)

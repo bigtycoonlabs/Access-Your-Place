@@ -41,7 +41,8 @@ const crumbs = (items) => ({
 });
 
 const COMPANY_NAV = [
-  ['/setupyourplace', 'About'],
+  ['/setupyourplace', 'Home'],
+  ['/setupyourplace/about', 'About'],
   ['/setupyourplace/accessibility', 'Accessibility'],
   ['/setupyourplace/careers', 'Careers'],
   ['/setupyourplace/press', 'Press'],
@@ -49,27 +50,46 @@ const COMPANY_NAV = [
 
 const PAGES = {
   '/setupyourplace': {
-    title: 'About Set Up Your Place LLC | Access Your Place, YP Labs and YP Flow',
-    description: 'We give people access before they have earned it. Set Up Your Place LLC, founded by Vission and Rel Cooper: five years, 2,000+ closings, and three platforms built from the work.',
+    title: 'Set Up Your Place LLC | Three platforms for people who were never let in',
+    description: 'Set Up Your Place LLC is a technology company behind Access Your Place, Access YP Labs and Access YP Flow. Five years of operations, 2,000+ closings, and software built from the work.',
     type: 'website',
     schema: [
       ORG,
-      { '@type': 'AboutPage', name: 'About Set Up Your Place LLC', url: `${SITE}/setupyourplace`, about: { '@id': ORG['@id'] } },
+      { '@type': 'WebSite', name: 'Set Up Your Place LLC', url: `${SITE}/setupyourplace`, publisher: { '@id': ORG['@id'] } },
       crumbs([['Home', '/'], ['Set Up Your Place', '/setupyourplace']]),
     ],
     h1: 'We give people access before they have earned it.',
     body: [
-      ['p', 'Because that is the only way access is real. Set Up Your Place LLC is a technology company, and its three platforms came from five years of real operations.'],
-      ['h2', 'The idea'],
-      ['p', 'A lease is worth more as a furnished stay than as a monthly rental. A small business\u2019s cash is worth more when it is planned and put to work. A back office is worth more when it runs itself. Getting let in is the part nobody solves. That is what we build.'],
+      ['p', 'Because that is the only way access is real. Three platforms, two AI assistants, one company, built from operations we run ourselves.'],
+      ['h2', 'Three gaps everybody can see'],
+      ['p', 'A lease is worth more as a furnished stay than as a monthly rental. A small business\u2019s cash is worth more when it is planned and put to work. A back office is worth more when it runs itself. Getting let in is the part nobody solves.'],
+      ['h2', 'Our platforms'],
+      ['p', 'Access Your Place: furnished rental operations without buying the property. Access YP Labs: the back office for a small business, with Penny. Access YP Flow: bookkeeping and cash flow, with Arbo. Use one, or all three.'],
+      ['h2', 'Five years of operations'],
+      ['p', 'Since 2020: more than 2,000 closings, 400+ master leases signed in our own name, 5,000+ landlords and communities negotiated with, and 3,000+ vendors and local service providers.'],
+      ['h2', 'Accessible first'],
+      ['p', 'Every platform is designed for screen readers from the first line, so anyone can use our software on their own.'],
+    ],
+  },
+  '/setupyourplace/about': {
+    title: 'About Set Up Your Place LLC | Our story and track record',
+    description: 'How Set Up Your Place LLC got here: furnished housing, then acquisitions, then the software. Founded by Vission and Rel Cooper. 2,000+ closings since 2020.',
+    type: 'website',
+    schema: [
+      { '@type': 'AboutPage', name: 'About Set Up Your Place LLC', url: `${SITE}/setupyourplace/about`, about: { '@id': ORG['@id'] } },
+      crumbs([['Home', '/'], ['Set Up Your Place', '/setupyourplace'], ['About', '/setupyourplace/about']]),
+    ],
+    h1: 'Built from the work, not from a plan.',
+    body: [
+      ['p', 'Set Up Your Place LLC is a technology company. Our three platforms came from five years of real operations.'],
       ['h2', 'Our story'],
       ['p', 'Founded by husband and wife Vission and Rel Cooper. Furnished housing first, then the acquisition business that fed it, then the software underneath both. At the end of 2024 Master Spaces and our setup service became Access Your Place. Access YP Labs and Access YP Flow followed.'],
       ['h2', 'Five years, in numbers'],
-      ['p', 'Since 2020: more than 2,000 closings, 400+ master leases signed in our own name, 5,000+ landlords and communities negotiated with, and 3,000+ vendors and local service providers.'],
-      ['h2', 'Our platforms'],
-      ['p', 'Access Your Place: furnished rental operations without buying the property, in the United States and Mexico. Access YP Labs: the back office for a small business, run by Penny. Access YP Flow: bookkeeping and cash flow with Arbo, who keeps the books across every business and property, works out what is genuinely spare, gets customers to pay, and can put spare cash to work in the owner\u2019s own accounts.'],
-      ['h2', 'What we believe'],
-      ['p', 'Access for everyone. Every platform is accessible first and designed for screen readers. AI should help people, not harm them.'],
+      ['p', 'Since 2020: more than 2,000 closings, 400+ master leases signed in our own name, 5,000+ landlords negotiated with, and 3,000+ vendors.'],
+      ['h2', 'What access costs'],
+      ['p', 'Sometimes people have not earned access yet. You have to give it anyway, or the opportunity is not real. When an operator walks away from a master lease, the lease is still ours and we keep the landlord whole.'],
+      ['h2', 'The network we have built'],
+      ['p', 'Landlords and property managers, apartment communities, furnished rental operators, business owners, housekeeping companies, maintenance companies, local home service providers, and furniture and supply vendors.'],
     ],
   },
   '/setupyourplace/accessibility': {
@@ -374,7 +394,7 @@ function renderPage(html, page) {
   const nav = COMPANY_NAV.map(([p, l]) => `<li><a href="${p}"${p === page.path ? ' aria-current="page"' : ''}>${l}</a></li>`).join('');
   const body = page.body.map(([t, text]) => `<${t}>${esc(text)}</${t}>`).join('');
   const header = isCompany
-    ? `<header><a href="/setupyourplace">Set Up Your Place LLC</a><nav aria-label="Company"><ul>${nav}<li><a href="/">Access Your Place</a></li></ul></nav></header>`
+    ? `<header><a href="/setupyourplace">Set Up Your Place LLC</a><nav aria-label="Company"><ul>${nav}</ul></nav></header>`
     : `<header><a href="/">Access Your Place</a><nav aria-label="Main"><ul><li><a href="/deals">Deals</a></li><li><a href="/start">Get started</a></li><li><a href="/how-it-works">How it works</a></li><li><a href="/setup-services">Setup services</a></li><li><a href="/landlord-partnership">Landlords</a></li><li><a href="/knowledge-library">Knowledge library</a></li><li><a href="/setupyourplace">Company</a></li></ul></nav></header>`;
   const prerender = `${header}<main><h1>${esc(page.h1)}</h1>${body}</main>`;
   html = html.replace(/<div id="root">\s*<\/div>/, `<div id="root">${prerender}</div>`);

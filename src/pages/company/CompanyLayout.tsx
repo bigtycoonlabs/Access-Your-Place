@@ -1,6 +1,6 @@
 import { ReactNode, useEffect, useRef } from 'react';
 import { Link, useLocation } from 'react-router-dom';
-import Footer from '@/components/Footer';
+import CompanyFooter from './CompanyFooter';
 
 // Shared frame for the Set Up Your Place company site: a skip link, one labelled navigation
 // with the current page marked, one main landmark, and the site footer. Moving between pages
@@ -9,7 +9,8 @@ import Footer from '@/components/Footer';
 let companyPageShown = false;
 
 export const COMPANY_PAGES = [
-  { to: '/setupyourplace', label: 'About' },
+  { to: '/setupyourplace', label: 'Home' },
+  { to: '/setupyourplace/about', label: 'About' },
   { to: '/setupyourplace/accessibility', label: 'Accessibility' },
   { to: '/setupyourplace/careers', label: 'Careers' },
   { to: '/setupyourplace/press', label: 'Press' },
@@ -62,7 +63,7 @@ export default function CompanyLayout({ eyebrow, title, intro, children }: {
               })}
               <li>
                 <Link to="/" className="inline-flex min-h-[44px] items-center rounded-md px-3 text-white/70 hover:text-white focus:outline-none focus:ring-2 focus:ring-[#d4a574]">
-                  Access Your Place
+                  <span aria-hidden="true" className="mr-1">↗</span>Access Your Place
                 </Link>
               </li>
             </ul>
@@ -80,7 +81,7 @@ export default function CompanyLayout({ eyebrow, title, intro, children }: {
         </section>
         {children}
       </main>
-      <Footer />
+      <CompanyFooter />
     </div>
   );
 }
