@@ -27,7 +27,7 @@ Deno.serve(async (req) => {
   try {
     const body = await req.json().catch(() => ({}));
     // Sign-in check: see _shared/identity.ts. This function used to trust whoever called it.
-    { const denied = await gate(req, body, String(body?.action || ''), corsHeaders, {"clientActions": ["claim_legacy_property", "delete_account", "delete_portfolio_property", "export_data", "get_am_info", "get_credit_requests", "get_linked_staff", "get_portfolio_properties", "request_am_change", "request_am_verification", "search_legacy_properties", "set_acquisition_manager", "submit_credit_request", "switch_to_staff", "update_portfolio_property"], "otherwise": "public"});
+    { const denied = await gate(req, body, String(body?.action || ''), corsHeaders, {"clientActions": ["claim_legacy_property", "delete_account", "delete_portfolio_property", "export_data", "get_am_info", "get_credit_requests", "get_investor_credits", "get_link_suggestions", "get_linked_staff", "get_portfolio_properties", "request_am_change", "request_am_verification", "search_legacy_properties", "set_acquisition_manager", "submit_am_assignment", "submit_credit_request", "switch_to_staff", "update_portfolio_property"]});
       if (denied) return denied; }
     const action = String(body.action || '');
     const investorId = body.investor_id || body.investorId;
