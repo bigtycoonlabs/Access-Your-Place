@@ -1,9 +1,10 @@
+import { gate } from '../_shared/identity.ts';
 import { serve } from 'https://deno.land/std@0.168.0/http/server.ts'
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2'
 
 const corsHeaders = {
   'Access-Control-Allow-Origin': '*',
-  'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
+  'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type, x-staff-session, x-investor-session, x-landlord-session',
 }
 
 serve(async (req) => {
@@ -17,7 +18,11 @@ serve(async (req) => {
       Deno.env.get('SUPABASE_SERVICE_ROLE_KEY') ?? ''
     )
 
-    const { action, ...params } = await req.json()
+    const __body = await req.json().catch(() => ({}));
+    // Sign-in check: see _shared/identity.ts. This function used to trust whoever called it.
+    { const denied = await gate(req, __body, String(__body?.action || ''), corsHeaders, {"clientActions": ["accept_offer", "cancel_listing", "counter_offer", "create_listing", "decline_deal", "get_marketplace_data", "get_my_seller_listings", "get_seller_offers", "reject_offer", "resubmit_listing", "search_investors", "submit_offer"], "publicActions": ["get_public_listings"]});
+      if (denied) return denied; }
+    const { action, ...params } = __body;
 
     switch (action) {
       case 'get_marketplace_data': {

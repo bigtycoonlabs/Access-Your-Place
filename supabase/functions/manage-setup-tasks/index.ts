@@ -71,7 +71,7 @@ function paymentBlockText(rails: string[] | undefined): string {
 
 const corsHeaders = {
   'Access-Control-Allow-Origin': '*',
-  'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type, x-staff-session, x-investor-session'
+  'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type, x-staff-session, x-investor-session, x-landlord-session'
 };
 
 const PHASE_NAMES = {1:'Acquisition & Initial Payment',2:'Consultation & Pre-Intake',3:'Intake Form & Service Agreement',4:'Logistics & Team Activation',5:'Product Sourcing & Spreadsheet',6:'Purchasing & Travel Logistics',7:'On-Site Setup & Live Tracking',8:'Cleanup, Media & Final Handover'};

@@ -20,7 +20,7 @@ globalThis.fetch = (input: any, init: any = {}) => {
 
 export const corsHeaders = {
   'Access-Control-Allow-Origin': '*',
-  'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type, x-investor-session, x-staff-session'
+  'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type, x-investor-session, x-staff-session, x-landlord-session'
 };
 
 const supabaseUrl = Deno.env.get('SUPABASE_URL')!;

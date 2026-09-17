@@ -1,3 +1,4 @@
+import { gate } from '../_shared/identity.ts';
 // property-forge
 //
 // Finds real rental listings in a market, then scores each one with the same engine that
@@ -39,7 +40,7 @@ globalThis.fetch = (input: any, init: any = {}) => {
 
 const corsHeaders = {
   'Access-Control-Allow-Origin': '*',
-  'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
+  'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type, x-staff-session, x-investor-session, x-landlord-session',
 };
 
 const SUPABASE_URL = Deno.env.get('SUPABASE_URL') || '';
@@ -174,6 +175,9 @@ Deno.serve(async (req) => {
 
   try {
     const body = await req.json().catch(() => ({}));
+    // Sign-in check: see _shared/identity.ts. This function used to trust whoever called it.
+    { const denied = await gate(req, body, String(body?.action || ''), corsHeaders, {});
+      if (denied) return denied; }
     const city = String(body.city || '').trim();
     const state = String(body.state || '').trim().toUpperCase();
     const minBeds = Number(body.min_bedrooms) || 1;

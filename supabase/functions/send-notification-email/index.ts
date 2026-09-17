@@ -1,3 +1,4 @@
+import { whoIsAsking } from '../_shared/identity.ts';
 // PostgREST on this project exposes ONLY the public schema, so forcing
 // Accept-Profile: prj_X-ZoVQv6LKXT made every REST call in this function return
 // 406 PGRST106 'Invalid schema'. Every prj_ table has a matching public view.
@@ -20,7 +21,7 @@ globalThis.fetch = (input: any, init: any = {}) => {
 
 const corsHeaders = {
   'Access-Control-Allow-Origin': '*',
-  'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type'
+  'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type, x-staff-session, x-investor-session, x-landlord-session'
 };
 
 Deno.serve(async (req) => {
@@ -49,6 +50,10 @@ Deno.serve(async (req) => {
     };
 
     const body = await req.json();
+    // Sign-in check: see _shared/identity.ts. This function used to trust whoever called it.
+    { const who = await whoIsAsking(req);
+      if (who.kind === 'none' || who.kind === 'landlord') return new Response(JSON.stringify({ success: false, error: 'Please sign in first.' }), { status: 401, headers: { ...corsHeaders, 'Content-Type': 'application/json' } });
+      if (who.kind === 'investor') { const to = String(body.investor_email || body.to || '').toLowerCase(); if (to && to !== who.email) return new Response(JSON.stringify({ success: false, error: 'You can only send notices about your own account.' }), { status: 403, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }); body.investor_id = who.id; } }
     const { action, investor_id, investor_name, investor_email, staff_name, subject, portal_url } = body;
 
     console.log('[send-notification-email v3] Action:', action, 'Investor:', investor_name, 'Email:', investor_email);

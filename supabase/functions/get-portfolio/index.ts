@@ -12,7 +12,7 @@ import { whoIsAsking } from '../_shared/identity.ts';
 
 const corsHeaders = {
   'Access-Control-Allow-Origin': '*',
-  'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type, x-staff-session, x-investor-session',
+  'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type, x-staff-session, x-investor-session, x-landlord-session',
 };
 
 const json = (b: unknown, s = 200) =>
@@ -32,8 +32,9 @@ Deno.serve(async (req) => {
     // and the client path any investor_id, so anyone could read any portfolio.
     const who = await whoIsAsking(req);
     if (who.kind === 'none') return json({ success: false, error: 'Your sign-in has expired. Please sign in again.' }, 401);
+    if (who.kind === 'landlord') return json({ success: false, error: 'This is only available to clients and staff.' }, 403);
     if (who.kind === 'staff') body.staff_id = who.id;
-    else {
+    else if (who.kind === 'investor') {
       delete body.staff_id;
       if (body.investor_id && String(body.investor_id) !== who.id) return json({ success: false, error: 'You can only see your own portfolio.' }, 403);
       body.investor_id = who.id;

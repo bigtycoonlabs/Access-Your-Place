@@ -1,3 +1,4 @@
+import { gate } from '../_shared/identity.ts';
 // PostgREST on this project exposes ONLY the public schema, so forcing
 // Accept-Profile: prj_X-ZoVQv6LKXT made every REST call in this function return
 // 406 PGRST106 'Invalid schema'. Every prj_ table has a matching public view.
@@ -22,7 +23,7 @@ globalThis.fetch = (input: any, init: any = {}) => {
 
 const corsHeaders = {
   'Access-Control-Allow-Origin': '*',
-  'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type'
+  'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type, x-staff-session, x-investor-session, x-landlord-session'
 };
 
 const supabaseUrl = Deno.env.get('SUPABASE_URL') || '';
@@ -96,6 +97,9 @@ Deno.serve(async (req) => {
     let dateRange = '30';
     try {
       const body = await req.json();
+      // Sign-in check: see _shared/identity.ts. This function used to trust whoever called it.
+      { const denied = await gate(req, body, String(body?.action || ''), corsHeaders, {});
+        if (denied) return denied; }
       dateRange = body?.dateRange || '30';
     } catch (e) {
       console.log('[v2.0] No body or invalid JSON, using default dateRange');

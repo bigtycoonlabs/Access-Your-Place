@@ -1,8 +1,9 @@
+import { gate } from '../_shared/identity.ts';
 import "jsr:@supabase/functions-js/edge-runtime.d.ts";
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "https://accessyourplace.com",
-  "Access-Control-Allow-Headers": "authorization, x-client-info, apikey, content-type",
+  "Access-Control-Allow-Headers": "authorization, x-client-info, apikey, content-type, x-staff-session, x-investor-session, x-landlord-session",
   "Access-Control-Allow-Methods": "POST, OPTIONS",
 };
 
@@ -52,6 +53,9 @@ Deno.serve(async (req: Request) => {
 
   try {
     const body = await req.json();
+    // Sign-in check: see _shared/identity.ts. This function used to trust whoever called it.
+    { const denied = await gate(req, body, String(body?.action || ''), corsHeaders, {"landlordActions": ["delete_document", "get_applications", "get_documents", "get_landlord_properties", "get_messages", "landlord_overview", "mark_messages_read", "remove_corporate_app_pdf", "save_corporate_app_pdf", "save_property_details", "send_message", "set_lease_preference", "submit_property", "update_application_status", "update_profile", "update_property_application_handling", "upload_document"]});
+      if (denied) return denied; }
     const action = body.action;
 
     // ---- LANDLORD-FACING. THIS PORTAL IS ABOUT THEM. ----

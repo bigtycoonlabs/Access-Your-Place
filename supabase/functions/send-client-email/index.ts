@@ -1,3 +1,4 @@
+import { gate } from '../_shared/identity.ts';
 // send-client-email
 //
 // THE ONE PATH for email that goes to a client. It sends, then it records what happened
@@ -37,7 +38,7 @@ globalThis.fetch = (input: any, init: any = {}) => {
 
 const corsHeaders = {
   'Access-Control-Allow-Origin': '*',
-  'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
+  'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type, x-staff-session, x-investor-session, x-landlord-session',
 };
 
 const SUPABASE_URL = Deno.env.get('SUPABASE_URL') || '';
@@ -70,6 +71,9 @@ Deno.serve(async (req) => {
 
   try {
     const body = await req.json().catch(() => ({}));
+    // Sign-in check: see _shared/identity.ts. This function used to trust whoever called it.
+    { const denied = await gate(req, body, String(body?.action || ''), corsHeaders, {});
+      if (denied) return denied; }
     const action = String(body.action || 'send');
 
     // Read a client's correspondence history. This is the half that would have prevented

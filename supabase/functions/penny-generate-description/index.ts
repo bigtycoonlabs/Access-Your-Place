@@ -1,8 +1,9 @@
+import { gate } from '../_shared/identity.ts';
 import { serve } from 'https://deno.land/std@0.168.0/http/server.ts'
 
 const corsHeaders = {
   'Access-Control-Allow-Origin': '*',
-  'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
+  'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type, x-staff-session, x-investor-session, x-landlord-session',
 }
 
 serve(async (req) => {
@@ -12,6 +13,9 @@ serve(async (req) => {
 
   try {
     const body = await req.json()
+    // Sign-in check: see _shared/identity.ts. This function used to trust whoever called it.
+    { const denied = await gate(req, body, String(body?.action || ''), corsHeaders, {"clientActions": ["get_recommendations"]});
+      if (denied) return denied; }
     const { action, investor_id, city, state, zip_code, max_price, min_bedrooms, operation_type, search_ai } = body
     
     const supabaseUrl = Deno.env.get('SUPABASE_URL')!

@@ -26,7 +26,7 @@ import {
 
 const corsHeaders = {
   'Access-Control-Allow-Origin': '*',
-  'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type, x-landlord-session',
+  'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type, x-landlord-session, x-staff-session, x-investor-session',
 }
 
 // The authoritative AYP landlord model, from the founder. Everything here is a real offering.

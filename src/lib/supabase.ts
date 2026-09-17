@@ -53,9 +53,7 @@ function safeRealtimeDecode(
 // CORS preflight, so the list is explicit.
 // Functions that check who is asking from the sign-in token. Every request to them carries
 // whichever sign-in this browser holds.
-const SIGNED_IN_FUNCTIONS = ['ai-investor-chat', 'penny-landlord-chat', 'manage-acquisition-requests',
-  'manage-investor-documents', 'manage-setup-tasks', 'manage-investor-admin', 'investor-messaging',
-  'manage-support-requests', 'manage-document-signatures', 'get-portfolio'];
+const SIGNED_IN_FUNCTIONS = ['ai-investor-chat', 'penny-landlord-chat', 'manage-acquisition-requests', 'manage-investor-documents', 'manage-setup-tasks', 'manage-investor-admin', 'investor-messaging', 'manage-support-requests', 'manage-document-signatures', 'get-portfolio', 'investor-activity-log', 'investor-auth', 'manage-am-assignments', 'manage-hr-commissions', 'manage-landlord-portal', 'manage-landlords', 'manage-portfolio-approvals', 'send-investor-invitation', 'sign-agreement', 'unassigned-investor-digest', 'investor-deal-locator', 'manage-investor-credits', 'manage-payments', 'manage-disputes', 'manage-referrals', 'manage-property-referrals', 'security-alerts', 'manage-deal-marketplace', 'generate-monthly-report', 'intelligent-deal-matching', 'manage-deal-alerts', 'check-deal-alerts', 'investor-email-notifications', 'penny-generate-description', 'manage-sop-repository', 'manage-investor-pipeline', 'manage-property-assignments', 'deal-flow-notifications', 'am-submit-deal', 'get-deal-analytics', 'send-bulk-email', 'send-client-email', 'send-inquiry-notifications', 'send-acquisition-emails', 'send-notification-email', 'leadforge', 'property-forge', 'manage-payment-proofs', 'upload-payment-proof'];
 const STAFF_SESSION_FUNCTIONS = ['get-leads', 'penny-staff-chat', 'staff-countersign', 'penny-staff-brief', 'manage-setup-tasks'];
 const staffAwareFetch: typeof fetch = (input, init = {}) => {
   try {
@@ -67,7 +65,7 @@ const staffAwareFetch: typeof fetch = (input, init = {}) => {
       const inv = window.localStorage.getItem('investorSessionToken');
       const ll = window.localStorage.getItem('landlord_session');
       if (fn !== 'penny-landlord-chat' && inv) headers.set('x-investor-session', inv);
-      if (fn === 'penny-landlord-chat' && ll) headers.set('x-landlord-session', ll);
+      if (ll) headers.set('x-landlord-session', ll);
       const st = JSON.parse(window.localStorage.getItem('staffSession') || '{}')?.session_token;
       if (fn !== 'penny-landlord-chat' && st) headers.set('x-staff-session', String(st));
       init = { ...init, headers };

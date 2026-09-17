@@ -1,3 +1,4 @@
+import { gate } from '../_shared/identity.ts';
 // PostgREST on this project exposes ONLY the public schema, so forcing
 // Accept-Profile: prj_X-ZoVQv6LKXT made every REST call in this function return
 // 406 PGRST106 'Invalid schema'. Every prj_ table has a matching public view.
@@ -20,7 +21,7 @@ globalThis.fetch = (input: any, init: any = {}) => {
 
 const corsHeaders = {
   'Access-Control-Allow-Origin': '*',
-  'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type'
+  'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type, x-staff-session, x-investor-session, x-landlord-session'
 };
 
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2';
@@ -36,6 +37,9 @@ Deno.serve(async (req) => {
     const supabase = createClient(supabaseUrl, supabaseKey);
 
     const body = await req.json();
+    // Sign-in check: see _shared/identity.ts. This function used to trust whoever called it.
+    { const denied = await gate(req, body, String(body?.action || ''), corsHeaders, {"clientActions": ["agree_to_tos", "check_tos_status", "get_property_referrals", "submit_property_referral"]});
+      if (denied) return denied; }
     const { action } = body;
     const json = (data: any, status = 200) => new Response(JSON.stringify(data), {
       status, headers: { ...corsHeaders, 'Content-Type': 'application/json' }

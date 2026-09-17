@@ -1,11 +1,15 @@
+import { gate } from '../_shared/identity.ts';
 import { serve } from 'https://deno.land/std@0.168.0/http/server.ts'
 
-const corsHeaders = { 'Access-Control-Allow-Origin': '*', 'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type' }
+const corsHeaders = { 'Access-Control-Allow-Origin': '*', 'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type, x-staff-session, x-investor-session, x-landlord-session' }
 
 serve(async (req) => {
   if (req.method === 'OPTIONS') return new Response('ok', { headers: corsHeaders })
   try {
     const body = await req.json()
+    // Sign-in check: see _shared/identity.ts. This function used to trust whoever called it.
+    { const denied = await gate(req, body, String(body?.action || ''), corsHeaders, {"clientActions": ["claim_reward", "get_payout_preferences", "get_referral_code", "get_referrals", "get_rewards", "invite_referral", "update_payout_preferences"]});
+      if (denied) return denied; }
     const { action, investor_id, referral_code, new_investor_id, reward_id, reward_type } = body
     const supabaseUrl = Deno.env.get('SUPABASE_URL')!, supabaseKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!
     const headers = { 'apikey': supabaseKey, 'Authorization': `Bearer ${supabaseKey}`, 'Content-Type': 'application/json' }

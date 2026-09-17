@@ -1,3 +1,4 @@
+import { gate } from '../_shared/identity.ts';
 // LeadForge engine: real property lead sourcing with credit-gated release.
 // Search is FREE and returns opportunities with specifics HIDDEN (no address, photos, or source
 // link). Releasing one real property costs one $62.50 LeadForge credit (staff unlimited), and
@@ -18,7 +19,7 @@ const GOOGLE_CX = Deno.env.get('GOOGLE_CX');
 
 const corsHeaders = {
   'Access-Control-Allow-Origin': '*',
-  'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
+  'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type, x-staff-session, x-investor-session, x-landlord-session',
   'Access-Control-Allow-Methods': 'POST, OPTIONS',
 };
 
@@ -273,6 +274,9 @@ Deno.serve(async (req) => {
   if (req.method === 'OPTIONS') return new Response('ok', { headers: corsHeaders });
   try {
     const body = await req.json().catch(() => ({}));
+    // Sign-in check: see _shared/identity.ts. This function used to trust whoever called it.
+    { const denied = await gate(req, body, String(body?.action || ''), corsHeaders, {});
+      if (denied) return denied; }
     const action = body.action || 'search';
     switch (action) {
       case 'search': return await doSearch(body);

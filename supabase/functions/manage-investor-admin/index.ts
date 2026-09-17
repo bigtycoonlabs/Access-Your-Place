@@ -22,7 +22,7 @@ globalThis.fetch = (input: any, init: any = {}) => {
 // manage-investor-admin v17.4 - schema fix (public). v17.3: createNotification uses 'data' column
 const corsHeaders = {
   'Access-Control-Allow-Origin': '*',
-  'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type, x-staff-session, x-investor-session'
+  'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type, x-staff-session, x-investor-session, x-landlord-session'
 };
 
 Deno.serve(async (req) => {

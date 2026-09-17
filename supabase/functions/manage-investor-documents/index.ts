@@ -21,7 +21,7 @@ globalThis.fetch = (input: any, init: any = {}) => {
 // manage-investor-documents v2.1 - REST API approach for reliability
 const corsHeaders = {
   'Access-Control-Allow-Origin': '*',
-  'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type, x-investor-session, x-staff-session'
+  'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type, x-investor-session, x-staff-session, x-landlord-session'
 };
 
 Deno.serve(async (req) => {
