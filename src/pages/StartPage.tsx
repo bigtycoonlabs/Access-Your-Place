@@ -310,7 +310,7 @@ export default function StartPage() {
             Choose what you need, and the questions for it appear below. No account required. We reply by email, and someone from the team may call.
           </p>
 
-          <form onSubmit={submit} className="mt-6 space-y-6" noValidate onFocusCapture={() => trackOnce('start_form_started', { kind: kind || 'none' })}>
+          <form onSubmit={submit} className="mt-6 space-y-6" noValidate onFocusCapture={() => trackOnce('start_form_started')}>
             <fieldset className="space-y-2">
               <legend className="text-base font-medium text-slate-900">What do you need?</legend>
               {DOORS.map((d) => (

@@ -167,7 +167,7 @@ function whoIsBrowsing(): { user_type: EventPayload['user_type']; staff_id: stri
 // credited to where the person first came from.
 function visitStart(path: string): { landing_path: string; first_referrer: string | null } {
   let landing = safeGet(LANDING_KEY, window.sessionStorage);
-  if (!landing) { landing = path; safeSet(LANDING_KEY, path, window.sessionStorage); }
+  if (!landing) { landing = path.split('?')[0] || '/'; safeSet(LANDING_KEY, landing, window.sessionStorage); }
   let ref = safeGet(FIRST_REF_KEY, window.sessionStorage);
   if (ref === null) {
     ref = (typeof document !== 'undefined' && document.referrer && !document.referrer.includes(window.location.host)) ? document.referrer : '';
