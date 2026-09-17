@@ -80,7 +80,7 @@ app.use('/rest/v1', createProxyMiddleware({
 
 // â”€â”€ Serve built React frontend (static files) â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 const DIST_DIR = path.join(__dirname, 'dist');
-app.use(express.static(DIST_DIR));
+app.use(express.static(DIST_DIR, { index: false }));
 
 // ── DB helpers — Edge Function proxy v1783810139 ───────────────────────────────────
 // PostgREST is Cloudflare-blocked from Railway. All queries go through the
@@ -6447,25 +6447,43 @@ return err('Unknown unassigned-investor-digest action: ' + action);
 
 // â”€â”€ SPA fallback â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 const seoPages = require('./seoPages');
-app.get('*', (req, res) => {
+
+// Deals change daily, so their sitemap is built from the live marketplace.
+app.get('/sitemap-deals.xml', async (req, res) => {
+  const rows = await seoPages.deals();
+  if (!rows) return res.status(503).set('Retry-After', '300').send('Sitemap temporarily unavailable');
+  const urls = rows.map((d) => `  <url>\n    <loc>https://accessyourplace.com/deals/${d.id}</loc>\n    <lastmod>${String(d.created_at || '').slice(0, 10) || new Date().toISOString().slice(0, 10)}</lastmod>\n    <changefreq>weekly</changefreq>\n    <priority>0.8</priority>\n  </url>`).join('\n');
+  res.set('Content-Type', 'application/xml; charset=utf-8');
+  res.send(`<?xml version="1.0" encoding="UTF-8"?>\n<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">\n${urls}\n</urlset>\n`);
+});
+
+// Every page address. Search engines and link previews do not run JavaScript, so the server
+// writes each page's real title, description, canonical address, previews and text, sends
+// true redirects, keeps private screens out of search, and answers unknown addresses with a
+// real 404 instead of a copy of the homepage. See seoPages.js.
+app.get('*', async (req, res) => {
+  const fs = require('fs');
   const indexPath = path.join(DIST_DIR, 'index.html');
-  if (require('fs').existsSync(indexPath)) {
-    // Company pages get their own title, description, canonical, preview tags and text
-    // (see seoPages.js). Everything else is served unchanged.
-    const page = seoPages.pageFor(req.path);
-    if (page) {
-      try {
-        const html = seoPages.renderPage(require('fs').readFileSync(indexPath, 'utf8'), page);
-        res.set('Content-Type', 'text/html; charset=utf-8');
-        return res.send(html);
-      } catch (e) {
-        console.error('[seoPages] render failed, serving the plain shell:', e.message);
-      }
-    }
-    res.sendFile(indexPath);
-  } else {
-    res.status(200).json({ ok: true, message: 'Access Your Place API server running' });
+  if (!fs.existsSync(indexPath)) {
+    return res.status(200).json({ ok: true, message: 'Access Your Place API server running' });
   }
+  let shell;
+  try { shell = fs.readFileSync(indexPath, 'utf8'); } catch { return res.sendFile(indexPath); }
+  let r = {};
+  try { r = await seoPages.resolve(req.path); } catch (e) { console.error('[seoPages] resolve failed:', e.message); }
+  try {
+    if (r.redirect) {
+      const q = req.originalUrl.includes('?') ? req.originalUrl.slice(req.originalUrl.indexOf('?')) : '';
+      return res.redirect(301, r.redirect + q);
+    }
+    res.set('Content-Type', 'text/html; charset=utf-8');
+    if (r.page) return res.send(seoPages.renderPage(shell, r.page));
+    if (r.noindex) { res.set('X-Robots-Tag', 'noindex, nofollow'); return res.send(seoPages.noindex(shell)); }
+    if (r.notFound) { res.set('X-Robots-Tag', 'noindex'); return res.status(404).send(seoPages.notFoundHtml(shell, req.path)); }
+  } catch (e) {
+    console.error('[seoPages] render failed, serving the plain shell:', e.message);
+  }
+  return res.sendFile(indexPath);
 });
 
 // â”€â”€ Start â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€

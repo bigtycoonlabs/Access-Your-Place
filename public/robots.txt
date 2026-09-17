@@ -1,88 +1,49 @@
 # Robots.txt for Access Your Place
 # https://accessyourplace.com
+#
+# One rule set for every crawler. The file used to give Googlebot, Bingbot and others their
+# own "Allow: /" sections, and a crawler with its own section ignores the general one, so the
+# private-area rules below never applied to them. Pages the server knows are private also
+# send "noindex" themselves.
+#
+# Links carrying utm_ tags are no longer blocked: every page declares its canonical address,
+# which tells search engines the tagged link and the clean one are the same page. Blocking
+# them hid that from crawlers, and ChatGPT and others add utm_source to the links they share.
 
-# Allow all major search engine crawlers
-User-agent: Googlebot
-Allow: /
-Crawl-delay: 1
-
-User-agent: Googlebot-Image
-Allow: /
-
-User-agent: Googlebot-News
-Allow: /
-
-User-agent: Bingbot
-Allow: /
-Crawl-delay: 1
-
-User-agent: Slurp
-Allow: /
-Crawl-delay: 2
-
-User-agent: DuckDuckBot
-Allow: /
-Crawl-delay: 1
-
-User-agent: Baiduspider
-Allow: /
-Crawl-delay: 2
-
-User-agent: YandexBot
-Allow: /
-Crawl-delay: 2
-
-# Social media crawlers
-User-agent: Twitterbot
-Allow: /
-
-User-agent: facebookexternalhit
-Allow: /
-
-User-agent: LinkedInBot
-Allow: /
-
-User-agent: Pinterest
-Allow: /
-
-User-agent: Slackbot
-Allow: /
-
-# Default rules for all other bots
 User-agent: *
 Allow: /
-
-# Disallow admin and private areas
 Disallow: /admin/
 Disallow: /staff/
 Disallow: /api/
-Disallow: /_next/
+Disallow: /functions/
 Disallow: /private/
-
-# Disallow query parameters that create duplicate content
+Disallow: /investor/portal
+Disallow: /landlord/portal
+Disallow: /pro-portal/
+Disallow: /am-agreement/
+Disallow: /oauth/
 Disallow: /*?*sort=
 Disallow: /*?*filter=
-Disallow: /*?*page=
-Disallow: /*?*ref=
-Disallow: /*?*utm_
 
-# Allow important static assets
-Allow: /images/
-Allow: /assets/
-Allow: /*.js$
-Allow: /*.css$
-Allow: /*.png$
-Allow: /*.jpg$
-Allow: /*.jpeg$
-Allow: /*.gif$
-Allow: /*.svg$
-Allow: /*.webp$
+# AI assistants and AI search: welcome. They already send visitors here.
+User-agent: GPTBot
+User-agent: OAI-SearchBot
+User-agent: ChatGPT-User
+User-agent: PerplexityBot
+User-agent: ClaudeBot
+User-agent: Claude-SearchBot
+User-agent: Google-Extended
+User-agent: Applebot-Extended
+Allow: /
+Disallow: /admin/
+Disallow: /staff/
+Disallow: /api/
+Disallow: /functions/
+Disallow: /investor/portal
+Disallow: /landlord/portal
+Disallow: /pro-portal/
+Disallow: /am-agreement/
 
-# Sitemap location
-# sitemap.xml is an INDEX pointing at the two below. sitemap-deals.xml was listed here
-# and never existed - a robots.txt advertising a sitemap that 404s (or worse, returns the
-# SPA shell as this one did) wastes crawl budget and teaches Google the site is unreliable.
+# sitemap.xml is an index of pages, articles and live deals (sitemap-deals.xml is built
+# from the marketplace on request).
 Sitemap: https://accessyourplace.com/sitemap.xml
-
-# Host directive (for Yandex)
-Host: https://accessyourplace.com

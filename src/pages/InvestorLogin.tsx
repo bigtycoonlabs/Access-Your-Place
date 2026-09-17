@@ -1015,7 +1015,7 @@ export default function InvestorLogin() {
         title="Investor Login - Access Your Place"
         description="Sign in to your Access Your Place investor account. Access exclusive rental arbitrage deals, market reports, and investment tools."
         keywords="investor login, rental arbitrage portal, AYP login, investor account"
-        canonicalUrl="/investor-login"
+        canonicalUrl="/investor/login"
         noIndex={true}
       />
       <a href="#main-content" className="sr-only focus:not-sr-only focus:absolute focus:top-4 focus:left-4 bg-white text-[#1a365d] px-4 py-2 rounded z-50">

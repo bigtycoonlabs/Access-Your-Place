@@ -105,7 +105,11 @@ export default function SEO({
     if (author) setMetaTag('author', author);
     
     // Robots
-    if (noIndex) {
+    // Private screens stay out of search even if a page forgets to say so (matches the
+    // server's list in backend/seoPages.js).
+    const privatePath = typeof window !== 'undefined' &&
+      /^\/(staff|admin)(\/|$)|^\/investor\/?$|^\/investor\/(portal|reset-password|unsubscribe|verify-email)|^\/landlord\/(portal|reset-password)|^\/(pro-portal|am-agreement|oauth)\/|^\/legal-agreement-gate/.test(window.location.pathname);
+    if (noIndex || privatePath) {
       setMetaTag('robots', 'noindex, nofollow');
     } else {
       setMetaTag('robots', 'index, follow, max-image-preview:large, max-snippet:-1, max-video-preview:-1');
