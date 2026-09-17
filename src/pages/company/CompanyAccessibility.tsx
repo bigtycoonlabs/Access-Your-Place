@@ -15,12 +15,12 @@ export default function CompanyAccessibility() {
   return (
     <CompanyLayout
       eyebrow="Accessibility"
-      title="Built by people who use screen readers."
-      intro={<p>Our founders, Vission and Rel Cooper, are both blind. They run this company with the same screen readers many of our customers use. Accessibility is not a feature we add at the end. It is how everything starts.</p>}
+      title="Accessible first. Built for screen readers."
+      intro={<p>Every platform we build is designed for screen readers from the first line, so anyone, including people who are blind or have low vision, can use our software on their own. Accessibility is not a feature we add at the end. It is how everything starts.</p>}
     >
       <SEO
         title="Accessibility | Set Up Your Place LLC"
-        description="Built by blind founders who use screen readers every day. How Access Your Place, Access YP Labs and Access YP Flow are built for assistive technology, and how to report a barrier."
+        description="Accessible first and built for screen readers. How Access Your Place, Access YP Labs and Access YP Flow work with assistive technology, and how to report a barrier."
         canonicalUrl="/setupyourplace/accessibility"
         ogType="website"
         structuredData={getBreadcrumbSchema([{ name: 'Home', url: '/' }, { name: 'Set Up Your Place', url: '/setupyourplace' }, { name: 'Accessibility', url: '/setupyourplace/accessibility' }])}
