@@ -41,6 +41,7 @@ import TermsOfService from "./pages/TermsOfService";
 import PrivacyPolicy from "./pages/PrivacyPolicy";
 import HowItWorks from "./pages/HowItWorks";
 import CoreValues from "./pages/CoreValues";
+import SetUpYourPlace from "./pages/SetUpYourPlace";
 import Careers from "./pages/Careers";
 import ProPortal from "./pages/ProPortal";
 import CommunityStandards from "./pages/CommunityStandards";
@@ -153,6 +154,9 @@ const App = () => (
                   <Route path="/privacy-policy" element={<PrivacyPolicy />} />
                   <Route path="/how-it-works" element={<HowItWorks />} />
                   <Route path="/core-values" element={<CoreValues />} />
+                  <Route path="/setupyourplace" element={<SetUpYourPlace />} />
+                  <Route path="/set-up-your-place" element={<Navigate to="/setupyourplace" replace />} />
+                  <Route path="/company" element={<Navigate to="/setupyourplace" replace />} />
                   <Route path="/am-agreement/:agreementId" element={<AMAgreementSign />} />
                   <Route path="/pro-portal/:token" element={<ProPortal />} />
                   <Route path="/community-standards" element={<CommunityStandards />} />

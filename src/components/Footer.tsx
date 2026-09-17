@@ -155,16 +155,16 @@ export default function Footer() {
 
         {/* Our Platforms */}
         <div className="border-t border-gray-800 pt-10 mb-10">
-          <h4 className="text-center text-sm font-semibold text-[#d4a574] uppercase tracking-widest mb-2">The Set Up Your Place LLC family</h4>
+          <h4 className="text-center text-sm font-semibold text-[#d4a574] uppercase tracking-widest mb-2">
+            <a href="/setupyourplace" className="hover:underline focus:outline-none focus:ring-2 focus:ring-[#d4a574] rounded">The Set Up Your Place LLC family</a>
+          </h4>
           <p className="text-center text-gray-400 text-sm max-w-2xl mx-auto mb-6">Access Your Place taught its founders that arbitrage isn't bound to one industry — it's a way of life. These are its sisters, each working that idea in its own field. The whole family is yours to use.</p>
           <div className="grid sm:grid-cols-3 gap-6 max-w-4xl mx-auto text-center">
             <div className="bg-white/5 rounded-xl p-5 hover:bg-white/10 transition-colors">
               <a
-                href="https://accessyourplace.com"
-                target="_blank"
-                rel="noopener noreferrer"
+                href="/"
                 className="text-[#d4a574] font-semibold text-base hover:underline focus:outline-none focus:ring-2 focus:ring-[#d4a574] rounded"
-                aria-label="AccessYourPlace (opens in new tab)"
+                aria-label="AccessYourPlace"
               >
                 AccessYourPlace
               </a>
@@ -174,7 +174,7 @@ export default function Footer() {
             </div>
             <div className="bg-white/5 rounded-xl p-5 hover:bg-white/10 transition-colors">
               <a
-                href="https://accessypflow.com"
+                href="https://accessypflow.com/?utm_source=accessyourplace&utm_medium=footer"
                 target="_blank"
                 rel="noopener noreferrer"
                 className="text-[#d4a574] font-semibold text-base hover:underline focus:outline-none focus:ring-2 focus:ring-[#d4a574] rounded"
@@ -188,7 +188,7 @@ export default function Footer() {
             </div>
             <div className="bg-white/5 rounded-xl p-5 hover:bg-white/10 transition-colors">
               <a
-                href="https://accessyplabs.com"
+                href="https://accessyplabs.com/?utm_source=accessyourplace&utm_medium=footer"
                 target="_blank"
                 rel="noopener noreferrer"
                 className="text-[#d4a574] font-semibold text-base hover:underline focus:outline-none focus:ring-2 focus:ring-[#d4a574] rounded"
@@ -197,7 +197,7 @@ export default function Footer() {
                 AccessYPLabs
               </a>
               <p className="text-gray-500 text-xs mt-2 leading-relaxed">
-                Where ideas become ownable businesses. An AI named Clay shapes any idea into a complete, pre-proven concept — plan, research, demo, and build path — and the Exchange is its marketplace of unlaunched businesses to claim and grow.
+                The back office for a small business, run by Penny. Filings and renewals in every state, the documents that should be on file, customers and team in one place, and sites and customer portals she builds for you.
               </p>
             </div>
           </div>
