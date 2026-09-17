@@ -33,7 +33,7 @@ IV. Financial SOPs
 
 Document everything in Google Docs or Notion for team access.
 
-Ready to systematize? Penny can help you build custom SOPs for your operation, and the AYP Success Team can coordinate setup support: https://calendly.com/investyourplaces`;
+Ready to systematize? Penny can help you build custom SOPs for your operation, and the AYP Success Team can coordinate setup support: https://accessyourplace.com/start`;
 
 
 export const remoteManagement = `Managing Properties Remotely
@@ -69,7 +69,7 @@ IV. When to Visit
 
 For staffing and virtual-assistance needs, your AYP setup manager can help you source and vet cleaners, maintenance, and trained VAs from the operator network.
 
-Book a call: https://calendly.com/investyourplaces`;
+Book a call: https://accessyourplace.com/start`;
 
 
 export const propertySelection = `Property Selection Criteria
@@ -116,7 +116,7 @@ Before signing lease:
 
 Access Your Place offers free market scans to evaluate property viability.
 
-Book a scan: https://calendly.com/investyourplaces`;
+Book a scan: https://accessyourplace.com/start`;
 
 export const first30Days = `First 30 Days After Signing Lease
 
@@ -136,7 +136,7 @@ Week 2: Furnishing
 □ Order decor and artwork
 □ Arrange furniture delivery
 
-OR use Access Your Place setup services - we handle everything in 5-7 days using our storage network across 64 cities.
+OR use Access Your Place setup services - your setup manager sources the furniture, books the vendors and runs the install in your market.
 
 Week 3: Final Setup
 □ Install smart lock
@@ -154,7 +154,7 @@ Week 4: Launch
 
 Average time to first booking: 3-7 days with optimized listing.
 
-Need help? Book a call: https://calendly.com/investyourplaces`;
+Need help? Book a call: https://accessyourplace.com/start`;
 
 export const maintenanceNetwork = `Building Your Maintenance Network
 
@@ -218,6 +218,6 @@ Common Emergencies:
 • Lock malfunction → Locksmith or remote code reset
 • Appliance failure → Repair or replacement (24-48 hours)
 
-Access Your Place maintains vendor networks in 64 cities for our clients.
+Since 2020 we have worked with more than 3,000 vendors and local service providers, and we introduce clients to the ones we use in their market.
 
-Book a call: https://calendly.com/investyourplaces`;
+Book a call: https://accessyourplace.com/start`;

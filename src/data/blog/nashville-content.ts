@@ -76,7 +76,7 @@ Co-Living (Per Room, Monthly) Performance:
 • Typical Property Size: 4-6 bedrooms
 • Estimated Annual Revenue: $31,200-$68,400 per property (4 rooms)
 
-Access Your Place has successfully helped clients launch 130+ properties in Nashville over the past 5 years, navigating the permit cap system and zoning restrictions.
+We work in Nashville over the past 5 years and can tell you what we are seeing there right now, including what landlords in that market are currently agreeing to, navigating the permit cap system and zoning restrictions.
 
-Ready to launch in Nashville? Book a discovery call: https://calendly.com/investyourplaces
+Ready to launch in Nashville? Book a discovery call: https://accessyourplace.com/start
 `;

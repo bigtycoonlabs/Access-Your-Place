@@ -55,7 +55,7 @@ Co-Living (Per Room, Monthly) Performance:
 • Typical Property Size: 4-6 bedrooms
 • Estimated Annual Revenue: $28,800-$61,200 per property (4 rooms)
 
-Access Your Place has successfully helped clients launch 300+ properties in the Orlando/Kissimmee market, making it our highest-volume market.
+We work in the Orlando/Kissimmee market and can tell you what we are seeing there right now, including what landlords in that market are currently agreeing to, making it our highest-volume market.
 
-Ready to launch in Orlando? Book a discovery call: https://calendly.com/investyourplaces
+Ready to launch in Orlando? Book a discovery call: https://accessyourplace.com/start
 `;

@@ -67,5 +67,5 @@ Note: Co-living may offer superior returns compared to STR in Georgetown due to 
 
 Access Your Place is expanding into Georgetown as part of our Austin metro growth strategy.
 
-Ready to launch in Georgetown? Book a discovery call: https://calendly.com/investyourplaces
+Ready to launch in Georgetown? Book a discovery call: https://accessyourplace.com/start
 `;

@@ -56,7 +56,7 @@ Co-Living (Per Room, Monthly) Performance:
 • Estimated Annual Revenue (4-Room): $28,800-$40,800 per property
 • Arbitrage Spread: $10,800-$15,000+ annual profit per property
 
-Access Your Place has successfully helped clients launch 110+ properties in Louisville over the past 5 years, with a strong focus on the high-yield co-living model.
+We work in Louisville over the past 5 years and can tell you what we are seeing there right now, including what landlords in that market are currently agreeing to, with a strong focus on the high-yield co-living model.
 
 Ready to explore Louisville opportunities? Check out our current deal flow: https://deals.accessyourplace.com
 `;

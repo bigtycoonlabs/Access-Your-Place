@@ -79,7 +79,7 @@ Co-Living (Per Room, Monthly) Performance:
 • Estimated Annual Revenue: $31,200-$64,800 per property (4 rooms)
 
 Strategic Recommendation for Atlanta Investors:
-Given Atlanta's two-property STR cap, Access Your Place recommends a hybrid strategy: maximize returns on 2 STR properties while building a scalable co-living portfolio. Our team has successfully helped clients launch 110+ properties in Atlanta over the past 5 years using this approach.
+Given Atlanta's two-property STR cap, Access Your Place recommends a hybrid strategy: maximize returns on 2 STR properties while building a scalable co-living portfolio. We work in Atlanta and can tell you what we are seeing there right now, including what landlords in that market are currently agreeing to.
 
-Ready to launch in Atlanta? Book a discovery call: https://calendly.com/investyourplaces
+Ready to launch in Atlanta? Book a discovery call: https://accessyourplace.com/start
 `;

@@ -29,7 +29,7 @@ Top Acquisition Channels:
 5. Networking Events - Real estate meetups and investor groups
 
 Access Your Place Advantage:
-Our acquisition team has relationships with 200+ landlords across 64 cities, streamlining your property search and negotiation process.
+Since 2020 we have closed more than 2,000 acquisitions for clients, signed 400+ master leases in our own name, and negotiated with over 5,000 landlords and communities across roughly 40 major cities and submarkets in the United States and Mexico, streamlining your property search and negotiation process.
 
 III. The Initial Outreach
 
@@ -66,7 +66,7 @@ Typical Acquisition Timeline:
 
 Our setup services can compress this timeline to 3-4 weeks with our nationwide logistics network.
 
-Ready to find your first property? Book a discovery call: https://calendly.com/investyourplaces`;
+Ready to find your first property? Book a discovery call: https://accessyourplace.com/start`;
 
 export const strSetupGuide = `How to Set Up a Short-Term Rental Property: Complete Guide
 
@@ -126,7 +126,7 @@ Bathroom ($200-$400):
 • Basic toiletries (shampoo, soap)
 
 Access Your Place Setup Services:
-Skip the hassle - our YP pros can furnish your entire property in 5-7 days using our storage unit inventory and supplier network across 64 cities. We fly teams nationwide to handle everything from furniture delivery to final styling.
+Skip the hassle - our setup team can furnish a property quickly by matching you with vendors and pros already working in your market, and a setup manager runs the launch and takes inventory as product arrives.
 
 III. Week 3-4: Amenities and Supplies
 
@@ -219,4 +219,4 @@ Average time to first booking: 3-7 days with optimized listing and competitive p
 
 Access Your Place can handle your entire setup from lease signing to first booking. Our nationwide logistics network ensures fast, professional launches in any of our 64 service cities.
 
-Ready to launch? Book a discovery call: https://calendly.com/investyourplaces`;
+Ready to launch? Book a discovery call: https://accessyourplace.com/start`;

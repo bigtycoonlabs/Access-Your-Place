@@ -196,6 +196,6 @@ Once you've successfully operated one co-living property for 6+ months:
 • Hire property manager at 3-5 properties
 • Consider master leasing entire apartment communities
 
-Access Your Place has helped clients scale from 1 to 20+ co-living properties using our proven systems and vendor networks.
+Our acquisition team can walk you through how operators in this market structure a second and third unit.
 
-Ready to launch your co-living property? Book a discovery call: https://calendly.com/investyourplaces`;
+Ready to launch your co-living property? Book a discovery call: https://accessyourplace.com/start`;

@@ -75,7 +75,7 @@ Co-Living Performance (Per Room, Monthly):
 • Limited market demand for co-living in beach resort area
 • Estimated Annual Revenue: $24,000-$42,000 per property (4 rooms)
 
-Access Your Place has helped clients launch 35+ properties in Panama City Beach, focusing on family-friendly beach properties with strong summer performance.
+We work in Panama City Beach and can tell you what we are seeing there right now, including what landlords in that market are currently agreeing to, focusing on family-friendly beach properties with strong summer performance.
 
-Ready to launch in Panama City Beach? Book a discovery call: https://calendly.com/investyourplaces
+Ready to launch in Panama City Beach? Book a discovery call: https://accessyourplace.com/start
 `;

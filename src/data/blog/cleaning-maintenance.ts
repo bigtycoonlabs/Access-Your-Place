@@ -240,4 +240,4 @@ Our vendor network includes vetted cleaners in all 64 service cities. We can con
 
 In Austin, Charlotte, and Tampa, we recommend Fix it Brothers (fixitbrothers.net) for professional STR cleaning and handyman services.
 
-Ready to build your cleaning dream team? Book a discovery call: https://calendly.com/investyourplaces`;
+Ready to build your cleaning dream team? Book a discovery call: https://accessyourplace.com/start`;

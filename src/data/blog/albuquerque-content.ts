@@ -62,7 +62,7 @@ Co-Living Performance (Per Room, Monthly):
 • Typical Property Size: 4-6 bedrooms
 • Estimated Annual Revenue: $21,600-$46,800 per property (4 rooms)
 
-Access Your Place has helped clients launch 15+ properties in Albuquerque, capitalizing on the Balloon Fiesta surge and year-round demand.
+We work in Albuquerque and can tell you what we are seeing there right now, including what landlords in that market are currently agreeing to, capitalizing on the Balloon Fiesta surge and year-round demand.
 
-Ready to launch in Albuquerque? Book a discovery call: https://calendly.com/investyourplaces
+Ready to launch in Albuquerque? Book a discovery call: https://accessyourplace.com/start
 `;

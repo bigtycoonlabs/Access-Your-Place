@@ -73,7 +73,7 @@ Co-Living (Per Room, Monthly) Performance:
 • Typical Property Size: 4-6 bedrooms
 • Estimated Annual Revenue: $28,800-$61,200 per property (4 rooms)
 
-Access Your Place has successfully helped clients launch 100+ properties in Arlington, making it one of our strongest DFW markets.
+We work in Arlington and can tell you what we are seeing there right now, including what landlords in that market are currently agreeing to, making it one of our strongest DFW markets.
 
-Ready to launch in Arlington? Book a discovery call: https://calendly.com/investyourplaces
+Ready to launch in Arlington? Book a discovery call: https://accessyourplace.com/start
 `;

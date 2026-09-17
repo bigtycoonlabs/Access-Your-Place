@@ -51,7 +51,7 @@ Co-Living (Per Room, Monthly) Performance:
 • Estimated Annual Revenue: $50,400-$79,200 per 3-bedroom property
 • Top Neighborhoods: Manhattan (East Village, Upper West Side), Brooklyn (Williamsburg, Park Slope), Queens (Astoria, Long Island City)
 
-Access Your Place has successfully helped clients launch 200+ co-living properties in NYC over the past 5 years, navigating the city's complex regulatory environment.
+We work in NYC over the past 5 years and can tell you what we are seeing there right now, including what landlords in that market are currently agreeing to, navigating the city's complex regulatory environment.
 
-Ready to discuss NYC co-living opportunities? Book a discovery call: https://calendly.com/investyourplaces
+Ready to discuss NYC co-living opportunities? Book a discovery call: https://accessyourplace.com/start
 `;

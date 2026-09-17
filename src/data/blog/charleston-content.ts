@@ -76,7 +76,7 @@ Co-Living Performance (Per Room, Monthly):
 • Typical Property Size: 4-5 bedrooms
 • Estimated Annual Revenue: $31,200-$57,000 per property (4 rooms)
 
-Access Your Place has helped clients launch 45+ properties in Charleston, navigating the city's complex permit requirements and maximizing revenue within regulatory constraints.
+We work in Charleston and can tell you what we are seeing there right now, including what landlords in that market are currently agreeing to, navigating the city's complex permit requirements and maximizing revenue within regulatory constraints.
 
-Ready to launch in Charleston? Book a discovery call: https://calendly.com/investyourplaces
+Ready to launch in Charleston? Book a discovery call: https://accessyourplace.com/start
 `;

@@ -69,7 +69,7 @@ Co-Living (Per Room, Monthly) Performance:
 • Typical Property Size: 4-6 bedrooms
 • Estimated Annual Revenue: $28,800-$64,800 per property (4 rooms)
 
-Access Your Place has successfully helped clients launch 160+ properties in Phoenix over the past 5 years, capitalizing on the city's favorable regulatory environment.
+We work in Phoenix over the past 5 years and can tell you what we are seeing there right now, including what landlords in that market are currently agreeing to, capitalizing on the city's favorable regulatory environment.
 
-Ready to launch in Phoenix? Book a discovery call: https://calendly.com/investyourplaces
+Ready to launch in Phoenix? Book a discovery call: https://accessyourplace.com/start
 `;

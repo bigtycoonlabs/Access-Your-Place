@@ -19,7 +19,7 @@ V. Pre-Checkout
 
 Use Hospitable ($20/month) to automate all messages.
 
-Ready to automate? https://calendly.com/investyourplaces`;
+Ready to automate? https://accessyourplace.com/start`;
 
 export const financialModeling = `Financial Modeling for Rental Arbitrage
 
@@ -63,7 +63,7 @@ V. Key Metrics
 
 Access Your Place provides free financial modeling for potential properties.
 
-Book a call: https://calendly.com/investyourplaces`;
+Book a call: https://accessyourplace.com/start`;
 
 export const difficultLandlords = `Dealing with Difficult Landlords
 
@@ -100,9 +100,9 @@ IV. Building Strong Relationships
 
 Strong landlord relationships lead to portfolio expansion opportunities.
 
-Access Your Place has relationships with 200+ landlords across 64 cities.
+Since 2020 we have closed more than 2,000 acquisitions for clients, signed 400+ master leases in our own name, and negotiated with over 5,000 landlords and communities across roughly 40 major cities and submarkets in the United States and Mexico.
 
-Book a call: https://calendly.com/investyourplaces`;
+Book a call: https://accessyourplace.com/start`;
 
 export const leaseNegotiation = `Rental Arbitrage Lease Negotiation
 
@@ -175,4 +175,4 @@ Before signing:
 
 Access Your Place helps clients negotiate favorable lease terms using our 5-year track record and landlord relationships.
 
-Book a call: https://calendly.com/investyourplaces`;
+Book a call: https://accessyourplace.com/start`;

@@ -70,7 +70,7 @@ Co-Living (Per Room, Monthly) Performance:
 • Estimated Annual Revenue: $36,000-$79,200 per property (4 rooms)
 
 Strategic Recommendation for Denver Investors:
-Given Denver's restrictive STR environment, Access Your Place recommends focusing on co-living models or exploring nearby markets with more favorable regulations. Our team has successfully helped clients launch 120+ co-living properties in the Denver metro area over the past 5 years.
+Given Denver's restrictive STR environment, Access Your Place recommends focusing on co-living models or exploring nearby markets with more favorable regulations. We work in the Denver metro area and can tell you what we are seeing there right now, including what landlords in that market are currently agreeing to.
 
-Ready to explore Denver co-living opportunities? Book a discovery call: https://calendly.com/investyourplaces
+Ready to explore Denver co-living opportunities? Book a discovery call: https://accessyourplace.com/start
 `;

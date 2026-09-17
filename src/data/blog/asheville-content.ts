@@ -86,7 +86,7 @@ Co-Living (Per Room, Monthly) Performance:
 • Estimated Annual Revenue: $28,800-$61,200 per property (4 rooms)
 
 Strategic Recommendation for Asheville Investors:
-Given Asheville city's restrictive STR environment, Access Your Place recommends focusing on Buncombe County properties outside city limits or pivoting to co-living models within city limits. Our team has successfully helped clients launch 85+ properties in the Asheville metro area over the past 5 years using these strategies.
+Given Asheville city's restrictive STR environment, Access Your Place recommends focusing on Buncombe County properties outside city limits or pivoting to co-living models within city limits. We work in the Asheville metro area and can tell you what we are seeing there right now, including what landlords in that market are currently agreeing to.
 
-Ready to explore Asheville opportunities? Book a discovery call: https://calendly.com/investyourplaces
+Ready to explore Asheville opportunities? Book a discovery call: https://accessyourplace.com/start
 `;

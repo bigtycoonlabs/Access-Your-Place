@@ -66,7 +66,7 @@ Market Dynamics
 • Premium Pricing: LA's high cost of living supports premium room rates
 • Competitive Market: Established co-living operators; differentiation critical
 
-Access Your Place has helped clients launch 80+ co-living properties in Los Angeles, focusing on furnished room rentals near entertainment and tech hubs.
+We work in Los Angeles and can tell you what we are seeing there right now, including what landlords in that market are currently agreeing to, focusing on furnished room rentals near entertainment and tech hubs.
 
-Ready to explore LA co-living? Book a discovery call: https://calendly.com/investyourplaces
+Ready to explore LA co-living? Book a discovery call: https://accessyourplace.com/start
 `;

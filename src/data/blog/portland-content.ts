@@ -69,7 +69,7 @@ Co-Living Performance (Per Room, Monthly):
 • Estimated Annual Revenue: $33,600-$79,200 per property (4 rooms)
 • Top Neighborhoods: Hawthorne, Alberta Arts, Division, Sellwood, near PSU/OHSU
 
-Access Your Place has helped clients launch 25+ co-living properties in Portland, focusing on the 30+ day rental model as the only viable arbitrage strategy.
+We work in Portland and can tell you what we are seeing there right now, including what landlords in that market are currently agreeing to, focusing on the 30+ day rental model as the only viable arbitrage strategy.
 
-Ready to explore Portland co-living? Book a discovery call: https://calendly.com/investyourplaces
+Ready to explore Portland co-living? Book a discovery call: https://accessyourplace.com/start
 `;

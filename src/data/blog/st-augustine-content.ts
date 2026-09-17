@@ -71,7 +71,7 @@ Co-Living Performance (Per Room, Monthly):
 • Typical Property Size: 4-6 bedrooms
 • Estimated Annual Revenue: $26,400-$57,600 per property (4 rooms)
 
-Access Your Place has helped clients launch 40+ properties in St. Augustine, capitalizing on the city's historic charm and beach proximity.
+We work in St and can tell you what we are seeing there right now, including what landlords in that market are currently agreeing to. Augustine, capitalizing on the city's historic charm and beach proximity.
 
-Ready to launch in St. Augustine? Book a discovery call: https://calendly.com/investyourplaces
+Ready to launch in St. Augustine? Book a discovery call: https://accessyourplace.com/start
 `;

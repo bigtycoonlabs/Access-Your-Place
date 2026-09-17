@@ -96,7 +96,7 @@ Co-Living Performance (Per Room, Monthly):
 • Typical Property Size: 4-6 bedrooms
 • Estimated Annual Revenue: $26,400-$57,600 per property (4 rooms)
 
-Access Your Place has helped clients launch 200+ properties across the Dallas-Fort Worth Metroplex, leveraging the region's diverse demand drivers.
+We work in the Dallas-Fort Worth Metroplex and can tell you what we are seeing there right now, including what landlords in that market are currently agreeing to, leveraging the region's diverse demand drivers.
 
-Ready to launch in DFW? Book a discovery call: https://calendly.com/investyourplaces
+Ready to launch in DFW? Book a discovery call: https://accessyourplace.com/start
 `;

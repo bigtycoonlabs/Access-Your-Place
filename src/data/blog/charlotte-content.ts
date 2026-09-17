@@ -51,7 +51,7 @@ Co-Living (Per Room, Monthly) Performance:
 • Typical Property Size: 4-6 bedrooms
 • Estimated Annual Revenue: $31,200-$61,200 per property (4 rooms)
 
-Access Your Place has successfully helped clients launch 150+ properties in Charlotte over the past 5 years.
+We work in Charlotte over the past 5 years and can tell you what we are seeing there right now, including what landlords in that market are currently agreeing to.
 
-Ready to launch in Charlotte? Book a discovery call: https://calendly.com/investyourplaces
+Ready to launch in Charlotte? Book a discovery call: https://accessyourplace.com/start
 `;

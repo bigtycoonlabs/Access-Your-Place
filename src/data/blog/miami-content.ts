@@ -69,7 +69,7 @@ Co-Living (Per Room, Monthly) Performance:
 • Typical Property Size: 4-8 bedrooms
 • Estimated Annual Revenue: $38,400-$115,200 per property (4 rooms)
 
-Access Your Place has successfully helped clients launch 200+ properties in Miami over the past 5 years, navigating the complex dual licensing system.
+We work in Miami over the past 5 years and can tell you what we are seeing there right now, including what landlords in that market are currently agreeing to, navigating the complex dual licensing system.
 
-Ready to launch in Miami? Book a discovery call: https://calendly.com/investyourplaces
+Ready to launch in Miami? Book a discovery call: https://accessyourplace.com/start
 `;

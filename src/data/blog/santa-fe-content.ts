@@ -71,5 +71,5 @@ Co-Living Performance (Per Room, Monthly):
 
 Access Your Place has helped select clients navigate Santa Fe's permit waitlist, with co-living as the primary scalable strategy.
 
-Ready to explore Santa Fe? Book a discovery call: https://calendly.com/investyourplaces
+Ready to explore Santa Fe? Book a discovery call: https://accessyourplace.com/start
 `;

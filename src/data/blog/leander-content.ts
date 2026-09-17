@@ -63,5 +63,5 @@ Co-Living (Per Room, Monthly) Performance:
 
 Access Your Place is actively expanding into the Leander market as part of our Austin metro growth strategy.
 
-Ready to launch in Leander? Book a discovery call: https://calendly.com/investyourplaces
+Ready to launch in Leander? Book a discovery call: https://accessyourplace.com/start
 `;

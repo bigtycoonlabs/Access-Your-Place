@@ -21,7 +21,7 @@ export const pinellasCounty = `Pinellas County (St. Petersburg & Clearwater) STR
 - Occupancy: 72%
 - Annual revenue: $48,600
 
-Book a call: https://calendly.com/investyourplaces`;
+Book a call: https://accessyourplace.com/start`;
 
 export const houston = `Houston TX STR & Co-Living Requirements
 
@@ -45,7 +45,7 @@ export const houston = `Houston TX STR & Co-Living Requirements
 - Occupancy: 68%
 - Annual revenue: $41,000
 
-Book a call: https://calendly.com/investyourplaces`;
+Book a call: https://accessyourplace.com/start`;
 
 export const fayetteville = `Fayetteville NC STR & Co-Living Requirements
 
@@ -68,7 +68,7 @@ export const fayetteville = `Fayetteville NC STR & Co-Living Requirements
 - Occupancy: 65%
 - Annual revenue: $34,400
 
-Book a call: https://calendly.com/investyourplaces`;
+Book a call: https://accessyourplace.com/start`;
 
 export const rentalArbitrageVsPurchase = `Why Rental Arbitrage Acquisition vs Traditional Purchasing
 
@@ -93,7 +93,7 @@ First Property: $2,500-$10,000
 - Includes: property sourcing, lease negotiation, compliance review
 - Master lease opportunities: $5,000-$10,000 for multi-unit access
 
-Book a call: https://calendly.com/investyourplaces`;
+Book a call: https://accessyourplace.com/start`;
 
 export const furnishedRentalTypes = `Furnished Rental Operation Types Breakdown
 
@@ -121,4 +121,4 @@ Setup time: 30-60 days
 Access: 5-50 units simultaneously
 Target: scalable operators
 
-Book a call: https://calendly.com/investyourplaces`;
+Book a call: https://accessyourplace.com/start`;

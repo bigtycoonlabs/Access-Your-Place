@@ -76,7 +76,7 @@ Co-Living (Per Room, Monthly) Performance:
 • Typical Property Size: 4-6 bedrooms
 • Estimated Annual Revenue: $33,600-$72,000 per property (4 rooms)
 
-Access Your Place has successfully helped clients launch 180+ properties in Austin over the past 5 years, leveraging the 2025 regulatory updates.
+We work in Austin over the past 5 years and can tell you what we are seeing there right now, including what landlords in that market are currently agreeing to, leveraging the 2025 regulatory updates.
 
-Ready to launch in Austin? Book a discovery call: https://calendly.com/investyourplaces
+Ready to launch in Austin? Book a discovery call: https://accessyourplace.com/start
 `;

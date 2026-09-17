@@ -58,7 +58,7 @@ Co-Living (Per Room, Monthly) Performance:
 • Estimated Annual Revenue (3-Room Max): $27,000-$37,800 per property
 • Note: The three-unrelated-person limit caps scalability but enforcement is minimal
 
-Access Your Place has successfully helped clients launch 90+ properties in Wilmington over the past 5 years, leveraging the city's favorable regulatory environment.
+We work in Wilmington over the past 5 years and can tell you what we are seeing there right now, including what landlords in that market are currently agreeing to, leveraging the city's favorable regulatory environment.
 
-Have a property in Wilmington to sell? Submit it for review and get listed on our deal flow within 24 hours: Contact us at https://calendly.com/investyourplaces
+Have a property in Wilmington to sell? Submit it for review and get listed on our deal flow within 24 hours: Tell us about it here: https://accessyourplace.com/start
 `;

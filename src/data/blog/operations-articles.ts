@@ -101,7 +101,7 @@ Master Lease Advantages:
 • Easier to implement building-wide improvements
 • Reduced acquisition time
 
-Access Your Place has relationships with 200+ landlords across 64 cities, enabling faster portfolio growth for our clients.
+Since 2020 we have closed more than 2,000 acquisitions for clients, signed 400+ master leases in our own name, and negotiated with over 5,000 landlords and communities across roughly 40 major cities and submarkets in the United States and Mexico, enabling faster portfolio growth for our clients.
 
 VI. Geographic Expansion Strategy
 
@@ -178,9 +178,9 @@ Your rental arbitrage portfolio has value:
 
 Alternative: Convert to property management company and manage for other investors (10-20% of revenue).
 
-Ready to scale your portfolio? Access Your Place provides acquisition support, setup services, and ongoing operations management across 64 cities.
+Ready to scale your portfolio? Access Your Place provides acquisition support and setup services in roughly 40 major cities and submarkets across the United States and Mexico.
 
-Book a discovery call: https://calendly.com/investyourplaces`;
+Book a discovery call: https://accessyourplace.com/start`;
 
 export const insuranceGuide = `Insurance Requirements for Rental Arbitrage: Complete Guide
 
@@ -371,4 +371,4 @@ We help clients:
 
 Our 3,700+ property launches include zero major uninsured losses - proper insurance is foundational to sustainable rental arbitrage.
 
-Ready to protect your business? Book a discovery call: https://calendly.com/investyourplaces`;
+Ready to protect your business? Book a discovery call: https://accessyourplace.com/start`;
