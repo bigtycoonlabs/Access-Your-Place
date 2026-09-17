@@ -29,8 +29,8 @@ export default function CompanyPress() {
       intro={<p>Podcasts, interviews, articles, video and events. If you would like to speak with our founders or anyone on our team, we would love to hear from you.</p>}
     >
       <SEO
-        title="Press - Set Up Your Place LLC"
-        description="Media and interview requests for Set Up Your Place LLC and its founders, Vission and Rel Cooper. Podcasts, interviews, articles, video and events."
+        title="Press and Media | Set Up Your Place LLC"
+        description="Interview Vission and Rel Cooper, blind founders of Set Up Your Place LLC. Podcasts, interviews, articles, video and events. Request an interview."
         canonicalUrl="/setupyourplace/press"
         ogType="website"
         structuredData={getBreadcrumbSchema([{ name: 'Home', url: '/' }, { name: 'Set Up Your Place', url: '/setupyourplace' }, { name: 'Press', url: '/setupyourplace/press' }])}

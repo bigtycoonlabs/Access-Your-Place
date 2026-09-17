@@ -59,7 +59,9 @@ export default function SEO({
   ratingValue,
   reviewCount,
 }: SEOProps) {
-  const fullTitle = title.includes(SITE_NAME) ? title : `${title} | ${SITE_NAME}`;
+  // Company pages carry their own brand in the title and should not gain an Access Your Place suffix.
+  const isCompanyTitle = title.includes('Set Up Your Place');
+  const fullTitle = title.includes(SITE_NAME) || isCompanyTitle ? title : `${title} | ${SITE_NAME}`;
   const fullCanonicalUrl = canonicalUrl 
     ? (canonicalUrl.startsWith('http') ? canonicalUrl : `${BASE_URL}${canonicalUrl}`)
     : typeof window !== 'undefined' ? window.location.href : BASE_URL;
@@ -124,7 +126,7 @@ export default function SEO({
     setMetaTag('og:description', description, true);
     setMetaTag('og:type', ogType, true);
     setMetaTag('og:url', fullCanonicalUrl, true);
-    setMetaTag('og:site_name', SITE_NAME, true);
+    setMetaTag('og:site_name', isCompanyTitle ? 'Set Up Your Place LLC' : SITE_NAME, true);
     setMetaTag('og:image', ogImage, true);
     setMetaTag('og:image:width', '1200', true);
     setMetaTag('og:image:height', '630', true);

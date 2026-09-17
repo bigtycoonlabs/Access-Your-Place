@@ -19,8 +19,8 @@ export default function CompanyAccessibility() {
       intro={<p>Our founders, Vission and Rel Cooper, are both blind. They run this company with the same screen readers many of our customers use. Accessibility is not a feature we add at the end. It is how everything starts.</p>}
     >
       <SEO
-        title="Accessibility - Set Up Your Place LLC"
-        description="How Set Up Your Place builds Access Your Place, Access YP Labs and Access YP Flow to work with screen readers and assistive technology, and how to tell us when something does not."
+        title="Accessibility | Set Up Your Place LLC"
+        description="Built by blind founders who use screen readers every day. How Access Your Place, Access YP Labs and Access YP Flow are built for assistive technology, and how to report a barrier."
         canonicalUrl="/setupyourplace/accessibility"
         ogType="website"
         structuredData={getBreadcrumbSchema([{ name: 'Home', url: '/' }, { name: 'Set Up Your Place', url: '/setupyourplace' }, { name: 'Accessibility', url: '/setupyourplace/accessibility' }])}

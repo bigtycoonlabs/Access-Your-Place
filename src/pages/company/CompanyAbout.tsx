@@ -53,12 +53,12 @@ export default function CompanyAbout() {
   return (
     <CompanyLayout
       eyebrow="About the company"
-      title="Access for everyone."
+      title="Set Up Your Place: access for everyone."
       intro={<p>Set Up Your Place LLC is a technology company. We build three platforms today, and every one of them came from the work: five years of serving hundreds of business owners, the data from running real operations, and the things people kept asking us for.</p>}
     >
       <SEO
-        title="About Set Up Your Place LLC - The company behind Access Your Place, YP Labs and YP Flow"
-        description="Set Up Your Place LLC is a technology company founded by Vission and Rel Cooper. Access Your Place, Access YP Labs and Access YP Flow were built from five years of serving business owners."
+        title="About Set Up Your Place LLC | Access Your Place, YP Labs and YP Flow"
+        description="Set Up Your Place LLC is a technology company founded by Vission and Rel Cooper. Access Your Place, Access YP Labs and Access YP Flow were built from five years of serving hundreds of business owners."
         keywords="Set Up Your Place LLC, Vission Cooper, Rel Cooper, Access Your Place, Access YP Labs, Access YP Flow"
         canonicalUrl="/setupyourplace"
         ogType="website"

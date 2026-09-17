@@ -17,8 +17,8 @@ export default function CompanyCareers() {
       intro={<p>We are looking for people who want to build something that matters: operators, organisers and entrepreneurs who are excited about using AI to help people, not harm them.</p>}
     >
       <SEO
-        title="Careers - Set Up Your Place LLC"
-        description="Join Set Up Your Place: commission-based roles at Access Your Place, administration roles at Access YP Flow and Access YP Labs, and entrepreneurs who want AI to help people."
+        title="Careers | Set Up Your Place LLC"
+        description="Join Set Up Your Place: commission-based Acquisition Manager, Setup Manager and Admin roles at Access Your Place, administration roles at Access YP Flow and Access YP Labs, and entrepreneurs who want AI to help people."
         canonicalUrl="/setupyourplace/careers"
         ogType="website"
         structuredData={getBreadcrumbSchema([{ name: 'Home', url: '/' }, { name: 'Set Up Your Place', url: '/setupyourplace' }, { name: 'Careers', url: '/setupyourplace/careers' }])}

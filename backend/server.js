@@ -6446,9 +6446,22 @@ return err('Unknown unassigned-investor-digest action: ' + action);
 }); // end app.post /functions/v1/:fn
 
 // â”€â”€ SPA fallback â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+const seoPages = require('./seoPages');
 app.get('*', (req, res) => {
   const indexPath = path.join(DIST_DIR, 'index.html');
   if (require('fs').existsSync(indexPath)) {
+    // Company pages get their own title, description, canonical, preview tags and text
+    // (see seoPages.js). Everything else is served unchanged.
+    const page = seoPages.pageFor(req.path);
+    if (page) {
+      try {
+        const html = seoPages.renderPage(require('fs').readFileSync(indexPath, 'utf8'), page);
+        res.set('Content-Type', 'text/html; charset=utf-8');
+        return res.send(html);
+      } catch (e) {
+        console.error('[seoPages] render failed, serving the plain shell:', e.message);
+      }
+    }
     res.sendFile(indexPath);
   } else {
     res.status(200).json({ ok: true, message: 'Access Your Place API server running' });
