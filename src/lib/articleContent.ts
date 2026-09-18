@@ -48,7 +48,8 @@ export function articleToHtml(body: string): string {
     if (/^(-{3,}|\*{3,})$/.test(line)) { closeAll(); out.push('<hr />'); continue; }
 
     const heading = line.match(/^(#{1,6})\s+(.*)$/);
-    if (heading) { closeAll(); const n = Math.min(heading[1].length + 1, 6); out.push(`<h${n}>${inline(heading[2])}</h${n}>`); continue; }
+    if (heading) { closeAll(); // ## becomes h2: the page heading is the h1, so article sections sit directly under it.
+      const n = Math.min(Math.max(heading[1].length, 2), 6); out.push(`<h${n}>${inline(heading[2])}</h${n}>`); continue; }
 
     if (/^\|.*\|$/.test(line)) {
       const cells = line.slice(1, -1).split('|').map((c) => c.trim());
