@@ -1139,7 +1139,7 @@ export default function SetupServices() {
               <ArrowRight size={20} />
             </a>
             <a 
-              href="/knowledge-library"
+              href="/setupyourplace/library"
               className="inline-flex items-center justify-center gap-2 bg-white text-[#1a2332] px-8 py-4 rounded-lg font-semibold hover:bg-gray-100 transition-colors"
             >
               Read Setup Guide

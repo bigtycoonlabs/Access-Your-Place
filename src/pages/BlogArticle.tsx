@@ -7,6 +7,7 @@ import SEO, { getArticleSchema, getBreadcrumbSchema } from '@/components/SEO';
 import { CommentSection } from '@/components/blog/CommentSection';
 import { SkipLinks } from '@/hooks/useAccessibility';
 import { supabase } from '@/lib/supabase';
+import { articleToHtml } from '@/lib/articleContent';
 
 import { Button } from '@/components/ui/button';
 import { ArrowLeft, Calendar, MapPin, FileCheck, TrendingUp, Users, Loader2, Share2, BookmarkPlus, Facebook, Twitter, Linkedin } from 'lucide-react';
@@ -202,7 +203,7 @@ export default function BlogArticle() {
           <p className="text-gray-600 mb-6">
             The article you're looking for doesn't exist or has been moved.
           </p>
-          <Link to="/knowledge-library">
+          <Link to="/setupyourplace/library">
             <Button className="focus:ring-2 focus:ring-[#d4a574] focus:ring-offset-2">
               Browse Knowledge Library
             </Button>
@@ -274,7 +275,7 @@ export default function BlogArticle() {
               <li aria-hidden="true" className="text-gray-400">/</li>
               <li itemProp="itemListElement" itemScope itemType="https://schema.org/ListItem">
                 <Link 
-                  to="/knowledge-library" 
+                  to="/setupyourplace/library" 
                   className="text-gray-500 hover:text-[#d4a574] focus:outline-none focus:ring-2 focus:ring-[#d4a574] rounded px-1"
                   itemProp="item"
                 >
@@ -294,7 +295,7 @@ export default function BlogArticle() {
 
           {/* Back Link */}
           <Link 
-            to="/knowledge-library" 
+            to="/setupyourplace/library" 
             className="inline-flex items-center text-[#d4a574] hover:underline mb-6 focus:outline-none focus:ring-2 focus:ring-[#d4a574] rounded px-2 py-1"
           >
             <ArrowLeft className="w-4 h-4 mr-2" aria-hidden="true" />
@@ -533,7 +534,7 @@ export default function BlogArticle() {
           {/* Article Body */}
           <div 
             className="blog-content prose prose-lg max-w-none" 
-            dangerouslySetInnerHTML={{ __html: article.content }}
+            dangerouslySetInnerHTML={{ __html: articleToHtml(article.content) }}
             role="article"
             itemProp="articleBody"
           />
@@ -565,7 +566,7 @@ export default function BlogArticle() {
                 {relatedArticles.map(related => (
                   <li key={related.id}>
                     <Link
-                      to={`/blog/${related.slug}`}
+                      to={`/setupyourplace/library/${related.slug}`}
                       className="block bg-gray-50 rounded-lg overflow-hidden hover:shadow-md transition-shadow focus:outline-none focus:ring-2 focus:ring-[#d4a574] focus:ring-offset-2"
                     >
                       <img 

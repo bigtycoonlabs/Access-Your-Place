@@ -158,7 +158,7 @@ export default function VIPProgram() {
               <ArrowRight className="w-4 h-4" />
             </a>
             <a 
-              href="/knowledge-library" 
+              href="/setupyourplace/library" 
               className="inline-flex items-center gap-2 border border-white/30 text-white px-6 py-3 rounded-xl font-medium hover:bg-white/10 transition-all"
             >
               Learn More About VIP

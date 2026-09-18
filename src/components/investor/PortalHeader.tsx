@@ -209,8 +209,8 @@ export function PortalHeader({ investor, onSettingsClick, onMessagesClick }: Por
               Documents
             </a>
             <a 
-              href="/knowledge-library"
-              onClick={(e) => { e.preventDefault(); navigate('/knowledge-library'); }}
+              href="/setupyourplace/library"
+              onClick={(e) => { e.preventDefault(); navigate('/setupyourplace/library'); }}
               className="hover:text-[#d4a574] transition focus:outline-none focus:ring-2 focus:ring-[#d4a574] rounded px-2 py-1"
             >
               Resources
@@ -405,8 +405,8 @@ export function PortalHeader({ investor, onSettingsClick, onMessagesClick }: Por
                 Documents
               </a>
               <a 
-                href="/knowledge-library"
-                onClick={(e) => { e.preventDefault(); navigate('/knowledge-library'); setMobileMenuOpen(false); }}
+                href="/setupyourplace/library"
+                onClick={(e) => { e.preventDefault(); navigate('/setupyourplace/library'); setMobileMenuOpen(false); }}
                 className="py-2 px-3 rounded hover:bg-white/10 transition focus:outline-none focus:ring-2 focus:ring-[#d4a574]"
               >
                 Resources

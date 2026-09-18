@@ -284,7 +284,7 @@ export function getWebsiteSchema() {
         '@type': 'SearchAction',
         target: {
           '@type': 'EntryPoint',
-          urlTemplate: `${BASE_URL}/knowledge-library?q={search_term_string}`,
+          urlTemplate: `${BASE_URL}/setupyourplace/library?q={search_term_string}`,
         },
         'query-input': 'required name=search_term_string',
       }

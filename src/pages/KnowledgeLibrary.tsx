@@ -302,7 +302,7 @@ export default function KnowledgeLibrary() {
                   <li key={article.id}>
                     <article className="h-full" itemScope itemType="https://schema.org/Article">
                       <Link 
-                        to={`/blog/${article.slug}`} 
+                        to={`/setupyourplace/library/${article.slug}`} 
                         className="block h-full bg-white rounded-lg shadow-lg overflow-hidden hover:shadow-xl transition-shadow focus:outline-none focus:ring-2 focus:ring-[#d4a574] focus:ring-offset-2"
                         aria-label={`Read article: ${article.title}. Category: ${article.category}. ${article.excerpt}`}
                         itemProp="url"

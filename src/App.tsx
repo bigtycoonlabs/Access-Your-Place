@@ -46,6 +46,9 @@ import CompanyAbout from "./pages/company/CompanyAbout";
 import CompanyAccessibility from "./pages/company/CompanyAccessibility";
 import CompanyCareers from "./pages/company/CompanyCareers";
 import CompanyPress from "./pages/company/CompanyPress";
+import CompanyLibrary from "./pages/company/CompanyLibrary";
+import BlogRedirect from "./pages/BlogRedirect";
+import CompanyLibraryArticle from "./pages/company/CompanyLibraryArticle";
 import Careers from "./pages/Careers";
 import ProPortal from "./pages/ProPortal";
 import CommunityStandards from "./pages/CommunityStandards";
@@ -137,10 +140,10 @@ const App = () => (
                       two front doors to the same building. /staff now goes to the console, and the
                       full dashboard is one link away from it. */}
                   <Route path="/staff" element={<Navigate to="/staff/workspace" replace />} />
-                  <Route path="/knowledge" element={<KnowledgeLibrary />} />
-                  <Route path="/knowledge-library" element={<KnowledgeLibrary />} />
-                  <Route path="/article-demo" element={<Navigate to="/knowledge-library" replace />} />
-                  <Route path="/blog/:slug" element={<BlogArticle />} />
+                  <Route path="/knowledge" element={<Navigate to="/setupyourplace/library" replace />} />
+                  <Route path="/knowledge-library" element={<Navigate to="/setupyourplace/library" replace />} />
+                  <Route path="/article-demo" element={<Navigate to="/setupyourplace/library" replace />} />
+                  <Route path="/blog/:slug" element={<BlogRedirect />} />
                   {/* /pricing removed 11 Aug 2026, owner decision: unnecessary. */}
                   <Route path="/setup-services" element={<SetupServices />} />
                   <Route path="/landlord-partnership" element={<LandlordPartnership />} />
@@ -163,6 +166,8 @@ const App = () => (
                   <Route path="/setupyourplace/accessibility" element={<CompanyAccessibility />} />
                   <Route path="/setupyourplace/careers" element={<CompanyCareers />} />
                   <Route path="/setupyourplace/press" element={<CompanyPress />} />
+                  <Route path="/setupyourplace/library" element={<CompanyLibrary />} />
+                  <Route path="/setupyourplace/library/:slug" element={<CompanyLibraryArticle />} />
                   <Route path="/accessibility" element={<Navigate to="/setupyourplace/accessibility" replace />} />
                   <Route path="/press" element={<Navigate to="/setupyourplace/press" replace />} />
                   <Route path="/set-up-your-place" element={<Navigate to="/setupyourplace" replace />} />

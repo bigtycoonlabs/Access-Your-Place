@@ -13,6 +13,7 @@ export const COMPANY_PAGES = [
   { to: '/setupyourplace/about', label: 'About' },
   { to: '/setupyourplace/accessibility', label: 'Accessibility' },
   { to: '/setupyourplace/careers', label: 'Careers' },
+  { to: '/setupyourplace/library', label: 'Library' },
   { to: '/setupyourplace/press', label: 'Press' },
 ];
 

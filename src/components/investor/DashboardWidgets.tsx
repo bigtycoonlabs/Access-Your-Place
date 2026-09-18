@@ -624,7 +624,7 @@ export function DashboardWidgets({ investorId, onNavigate, onBookCall }: Props) 
           </CardHeader>
           <CardContent>
             <p className="text-sm text-gray-600 mb-3">Access guides, market research, and educational resources.</p>
-            <Link to="/knowledge-library">
+            <Link to="/setupyourplace/library">
               <Button size="sm" className="w-full bg-teal-600 hover:bg-teal-700">
                 <BookOpen className="w-4 h-4 mr-2" />
                 Browse Library

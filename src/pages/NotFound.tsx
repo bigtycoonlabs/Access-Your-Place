@@ -17,7 +17,7 @@ const NotFound = () => {
   const suggestedLinks = [
     { icon: Home, label: "Home", href: "/", description: "Return to the homepage" },
     { icon: Building2, label: "Property Deals", href: "/deals", description: "Browse available properties" },
-    { icon: BookOpen, label: "Knowledge Library", href: "/knowledge-library", description: "Read our guides and articles" },
+    { icon: BookOpen, label: "Knowledge Library", href: "/setupyourplace/library", description: "Read our guides and articles" },
     { icon: HelpCircle, label: "Contact Support", href: "mailto:support@accessyourplace.com", description: "Get help from our team" },
   ];
 
@@ -100,7 +100,7 @@ const NotFound = () => {
           <div className="mt-8 pt-8 border-t border-gray-200 text-center">
             <p className="text-sm text-gray-500">
               Looking for something specific? Try searching our{" "}
-              <Link to="/knowledge-library" className="text-[#d4a574] hover:underline">
+              <Link to="/setupyourplace/library" className="text-[#d4a574] hover:underline">
                 Knowledge Library
               </Link>{" "}
               or{" "}

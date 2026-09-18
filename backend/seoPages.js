@@ -45,6 +45,7 @@ const COMPANY_NAV = [
   ['/setupyourplace/about', 'About'],
   ['/setupyourplace/accessibility', 'Accessibility'],
   ['/setupyourplace/careers', 'Careers'],
+  ['/setupyourplace/library', 'Library'],
   ['/setupyourplace/press', 'Press'],
 ];
 
@@ -214,8 +215,8 @@ Object.assign(PAGES, {
     'We\u2019re hiring Acquisition Managers and Setup Managers',
     ['Get certified, cross-train in both roles, and build your own book. Commission is tied to deals sourced, deals closed and operations launched.',
      ['p', 'More about the company: accessyourplace.com/setupyourplace/careers']]),
-  '/knowledge-library': page('/knowledge-library',
-    'Knowledge Library: Furnished Rental Guides and Local Regulations | Access Your Place',
+  '/setupyourplace/library': page('/setupyourplace/library',
+    'Knowledge Library | Set Up Your Place',
     'Free guides on furnished rentals, rental arbitrage, co-living and corporate housing, including city-by-city short-term rental regulations with sources.',
     'Knowledge library',
     ['Free guides on furnished rentals, rental arbitrage, co-living and corporate housing, including city-by-city regulations with their sources.']),
@@ -242,7 +243,8 @@ PAGES['/'] = {
 // Addresses that are other addresses. Sent as real redirects so search engines follow them.
 const REDIRECTS = {
   '/deal-flow': '/deals', '/client-access': '/investor/login', '/article-demo': '/knowledge-library',
-  '/knowledge': '/knowledge-library', '/accessibility': '/setupyourplace/accessibility',
+  '/knowledge': '/setupyourplace/library',
+  '/knowledge-library': '/setupyourplace/library', '/accessibility': '/setupyourplace/accessibility',
   '/press': '/setupyourplace/press', '/set-up-your-place': '/setupyourplace', '/company': '/setupyourplace',
   '/investor-login': '/investor/login', '/staff-login': '/staff/login', '/staff': '/staff/workspace',
   '/staff/dashboard': '/staff/workspace',
@@ -320,7 +322,7 @@ async function articlePage(slug) {
   if (rows === undefined) return null;
   const a = rows[0];
   if (!a) return { notFound: true };
-  const path = `/blog/${a.slug}`;
+  const path = `/setupyourplace/library/${a.slug}`;
   const title = `${a.seo_title || a.title} | Access Your Place`;
   const description = clip(a.seo_description || a.meta_description || a.excerpt || a.content, 300);
   const text = clip(String(a.content || '').replace(/<[^>]+>/g, ' ').replace(/[#*_>`]/g, ''), 1500);
@@ -337,13 +339,13 @@ async function articlePage(slug) {
         author: { '@id': AYP_ORG['@id'] }, publisher: AYP_ORG,
         mainEntityOfPage: SITE + path,
       },
-      crumbs([['Home', '/'], ['Knowledge library', '/knowledge-library'], [clip(a.title, 80), path]]),
+      crumbs([['Set Up Your Place', '/setupyourplace'], ['Knowledge library', '/setupyourplace/library'], [clip(a.title, 80), path]]),
     ],
   };
 }
 
 // Every route the app knows, so an unknown address can honestly be called not found.
-const KNOWN = [/^\/deals\/[^/]+$/, /^\/blog\/[^/]+$/, /^\/investor\/login$/, /^\/landlord\/login$/, /^\/pro-portal\/[^/]+$/, /^\/am-agreement\/[^/]+$/];
+const KNOWN = [/^\/deals\/[^/]+$/, /^\/setupyourplace\/library\/[^/]+$/, /^\/investor\/login$/, /^\/landlord\/login$/, /^\/pro-portal\/[^/]+$/, /^\/am-agreement\/[^/]+$/];
 
 async function resolve(pathname) {
   const clean = (pathname || '/').split('?')[0].replace(/\/+$/, '') || '/';
@@ -352,7 +354,10 @@ async function resolve(pathname) {
   if (PRIVATE.some((re) => re.test(clean))) return { noindex: true };
   let m = clean.match(/^\/deals\/([^/]+)$/);
   if (m) { const r = await dealPage(m[1]); return r === null ? {} : r.notFound ? { notFound: true } : { page: r }; }
+  // The library moved to the company site. Old article addresses redirect permanently.
   m = clean.match(/^\/blog\/([^/]+)$/);
+  if (m) return { redirect: `/setupyourplace/library/${m[1]}` };
+  m = clean.match(/^\/setupyourplace\/library\/([^/]+)$/);
   if (m) { const r = await articlePage(m[1]); return r === null ? {} : r.notFound ? { notFound: true } : { page: r }; }
   if (KNOWN.some((re) => re.test(clean))) return {};
   return { notFound: true };

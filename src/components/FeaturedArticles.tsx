@@ -44,7 +44,7 @@ export default function FeaturedArticles() {
             </div>
             <h2 className="text-3xl font-bold text-white">What's <span className="text-[#d4a574]">New</span> on the Platform</h2>
           </div>
-          <Link to="/knowledge-library" className="text-[#d4a574] font-semibold flex items-center gap-1 hover:underline">
+          <Link to="/setupyourplace/library" className="text-[#d4a574] font-semibold flex items-center gap-1 hover:underline">
             View All <ArrowRight className="w-4 h-4" />
           </Link>
         </div>
@@ -54,7 +54,7 @@ export default function FeaturedArticles() {
             return (
               <Link 
                 key={i} 
-                to={`/blog/${article.slug}`} 
+                to={`/setupyourplace/library/${article.slug}`} 
                 className={`group rounded-xl overflow-hidden border transition-all hover:shadow-lg hover:-translate-y-1 duration-300 ${
                   article.featured 
                     ? 'md:col-span-2 md:row-span-2 bg-gradient-to-br from-[#1a365d] to-[#2d4a7c] text-white border-[#d4a574]/20' 

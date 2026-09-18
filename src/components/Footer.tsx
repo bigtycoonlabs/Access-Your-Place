@@ -71,7 +71,7 @@ export default function Footer() {
                 </li>
                 <li>
                   <a 
-                    href="/knowledge-library" 
+                    href="/setupyourplace/library" 
                     className="text-gray-400 hover:text-[#d4a574] transition-colors focus:outline-none focus:ring-2 focus:ring-[#d4a574] rounded"
                   >
                     Knowledge Library

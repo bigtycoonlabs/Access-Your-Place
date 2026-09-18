@@ -67,7 +67,7 @@ export default function BuildYourBrand() {
                 <ArrowRight className="w-4 h-4" />
               </a>
               <a
-                href="/knowledge-library"
+                href="/setupyourplace/library"
                 className="inline-flex items-center gap-2 border border-[#d4a574] text-[#d4a574] px-6 py-3 rounded-xl font-bold hover:bg-[#d4a574]/10 transition-all"
               >
                 Free Resources
