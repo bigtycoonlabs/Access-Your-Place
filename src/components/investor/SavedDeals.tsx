@@ -151,7 +151,12 @@ export function SavedDeals({ investorId, onInquire }: SavedDealsProps) {
                       <div className="w-full h-full flex items-center justify-center">
                         <Building2 className="w-10 h-10 text-white/40" />
                       </div>
-                      <Badge className="absolute top-2 left-2 bg-[#d4a574]">
+                      {!stillListed && (
+                  <p className="absolute inset-x-0 bottom-0 bg-black/75 px-3 py-1 text-sm text-white">
+                    No longer available. Ask us about similar operations.
+                  </p>
+                )}
+                <Badge className="absolute top-2 left-2 bg-[#d4a574]">
                         {deal.operation_type === 'coliving' ? 'Co-Living' : deal.operation_type === 'both' ? 'Both' : 'STR'}
                       </Badge>
                       <div className="absolute top-2 right-2 flex items-center gap-2">
@@ -232,6 +237,9 @@ export function SavedDeals({ investorId, onInquire }: SavedDealsProps) {
           
           const pennyScore = p.penny_score ?? null;
           const isFlagged = pennyScore !== null && pennyScore < 40;
+          // A saved deal can be withdrawn after it was saved. Say so on the card rather than
+          // offering a button that leads nowhere: a dead link reads as a broken portal.
+          const stillListed = p.is_published === true && p.workflow_stage === 'published';
           
           return (
             <Card key={fav.id} className={`overflow-hidden hover:shadow-lg transition ${isFlagged ? 'border-red-300 bg-red-50/30' : ''}`}>
@@ -278,9 +286,15 @@ export function SavedDeals({ investorId, onInquire }: SavedDealsProps) {
                   <span className="flex items-center gap-1"><DollarSign className="w-4 h-4" />${p.monthly_rent?.toLocaleString()}/mo</span>
                 </div>
                 <div className="flex gap-2">
-                  <Button size="sm" className="flex-1 bg-[#d4a574] hover:bg-[#c49464]" onClick={() => handleViewDeal(p)}>
-                    Inquire
-                  </Button>
+                  {stillListed ? (
+                    <Button size="sm" className="flex-1 bg-[#d4a574] hover:bg-[#c49464]" onClick={() => handleViewDeal(p)}>
+                      Inquire
+                    </Button>
+                  ) : (
+                    <Button size="sm" className="flex-1" variant="outline" disabled aria-label="This operation is no longer available">
+                      No longer available
+                    </Button>
+                  )}
                   <Button size="sm" variant="outline" onClick={() => removeFavorite(p)}>
                     <Trash2 className="w-4 h-4" />
                   </Button>

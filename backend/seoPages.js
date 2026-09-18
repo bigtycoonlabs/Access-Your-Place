@@ -344,11 +344,24 @@ async function articlePage(slug) {
   };
 }
 
+// Probes for endpoints this site has never had: ecommerce, WordPress, config files. They get a
+// short plain 404 rather than the app shell, so no JavaScript runs, nothing is recorded as a
+// visitor, and we are not sending 10KB of HTML to a scraper thousands of times.
+const PROBE_PATH =
+  /^\/(products|collections|cart|checkout|wp-|wordpress|xmlrpc|admin\.php|phpmyadmin|\.env|\.git|vendor\/|cgi-bin)/i;
+const PROBE_EXTENSION = /\.(json|php|asp|aspx|jsp|cgi|env|sql|bak|old|yml|yaml|ini|log)$/i;
+function isProbe(pathname) {
+  const clean = (pathname || '/').split('?')[0];
+  if (clean === '/manifest.json' || clean === '/site.webmanifest' || clean === '/asset-manifest.json') return false;
+  return PROBE_PATH.test(clean) || PROBE_EXTENSION.test(clean);
+}
+
 // Every route the app knows, so an unknown address can honestly be called not found.
 const KNOWN = [/^\/deals\/[^/]+$/, /^\/setupyourplace\/library\/[^/]+$/, /^\/investor\/login$/, /^\/landlord\/login$/, /^\/pro-portal\/[^/]+$/, /^\/am-agreement\/[^/]+$/];
 
 async function resolve(pathname) {
   const clean = (pathname || '/').split('?')[0].replace(/\/+$/, '') || '/';
+  if (isProbe(pathname)) return { probe: true };
   if (REDIRECTS[clean]) return { redirect: REDIRECTS[clean] };
   if (PAGES[clean]) return { page: { path: clean, ...PAGES[clean] } };
   if (PRIVATE.some((re) => re.test(clean))) return { noindex: true };
@@ -433,4 +446,4 @@ function staticPageHeaders(req, res, next) {
   next();
 }
 
-module.exports = { staticPageHeaders, resolve, renderPage, noindex, notFoundHtml, deals, PAGES, REDIRECTS };
+module.exports = { staticPageHeaders, isProbe, resolve, renderPage, noindex, notFoundHtml, deals, PAGES, REDIRECTS };

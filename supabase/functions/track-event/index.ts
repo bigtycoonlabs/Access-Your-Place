@@ -24,6 +24,17 @@ function domainOf(ref: string | null): string | null {
   if (!ref) return null;
   try { return new URL(ref).hostname.replace(/^www\./, '').toLowerCase().slice(0, 120); } catch { return null; }
 }
+// Scrapers probe for ecommerce and CMS endpoints that this site has never had, at machine
+// speed, with an ordinary Chrome user agent. Ten such "visitors" hit eight /products/*.json
+// paths in four seconds each and were counted as real people, which quietly inflates every
+// number on the analytics screen. A real page view here never ends in a file extension and
+// never sits under these prefixes, so the path alone is enough to refuse the row.
+const PROBE_PATH =
+  /^\/(products|collections|cart|checkout|wp-|wordpress|xmlrpc|admin\.php|phpmyadmin|\.env|\.git|\.well-known\/security|vendor\/|cgi-bin)/i;
+const PROBE_EXTENSION = /\.(json|php|asp|aspx|jsp|cgi|env|sql|bak|old|yml|yaml|ini|log)$/i;
+function isProbe(path: string): boolean {
+  return PROBE_PATH.test(path) || PROBE_EXTENSION.test(path);
+}
 function deviceOf(ua: string | null): string {
   const u = (ua || '').toLowerCase();
   if (!u) return 'unknown';
@@ -49,6 +60,7 @@ Deno.serve(async (req) => {
       const path = trim(e.path || e.page, 500);
       const name = trim(e.event_name, 60);
       if (!type || !path) continue;
+      if (isProbe(path)) continue;
       if (type === 'event' && (!name || !EVENT_NAME.test(name))) continue;
       const ua = trim(e.user_agent || req.headers.get('user-agent'), 1000);
       const device = deviceOf(ua);
