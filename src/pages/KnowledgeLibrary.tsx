@@ -30,7 +30,6 @@ export default function KnowledgeLibrary() {
   const [dbArticles, setDbArticles] = useState<DatabaseArticle[]>([]);
   const [loading, setLoading] = useState(true);
   
-  const categories = ['All', 'STR Regulations', 'Co-Living', 'Market Data', 'Property Management', 'Tips & Tricks'];
   
   // Fetch published articles from database
   useEffect(() => {
@@ -116,6 +115,10 @@ export default function KnowledgeLibrary() {
   ];
   
   // Filter articles by category and search query
+  // Built from what is actually in the library, so a new category appears on its own and a
+  // retired one stops being offered as an empty filter.
+  const categories = ['All', ...Array.from(new Set(allArticles.map(a => a.category).filter(Boolean))).sort()];
+
   const filtered = allArticles.filter(article => {
     const matchesCategory = filter === 'All' || article.category === filter;
     const matchesSearch = searchQuery === '' || 

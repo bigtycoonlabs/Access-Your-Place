@@ -33,17 +33,14 @@ export default function BlogArticle() {
   const [loading, setLoading] = useState(true);
   const [showShareMenu, setShowShareMenu] = useState(false);
   
-  // First try to find in static articles
-  const staticArticle = blogArticles.find(a => a.slug === slug);
+  // The library lives in the database, which is the one place staff and Penny can edit.
+  // The old bundled copies are only a fallback for a slug the database has not got, so an
+  // edit in the database is always what a reader sees.
+  const bundledFallback = blogArticles.find(a => a.slug === slug) || null;
   
   // Then try to fetch from database if not found in static
   useEffect(() => {
     const fetchFromDatabase = async () => {
-      if (staticArticle) {
-        setLoading(false);
-        return;
-      }
-      
       try {
         // Try draft_articles first
         const { data: draftData } = await supabase.functions.invoke('get-draft-articles', {
@@ -101,10 +98,10 @@ export default function BlogArticle() {
     };
     
     fetchFromDatabase();
-  }, [slug, staticArticle]);
+  }, [slug]);
   
   // Use either static or database article
-  const article = staticArticle || (dbArticle ? {
+  const article = (dbArticle ? {
     id: dbArticle.id,
     title: dbArticle.title,
     slug: dbArticle.slug,
@@ -118,6 +115,20 @@ export default function BlogArticle() {
     requiresLicense: dbArticle.requires_license,
     adr: dbArticle.adr,
     occupancy: dbArticle.occupancy
+  } : bundledFallback ? {
+    id: bundledFallback.id,
+    title: bundledFallback.title,
+    slug: bundledFallback.slug,
+    category: bundledFallback.category,
+    excerpt: bundledFallback.excerpt,
+    content: bundledFallback.content,
+    imageUrl: bundledFallback.imageUrl,
+    city: bundledFallback.city,
+    state: bundledFallback.state,
+    publishDate: bundledFallback.publishDate,
+    requiresLicense: bundledFallback.requiresLicense,
+    adr: bundledFallback.adr,
+    occupancy: bundledFallback.occupancy
   } : null);
 
   // Generate SEO keywords based on article content
