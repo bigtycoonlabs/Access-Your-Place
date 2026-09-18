@@ -6479,6 +6479,11 @@ app.get('*', async (req, res) => {
     }
     res.set('Content-Type', 'text/html; charset=utf-8');
     if (r.page) return res.send(seoPages.renderPage(shell, r.page));
+    if (r.probe) {
+      res.set('X-Robots-Tag', 'noindex, nofollow');
+      res.set('Content-Type', 'text/plain; charset=utf-8');
+      return res.status(404).send('Not found\n');
+    }
     if (r.noindex) { res.set('X-Robots-Tag', 'noindex, nofollow'); return res.send(seoPages.noindex(shell)); }
     if (r.notFound) { res.set('X-Robots-Tag', 'noindex'); return res.status(404).send(seoPages.notFoundHtml(shell, req.path)); }
   } catch (e) {
