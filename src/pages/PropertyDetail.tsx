@@ -984,11 +984,15 @@ export default function PropertyDetail() {
                       const token = getInvestorSessionToken();
                       trackEvent('acquire_clicked', { deal_id: id, signed_in: !!token });
                       if (!token) {
+                        // Straight to Create Account, and back into this acquisition once
+                        // signed in. This used to wait 1.2 seconds with nothing happening, so
+                        // people clicked twice, and then opened the sign-in form, which a
+                        // first-time buyer has no use for. The form still has a Sign In tab.
                         toast({
                           title: 'Account required',
-                          description: 'Create a free account or sign in to start an acquisition. Taking you there now.',
+                          description: 'Create a free account, or sign in, and we will bring you straight back to this acquisition.',
                         });
-                        setTimeout(() => navigate(`/investor/login?redirect=/deals/${id}`), 1200);
+                        navigate(`/investor/login?tab=register&redirect=${encodeURIComponent(`/investor/portal?acquire=${id}`)}`);
                         return;
                       }
                       navigate(`/investor/portal?acquire=${id}`);

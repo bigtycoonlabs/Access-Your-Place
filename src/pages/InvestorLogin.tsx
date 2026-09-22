@@ -392,6 +392,18 @@ export default function InvestorLogin() {
   
   const [searchParams] = useSearchParams();
   const navigate = useNavigate();
+
+  // Where to send someone once they are signed in. A buyer who pressed "Start Your
+  // Acquisition" on a deal arrives here with ?redirect=... and must land back on that deal,
+  // not on the dashboard: every success path below used to go to /investor and the deal was
+  // lost at the exact moment the person had decided to buy. Only same-site paths are
+  // accepted, so the parameter cannot be used to bounce someone to another website.
+  const afterAuthPath = (() => {
+    const r = searchParams.get('redirect') || '';
+    if (!r.startsWith('/') || r.startsWith('//') || r.startsWith('/\\')) return '/investor';
+    if (r.startsWith('/investor/login')) return '/investor';
+    return r;
+  })();
   const { toast } = useToast();
 
   // Clear location state after reading it
@@ -444,7 +456,7 @@ export default function InvestorLogin() {
           try {
             const parsed = JSON.parse(session);
             if (parsed.id && parsed.email) {
-              navigate('/investor');
+              navigate(afterAuthPath);
               return;
             }
           } catch {}
@@ -462,7 +474,7 @@ export default function InvestorLogin() {
       clearTimeout(timeoutId);
 
       if (!error && data?.success) {
-        navigate('/investor');
+        navigate(afterAuthPath);
         return;
       }
     } catch (e) {
@@ -589,7 +601,7 @@ export default function InvestorLogin() {
                 } else {
                   localStorage.removeItem('investorRememberMe');
                 }
-                window.location.href = '/investor';
+                window.location.href = afterAuthPath;
                 return;
               }
             }
@@ -629,7 +641,7 @@ export default function InvestorLogin() {
               }
               
               toast({ title: 'Welcome back!', description: `Logged in as ${fallbackResult.data.investor.full_name}` });
-              navigate('/investor');
+              navigate(afterAuthPath);
               return;
             } else {
               setFailedLoginAttempts(prev => prev + 1);
@@ -666,7 +678,7 @@ export default function InvestorLogin() {
             }
             
             toast({ title: 'Welcome back!', description: `Logged in as ${data.investor.full_name}` });
-            navigate('/investor');
+            navigate(afterAuthPath);
             return;
           }
           
@@ -689,7 +701,7 @@ export default function InvestorLogin() {
             localStorage.setItem('investorSessionToken', fallbackResult.data.session.token); trackEvent('login_success');
             
             toast({ title: 'Welcome back!', description: `Logged in as ${fallbackResult.data.investor.full_name}` });
-            navigate('/investor');
+            navigate(afterAuthPath);
             return;
           }
           
@@ -792,7 +804,7 @@ export default function InvestorLogin() {
             toast({ title: 'Account Created!', description: fallbackResult.data.message || 'Welcome to Access Your Place!' });
             
             setTimeout(() => {
-              navigate('/investor');
+              navigate(afterAuthPath);
             }, 2000);
             return; // Early return is fine now because finally block will handle setLoading(false)
           } else {
@@ -830,7 +842,7 @@ export default function InvestorLogin() {
         toast({ title: 'Account Created!', description: data.message || 'Welcome to Access Your Place!' });
         
         setTimeout(() => {
-          navigate('/investor');
+          navigate(afterAuthPath);
         }, 2000);
         return;
       }
@@ -872,7 +884,7 @@ export default function InvestorLogin() {
           toast({ title: 'Account Created!', description: 'Welcome to Access Your Place!' });
           
           setTimeout(() => {
-            navigate('/investor');
+            navigate(afterAuthPath);
           }, 2000);
           return;
         }
