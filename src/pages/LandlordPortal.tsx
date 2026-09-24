@@ -9,6 +9,7 @@ import {
 import LandlordPortalApplications from '@/components/landlord/LandlordPortalApplications';
 import LandlordPortalProperties from '@/components/landlord/LandlordPortalProperties';
 import LandlordPortalDocuments from '@/components/landlord/LandlordPortalDocuments';
+import LandlordSignatures from '@/components/landlord/LandlordSignatures';
 import LandlordPortalMessages from '@/components/landlord/LandlordPortalMessages';
 import { LandlordPennyChat } from '@/components/landlord/LandlordPennyChat';
 import { LandlordHome } from '@/components/landlord/LandlordHome';
@@ -301,8 +302,11 @@ export default function LandlordPortal() {
             {activeTab === 'documents' && (
               <div>
                 <div className="mb-6">
-                  <h2 className="text-2xl font-bold text-[#1a2332]">Document Library</h2>
-                  <p className="text-gray-500 mt-1">Your "Rules of Engagement" — property rules, parking maps, HOA bylaws, and more.</p>
+                  <h2 className="text-2xl font-bold text-[#1a2332]">Documents</h2>
+                  <p className="text-gray-500 mt-1">Sign leases and agreements we send you, and keep your "Rules of Engagement": property rules, parking maps, HOA bylaws, and more.</p>
+                </div>
+                <div className="mb-8">
+                  <LandlordSignatures landlordId={landlord.id} landlordName={landlord.name} />
                 </div>
                 <LandlordPortalDocuments landlordId={landlord.id} />
               </div>

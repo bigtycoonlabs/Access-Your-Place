@@ -1,5 +1,6 @@
 import { StaffAnalytics } from '@/components/staff/StaffAnalytics';
 import { StartSubmissions } from '@/components/staff/StartSubmissions';
+import { LandlordSignatureSender } from '@/components/staff/LandlordSignatureSender';
 import { useState, useEffect, useCallback, useMemo } from 'react';
 import { supabase } from '@/lib/supabase';
 import { useNavigate } from 'react-router-dom';
@@ -78,6 +79,7 @@ const SPACES: Record<Space, {
       { label: 'Publish a listing', does: 'Make a verified operation visible on the marketplace.' },
       { label: 'Remove a listing', does: 'Take an operation off the marketplace.' },
       { label: 'Add a community', does: 'Add a building or landlord we work with.' },
+      { label: 'Send a landlord a document to sign', does: 'Put a lease or agreement in a landlord\u2019s portal for them to sign. A lease tied to an application moves it along when they sign.' },
     ],
     record: [
       { label: 'Record landlord verification', does: 'Log that a human spoke to the landlord. Your name is attached to the claim.' },
@@ -882,11 +884,15 @@ export default function StaffWorkspace() {
                   style={{ background: '#fff', border: '1px solid #12263f', borderRadius: 8, padding: 18, marginTop: 10 }}>
                   <h3 style={{ margin: '0 0 .2em' }}>{a.label}</h3>
                   <p style={{ color: '#5b6672', fontSize: '.92rem' }}>{a.does}</p>
+                  {a.label === 'Send a landlord a document to sign' ? (
+                    <LandlordSignatureSender staffName={displayName} onDone={(m) => setAnnounce(m)} />
+                  ) : (
                   <p style={{ color: '#5b6672', fontSize: '.9rem' }}>
                     {['Start a new project','Send a Pro the job link','Add items to a project','Sign a document'].includes(a.label)
                       ? 'This one is live. Use the controls higher up this page to do it.'
                       : 'Not built into this screen yet. Ask Penny to do it, or tell the Success Team and it will be picked up.'}
                   </p>
+                  )}
                   <button type="button" onClick={() => setOpenAction(null)}
                     style={{ minHeight: 44, padding: '0 16px', borderRadius: 6, border: '1px solid #12263f', background: '#fff', color: '#12263f', fontWeight: 600, cursor: 'pointer' }}>
                     Close
