@@ -2,6 +2,8 @@ import { StaffAnalytics } from '@/components/staff/StaffAnalytics';
 import { StartSubmissions } from '@/components/staff/StartSubmissions';
 import { useState, useEffect, useCallback, useMemo } from 'react';
 import { supabase } from '@/lib/supabase';
+import { useNavigate } from 'react-router-dom';
+import { hasLiveStaffSession, clearStaffSession } from '@/lib/staffSession';
 import { lazy, Suspense } from 'react';
 
 const StaffCountersign = lazy(() =>
@@ -30,6 +32,7 @@ type View = 'dash' | 'work' | 'penny' | 'clients' | 'intake' | 'analytics' | Spa
 interface StaffSession {
   id?: string; full_name?: string; name?: string; email?: string;
   role?: string; department?: string; roles?: string[]; permissions?: string[];
+  session_token?: string; session_expires?: string;
 }
 
 const SPACES: Record<Space, {
@@ -163,12 +166,27 @@ export default function StaffWorkspace() {
   }, [busy]);
   const [result, setResult] = useState('');
 
+  const navigate = useNavigate();
+
+  // Sign out here, and send anyone without a working sign-in to the form. This page used to
+  // render "Not signed in" with no way forward, and had no sign-out at all, so an expired
+  // session left staff (the setup team among them) stuck with nothing to press.
+  const signOut = useCallback((expired = false) => {
+    clearStaffSession();
+    navigate(expired ? '/staff/login?expired=1' : '/staff/login', { replace: true });
+  }, [navigate]);
+
   useEffect(() => {
+    if (!hasLiveStaffSession()) {
+      const hadSession = !!localStorage.getItem('staffSession');
+      signOut(hadSession);
+      return;
+    }
     try {
       const raw = localStorage.getItem('staffSession');
       if (raw) setSession(JSON.parse(raw));
     } catch { /* unreadable session */ }
-  }, []);
+  }, [signOut]);
 
   const canEnter = useMemo(() => spacesFor(session), [session]);
   const displayName = session?.full_name || session?.name || '';
@@ -192,12 +210,15 @@ export default function StaffWorkspace() {
         p_session_token: session.session_token || '',
         p_project_ids: proj.map((x: any) => x.id),
       });
+      if (ws?.reason === 'session_expired' || ws?.reason === 'not_signed_in') {
+        // Replaced by a sign-in on another device, or expired early. Straight to the form.
+        signOut(true);
+        return;
+      }
       if (wsErr || !ws?.ok) {
         setItems([]);
         setClients([]);
-        const why = ws?.reason === 'session_expired' || ws?.reason === 'not_signed_in'
-          ? 'Not loaded. Your sign-in has expired, so your items and clients could not be loaded. Sign out and sign in again.'
-          : 'Not loaded. Your items and clients could not be read. Nothing was changed. Try again shortly.';
+        const why = 'Not loaded. Your items and clients could not be read. Nothing was changed. Try again shortly.';
         setResult(why);
         setAnnounce(why);
       } else {
@@ -206,7 +227,7 @@ export default function StaffWorkspace() {
       }
     } catch { /* shown as empty, not as zero */ }
     setLoading(false);
-  }, [session?.id]);
+  }, [session?.id, signOut]);
 
   useEffect(() => { load(); }, [load]);
 
@@ -903,7 +924,13 @@ export default function StaffWorkspace() {
       <header style={{ background: '#12263f', color: '#fff', padding: '12px 20px' }}>
         <div style={{ maxWidth: 1080, margin: '0 auto', display: 'flex', justifyContent: 'space-between', alignItems: 'center', gap: 12, flexWrap: 'wrap' }}>
           <span style={{ fontWeight: 700 }}>Access Your Place</span>
-          <span style={{ fontSize: '.9rem' }}>{displayName || 'Not signed in'}</span>
+          <span style={{ fontSize: '.9rem', display: 'flex', alignItems: 'center', gap: 12 }}>
+            {displayName || 'Not signed in'}
+            <button type="button" onClick={() => signOut()}
+              style={{ background: 'transparent', color: '#fff', border: '1px solid rgba(255,255,255,.6)', borderRadius: 6, padding: '4px 10px', fontSize: '.85rem', cursor: 'pointer' }}>
+              Sign out
+            </button>
+          </span>
         </div>
       </header>
 
