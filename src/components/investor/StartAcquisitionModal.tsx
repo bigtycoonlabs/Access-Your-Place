@@ -332,11 +332,10 @@ function WireTransferPayment({
         </div>
       </div>
 
-      <div className="mt-4 p-3 bg-blue-100 rounded-lg">
-          <p className="text-sm text-blue-800">
-            <strong>Reference:</strong> Include your full name and "Acquisition Fee" in the wire reference field.
-          </p>
-        </div>
+      <div className="p-3 bg-blue-100 rounded-lg">
+        <p className="text-sm text-blue-800">
+          <strong>Reference:</strong> Include your full name and "Acquisition Fee" in the wire reference field.
+        </p>
       </div>
 
       <div className="border-2 border-dashed border-gray-300 rounded-lg p-6 text-center">

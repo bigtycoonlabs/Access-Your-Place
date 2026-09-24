@@ -151,12 +151,7 @@ export function SavedDeals({ investorId, onInquire }: SavedDealsProps) {
                       <div className="w-full h-full flex items-center justify-center">
                         <Building2 className="w-10 h-10 text-white/40" />
                       </div>
-                      {!stillListed && (
-                  <p className="absolute inset-x-0 bottom-0 bg-black/75 px-3 py-1 text-sm text-white">
-                    No longer available. Ask us about similar operations.
-                  </p>
-                )}
-                <Badge className="absolute top-2 left-2 bg-[#d4a574]">
+                      <Badge className="absolute top-2 left-2 bg-[#d4a574]">
                         {deal.operation_type === 'coliving' ? 'Co-Living' : deal.operation_type === 'both' ? 'Both' : 'STR'}
                       </Badge>
                       <div className="absolute top-2 right-2 flex items-center gap-2">
@@ -270,6 +265,11 @@ export function SavedDeals({ investorId, onInquire }: SavedDealsProps) {
                     <AlertTriangle className="w-3 h-3" />
                     Flagged - Review Required
                   </div>
+                )}
+                {!stillListed && !isFlagged && (
+                  <p className="absolute inset-x-0 bottom-0 bg-black/75 px-3 py-1 text-sm text-white">
+                    No longer available. Ask us about similar operations.
+                  </p>
                 )}
               </div>
               <CardContent className="p-4">
