@@ -5,6 +5,7 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Button } from '@/components/ui/button';
 import { supabase } from '@/lib/supabase';
+import { hasLiveStaffSession, clearStaffSession } from '@/lib/staffSession';
 import { useToast } from '@/hooks/use-toast';
 import { Loader2, ArrowLeft, Phone, CheckCircle, Eye, EyeOff, ArrowRight, Check, X, AlertTriangle, Mail, ShieldAlert } from 'lucide-react';
 import { PasswordStrengthIndicator, validatePasswordStrength } from '@/components/investor/PasswordStrengthIndicator';
@@ -46,7 +47,10 @@ function saveRateLimit(state: RateLimitState) {
 
 export default function StaffLogin() {
   const [searchParams] = useSearchParams();
-  const invitationToken = searchParams.get('token');
+  // Invitation emails link with ?invitation=<token> (manage-staff and the backend both build
+  // it that way); this page only read ?token=, so an invited person saw the plain sign-in form,
+  // never set a password, and every attempt failed. Accept both.
+  const invitationToken = searchParams.get('token') || searchParams.get('invitation');
 
   const [view, setView] = useState<ViewState>(invitationToken ? 'invitation' : 'login');
   const [email, setEmail] = useState('');
@@ -130,14 +134,21 @@ export default function StaffLogin() {
   }, []);
 
   useEffect(() => {
-    // Check if already logged in
-    const session = localStorage.getItem('staffSession');
-    if (session) {
-      navigate('/staff');
-    }
-    
+    // Someone following an invitation is setting up an account, whatever is stored here.
     if (invitationToken) {
       validateInvitation();
+      return;
+    }
+
+    // Only skip the form for a sign-in that still works. An expired one is cleared, so the
+    // person gets the form instead of bouncing between here and an "expired" workspace.
+    if (hasLiveStaffSession()) {
+      navigate('/staff');
+    } else {
+      clearStaffSession();
+      if (searchParams.get('expired')) {
+        toast({ title: 'Please sign in again', description: 'Your sign-in expired or was replaced by a sign-in on another device.' });
+      }
     }
   }, [invitationToken, navigate]);
 
@@ -312,6 +323,7 @@ export default function StaffLogin() {
         agreement_signed: data.agreement_signed !== false,
         agreement_id: data.agreement_id || null,
         session_token: data.session_token || null,
+        session_expires: data.session_expires || null,
         loginTime: Date.now()
       };
       
@@ -505,6 +517,7 @@ export default function StaffLogin() {
       agreement_signed: responseData.agreement_signed !== false,
       agreement_id: responseData.agreement_id || null,
       session_token: responseData.session_token || null,
+      session_expires: responseData.session_expires || null,
       loginTime: Date.now()
     };
 
