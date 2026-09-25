@@ -1,5 +1,6 @@
 import { useState, useEffect } from 'react';
 import { supabase } from '@/lib/supabase';
+import { uploadLandlordFile } from '@/lib/landlordUpload';
 import { useToast } from '@/hooks/use-toast';
 import { Building, Plus, MapPin, Home, CheckCircle, Clock, X, AlertCircle, Globe, Upload, FileText, Loader2, Trash2 } from 'lucide-react';
 import { LandlordPropertyDetails } from './LandlordPropertyDetails';
@@ -117,13 +118,11 @@ export default function LandlordPortalProperties({ landlordId }: Props) {
   const handleUploadPdf = async (propertyId: string, file: File) => {
     setUploadingPdf(propertyId);
     try {
-      const filePath = `landlord-apps/${landlordId}/${propertyId}/${Date.now()}-${file.name}`;
-      const { error: uploadError } = await supabase.storage.from('seller-documents').upload(filePath, file);
-      if (uploadError) throw uploadError;
-      const { data: urlData } = supabase.storage.from('seller-documents').getPublicUrl(filePath);
+      const storagePath = await uploadLandlordFile(file, 'application_pdf', propertyId);
       const { data } = await supabase.functions.invoke('manage-landlord-portal', {
-        body: { action: 'save_corporate_app_pdf', property_id: propertyId, landlord_id: landlordId, pdf_url: urlData.publicUrl, pdf_filename: file.name }
+        body: { action: 'save_corporate_app_pdf', property_id: propertyId, landlord_id: landlordId, storage_path: storagePath, filename: file.name }
       });
+      if (!data?.success) throw new Error(data?.error || 'The PDF was not saved.');
       if (data?.success && data?.property) {
         setProperties(prev => prev.map(p => p.id === propertyId ? { ...p, ...data.property } : p));
         toast({ title: 'PDF Uploaded', description: 'Corporate application PDF has been saved.' });
