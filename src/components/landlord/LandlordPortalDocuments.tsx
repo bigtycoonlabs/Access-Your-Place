@@ -1,5 +1,6 @@
 import { useState, useEffect } from 'react';
 import { supabase } from '@/lib/supabase';
+import { uploadLandlordFile } from '@/lib/landlordUpload';
 import { useToast } from '@/hooks/use-toast';
 import { FileText, Plus, Trash2, Download, Upload, FolderOpen, X, File, BookOpen, Car, Shield, CreditCard, Camera, Video } from 'lucide-react';
 
@@ -62,39 +63,30 @@ export default function LandlordPortalDocuments({ landlordId }: Props) {
     }
     setUploading(true);
     try {
-      let fileUrl = '';
-      let fileName = '';
-      let fileSize = 0;
-
-      if (selectedFile) {
-        const ext = selectedFile.name.split('.').pop();
-        const path = `landlord-docs/${landlordId}/${Date.now()}.${ext}`;
-        const { error: uploadErr } = await supabase.storage.from('seller-documents').upload(path, selectedFile);
-        if (!uploadErr) {
-          const { data: urlData } = supabase.storage.from('seller-documents').getPublicUrl(path);
-          fileUrl = urlData?.publicUrl || '';
-          fileName = selectedFile.name;
-          fileSize = selectedFile.size;
-        }
+      // A document record needs its file; saving one without it used to fail silently.
+      if (!selectedFile) {
+        toast({ title: 'Choose a file', description: 'Select the file to upload, then save.', variant: 'destructive' });
+        setUploading(false);
+        return;
       }
+      const storagePath = await uploadLandlordFile(selectedFile, 'document');
 
       const { data } = await supabase.functions.invoke('manage-landlord-portal', {
         body: {
           action: 'upload_document', landlord_id: landlordId,
           document_type: selectedType, title, description,
-          file_url: fileUrl, file_name: fileName, file_size: fileSize,
+          storage_path: storagePath, file_name: selectedFile.name, file_size: selectedFile.size,
           uploaded_by: 'landlord'
         }
       });
 
-      if (data?.success) {
-        toast({ title: 'Document Uploaded', description: 'Your document has been saved.' });
-        setShowUpload(false);
-        setTitle(''); setDescription(''); setSelectedType(''); setSelectedFile(null);
-        fetchDocuments();
-      }
+      if (!data?.success) throw new Error(data?.error || 'Your document was not saved.');
+      toast({ title: 'Document Uploaded', description: 'Your document has been saved.' });
+      setShowUpload(false);
+      setTitle(''); setDescription(''); setSelectedType(''); setSelectedFile(null);
+      fetchDocuments();
     } catch (err) {
-      toast({ title: 'Error', description: 'Failed to upload document', variant: 'destructive' });
+      toast({ title: 'Error', description: err instanceof Error ? err.message : 'Failed to upload document', variant: 'destructive' });
     }
     setUploading(false);
   };

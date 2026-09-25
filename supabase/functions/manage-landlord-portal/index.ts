@@ -51,10 +51,36 @@ Deno.serve(async (req: Request) => {
     return data;
   };
 
+  // Landlord files live in the private seller-documents bucket. The database keeps a
+  // reference ("storage:seller-documents/<path>") and every read hands out a short-lived
+  // link, so a document is never reachable by a permanent public URL.
+  const FILE_BUCKET = "seller-documents";
+  const REF_PREFIX = `storage:${FILE_BUCKET}/`;
+  const encodePath = (p: string) => p.split("/").map(encodeURIComponent).join("/");
+  const signedUrl = async (path: string, seconds = 3600): Promise<string | null> => {
+    const res = await fetch(`${supabaseUrl}/storage/v1/object/sign/${FILE_BUCKET}/${encodePath(path)}`, {
+      method: "POST", headers, body: JSON.stringify({ expiresIn: seconds }),
+    });
+    if (!res.ok) return null;
+    const out = await res.json().catch(() => null);
+    return out?.signedURL ? `${supabaseUrl}/storage/v1${out.signedURL}` : null;
+  };
+  const resolveRef = async (ref: unknown) =>
+    typeof ref === "string" && ref.startsWith(REF_PREFIX) ? await signedUrl(ref.slice(REF_PREFIX.length)) : ref;
+  const removeRef = async (ref: unknown) => {
+    if (typeof ref !== "string" || !ref.startsWith(REF_PREFIX)) return;
+    await fetch(`${supabaseUrl}/storage/v1/object/${FILE_BUCKET}`, {
+      method: "DELETE", headers, body: JSON.stringify({ prefixes: [ref.slice(REF_PREFIX.length)] }),
+    }).catch(() => {});
+  };
+  // A path the caller uploaded must sit in that landlord's own folder.
+  const ownPath = (path: unknown, folder: string, landlordId: unknown) =>
+    typeof path === "string" && !path.includes("..") && path.startsWith(`${folder}/${landlordId}/`);
+
   try {
     const body = await req.json();
     // Sign-in check: see _shared/identity.ts. This function used to trust whoever called it.
-    { const denied = await gate(req, body, String(body?.action || ''), corsHeaders, {"landlordActions": ["decline_signature", "delete_document", "get_applications", "get_documents", "get_landlord_properties", "get_messages", "get_signature_requests", "landlord_overview", "mark_messages_read", "mark_signature_viewed", "remove_corporate_app_pdf", "save_corporate_app_pdf", "save_property_details", "send_message", "set_lease_preference", "sign_document", "submit_property", "update_application_status", "update_profile", "update_property_application_handling", "upload_document"],
+    { const denied = await gate(req, body, String(body?.action || ''), corsHeaders, {"landlordActions": ["create_upload_url", "decline_signature", "delete_document", "get_applications", "get_documents", "get_landlord_properties", "get_messages", "get_signature_requests", "landlord_overview", "mark_messages_read", "mark_signature_viewed", "remove_corporate_app_pdf", "save_corporate_app_pdf", "save_property_details", "send_message", "set_lease_preference", "sign_document", "submit_property", "update_application_status", "update_profile", "update_property_application_handling", "upload_document"],
       // A landlord may only touch rows on their own account, whatever id they send.
       "ownRow": {
         "delete_document": { "table": "landlord_documents", "field": "document_id" },
@@ -62,6 +88,9 @@ Deno.serve(async (req: Request) => {
         "mark_signature_viewed": { "table": "landlord_signatures", "field": "signature_id" },
         "sign_document": { "table": "landlord_signatures", "field": "signature_id" },
         "decline_signature": { "table": "landlord_signatures", "field": "signature_id" },
+        "save_corporate_app_pdf": { "table": "landlord_properties", "field": "property_id" },
+        "remove_corporate_app_pdf": { "table": "landlord_properties", "field": "property_id" },
+        "update_property_application_handling": { "table": "landlord_properties", "field": "property_id" },
       }});
       if (denied) return denied; }
     const action = body.action;
@@ -145,6 +174,34 @@ Deno.serve(async (req: Request) => {
       return json({ success: true, property: rows[0] });
     }
 
+    if (action === "create_upload_url") {
+      // A one-time upload link into the landlord's own folder. The browser never gets
+      // general write access to storage.
+      const { landlord_id } = body;
+      if (!landlord_id || !body.file_name) return json({ success: false, error: "landlord_id and file_name are required." }, 400);
+      const safe = String(body.file_name).replace(/[^A-Za-z0-9._-]+/g, "_").slice(-120) || "file";
+      let path: string;
+      if (body.purpose === "application_pdf") {
+        if (!body.property_id) return json({ success: false, error: "property_id is required." }, 400);
+        const props = await read("landlord_properties",
+          `select=id&id=eq.${encodeURIComponent(body.property_id)}&landlord_id=eq.${encodeURIComponent(landlord_id)}&limit=1`);
+        if (!props[0]) return json({ success: false, error: "That property is not on your account." }, 403);
+        path = `landlord-apps/${landlord_id}/${body.property_id}/${Date.now()}-${safe}`;
+      } else {
+        path = `landlord-docs/${landlord_id}/${Date.now()}-${safe}`;
+      }
+      const res = await fetch(`${supabaseUrl}/storage/v1/object/upload/sign/${FILE_BUCKET}/${encodePath(path)}`, {
+        method: "POST", headers, body: "{}",
+      });
+      const out = await res.json().catch(() => null);
+      const token = out?.url ? new URL(out.url, supabaseUrl).searchParams.get("token") : null;
+      if (!res.ok || !token) {
+        console.error("create_upload_url failed", res.status, out);
+        return json({ success: false, error: "We could not prepare the upload. Please try again." }, 502);
+      }
+      return json({ success: true, bucket: FILE_BUCKET, path, token });
+    }
+
     if (action === "get_all_portal_landlords") {
       return json({ success: true, landlords: await read("landlord_contacts", "select=*&portal_enabled=eq.true&order=created_at.desc") });
     }
@@ -197,8 +254,10 @@ Deno.serve(async (req: Request) => {
 
     if (action === "get_landlord_properties") {
       if (!body.landlord_id) return json({ success: false, error: "landlord_id is required" }, 400);
-      return json({ success: true, properties: await read("landlord_properties",
-        `select=*&landlord_id=eq.${encodeURIComponent(body.landlord_id)}&order=created_at.desc`) });
+      const properties = await read("landlord_properties",
+        `select=*&landlord_id=eq.${encodeURIComponent(body.landlord_id)}&order=created_at.desc`);
+      for (const p of properties) p.corporate_app_pdf_url = await resolveRef(p.corporate_app_pdf_url);
+      return json({ success: true, properties });
     }
 
     if (action === "submit_property") {
@@ -252,7 +311,7 @@ Deno.serve(async (req: Request) => {
         return json({ success: false, error: "property_id and application_handling are required" }, 400);
       }
       const data = await write("landlord_properties", "PATCH",
-        `id=eq.${encodeURIComponent(body.property_id)}`,
+        `id=eq.${encodeURIComponent(body.property_id)}${body.landlord_id ? `&landlord_id=eq.${encodeURIComponent(body.landlord_id)}` : ""}`,
         { application_handling: body.application_handling });
       return json({ success: true, property: Array.isArray(data) ? data[0] : data });
     }
@@ -260,23 +319,46 @@ Deno.serve(async (req: Request) => {
     if (action === "save_corporate_app_pdf" || action === "remove_corporate_app_pdf") {
       if (!body.property_id) return json({ success: false, error: "property_id is required" }, 400);
       const removing = action === "remove_corporate_app_pdf";
+      let pdfUrl = body.pdf_url ?? null;
+      if (!removing && body.storage_path) {
+        if (!ownPath(body.storage_path, "landlord-apps", body.landlord_id)) {
+          return json({ success: false, error: "That file is not in your folder." }, 403);
+        }
+        pdfUrl = REF_PREFIX + body.storage_path;
+      }
+      const scope = body.landlord_id ? `&landlord_id=eq.${encodeURIComponent(body.landlord_id)}` : "";
+      if (removing) {
+        const prior = await read("landlord_properties", `select=corporate_app_pdf_url&id=eq.${encodeURIComponent(body.property_id)}${scope}&limit=1`);
+        await removeRef(prior[0]?.corporate_app_pdf_url);
+      }
       const data = await write("landlord_properties", "PATCH",
-        `id=eq.${encodeURIComponent(body.property_id)}`, {
-          corporate_app_pdf_url: removing ? null : body.pdf_url,
+        `id=eq.${encodeURIComponent(body.property_id)}${scope}`, {
+          corporate_app_pdf_url: removing ? null : pdfUrl,
           corporate_app_pdf_filename: removing ? null : body.filename,
           corporate_app_requirements_note: removing ? null : (body.requirements_note ?? null),
         });
-      return json({ success: true, property: Array.isArray(data) ? data[0] : data });
+      const saved = Array.isArray(data) ? data[0] : data;
+      if (saved) saved.corporate_app_pdf_url = await resolveRef(saved.corporate_app_pdf_url);
+      return json({ success: true, property: saved });
     }
 
     if (action === "get_documents") {
       if (!body.landlord_id) return json({ success: false, error: "landlord_id is required" }, 400);
-      return json({ success: true, documents: await read("landlord_documents",
-        `select=*&landlord_id=eq.${encodeURIComponent(body.landlord_id)}&order=created_at.desc`) });
+      const documents = await read("landlord_documents",
+        `select=*&landlord_id=eq.${encodeURIComponent(body.landlord_id)}&order=created_at.desc`);
+      for (const d of documents) d.file_url = await resolveRef(d.file_url);
+      return json({ success: true, documents });
     }
 
     if (action === "upload_document") {
-      const { landlord_id, file_url, file_name } = body;
+      const { landlord_id, file_name } = body;
+      let file_url = body.file_url;
+      if (body.storage_path) {
+        if (!ownPath(body.storage_path, "landlord-docs", landlord_id)) {
+          return json({ success: false, error: "That file is not in your folder." }, 403);
+        }
+        file_url = REF_PREFIX + body.storage_path;
+      }
       if (!landlord_id || !file_url || !file_name) {
         return json({ success: false, error: "landlord_id, file_url and file_name are required" }, 400);
       }
@@ -292,7 +374,9 @@ Deno.serve(async (req: Request) => {
 
     if (action === "delete_document") {
       if (!body.document_id) return json({ success: false, error: "document_id is required" }, 400);
+      const doc = await read("landlord_documents", `select=file_url&id=eq.${encodeURIComponent(body.document_id)}&limit=1`);
       await write("landlord_documents", "DELETE", `id=eq.${encodeURIComponent(body.document_id)}`, null);
+      await removeRef(doc[0]?.file_url);
       return json({ success: true, deleted: body.document_id });
     }
 
