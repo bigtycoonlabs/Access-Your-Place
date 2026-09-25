@@ -379,6 +379,7 @@ export function PennyStaffChat({
           <div key={i} className={m.role === 'user' ? 'text-right' : 'text-left'}>
             <span className="sr-only">{m.role === 'user' ? 'You said: ' : 'Penny said: '}</span>
             <div
+              translate="no"
               className={
                 m.role === 'user'
                   ? 'inline-block rounded-2xl bg-slate-800 text-white px-4 py-2 text-sm max-w-[85%] whitespace-pre-wrap text-left'

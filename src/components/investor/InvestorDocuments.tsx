@@ -168,7 +168,7 @@ export function InvestorDocuments({ investorId, investorName, onNavigateToSignin
         setNewDocCount(newCount);
         toast({
           title: 'New Document Available',
-          description: `${newCount} new document${newCount > 1 ? 's have' : ' has'} been uploaded to your portal.`,
+          description: newCount > 1 ? `${newCount} new documents have been uploaded to your portal.` : '1 new document has been uploaded to your portal.',
         });
         // Auto-refresh
         fetchStaffDocumentsOnly();

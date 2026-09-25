@@ -160,7 +160,7 @@ export function PennyDealIntake({ staffSession, hideHeader = false, greeting }: 
               <span className="block text-xs font-bold opacity-80 mb-1">
                 {m.who === 'penny' ? 'Penny' : staffName}
               </span>
-              <span className="whitespace-pre-wrap">{m.text}</span>
+              <span translate="no" className="whitespace-pre-wrap">{m.text}</span>
             </div>
           ))}
           <div ref={logEndRef} />

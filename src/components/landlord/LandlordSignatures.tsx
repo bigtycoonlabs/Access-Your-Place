@@ -11,6 +11,7 @@ import {
 } from '@/components/ui/dialog';
 import { SignaturePad, type SignatureResult } from '@/components/investor/SignaturePad';
 import { FileSignature, CheckCircle, Clock, ExternalLink, Loader2, XCircle } from 'lucide-react';
+import { OriginalLanguageNote, getPortalLanguage } from '@/i18n/PortalLanguage';
 
 export interface SignatureRequest {
   id: string;
@@ -58,7 +59,7 @@ export function useSignatureRequests(landlordId: string) {
   return { requests, loading, error, reload };
 }
 
-const fmt = (d?: string | null) => (d ? new Date(d).toLocaleDateString(undefined, { month: 'short', day: 'numeric', year: 'numeric' }) : '');
+const fmt = (d?: string | null) => (d ? new Date(d).toLocaleDateString(getPortalLanguage() === 'es' ? 'es' : undefined, { month: 'short', day: 'numeric', year: 'numeric' }) : '');
 
 interface SignDialogProps {
   request: SignatureRequest | null;
@@ -140,17 +141,18 @@ export function SignDocumentDialog({ request, landlordId, landlordName, onClose,
     <Dialog open onOpenChange={(open) => { if (!open && !busy) onClose(); }}>
       <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto">
         <DialogHeader>
-          <DialogTitle>{request.document_name}</DialogTitle>
+          <DialogTitle translate="no">{request.document_name}</DialogTitle>
           <DialogDescription>
-            Sent {fmt(request.sent_at)}{request.sent_by_name ? ` by ${request.sent_by_name}` : ''}
-            {request.expires_at ? `. Please sign by ${fmt(request.expires_at)}.` : '.'}
+            {request.sent_by_name ? `Sent ${fmt(request.sent_at)} by ${request.sent_by_name}.` : `Sent ${fmt(request.sent_at)}.`}
+            {request.expires_at ? ` Please sign by ${fmt(request.expires_at)}.` : ''}
           </DialogDescription>
         </DialogHeader>
 
-        {request.message && <p className="text-sm text-gray-700 bg-gray-50 rounded-lg p-3">{request.message}</p>}
+        {request.message && <p translate="no" className="text-sm text-gray-700 bg-gray-50 rounded-lg p-3">{request.message}</p>}
 
+        {(request.document_content || request.document_url) && <OriginalLanguageNote />}
         {request.document_content && (
-          <div className="border rounded-lg p-4 max-h-72 overflow-y-auto whitespace-pre-wrap text-sm text-gray-800 bg-white">
+          <div translate="no" className="border rounded-lg p-4 max-h-72 overflow-y-auto whitespace-pre-wrap text-sm text-gray-800 bg-white">
             {request.document_content}
           </div>
         )}
@@ -251,7 +253,7 @@ export default function LandlordSignatures({ landlordId, landlordName }: Props) 
           {waiting.map((r) => (
             <li key={r.id} className="flex flex-wrap items-center justify-between gap-3 border border-amber-200 bg-amber-50 rounded-lg p-3">
               <div>
-                <p className="font-medium text-gray-900">{r.document_name}</p>
+                <p translate="no" className="font-medium text-gray-900">{r.document_name}</p>
                 <p className="text-xs text-gray-600 flex items-center gap-1">
                   <Clock className="w-3 h-3" /> Sent {fmt(r.sent_at)}{r.expires_at ? ` · sign by ${fmt(r.expires_at)}` : ''}
                 </p>
@@ -268,9 +270,9 @@ export default function LandlordSignatures({ landlordId, landlordName }: Props) 
         <ul className="divide-y divide-gray-100">
           {done.map((r) => (
             <li key={r.id} className="flex flex-wrap items-center justify-between gap-2 py-2 text-sm">
-              <span className="text-gray-800">{r.document_name}</span>
+              <span translate="no" className="text-gray-800">{r.document_name}</span>
               {r.status === 'signed' ? (
-                <span className="flex items-center gap-1 text-emerald-700"><CheckCircle className="w-4 h-4" /> Signed {fmt(r.signed_at)}{r.signer_name ? ` by ${r.signer_name}` : ''}</span>
+                <span className="flex items-center gap-1 text-emerald-700"><CheckCircle className="w-4 h-4" /> {r.signer_name ? `Signed ${fmt(r.signed_at)} by ${r.signer_name}` : `Signed ${fmt(r.signed_at)}`}</span>
               ) : r.status === 'declined' ? (
                 <span className="flex items-center gap-1 text-gray-600"><XCircle className="w-4 h-4" /> You asked for changes {fmt(r.declined_at)}</span>
               ) : (

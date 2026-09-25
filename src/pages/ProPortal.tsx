@@ -15,6 +15,7 @@ import {
   Upload, AlertCircle, Truck, Image, Video, RefreshCw,
   ChevronDown, ChevronUp, Shield
 } from 'lucide-react';
+import { OriginalLanguageNote } from '@/i18n/PortalLanguage';
 
 // Maintenance form fields
 const MAINTENANCE_FIELDS = [
@@ -602,7 +603,8 @@ export default function ProPortal() {
                 ) : (
                   <div className="space-y-6">
                     {/* Agreement Text */}
-                    <div className="bg-gray-50 rounded-lg p-6 border max-h-[400px] overflow-y-auto text-sm leading-relaxed">
+                    <OriginalLanguageNote />
+                    <div translate="no" className="bg-gray-50 rounded-lg p-6 border max-h-[400px] overflow-y-auto text-sm leading-relaxed">
                       {project.pro_contract_agreement_text ? (
                         <div dangerouslySetInnerHTML={{ __html: project.pro_contract_agreement_text }} />
                       ) : (

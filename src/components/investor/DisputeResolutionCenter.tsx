@@ -805,7 +805,7 @@ export function DisputeResolutionCenter({ investorId, investorName, investorEmai
                               {new Date(msg.created_at).toLocaleString()}
                             </span>
                           </div>
-                          <p className="text-sm text-gray-700">{msg.message}</p>
+                          <p translate="no" className="text-sm text-gray-700">{msg.message}</p>
                         </div>
                       ))
                     )}

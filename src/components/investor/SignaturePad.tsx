@@ -3,6 +3,7 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { PenTool, Type, Eraser, RotateCcw } from 'lucide-react';
+import { getPortalLanguage } from '@/i18n/PortalLanguage';
 
 export interface SignatureResult {
   type: 'drawn' | 'typed';
@@ -72,7 +73,8 @@ export function SignaturePad({ investorName, onSignatureChange, disabled }: Sign
 
     ctx.fillStyle = '#9ca3af';
     ctx.font = '11px sans-serif';
-    ctx.fillText('Sign above this line', 20, height - 12);
+    // Drawn on the canvas, so the page translator cannot reach it.
+    ctx.fillText(getPortalLanguage() === 'es' ? 'Firme arriba de esta línea' : 'Sign above this line', 20, height - 12);
     ctx.restore();
   };
 
@@ -278,7 +280,7 @@ export function SignaturePad({ investorName, onSignatureChange, disabled }: Sign
           }`}
         >
           <Type className="w-3.5 h-3.5" />
-          Type
+          Type name
         </button>
       </div>
 

@@ -1,3 +1,4 @@
+-- Applied to production on 25 September 2026.
 -- Landlord portal signing.
 --
 -- Landlords had no way to sign anything in their portal: a lease reached "lease generated"

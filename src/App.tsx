@@ -8,6 +8,7 @@ import { BrowserRouter, Routes, Route, Navigate } from "react-router-dom";
 import { AppProvider } from "@/contexts/AppContext";
 import NativeShell from "@/components/NativeShell";
 import { PageTracker } from "@/hooks/usePageTracking";
+import { PortalLanguage } from "@/i18n/PortalLanguage";
 import Index from "./pages/Index";
 import NotFound from "./pages/NotFound";
 import Deals from "./pages/Deals";
@@ -113,26 +114,26 @@ const App = () => (
                   <Route path="/deal-flow" element={<Navigate to="/deals" replace />} />
                   <Route path="/deals/:id" element={<PropertyDetail />} />
                   <Route path="/client-access" element={<Navigate to="/investor/login" replace />} />
-                  <Route path="/investor/login" element={<InvestorLogin />} />
-                  <Route path="/investor" element={<InvestorPortal />} />
-                  <Route path="/investor/portal" element={<InvestorPortal />} />
-                  <Route path="/investor/reset-password" element={<InvestorResetPassword />} />
-                  <Route path="/investor/verify-email" element={<InvestorVerifyEmail />} />
+                  <Route path="/investor/login" element={<PortalLanguage><InvestorLogin /></PortalLanguage>} />
+                  <Route path="/investor" element={<PortalLanguage><InvestorPortal /></PortalLanguage>} />
+                  <Route path="/investor/portal" element={<PortalLanguage><InvestorPortal /></PortalLanguage>} />
+                  <Route path="/investor/reset-password" element={<PortalLanguage><InvestorResetPassword /></PortalLanguage>} />
+                  <Route path="/investor/verify-email" element={<PortalLanguage><InvestorVerifyEmail /></PortalLanguage>} />
                   <Route path="/investor/unsubscribe" element={<InvestorUnsubscribe />} />
-                  <Route path="/staff/login" element={<StaffLogin />} />
+                  <Route path="/staff/login" element={<PortalLanguage><StaffLogin /></PortalLanguage>} />
                   <Route path="/staff-login" element={<Navigate to="/staff/login" replace />} />
                   {/* The new Success Team home. The full dashboard is still one link away at
                       ?view=full, so nothing is taken away before this has been judged. */}
-                  <Route path="/staff/home" element={<StaffHomeRoute />} />
+                  <Route path="/staff/home" element={<PortalLanguage><StaffHomeRoute /></PortalLanguage>} />
                   {/* The old dashboard is retired. It rendered two competing tab bars, showed setup
                       managers other people's tools, and had no way to start a project. Staff now go
                       to the workspace. Kept as a redirect rather than deleted so old links and the
                       emails already sent still land somewhere sensible. */}
                   <Route path="/staff/dashboard" element={<Navigate to="/staff/workspace" replace />} />
                   {/* Redesign, built alongside the existing dashboard so nothing breaks. */}
-                  <Route path="/staff/workspace" element={<StaffWorkspace />} />
+                  <Route path="/staff/workspace" element={<PortalLanguage><StaffWorkspace /></PortalLanguage>} />
                   <Route path="/staff/leadforge" element={<StaffLeadForge />} />
-                  <Route path="/staff/reset-password" element={<StaffResetPassword />} />
+                  <Route path="/staff/reset-password" element={<PortalLanguage><StaffResetPassword /></PortalLanguage>} />
                   <Route path="/staff/quick-add" element={<StaffQuickAddContact />} />
                   {/* Redirect /staff to /staff/dashboard */}
                   {/* ONE LANDING, NOT TWO. Signing in used to drop a Success Team member on the old
@@ -151,9 +152,9 @@ const App = () => (
                   <Route path="/start" element={<StartPage />} />
                   <Route path="/list-your-property" element={<ListYourProperty />} />
                   <Route path="/staff/research-review" element={<ResearchReview />} />
-                  <Route path="/landlord/login" element={<LandlordLogin />} />
-                  <Route path="/landlord/reset-password" element={<LandlordResetPassword />} />
-                  <Route path="/landlord/portal" element={<LandlordPortal />} />
+                  <Route path="/landlord/login" element={<PortalLanguage><LandlordLogin /></PortalLanguage>} />
+                  <Route path="/landlord/reset-password" element={<PortalLanguage><LandlordResetPassword /></PortalLanguage>} />
+                  <Route path="/landlord/portal" element={<PortalLanguage><LandlordPortal /></PortalLanguage>} />
                   <Route path="/admin/comments" element={<AdminComments />} />
                   <Route path="/oauth/callback" element={<OAuthCallback />} />
                   <Route path="/oauth/callback/investor" element={<OAuthCallback />} />
@@ -173,7 +174,7 @@ const App = () => (
                   <Route path="/set-up-your-place" element={<Navigate to="/setupyourplace" replace />} />
                   <Route path="/company" element={<Navigate to="/setupyourplace" replace />} />
                   <Route path="/am-agreement/:agreementId" element={<AMAgreementSign />} />
-                  <Route path="/pro-portal/:token" element={<ProPortal />} />
+                  <Route path="/pro-portal/:token" element={<PortalLanguage><ProPortal /></PortalLanguage>} />
                   <Route path="/community-standards" element={<CommunityStandards />} />
                   <Route path="/legal-agreement-gate" element={<LegalAgreementGate />} />
                   <Route path="/penny-ai" element={<PennyPage />} />

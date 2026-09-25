@@ -985,10 +985,11 @@ export default function StaffWorkspace() {
               <h1 style={{ fontSize: '1.5rem', margin: '0 0 .7em' }}>Dashboard</h1>
               <div style={{ background: '#fff', border: '1px solid #dfe3e8', borderRadius: 8, padding: 16, marginBottom: 10 }}>
                 <h3 style={{ margin: '0 0 .2em' }}>
-                  {loading ? 'Checking what is waiting…' : `${workCount} thing${workCount === 1 ? '' : 's'} need${workCount === 1 ? 's' : ''} you`}
+                  {loading ? 'Checking what is waiting…' : workCount === 1 ? '1 thing needs you' : `${workCount} things need you`}
                 </h3>
                 <p style={{ color: '#5b6672', fontSize: '.92rem' }}>
-                  {toSign.length} document{toSign.length === 1 ? '' : 's'} awaiting your signature. {projects.length} project{projects.length === 1 ? '' : 's'} running.
+                  {toSign.length === 1 ? '1 document awaiting your signature.' : `${toSign.length} documents awaiting your signature.`}{' '}
+                  {projects.length === 1 ? '1 project running.' : `${projects.length} projects running.`}
                 </p>
                 <button type="button" onClick={() => go('work')}
                   style={{ minHeight: 44, padding: '0 16px', borderRadius: 6, border: '1px solid #12263f', background: '#12263f', color: '#fff', fontWeight: 600, cursor: 'pointer' }}>
