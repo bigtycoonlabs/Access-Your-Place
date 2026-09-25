@@ -175,10 +175,46 @@ jobs:
 
           # Distinctive string literals: 40+ chars, which are specific enough that their
           # presence is real evidence and not coincidence.
+          #
+          # Read each file in order, the way the code is parsed: skip comments, and step over
+          # every quoted string, short or long, before looking for the next one. A regex that
+          # searches for "a long quoted run" instead slides past short strings and pairs the
+          # closing quote of one with the opening quote of the next. On
+          #     if (!auth.startsWith("Bearer ")) return json({ success: false, error: "Auth...
+          # it read `)) return json({ success: false, error: ` as a string, called it missing
+          # from a deploy that had succeeded (25 Sep 2026), and cried wolf.
+          def string_literals(src):
+              i, n = 0, len(src)
+              while i < n:
+                  c = src[i]
+                  if src.startswith("//", i):
+                      j = src.find("\n", i)
+                      i = n if j < 0 else j
+                  elif src.startswith("/*", i):
+                      j = src.find("*/", i + 2)
+                      i = n if j < 0 else j + 2
+                  elif c in "'\"`":
+                      j, buf, clean = i + 1, [], True
+                      while j < n and src[j] != c:
+                          if src[j] == "\\":
+                              clean = False        # escapes differ in the deployed copy's form
+                              j += 2
+                              continue
+                          if c != "`" and src[j] == "\n":
+                              break                # an unterminated quote: stop, do not guess
+                          buf.append(src[j])
+                          j += 1
+                      if c != "`" and clean:
+                          yield "".join(buf)
+                      i = j + 1
+                  else:
+                      i += 1
+
           lits = set()
           for p in sorted(repo.rglob("*.ts")):
-              for m in re.finditer(r"'([^'\\\n]{40,})'|\"([^\"\\\n]{40,})\"", p.read_text(errors="ignore")):
-                  lits.add(m.group(1) or m.group(2))
+              for lit in string_literals(p.read_text(errors="ignore")):
+                  if len(lit) >= 40 and "\n" not in lit:
+                      lits.add(lit)
 
           # Drop captures that ran across a template-literal boundary. A regex for quoted
           # strings will happily match from inside one `template ${expr}` into the next,
