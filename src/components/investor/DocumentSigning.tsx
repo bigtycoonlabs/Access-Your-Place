@@ -554,7 +554,7 @@ ${sigData.signature_image_url ? `<img src="${sigData.signature_image_url}" alt="
                 onScroll={handleAgreementScroll}
               >
                 {selectedDoc?.document_content ? (
-                  <pre className="whitespace-pre-wrap text-sm font-mono text-gray-800 leading-relaxed">
+                  <pre translate="no" className="whitespace-pre-wrap text-sm font-mono text-gray-800 leading-relaxed">
                     {selectedDoc.document_content}
                   </pre>
                 ) : (

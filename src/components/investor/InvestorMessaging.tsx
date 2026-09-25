@@ -314,7 +314,7 @@ export function InvestorMessaging({ investorId, investorName, assignedAMName, as
                             {msg.subject}
                           </p>
                         )}
-                        <p className="text-sm whitespace-pre-wrap">{msg.message}</p>
+                        <p translate="no" className="text-sm whitespace-pre-wrap">{msg.message}</p>
                         <div className={`flex items-center gap-1 mt-2 text-xs ${
                           msg.sender_type === 'investor' ? 'text-white/60' : 'text-gray-400'
                         }`}>

@@ -67,7 +67,7 @@ export default function AypLogo({ className = '', markSize = 34, showWordmark = 
         </text>
       </svg>
       {showWordmark && (
-        <span className="text-xl font-bold leading-none tracking-tight">
+        <span translate="no" className="text-xl font-bold leading-none tracking-tight">
           <span className="text-white">Access </span>
           <span className="text-[#d4a574]">Your Place</span>
         </span>

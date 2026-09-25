@@ -357,7 +357,7 @@ export function LoginSupportChat({ failedAttempts = 0, lastAttemptEmail = '' }: 
                                 : 'bg-gray-100 text-gray-900 rounded-bl-md'
                             }`}
                           >
-                            <p className="text-sm whitespace-pre-wrap">{msg.content}</p>
+                            <p translate="no" className="text-sm whitespace-pre-wrap">{msg.content}</p>
                             <p className={`text-xs mt-1 ${
                               msg.type === 'user' ? 'text-white/60' : 'text-gray-400'
                             }`}>

@@ -137,7 +137,7 @@ export default function LandlordPortalMessages({ landlordId, landlordName, appli
                       ? 'bg-[#d4a574] text-white rounded-br-md'
                       : 'bg-gray-100 text-gray-800 rounded-bl-md'
                   }`}>
-                    <p className="text-sm leading-relaxed whitespace-pre-wrap">{msg.message}</p>
+                    <p translate="no" className="text-sm leading-relaxed whitespace-pre-wrap">{msg.message}</p>
                   </div>
                   <div className={`flex items-center gap-2 mt-1 ${msg.sender_type === 'landlord' ? 'justify-end' : 'justify-start'}`}>
                     <span className="text-xs text-gray-400">{msg.sender_name || (msg.sender_type === 'staff' ? 'AM Team' : 'You')}</span>

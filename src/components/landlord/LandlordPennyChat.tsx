@@ -154,7 +154,7 @@ export function LandlordPennyChat({ landlordId, landlordName }: Props) {
                 : 'mr-auto max-w-[92%] rounded-2xl bg-gray-100 px-4 py-3 text-sm text-gray-900'
             }
           >
-            <p className="whitespace-pre-wrap leading-relaxed">{m.content}</p>
+            <p translate="no" className="whitespace-pre-wrap leading-relaxed">{m.content}</p>
           </div>
         ))}
 
