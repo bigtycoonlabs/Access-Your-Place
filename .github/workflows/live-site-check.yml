@@ -81,6 +81,16 @@ jobs:
           }
           ok('Access Your Place deployed app has the English / Spanish switch', hasSwitch, `searched ${checked} script file(s)`);
 
+          // A staff chat screenshot (names on it) was published by mistake as a property photo.
+          // The file is deleted; the address must not serve an image any more. A single-page app
+          // may answer 200 with its HTML shell for a missing file, so check what comes back, not
+          // only the status.
+          try {
+            const r = await fetch('https://accessyourplace.com/property-photos/cleveland-units/photo-13.jpeg', { redirect: 'follow' });
+            const type = r.headers.get('content-type') || '';
+            ok('Access Your Place leaked staff screenshot is gone', !(r.ok && type.startsWith('image/')), `status ${r.status}, ${type || 'no content type'}`);
+          } catch (e) { ok('Access Your Place leaked screenshot', false, String(e)); }
+
           const lines = results.map((r) => `${r.pass ? 'PASS' : 'FAIL'}  ${r.name}${r.detail ? '  (' + r.detail + ')' : ''}`);
           console.log(lines.join('\n'));
           const failed = results.filter((r) => !r.pass).length;
