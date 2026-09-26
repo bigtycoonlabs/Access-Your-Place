@@ -345,6 +345,14 @@ Deno.serve(async (req) => {
       warning: logWarning,
     });
   } catch (e) {
-    return json({ success: false, error: e instanceof Error ? e.message : String(e) }, 500);
+    // The detail (storage responses, paths) goes to the function log, not back to the
+    // caller. The reference ties the two together.
+    const ref = crypto.randomUUID().slice(0, 8);
+    console.error('deliver-document failed', ref, e instanceof Error ? (e.stack || e.message) : String(e));
+    return json({
+      success: false,
+      error: `The delivery did not complete. Check the delivery log before sending again. Reference ${ref}.`,
+      reference: ref,
+    }, 500);
   }
 });
