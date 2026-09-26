@@ -60,8 +60,12 @@ jobs:
             } catch (e) { ok(`YP Labs ${from}`, false, String(e)); }
           }
           try {
+            // The server answers unknown addresses with a page, so a 200 alone does not mean the
+            // script is still there. It is gone unless what comes back is JavaScript.
             const r = await get('https://accessyplabs.com/js/app.js');
-            ok('YP Labs retired script is gone', r.status === 404 || r.status === 301, `status ${r.status}`);
+            const type = r.headers.get('content-type') || '';
+            const cache = r.headers.get('cf-cache-status') || '';
+            ok('YP Labs retired script is gone', !(r.ok && /javascript/i.test(type)), `status ${r.status}, ${type || 'no content type'}${cache ? `, cache ${cache}` : ''}`);
           } catch (e) { ok('YP Labs retired script', false, String(e)); }
 
           // Access Your Place: the portal sign-in pages load, and the deployed app carries the
@@ -88,7 +92,8 @@ jobs:
           try {
             const r = await fetch('https://accessyourplace.com/property-photos/cleveland-units/photo-13.jpeg', { redirect: 'follow' });
             const type = r.headers.get('content-type') || '';
-            ok('Access Your Place leaked staff screenshot is gone', !(r.ok && type.startsWith('image/')), `status ${r.status}, ${type || 'no content type'}`);
+            const cache = r.headers.get('cf-cache-status') || r.headers.get('x-cache') || '';
+            ok('Access Your Place leaked staff screenshot is gone', !(r.ok && type.startsWith('image/')), `status ${r.status}, ${type || 'no content type'}${cache ? `, cache ${cache}` : ''}`);
           } catch (e) { ok('Access Your Place leaked screenshot', false, String(e)); }
 
           const lines = results.map((r) => `${r.pass ? 'PASS' : 'FAIL'}  ${r.name}${r.detail ? '  (' + r.detail + ')' : ''}`);
