@@ -1,5 +1,9 @@
--- Apply only once the staff workspace change that stops calling these from the browser is
--- live (merged 26 September 2026), or the item buttons in the workspace stop working.
+-- Applied to production on 26 September 2026, once the staff workspace change that stops
+-- calling these from the browser was confirmed live. Applied earlier, the item buttons in the
+-- workspace would have stopped working.
+--
+-- Checked after applying: anon and authenticated are refused on all three; service_role runs
+-- them (a mark with an unknown staff id returns "Only an active staff member can mark items.").
 --
 -- ayp_staff_mark_items, ayp_setup_remove_items and ayp_setup_add_items were called straight
 -- from the staff workspace with the public key, each passing a staff id the browser supplied.
