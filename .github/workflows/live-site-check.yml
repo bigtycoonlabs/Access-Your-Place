@@ -1,0 +1,91 @@
+# Checks the three live sites from GitHub's network, after a deploy.
+#
+# The cloud sessions that build these fixes cannot reach the live sites, so this runs the
+# post-deploy checks from GitHub instead. Run it by hand (Actions, "Live site check", Run
+# workflow). It only reads public pages and never signs in or changes anything.
+name: Live site check
+
+on:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  check:
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+      - name: Check the live sites
+        shell: bash
+        run: |
+          cat > check.mjs <<'EOF'
+          const results = [];
+          const ok = (name, pass, detail = '') => results.push({ name, pass, detail });
+          const get = (url, opts = {}) => fetch(url, { redirect: 'manual', headers: { 'user-agent': 'live-site-check' }, ...opts });
+
+          // YP Flow: with JavaScript off, a sign-in or sign-up submit must never put fields in the
+          // address. The served HTML is what a browser without JavaScript acts on.
+          for (const path of ['/login', '/register']) {
+            const url = 'https://accessypflow.com' + path;
+            try {
+              const r = await get(url);
+              const html = await r.text();
+              ok(`YP Flow ${path} loads`, r.status === 200, `status ${r.status}`);
+              const forms = html.match(/<form\b[^>]*>/gi) || [];
+              ok(`YP Flow ${path} has a form`, forms.length > 0, `${forms.length} form(s)`);
+              const unsafe = forms.filter((f) => !/method="post"/i.test(f));
+              ok(`YP Flow ${path} every form posts (no password in the address)`, forms.length > 0 && unsafe.length === 0, unsafe.join(' ') || forms.join(' '));
+              const submit = (html.match(/<button\b[^>]*type="submit"[^>]*>/gi) || []);
+              ok(`YP Flow ${path} submit waits until the page is ready`, submit.length > 0 && submit.every((b) => /\bdisabled\b/i.test(b)), submit.join(' '));
+            } catch (e) { ok(`YP Flow ${path} reachable`, false, String(e)); }
+          }
+
+          // YP Labs: the site loads, retired pages redirect, their scripts are gone, and the
+          // analytics beacon is allowed by the security policy.
+          try {
+            const r = await get('https://accessyplabs.com/');
+            ok('YP Labs home loads', r.status === 200, `status ${r.status}`);
+            const csp = r.headers.get('content-security-policy') || '';
+            ok('YP Labs allows the analytics beacon', csp.includes('static.cloudflareinsights.com'), csp ? 'host present in policy' : 'no policy header');
+          } catch (e) { ok('YP Labs reachable', false, String(e)); }
+          for (const [from, to] of [['/app.html', '/today.html'], ['/marketplace.html', '/'], ['/console.html', '/staff/']]) {
+            try {
+              const r = await get('https://accessyplabs.com' + from);
+              const loc = r.headers.get('location') || '';
+              ok(`YP Labs ${from} redirects to ${to}`, r.status === 301 && (loc === to || loc.endsWith('accessyplabs.com' + to)), `status ${r.status}, location ${loc}`);
+            } catch (e) { ok(`YP Labs ${from}`, false, String(e)); }
+          }
+          try {
+            const r = await get('https://accessyplabs.com/js/app.js');
+            ok('YP Labs retired script is gone', r.status === 404 || r.status === 301, `status ${r.status}`);
+          } catch (e) { ok('YP Labs retired script', false, String(e)); }
+
+          // Access Your Place: the portal sign-in pages load, and the deployed app carries the
+          // English / Spanish switch.
+          const bundles = new Set();
+          for (const path of ['/', '/staff/login', '/landlord/login', '/landlord/portal']) {
+            try {
+              const r = await get('https://accessyourplace.com' + path, { redirect: 'follow' });
+              const html = await r.text();
+              ok(`Access Your Place ${path} loads`, r.status === 200, `status ${r.status}`);
+              for (const m of html.matchAll(/<(?:script|link)\b[^>]*(?:src|href)="([^"]+\.js)"/gi)) bundles.add(new URL(m[1], 'https://accessyourplace.com').href);
+            } catch (e) { ok(`Access Your Place ${path}`, false, String(e)); }
+          }
+          let hasSwitch = false, checked = 0;
+          for (const b of bundles) {
+            try { const t = await (await fetch(b)).text(); checked++; if (t.includes('ayp_portal_language')) { hasSwitch = true; break; } } catch {}
+          }
+          ok('Access Your Place deployed app has the English / Spanish switch', hasSwitch, `searched ${checked} script file(s)`);
+
+          const lines = results.map((r) => `${r.pass ? 'PASS' : 'FAIL'}  ${r.name}${r.detail ? '  (' + r.detail + ')' : ''}`);
+          console.log(lines.join('\n'));
+          const failed = results.filter((r) => !r.pass).length;
+          const summary = `## Live site check\n\n${results.length - failed} passed, ${failed} failed.\n\n` + results.map((r) => `- ${r.pass ? 'Passed' : '**Failed**'}: ${r.name}`).join('\n') + '\n';
+          await import('node:fs').then((fs) => fs.appendFileSync(process.env.GITHUB_STEP_SUMMARY, summary));
+          if (failed) process.exit(1);
+          EOF
+          node check.mjs
