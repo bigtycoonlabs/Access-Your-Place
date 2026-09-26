@@ -72,3 +72,6 @@ verify_jwt = false
 
 [functions.manage-deal-marketplace]
 verify_jwt = false
+
+[functions.deliver-document]
+verify_jwt = false

@@ -51,6 +51,31 @@ Deno.serve(async (req: Request) => {
     return data;
   };
 
+  // Signing was silent in both directions: a landlord only learned a document was waiting if
+  // they happened to open the portal, and staff only learned it was signed or declined from an
+  // in-app notice. These emails close that. Plain text, from Penny, replies to success@.
+  // Best effort: a failed send never fails the signing itself, but it is logged, not swallowed.
+  const SUCCESS_INBOX = "success@accessyourplace.com";
+  const sendEmail = async (to: string, subject: string, text: string): Promise<boolean> => {
+    const key = Deno.env.get("RESEND_API_KEY");
+    if (!key || !to || !to.includes("@")) {
+      console.error("manage-landlord-portal email_not_sent", !key ? "no RESEND_API_KEY" : "no recipient", subject);
+      return false;
+    }
+    try {
+      const res = await fetch("https://api.resend.com/emails", {
+        method: "POST",
+        headers: { "Content-Type": "application/json", Authorization: `Bearer ${key}` },
+        body: JSON.stringify({ from: "Penny <penny@accessyourplace.com>", reply_to: [SUCCESS_INBOX], to: [to], subject, text }),
+      });
+      if (!res.ok) console.error("manage-landlord-portal email_refused", res.status, (await res.text()).slice(0, 300));
+      return res.ok;
+    } catch (e) {
+      console.error("manage-landlord-portal email_failed", e instanceof Error ? e.message : e);
+      return false;
+    }
+  };
+
   // Landlord files live in the private seller-documents bucket. The database keeps a
   // reference ("storage:seller-documents/<path>") and every read hands out a short-lived
   // link, so a document is never reachable by a permanent public URL.
@@ -282,8 +307,8 @@ Deno.serve(async (req: Request) => {
         type: "landlord_property_submitted",
         title: "A landlord submitted a property",
         message: `${address}, ${city} ${state} is waiting for review.`,
-        data: { landlord_property_id: row?.id, landlord_id },
-      }).catch(() => {});
+        metadata: { landlord_property_id: row?.id, landlord_id },
+      }).catch((e) => console.error("staff notification not saved", e instanceof Error ? e.message : e));
       return json({ success: true, property: row,
         note: "Submitted for review. It is not listed yet — someone will speak to you first." });
     }
@@ -402,8 +427,8 @@ Deno.serve(async (req: Request) => {
           type: "landlord_message",
           title: "A landlord sent a message",
           message: String(message).slice(0, 200),
-          data: { landlord_id },
-        }).catch(() => {});
+          metadata: { landlord_id },
+        }).catch((e) => console.error("staff notification not saved", e instanceof Error ? e.message : e));
       }
       return json({ success: true, message: Array.isArray(data) ? data[0] : data });
     }
@@ -513,7 +538,7 @@ Deno.serve(async (req: Request) => {
     // row records who signed, when, from where, how (drawn or typed), and a hash of exactly
     // what they were shown. Signing a lease moves its corporate application to lease_signed.
 
-    const SIGNATURE_LIST_COLUMNS = "id,landlord_id,corporate_application_id,landlord_property_id,document_name,document_type,document_url,document_content,message,status,sent_by_name,sent_at,viewed_at,expires_at,signed_at,signer_name,signature_type,declined_at,decline_reason";
+    const SIGNATURE_LIST_COLUMNS = "id,landlord_id,corporate_application_id,landlord_property_id,document_name,document_type,document_url,document_content,message,status,sent_by_name,sent_at,viewed_at,expires_at,signed_at,signer_name,signature_type,signature_image,initials,document_hash,declined_at,decline_reason,countersign_role,countersigned_by_name,countersigned_at,signing_order,released_to_client_at";
     const isExpired = (row: any) => row?.expires_at && new Date(row.expires_at).getTime() < Date.now();
     const sha256 = async (text: string) => {
       const buf = await crypto.subtle.digest("SHA-256", new TextEncoder().encode(text));
@@ -592,7 +617,24 @@ Deno.serve(async (req: Request) => {
         is_read: false, created_at: new Date().toISOString(),
       }).catch(() => {});
 
-      return json({ success: true, signature: row });
+      const landlordName = String(landlords[0].name || "").trim();
+      const emailed = await sendEmail(String(landlords[0].email || ""),
+        `A document is waiting for your signature: ${row?.document_name}`,
+        [
+          `Hi${landlordName ? ` ${landlordName}` : ""},`,
+          "",
+          `We've sent you "${row?.document_name}" to sign.`,
+          ...(body.message ? ["", String(body.message).slice(0, 1000)] : []),
+          "",
+          "To review and sign it, sign in to your landlord portal and open Documents:",
+          "https://accessyourplace.com/landlord/login",
+          "",
+          "If anything in it looks wrong, reply to this email before signing.",
+          "",
+          "Penny, Access Your Place",
+        ].join("\n"));
+
+      return json({ success: true, signature: row, emailed });
     }
 
     if (action === "get_signature_requests") {
@@ -664,8 +706,15 @@ Deno.serve(async (req: Request) => {
         type: "landlord_document_signed",
         title: "A landlord signed a document",
         message: `${signerName} signed "${row.document_name}".`,
-        data: { landlord_id: row.landlord_id, signature_id: row.id, corporate_application_id: row.corporate_application_id },
-      }).catch(() => {});
+        metadata: { landlord_id: row.landlord_id, signature_id: row.id, corporate_application_id: row.corporate_application_id },
+      }).catch((e) => console.error("staff notification not saved", e instanceof Error ? e.message : e));
+
+      await sendEmail(SUCCESS_INBOX, `Signed by landlord: ${row.document_name}`, [
+        `${signerName} signed "${row.document_name}" in the landlord portal on ${new Date(signed.signed_at || Date.now()).toUTCString()}.`,
+        "",
+        "If this needs a company countersignature, it is now in the staff countersign queue.",
+        "Open the staff workspace to see it: https://accessyourplace.com/staff/workspace",
+      ].join("\n"));
 
       return json({ success: true, signature: {
         id: signed.id, status: signed.status, signed_at: signed.signed_at,
@@ -688,8 +737,16 @@ Deno.serve(async (req: Request) => {
         type: "landlord_document_declined",
         title: "A landlord declined to sign",
         message: `"${row.document_name}": ${reason.slice(0, 200)}`,
-        data: { landlord_id: row.landlord_id, signature_id: row.id },
-      }).catch(() => {});
+        metadata: { landlord_id: row.landlord_id, signature_id: row.id },
+      }).catch((e) => console.error("staff notification not saved", e instanceof Error ? e.message : e));
+
+      await sendEmail(SUCCESS_INBOX, `Declined by landlord: ${row.document_name}`, [
+        `A landlord declined to sign "${row.document_name}".`,
+        "",
+        `Their reason: ${reason.slice(0, 1000)}`,
+        "",
+        "Open the staff workspace to follow up: https://accessyourplace.com/staff/workspace",
+      ].join("\n"));
       return json({ success: true });
     }
 
