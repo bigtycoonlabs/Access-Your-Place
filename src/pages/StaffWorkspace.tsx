@@ -389,9 +389,8 @@ export default function StaffWorkspace() {
                     </span>
                     <button type="button"
                       aria-label={r.delivered_at ? `Mark ${r.item_name} as not arrived` : `Mark ${r.item_name} arrived`}
-                      onClick={() => runRpc('ayp_staff_mark_items',
-                        { p_staff_id: session?.id, p_item_ids: [r.id],
-                          p_arrived: !r.delivered_at, p_placed: false },
+                      onClick={() => run('staff_setup_items',
+                        { op: 'mark', item_ids: [r.id], arrived: !r.delivered_at, placed: false },
                         (d) => d?.note || 'Updated.')}
                       style={{ minHeight: 44, minWidth: 84, padding: '0 12px', borderRadius: 6,
                                border: `1px solid ${r.delivered_at ? '#065f46' : '#12263f'}`,
@@ -402,8 +401,8 @@ export default function StaffWorkspace() {
                       {r.delivered_at ? 'Arrived' : 'Mark arrived'}
                     </button>
                     <button type="button" aria-label={`Remove ${r.item_name}`}
-                      onClick={() => runRpc('ayp_setup_remove_items',
-                        { p_staff_id: session?.id, p_item_ids: [r.id], p_project_id: null, p_all: false },
+                      onClick={() => run('staff_setup_items',
+                        { op: 'remove', item_ids: [r.id], project_id: null, all: false },
                         (d) => d?.note || 'Removed.')}
                       style={{ minHeight: 44, minWidth: 78, padding: '0 12px', borderRadius: 6,
                                border: '1px solid #9f1239', background: '#fff', color: '#9f1239',
@@ -417,8 +416,8 @@ export default function StaffWorkspace() {
                 <Btn kind="sec" onClick={() => {
                   const ids = list.filter((x: any) => !x.delivered_at).map((x: any) => x.id);
                   if (!ids.length) { setResult('Everything on this job is already marked arrived.'); return; }
-                  runRpc('ayp_staff_mark_items',
-                    { p_staff_id: session?.id, p_item_ids: ids, p_arrived: true, p_placed: false },
+                  run('staff_setup_items',
+                    { op: 'mark', item_ids: ids, arrived: true, placed: false },
                     (d) => d?.note || `${ids.length} marked arrived.`);
                 }}>Mark all {list.filter((x: any) => !x.delivered_at).length} outstanding as arrived</Btn>
               </div>
@@ -429,8 +428,8 @@ export default function StaffWorkspace() {
                       Remove all {list.length} items from {nameFor(pid)}? Anything a Pro has already
                       confirmed, or that has arrived, will be kept.
                     </p>
-                    <Btn onClick={() => runRpc('ayp_setup_remove_items',
-                      { p_staff_id: session?.id, p_item_ids: null, p_project_id: pid, p_all: true },
+                    <Btn onClick={() => run('staff_setup_items',
+                      { op: 'remove', item_ids: null, project_id: pid, all: true },
                       (d) => { setForm((f) => ({ ...f, clearing: '' })); return d?.note || 'Cleared.'; })}>
                       Yes, clear the list
                     </Btn>
@@ -739,8 +738,8 @@ export default function StaffWorkspace() {
               // A destination typed in the box applies to any row that did not carry one.
               if (form.dest) rows = rows.map((r: any) => ({ ...r, destination_unit: r.destination_unit || form.dest }));
               if (!rows.length) { setResult('Not saved. Type at least one item.'); setAnnounce('Not saved. Type at least one item.'); return; }
-              runRpc('ayp_setup_add_items',
-                { p_project_id: panel.slice(6), p_staff_id: session?.id, p_items: rows },
+              run('staff_setup_items',
+                { op: 'add', project_id: panel.slice(6), items: rows },
                 (d) => { setForm((fm) => ({ ...fm, parsed: '' })); return d?.note || `Added ${rows.length} item(s).`; });
             }}>Add these items</Btn>
             <Btn kind="sec" always onClick={() => { setPanel(null); setResult(''); setForm({}); }}>Cancel</Btn>

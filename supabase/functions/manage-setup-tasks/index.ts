@@ -581,6 +581,33 @@ Deno.serve(async (req) => {
       return ok({ success: true, project: data });
     }
 
+    // Staff item changes on a setup job. The workspace used to call these database functions
+    // straight from the browser with the public key, passing its own staff id; anyone could
+    // send any staff id. Now they run here, behind the staff session check above, with the
+    // staff id taken from that session, and the functions are no longer callable directly.
+    if (action === 'staff_setup_items') {
+      const me = await staffFromSession(req, body);
+      if (!me) return ok({ success: false, error: SIGNED_OUT, reason: 'session_expired' }, 401);
+      const ids = Array.isArray(params.item_ids) ? params.item_ids : null;
+      let fn = '', args: Record<string, unknown> = {};
+      if (params.op === 'mark') {
+        fn = 'ayp_staff_mark_items';
+        args = { p_staff_id: me.id, p_item_ids: ids, p_arrived: params.arrived ?? null, p_placed: params.placed ?? null };
+      } else if (params.op === 'remove') {
+        fn = 'ayp_setup_remove_items';
+        args = { p_staff_id: me.id, p_item_ids: ids, p_project_id: params.project_id ?? null, p_all: params.all === true };
+      } else if (params.op === 'add') {
+        fn = 'ayp_setup_add_items';
+        args = { p_project_id: params.project_id, p_staff_id: me.id, p_items: Array.isArray(params.items) ? params.items : [] };
+      } else {
+        return ok({ success: false, error: 'Unknown item change.' }, 400);
+      }
+      const { data, error } = await supabase.rpc(fn, args);
+      if (error) return ok({ success: false, error: error.message });
+      const r = (data && typeof data === 'object') ? data as Record<string, unknown> : {};
+      return ok({ ...r, success: r.ok !== false, error: r.ok === false ? (r.error || 'It did not save') : undefined });
+    }
+
     if (action === 'update_spreadsheet') {
       const { data: project } = await supabase.from('setup_projects').select('*').eq('id', params.project_id).single();
       const { data, error } = await supabase.from('setup_projects').update({ sourcing_spreadsheet: params.items, updated_at: new Date().toISOString(), activity_log: addLog(project?.activity_log, `Spreadsheet updated (${params.items.length} items)`, params.staff_name) }).eq('id', params.project_id).select().single();
